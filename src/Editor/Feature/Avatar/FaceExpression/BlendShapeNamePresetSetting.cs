@@ -36,6 +36,22 @@ namespace Ee4v.FaceExpression
         public string role;
         public string side;
         public bool mouthMorph;
+        public string appearancePart;
+        public string appearanceGroup;
+    }
+
+    internal static class BlendShapeAppearancePart
+    {
+        internal const string Expression = "expression";
+        internal const string Head = "head";
+        internal const string Chest = "chest";
+        internal const string Waist = "waist";
+        internal const string Shoulders = "shoulders";
+        internal const string Arms = "arms";
+        internal const string Hands = "hands";
+        internal const string Legs = "legs";
+        internal const string Feet = "feet";
+        internal const string Other = "other";
     }
 
     internal static class BlendShapeNamePresetSetting
@@ -252,6 +268,13 @@ namespace Ee4v.FaceExpression
                 preset.mappings = (preset.mappings ?? new List<BlendShapeNameMapping>())
                     .Where(mapping => mapping != null && !string.IsNullOrEmpty(mapping.shapeName))
                     .ToList();
+                foreach (var mapping in preset.mappings)
+                {
+                    mapping.appearancePart = mapping.appearancePart ??
+                                             string.Empty;
+                    mapping.appearanceGroup = mapping.appearanceGroup ??
+                                              string.Empty;
+                }
             }
         }
     }

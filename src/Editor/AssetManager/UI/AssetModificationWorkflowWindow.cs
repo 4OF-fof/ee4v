@@ -130,6 +130,7 @@ namespace Ee4v.AssetManager.UI
             internal string ShapeName { get; set; }
             internal string DisplayName { get; set; }
             internal BodyPartCategory Category { get; set; }
+            internal string Group { get; set; }
             internal float Value { get; set; }
             internal float BaseValue { get; set; }
         }
@@ -432,6 +433,8 @@ namespace Ee4v.AssetManager.UI
                 OnManagerInvalidated;
             Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
             Undo.undoRedoPerformed += RefreshAfterUndoRedo;
+            BlendShapePresetStorage.Shared.Changed -= OnBlendShapePresetChanged;
+            BlendShapePresetStorage.Shared.Changed += OnBlendShapePresetChanged;
             ConfigureWindow();
         }
 
@@ -447,7 +450,27 @@ namespace Ee4v.AssetManager.UI
             AssetManagerWindowSession.ManagerInvalidated -=
                 OnManagerInvalidated;
             Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
+            BlendShapePresetStorage.Shared.Changed -= OnBlendShapePresetChanged;
             DisposeEditors();
+        }
+
+        private void OnBlendShapePresetChanged()
+        {
+            if (_workingObject != null &&
+                _currentCategory == WorkflowCategory.Appearance &&
+                _appearanceSection == AppearanceSection.Size &&
+                _controlsHost != null &&
+                rootVisualElement.panel != null)
+            {
+                rootVisualElement.schedule.Execute(() =>
+                {
+                    if (_controlsHost != null &&
+                        rootVisualElement.panel != null)
+                    {
+                        ShowCategory(WorkflowCategory.Appearance, false);
+                    }
+                });
+            }
         }
 
         private void ConfigureWindow()
@@ -1220,10 +1243,45 @@ namespace Ee4v.AssetManager.UI
                             "ee4v-modification-workflow__size-group-title");
                         bodyShapeList.Add(categoryLabel);
                     }
-                    foreach (var bodyShape in categoryShapes)
+                    var roleGroups = categoryShapes
+                        .Select((shape, index) => new
+                        {
+                            Shape = shape,
+                            Key = string.IsNullOrWhiteSpace(shape.Group)
+                                ? "\0" + index
+                                : shape.Group
+                        })
+                        .GroupBy(item => item.Key, StringComparer.Ordinal);
+                    foreach (var roleGroup in roleGroups)
                     {
-                        bodyShapeList.Add(
-                            BuildBodyBlendShapeControl(bodyShape));
+                        var groupedShapes = roleGroup
+                            .Select(item => item.Shape)
+                            .ToArray();
+                        var hasRoleTitle = !string.IsNullOrWhiteSpace(
+                                               groupedShapes[0].Group) &&
+                                           (groupedShapes.Length > 1 ||
+                                            !string.Equals(
+                                                groupedShapes[0].Group,
+                                                groupedShapes[0].DisplayName,
+                                                StringComparison.OrdinalIgnoreCase));
+                        if (hasRoleTitle)
+                        {
+                            bodyShapeList.Add(UiTextFactory.Create(
+                                groupedShapes[0].Group,
+                                UiClassNames.SecondaryText,
+                                "ee4v-modification-workflow__size-role-title"));
+                        }
+                        foreach (var bodyShape in groupedShapes)
+                        {
+                            var control = BuildBodyBlendShapeControl(
+                                bodyShape);
+                            if (hasRoleTitle)
+                            {
+                                control.AddToClassList(
+                                    "ee4v-modification-workflow__size-control--child");
+                            }
+                            bodyShapeList.Add(control);
+                        }
                     }
                 }
                 content.Add(bodyShapeList);
@@ -1792,8 +1850,7 @@ namespace Ee4v.AssetManager.UI
                 .Where(renderer =>
                     renderer != null &&
                     renderer.sharedMesh != null &&
-                    renderer.sharedMesh.blendShapeCount > 0 &&
-                    !IsBodyMesh(renderer))
+                    renderer.sharedMesh.blendShapeCount > 0)
                 .ToArray();
             if (renderers.Length == 0)
             {
@@ -1802,11 +1859,27 @@ namespace Ee4v.AssetManager.UI
 
             var result = new List<BodyBlendShapeDefinition>();
             var separators = FaceExpressionSettings.GetSeparators();
+            var namingRule = FaceExpressionSettings.GetNameRule(
+                BlendShapePresetStorage.Shared);
             foreach (var renderer in renderers)
             {
                 var rendererPath = AnimationUtility.CalculateTransformPath(
                     renderer.transform,
                     _workingObject.transform);
+                var meshAssetPath = AssetDatabase.GetAssetPath(
+                    renderer.sharedMesh);
+                var sourceAssetGuid = string.Empty;
+                var sourceMeshLocalId = 0L;
+                if (string.Equals(
+                        System.IO.Path.GetExtension(meshAssetPath),
+                        ".fbx",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+                        renderer.sharedMesh,
+                        out sourceAssetGuid,
+                        out sourceMeshLocalId);
+                }
                 for (var shapeIndex = 0;
                      shapeIndex < renderer.sharedMesh.blendShapeCount;
                      shapeIndex++)
@@ -1820,14 +1893,40 @@ namespace Ee4v.AssetManager.UI
                     {
                         continue;
                     }
+                    namingRule.TryGetMapping(
+                        sourceAssetGuid,
+                        sourceMeshLocalId,
+                        shapeName,
+                        out var mapping);
+                    if (string.Equals(
+                            mapping?.appearancePart,
+                            BlendShapeAppearancePart.Expression,
+                            StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+                    if (!TryGetPresetBodyPart(
+                            mapping?.appearancePart,
+                            out var category))
+                    {
+                        if (IsBodyMesh(renderer))
+                        {
+                            continue;
+                        }
+                        category = ClassifyBodyPart(
+                            shapeName,
+                            renderer.name);
+                    }
                     result.Add(new BodyBlendShapeDefinition
                     {
                         RendererPath = rendererPath,
                         ShapeName = shapeName,
                         DisplayName = GetBodyBlendShapeDisplayName(shapeName),
-                        Category = ClassifyBodyPart(
-                            shapeName,
-                            renderer.name),
+                        Category = category,
+                        Group = string.IsNullOrWhiteSpace(
+                            mapping?.appearanceGroup)
+                            ? mapping?.role?.Trim() ?? string.Empty
+                            : mapping.appearanceGroup.Trim(),
                         Value = Mathf.Clamp(
                             renderer.GetBlendShapeWeight(shapeIndex),
                             MinimumBodyBlendShapeWeight,
@@ -1839,6 +1938,47 @@ namespace Ee4v.AssetManager.UI
                 }
             }
             return result;
+        }
+
+        private static bool TryGetPresetBodyPart(
+            string part,
+            out BodyPartCategory category)
+        {
+            switch (part)
+            {
+                case BlendShapeAppearancePart.Head:
+                    category = BodyPartCategory.Head;
+                    break;
+                case BlendShapeAppearancePart.Chest:
+                    category = BodyPartCategory.Chest;
+                    break;
+                case BlendShapeAppearancePart.Waist:
+                    category = BodyPartCategory.Waist;
+                    break;
+                case BlendShapeAppearancePart.Shoulders:
+                    category = BodyPartCategory.Shoulders;
+                    break;
+                case BlendShapeAppearancePart.Arms:
+                    category = BodyPartCategory.Arms;
+                    break;
+                case BlendShapeAppearancePart.Hands:
+                    category = BodyPartCategory.Hands;
+                    break;
+                case BlendShapeAppearancePart.Legs:
+                    category = BodyPartCategory.Legs;
+                    break;
+                case BlendShapeAppearancePart.Feet:
+                    category = BodyPartCategory.Feet;
+                    break;
+                case BlendShapeAppearancePart.Other:
+                    category = BodyPartCategory.Other;
+                    break;
+                default:
+                    category = BodyPartCategory.Other;
+                    return false;
+            }
+
+            return true;
         }
 
         private static string GetBodyBlendShapeDisplayName(string shapeName)

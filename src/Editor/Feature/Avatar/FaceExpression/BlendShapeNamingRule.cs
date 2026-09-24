@@ -91,6 +91,19 @@ namespace Ee4v.FaceExpression
                    mapping.mouthMorph;
         }
 
+        internal bool TryGetMapping(
+            string assetGuid,
+            long meshLocalId,
+            string shapeName,
+            out BlendShapeNameMapping mapping)
+        {
+            mapping = null;
+            return !string.IsNullOrEmpty(assetGuid) &&
+                   _mappings.TryGetValue(
+                       new MappingKey(assetGuid, meshLocalId, shapeName),
+                       out mapping);
+        }
+
         private readonly struct MappingKey : IEquatable<MappingKey>
         {
             private readonly string _assetGuid;

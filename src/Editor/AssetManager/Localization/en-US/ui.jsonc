@@ -56,7 +56,7 @@
         "material": "Material",
         "size": "Size"
       },
-      "sizeHumanoidRequired": "A Humanoid Animator is required for advanced skeleton scaling. Height and BlendShapes outside the Body mesh remain available.",
+      "sizeHumanoidRequired": "A Humanoid Animator is required for advanced skeleton scaling. Height and appearance BlendShapes remain available.",
       "heightDescriptorRequired": "A VRC Avatar Descriptor with a valid View Position is required to read the upload-time avatar height.",
       "sizeProtected": "This Prefab is outside the derived asset. Its size cannot be changed so the source remains protected.",
       "sizeSaveFailed": "The size could not be saved to the derived Prefab. Check the Console.",
@@ -64,7 +64,7 @@
       "sizeSliderTooltip": "Adjust {0} from 50% to 200%. Numeric input accepts values outside this range",
       "axisScaleSliderTooltip": "Adjust the {1}-axis scale of {0} from 50% to 200%. Numeric input accepts values outside this range",
       "heightSliderTooltip": "Adjust height from {0} to {1}",
-      "bodyShapeEmpty": "No adjustable BlendShapes were found outside the Body mesh.",
+      "bodyShapeEmpty": "No adjustable appearance BlendShapes were found.",
       "bodyShapePartEmpty": "No adjustable BlendShapes were found for this part.",
       "bodyShapeSliderTooltip": "Adjust the {0} BlendShape from 0% to 100%",
       "bodyShapePart": {

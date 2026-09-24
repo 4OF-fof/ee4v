@@ -49,8 +49,7 @@ namespace Ee4v.FaceExpression
             root.Add(_view);
 
             var selection = Selection.activeGameObject;
-            if (BlendShapeNamePresetSetting.ResolveSourceFbx(selection) !=
-                null)
+            if (selection != null)
             {
                 _view.SelectAvatar(selection);
             }

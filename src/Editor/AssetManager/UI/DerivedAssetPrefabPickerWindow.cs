@@ -1133,7 +1133,7 @@ namespace Ee4v.AssetManager.UI
                 case BodyPartCategory.Legs:
                     return new Vector2(-13f, 4f);
                 case BodyPartCategory.Feet:
-                    return new Vector2(-38f, 18f);
+                    return new Vector2(-30f, -20f);
                 default:
                     return Vector2.zero;
             }

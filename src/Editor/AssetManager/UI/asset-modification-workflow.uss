@@ -477,6 +477,13 @@
     -unity-text-align: middle-left;
 }
 
+.ee4v-modification-workflow__size-role-title {
+    margin-top: var(--ee4v-space-sm);
+    margin-bottom: var(--ee4v-space-xs);
+    padding-left: var(--ee4v-space-lg);
+    -unity-font-style: bold;
+}
+
 .ee4v-modification-workflow__size-control {
     height: var(--ee4v-size-32);
     min-width: 0;

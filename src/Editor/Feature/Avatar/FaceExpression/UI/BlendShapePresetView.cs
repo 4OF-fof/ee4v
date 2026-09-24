@@ -22,6 +22,8 @@ namespace Ee4v.FaceExpression
         private BlendShapeFbxPreset _draft;
         private GameObject _selectedAvatar;
         private GameObject _sourceFbxAsset;
+        private readonly List<GameObject> _sourceFbxAssets =
+            new List<GameObject>();
         private readonly List<BlendShapeNameMapping> _filtered =
             new List<BlendShapeNameMapping>();
         private readonly List<RoleGroup> _roleGroups =
@@ -38,6 +40,7 @@ namespace Ee4v.FaceExpression
         private UiTextElement _sourceFbx;
         private UiButton _save;
         private UiButton _reclassify;
+        private UiButton _switchFbx;
         private bool _dirty;
         private bool _settingAsset;
         private string _selectedGroupKey;
@@ -101,6 +104,13 @@ namespace Ee4v.FaceExpression
             _sourceFbx.AddToClassList(
                 "ee4v-blend-shape-preset__source");
             toolbar.Leading.Add(_sourceFbx);
+            _switchFbx = new UiButton(
+                I18N.Get("presetWindow.switchFbx"),
+                OpenSourceFbxMenu,
+                variant: UiButtonVariant.Ghost);
+            _switchFbx.AddToClassList(
+                "ee4v-blend-shape-preset__action");
+            toolbar.Leading.Add(_switchFbx);
 
             _save = new UiButton(
                 I18N.Get("presetWindow.save"),
@@ -177,9 +187,10 @@ namespace Ee4v.FaceExpression
             header.style.paddingLeft = 8f;
             header.style.paddingRight = 8f;
             header.style.paddingBottom = 4f;
-            header.Add(CreateHeaderText("presetWindow.source", 3.2f));
-            header.Add(CreateHeaderText("presetWindow.side", 0.55f));
-            header.Add(CreateHeaderText("presetWindow.mouthMorph", 0.55f));
+            header.Add(CreateHeaderText("presetWindow.source", 2.5f));
+            header.Add(CreateHeaderText("presetWindow.side", 0.5f));
+            header.Add(CreateHeaderText("presetWindow.mouthMorph", 0.5f));
+            header.Add(CreateHeaderText("presetWindow.appearancePartTitle", 1.3f));
             return header;
         }
 
@@ -199,8 +210,11 @@ namespace Ee4v.FaceExpression
 
         internal void SelectAvatar(GameObject avatar)
         {
-            var sourceFbx = BlendShapeNamePresetSetting.ResolveSourceFbx(avatar);
-            if (avatar != null && sourceFbx == null)
+            var preferredPath = _selectedAvatar == avatar
+                ? AssetDatabase.GetAssetPath(_sourceFbxAsset)
+                : string.Empty;
+            var sourceFbxAssets = GetSourceFbxAssets(avatar);
+            if (avatar != null && sourceFbxAssets.Count == 0)
             {
                 SetAvatarField(_selectedAvatar);
                 SetStatus(I18N.Get("presetWindow.invalidAvatar"));
@@ -208,10 +222,12 @@ namespace Ee4v.FaceExpression
             }
 
             _selectedAvatar = avatar;
-            _sourceFbxAsset = sourceFbx;
+            _sourceFbxAssets.Clear();
+            _sourceFbxAssets.AddRange(sourceFbxAssets);
             SetAvatarField(avatar);
             if (avatar == null)
             {
+                _sourceFbxAsset = null;
                 _draft = null;
                 _dirty = false;
                 Refresh();
@@ -219,6 +235,22 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
+            SelectSourceFbx(_sourceFbxAssets.FirstOrDefault(source =>
+                string.Equals(
+                    AssetDatabase.GetAssetPath(source),
+                    preferredPath,
+                    StringComparison.OrdinalIgnoreCase)) ??
+                _sourceFbxAssets[0]);
+        }
+
+        private void SelectSourceFbx(GameObject sourceFbx)
+        {
+            if (sourceFbx == null)
+            {
+                return;
+            }
+
+            _sourceFbxAsset = sourceFbx;
             var path = AssetDatabase.GetAssetPath(sourceFbx);
             var guid = AssetDatabase.AssetPathToGUID(path);
             var saved = BlendShapeNamePresetSetting.Find(_state, guid);
@@ -226,7 +258,7 @@ namespace Ee4v.FaceExpression
                 ? BlendShapeNamePresetSetting.CreatePreset(
                     sourceFbx,
                     FaceExpressionSettings.GetSeparators(_settings),
-                    avatar)
+                    _selectedAvatar)
                 : Clone(saved);
             if (_draft != null)
             {
@@ -241,6 +273,73 @@ namespace Ee4v.FaceExpression
             SetStatus(saved == null
                 ? I18N.Get("presetWindow.autoClassified")
                 : string.Empty);
+        }
+
+        private static IReadOnlyList<GameObject> GetSourceFbxAssets(
+            GameObject avatar)
+        {
+            var result = new List<GameObject>();
+            if (avatar == null)
+            {
+                return result;
+            }
+
+            var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            void AddPath(string path)
+            {
+                if (!string.Equals(
+                        Path.GetExtension(path),
+                        ".fbx",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    paths.Contains(path))
+                {
+                    return;
+                }
+
+                var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (fbx != null && AssetDatabase.LoadAllAssetsAtPath(path)
+                        .OfType<Mesh>()
+                        .Any(mesh => mesh.blendShapeCount > 0))
+                {
+                    paths.Add(path);
+                    result.Add(fbx);
+                }
+            }
+
+            var baseFbx = BlendShapeNamePresetSetting.ResolveSourceFbx(
+                avatar);
+            AddPath(AssetDatabase.GetAssetPath(baseFbx));
+            foreach (var renderer in avatar
+                         .GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (renderer?.sharedMesh != null &&
+                    renderer.sharedMesh.blendShapeCount > 0)
+                {
+                    AddPath(AssetDatabase.GetAssetPath(
+                        renderer.sharedMesh));
+                }
+            }
+            return result;
+        }
+
+        private void OpenSourceFbxMenu()
+        {
+            if (_dirty)
+            {
+                return;
+            }
+
+            var menu = new GenericMenu();
+            foreach (var sourceFbx in _sourceFbxAssets)
+            {
+                var fbx = sourceFbx;
+                menu.AddItem(
+                    UiTextFactory.CreateGuiContent(
+                        AssetDatabase.GetAssetPath(fbx)),
+                    fbx == _sourceFbxAsset,
+                    () => SelectSourceFbx(fbx));
+            }
+            menu.ShowAsContext();
         }
 
         private void SetAvatarField(GameObject avatar)
@@ -270,6 +369,7 @@ namespace Ee4v.FaceExpression
                     _sourceFbxAsset.name));
             _save.SetEnabled(_draft != null && _dirty);
             _reclassify.SetEnabled(_sourceFbxAsset != null);
+            _switchFbx.SetEnabled(_sourceFbxAssets.Count > 1 && !_dirty);
             RefreshFilter();
             if (_draft == null)
             {
@@ -628,7 +728,9 @@ namespace Ee4v.FaceExpression
             return search.Length == 0 || Contains(mapping.meshName, search) ||
                    Contains(mapping.shapeName, search) ||
                    Contains(mapping.role, search) ||
-                   Contains(mapping.side, search);
+                   Contains(mapping.side, search) ||
+                   Contains(mapping.appearancePart, search) ||
+                   Contains(mapping.appearanceGroup, search);
         }
 
         private static string GetRoleLabel(RoleGroup group)

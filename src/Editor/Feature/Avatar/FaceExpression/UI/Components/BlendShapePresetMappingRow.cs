@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEngine.UIElements;
 
@@ -13,6 +14,21 @@ namespace Ee4v.FaceExpression
             "ee4v-blend-shape-preset-mapping-row__field";
         private static readonly List<string> SideChoices =
             new List<string> { string.Empty, "L", "R" };
+        private static readonly List<string> AppearancePartChoices =
+            new List<string>
+            {
+                string.Empty,
+                BlendShapeAppearancePart.Expression,
+                BlendShapeAppearancePart.Head,
+                BlendShapeAppearancePart.Chest,
+                BlendShapeAppearancePart.Waist,
+                BlendShapeAppearancePart.Shoulders,
+                BlendShapeAppearancePart.Arms,
+                BlendShapeAppearancePart.Hands,
+                BlendShapeAppearancePart.Legs,
+                BlendShapeAppearancePart.Feet,
+                BlendShapeAppearancePart.Other
+            };
         private readonly Action _changed;
         private readonly Func<
             BlendShapeNameMapping,
@@ -23,6 +39,7 @@ namespace Ee4v.FaceExpression
         private readonly UiTextElement _source;
         private readonly PopupField<string> _side;
         private readonly Toggle _mouthMorph;
+        private readonly PopupField<string> _appearancePart;
         private BlendShapeNameMapping _mapping;
         private bool _binding;
 
@@ -39,7 +56,7 @@ namespace Ee4v.FaceExpression
             AddToClassList(RootClassName);
 
             _source = UiTextFactory.Create();
-            Configure(_source, 3.2f);
+            Configure(_source, 2.5f);
             Add(_source);
             BlendShapePresetView.RegisterPresetDrag(
                 _source,
@@ -62,16 +79,27 @@ namespace Ee4v.FaceExpression
                 0,
                 value => string.IsNullOrEmpty(value) ? "-" : value,
                 value => string.IsNullOrEmpty(value) ? "-" : value);
-            Configure(_side, 0.55f);
+            Configure(_side, 0.5f);
             _side.RegisterValueChangedCallback(evt => Change(
                 mapping => mapping.side = evt.newValue));
             Add(_side);
 
             _mouthMorph = UiTextFactory.CreateToggle();
-            Configure(_mouthMorph, 0.55f);
+            Configure(_mouthMorph, 0.5f);
             _mouthMorph.RegisterValueChangedCallback(evt => Change(
                 mapping => mapping.mouthMorph = evt.newValue));
             Add(_mouthMorph);
+
+            _appearancePart = UiTextFactory.CreatePopupField(
+                string.Empty,
+                AppearancePartChoices,
+                0,
+                FormatAppearancePart,
+                FormatAppearancePart);
+            Configure(_appearancePart, 1.3f);
+            _appearancePart.RegisterValueChangedCallback(evt => Change(
+                mapping => mapping.appearancePart = evt.newValue));
+            Add(_appearancePart);
         }
 
         internal void Bind(BlendShapeNameMapping mapping)
@@ -84,7 +112,17 @@ namespace Ee4v.FaceExpression
                 : string.Empty;
             _side.SetValueWithoutNotify(side);
             _mouthMorph.SetValueWithoutNotify(mapping.mouthMorph);
+            _appearancePart.SetValueWithoutNotify(
+                AppearancePartChoices.Contains(mapping.appearancePart)
+                    ? mapping.appearancePart
+                    : string.Empty);
             _binding = false;
+        }
+
+        private static string FormatAppearancePart(string value)
+        {
+            return I18N.Get("presetWindow.appearancePart." +
+                            (string.IsNullOrEmpty(value) ? "auto" : value));
         }
 
         private void Change(Action<BlendShapeNameMapping> change)
