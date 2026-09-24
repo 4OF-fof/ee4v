@@ -9,8 +9,8 @@
     "windowTitle": "改変ワークフロー",
     "categories": "カスタマイズ",
     "category": {
-      "objects": "オブジェクト",
-      "appearance": "見た目",
+      "shapeParts": "体型・パーツ",
+      "material": "マテリアル",
       "expressionAnimation": "表情・アニメーション",
       "physBone": "PhysBone"
     },
@@ -29,15 +29,20 @@
       "saveFailed": "派生Prefabを更新できませんでした。Consoleを確認してください。"
     },
     "objects": {
-      "description": "チェックを外すとEditorOnlyとして非表示にし、派生Prefabへ保存します。",
-      "search": "オブジェクトを検索",
+      "sectionTitle": "表示するパーツ",
+      "description": "チェックを外すとパーツを非表示にし、派生Prefabへ保存します。",
+      "search": "パーツを検索",
       "count": "{0} / {1} 件を表示",
       "countMore": "{0} / {1} 件を表示。検索で絞り込めます。",
-      "empty": "このPrefab内に切り替え可能なオブジェクトはありません。",
-      "noMatch": "一致するオブジェクトはありません。",
-      "turnOn": "このオブジェクトを表示",
-      "turnOff": "このオブジェクトをEditorOnlyとして非表示",
-      "parentHidden": "親オブジェクトが非表示です。"
+      "empty": "表示を切り替えられるパーツがありません。",
+      "noMatch": "一致するパーツはありません。",
+      "turnOn": "このパーツを表示",
+      "turnOff": "このパーツを非表示",
+      "parentHidden": "親のパーツが非表示です。"
+    },
+    "shapeParts": {
+      "shape": "体型",
+      "parts": "パーツ"
     },
     "selection": {
       "title": "派生アセットを選ぶ",
@@ -73,10 +78,6 @@
     "appearance": {
       "bodyPart": {
         "wholeBody": "全身"
-      },
-      "section": {
-        "material": "マテリアル",
-        "size": "サイズ"
       },
       "sizeHumanoidRequired": "高度な骨格スケールには、Humanoid Avatarが設定されたAnimatorが必要です。身長と見た目用BlendShapeは引き続き使用できます。",
       "heightDescriptorRequired": "VRChatアップロード時の身長を取得するには、VRC Avatar Descriptorと有効なView Positionが必要です。",
@@ -129,7 +130,9 @@
       "showAll": "すべてのMaterialを表示",
       "readOnly": "読取専用",
       "editorUnavailable": "Material Inspectorを作成できませんでした。",
-      "protected": "このMaterialは派生アセット外にあります。元素材を守るため、この画面では編集できません。",
+      "protected": "このMaterialは元アセットまたは別のPrefabでも使われています。編集用Material Variantを作ると、選択中の範囲だけ変更できます。",
+      "makeEditable": "編集用Material Variantを作成",
+      "materialVariantFailed": "編集用Material Variantを作成できませんでした。Consoleを確認してください。",
       "emptyTitle": "Materialが見つかりません",
       "emptyPartDescription": "この部位に分類されたMaterialはありません。「全身」も確認してください。",
       "emptyDescription": "選択した派生アセットにMaterialが設定されているか確認してください。"

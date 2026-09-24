@@ -297,6 +297,10 @@
     margin-bottom: var(--ee4v-space-xs);
 }
 
+.ee4v-modification-workflow__objects-content {
+    min-width: 0;
+}
+
 .ee4v-modification-workflow__objects-description {
     margin-bottom: var(--ee4v-space-lg);
 }
@@ -528,19 +532,47 @@
     border-radius: 0;
 }
 
-.ee4v-modification-workflow__controls {
+.ee4v-modification-workflow__controls-column {
     width: 460px;
     min-width: 420px;
     min-height: 0;
     flex-shrink: 0;
+    flex-direction: column;
     border-left-width: var(--ee4v-border-hairline);
     border-left-color: var(--ee4v-color-border-default);
     background-color: var(--ee4v-color-surface-subtle);
 }
 
+.ee4v-modification-workflow__appearance-header {
+    min-width: 0;
+    flex-shrink: 0;
+    flex-direction: column;
+    padding: var(--ee4v-space-2xl);
+    padding-bottom: var(--ee4v-space-md);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-bottom-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-modification-workflow__appearance-header .ee4v-modification-workflow__shape-parts-tabs {
+    margin-bottom: var(--ee4v-space-none);
+}
+
+.ee4v-modification-workflow__controls {
+    min-width: 0;
+    min-height: 0;
+    flex-grow: 1;
+}
+
 .ee4v-modification-workflow__controls-content {
     min-width: 0;
     padding: var(--ee4v-space-2xl);
+}
+
+.ee4v-modification-workflow__make-material-editable.ee4v-ui-button {
+    width: 100%;
+    margin-top: var(--ee4v-space-lg);
+    margin-bottom: var(--ee4v-space-sm);
 }
 
 .ee4v-modification-workflow__feedback {
@@ -552,6 +584,10 @@
     flex-direction: row;
     flex-wrap: wrap;
     margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-modification-workflow__part-selector--standalone {
+    margin-bottom: var(--ee4v-space-none);
 }
 
 .ee4v-modification-workflow__part-button.ee4v-ui-button {
@@ -571,7 +607,7 @@
     background-color: var(--ee4v-color-selection-soft);
 }
 
-.ee4v-modification-workflow__appearance-tabs {
+.ee4v-modification-workflow__shape-parts-tabs {
     min-width: 0;
     flex-direction: row;
     margin-bottom: var(--ee4v-space-xl);
@@ -582,7 +618,7 @@
     background-color: var(--ee4v-color-panel);
 }
 
-.ee4v-modification-workflow__appearance-tab.ee4v-ui-button {
+.ee4v-modification-workflow__shape-parts-tab.ee4v-ui-button {
     min-width: 0;
     min-height: 36px;
     flex-grow: 1;
@@ -590,8 +626,8 @@
     background-color: var(--ee4v-color-transparent);
 }
 
-.ee4v-modification-workflow__appearance-tab--active.ee4v-ui-button,
-.ee4v-modification-workflow__appearance-tab--active.ee4v-ui-button:hover {
+.ee4v-modification-workflow__shape-parts-tab--active.ee4v-ui-button,
+.ee4v-modification-workflow__shape-parts-tab--active.ee4v-ui-button:hover {
     border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
 }

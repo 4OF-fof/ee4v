@@ -332,7 +332,7 @@ namespace Ee4v.AssetManager.UI
         private bool _flexibleLayout;
         private BodyPartCategory? _focusedBodyPart;
         private bool _shoulderLeftSide = true;
-        private bool _handLeftSide;
+        private bool _handLeftSide = true;
         private bool _wholeBackView;
         private bool _headBackView;
         private bool _waistBackView;
