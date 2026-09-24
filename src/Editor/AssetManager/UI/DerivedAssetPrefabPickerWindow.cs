@@ -280,9 +280,9 @@ namespace Ee4v.AssetManager.UI
 
         private readonly ScenePreviewViewport _viewport;
         private readonly PreviewOrbitController _orbit;
-        private readonly VisualElement _sideToggle;
-        private readonly UiButton _leftSideButton;
-        private readonly UiButton _rightSideButton;
+        private readonly VisualElement _viewToggle;
+        private readonly UiButton _primaryViewButton;
+        private readonly UiButton _secondaryViewButton;
         private readonly Dictionary<Transform, Vector3>
             _pendingTransformScales =
                 new Dictionary<Transform, Vector3>();
@@ -326,6 +326,9 @@ namespace Ee4v.AssetManager.UI
         private BodyPartCategory? _focusedBodyPart;
         private bool _shoulderLeftSide = true;
         private bool _handLeftSide;
+        private bool _wholeBackView;
+        private bool _headBackView;
+        private bool _waistBackView;
 
         internal DerivedAssetPrefabScenePreview()
         {
@@ -342,24 +345,24 @@ namespace Ee4v.AssetManager.UI
             _orbit = new PreviewOrbitController(
                 PreviewControlHash,
                 RequestPreviewRepaint);
-            _sideToggle = new VisualElement();
-            _sideToggle.AddToClassList(
+            _viewToggle = new VisualElement();
+            _viewToggle.AddToClassList(
                 "ee4v-asset-manager__preview-side-toggle");
-            _leftSideButton = new UiButton(
+            _primaryViewButton = new UiButton(
                 I18N.Get("workflow.preview.sideLeft"),
-                () => SelectPreviewSide(true),
+                () => SelectPreviewView(true),
                 variant: UiButtonVariant.Ghost);
-            _rightSideButton = new UiButton(
+            _secondaryViewButton = new UiButton(
                 I18N.Get("workflow.preview.sideRight"),
-                () => SelectPreviewSide(false),
+                () => SelectPreviewView(false),
                 variant: UiButtonVariant.Ghost);
-            _leftSideButton.AddToClassList(
+            _primaryViewButton.AddToClassList(
                 "ee4v-asset-manager__preview-side-button");
-            _rightSideButton.AddToClassList(
+            _secondaryViewButton.AddToClassList(
                 "ee4v-asset-manager__preview-side-button");
-            _sideToggle.Add(_leftSideButton);
-            _sideToggle.Add(_rightSideButton);
-            _viewport.FeatureOverlay.Add(_sideToggle);
+            _viewToggle.Add(_primaryViewButton);
+            _viewToggle.Add(_secondaryViewButton);
+            _viewport.FeatureOverlay.Add(_viewToggle);
             Add(_viewport);
             SetPreviewAvailable(false);
 
@@ -398,7 +401,7 @@ namespace Ee4v.AssetManager.UI
         internal void FocusBodyPart(BodyPartCategory? part)
         {
             _focusedBodyPart = part;
-            RefreshSideToggle();
+            RefreshViewToggle();
             FrameCurrentSelection(true);
         }
 
@@ -418,39 +421,74 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void SelectPreviewSide(bool leftSide)
+        private bool IsBackView(BodyPartCategory? part)
+        {
+            if (!part.HasValue)
+            {
+                return _wholeBackView;
+            }
+
+            switch (part.Value)
+            {
+                case BodyPartCategory.Head:
+                    return _headBackView;
+                case BodyPartCategory.Waist:
+                    return _waistBackView;
+                default:
+                    return false;
+            }
+        }
+
+        private void SelectPreviewView(bool primary)
         {
             if (!_focusedBodyPart.HasValue)
             {
-                return;
-            }
+                if (!_flexibleLayout)
+                {
+                    return;
+                }
 
-            var part = _focusedBodyPart.Value;
-            if (part == BodyPartCategory.Shoulders ||
-                part == BodyPartCategory.Arms)
-            {
-                _shoulderLeftSide = leftSide;
-            }
-            else if (part == BodyPartCategory.Hands)
-            {
-                _handLeftSide = leftSide;
+                _wholeBackView = !primary;
             }
             else
             {
-                return;
+                switch (_focusedBodyPart.Value)
+                {
+                    case BodyPartCategory.Shoulders:
+                    case BodyPartCategory.Arms:
+                        _shoulderLeftSide = primary;
+                        break;
+                    case BodyPartCategory.Hands:
+                        _handLeftSide = primary;
+                        break;
+                    case BodyPartCategory.Head:
+                        _headBackView = !primary;
+                        break;
+                    case BodyPartCategory.Waist:
+                        _waistBackView = !primary;
+                        break;
+                    default:
+                        return;
+                }
             }
 
-            RefreshSideToggle();
+            RefreshViewToggle();
             FrameCurrentSelection(true);
         }
 
-        private void RefreshSideToggle()
+        private void RefreshViewToggle()
         {
+            var sideSelection = _focusedBodyPart ==
+                    BodyPartCategory.Shoulders ||
+                _focusedBodyPart == BodyPartCategory.Arms ||
+                _focusedBodyPart == BodyPartCategory.Hands;
+            var backSelection = _flexibleLayout &&
+                (!_focusedBodyPart.HasValue ||
+                 _focusedBodyPart == BodyPartCategory.Head ||
+                 _focusedBodyPart == BodyPartCategory.Waist);
             var visible = _instance != null &&
-                (_focusedBodyPart == BodyPartCategory.Shoulders ||
-                 _focusedBodyPart == BodyPartCategory.Arms ||
-                 _focusedBodyPart == BodyPartCategory.Hands);
-            _sideToggle.style.display = visible
+                (sideSelection || backSelection);
+            _viewToggle.style.display = visible
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             if (!visible)
@@ -458,13 +496,21 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var leftSide = IsLeftSide(_focusedBodyPart.Value);
-            _leftSideButton.EnableInClassList(
+            _primaryViewButton.SetLabel(I18N.Get(sideSelection
+                ? "workflow.preview.sideLeft"
+                : "workflow.preview.front"));
+            _secondaryViewButton.SetLabel(I18N.Get(sideSelection
+                ? "workflow.preview.sideRight"
+                : "workflow.preview.back"));
+            var primaryActive = sideSelection
+                ? IsLeftSide(_focusedBodyPart.Value)
+                : !IsBackView(_focusedBodyPart);
+            _primaryViewButton.EnableInClassList(
                 "ee4v-asset-manager__preview-side-button--active",
-                leftSide);
-            _rightSideButton.EnableInClassList(
+                primaryActive);
+            _secondaryViewButton.EnableInClassList(
                 "ee4v-asset-manager__preview-side-button--active",
-                !leftSide);
+                !primaryActive);
         }
 
         internal void SetTransformScales(
@@ -546,6 +592,7 @@ namespace Ee4v.AssetManager.UI
         internal void SetFlexibleLayout(bool flexible)
         {
             _flexibleLayout = flexible;
+            RefreshViewToggle();
         }
 
         public void Dispose()
@@ -683,14 +730,12 @@ namespace Ee4v.AssetManager.UI
 
         internal void ResetView()
         {
-            _focusedBodyPart = null;
-            RefreshSideToggle();
             if (_instance == null)
             {
                 return;
             }
 
-            FrameWholeAvatar(true);
+            FrameCurrentSelection(true);
         }
 
         private void FrameCurrentSelection(bool animate = false)
@@ -727,10 +772,19 @@ namespace Ee4v.AssetManager.UI
                     avatarHeight * 0.14f;
             }
 
+            var viewAngles = GetViewAngles(part, leftSide);
+            if (IsBackView(part))
+            {
+                viewAngles.x += 180f;
+                if (part == BodyPartCategory.Waist)
+                {
+                    viewAngles.y = 28f;
+                }
+            }
             FrameBounds(
                 focusBounds,
                 avatarHeight * GetMinimumHalfView(part),
-                GetViewAngles(part, leftSide),
+                viewAngles,
                 animate,
                 GetDistanceScale(part));
         }
@@ -746,7 +800,9 @@ namespace Ee4v.AssetManager.UI
             FrameBounds(
                 bounds,
                 0f,
-                Vector2.zero,
+                _flexibleLayout && _wholeBackView
+                    ? new Vector2(180f, 0f)
+                    : Vector2.zero,
                 animate,
                 _flexibleLayout ? AppearanceFullBodyDistanceScale : 1f);
         }
@@ -1044,6 +1100,8 @@ namespace Ee4v.AssetManager.UI
         {
             switch (part)
             {
+                case BodyPartCategory.Chest:
+                    return 0.82f;
                 case BodyPartCategory.Waist:
                 case BodyPartCategory.Shoulders:
                 case BodyPartCategory.Arms:
@@ -1064,7 +1122,7 @@ namespace Ee4v.AssetManager.UI
                 case BodyPartCategory.Head:
                     return new Vector2(-12f, 3f);
                 case BodyPartCategory.Chest:
-                    return new Vector2(-34f, 9f);
+                    return new Vector2(-30f, 13f);
                 case BodyPartCategory.Waist:
                     return new Vector2(38f, 18f);
                 case BodyPartCategory.Shoulders:
@@ -1426,7 +1484,7 @@ namespace Ee4v.AssetManager.UI
         private void SetPreviewAvailable(bool available)
         {
             _viewport.SetPreviewAvailable(available);
-            RefreshSideToggle();
+            RefreshViewToggle();
         }
 
         private void CleanupPreview()

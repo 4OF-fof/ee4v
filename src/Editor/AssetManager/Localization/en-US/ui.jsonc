@@ -44,7 +44,9 @@
       "sizeTitle": "Preview",
       "todoTitle": "Preview",
       "sideLeft": "Left",
-      "sideRight": "Right"
+      "sideRight": "Right",
+      "front": "Front",
+      "back": "Back"
     },
     "appearance": {
       "bodyPart": {

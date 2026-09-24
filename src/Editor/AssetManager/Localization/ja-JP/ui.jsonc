@@ -44,7 +44,9 @@
       "sizeTitle": "プレビュー",
       "todoTitle": "プレビュー",
       "sideLeft": "左",
-      "sideRight": "右"
+      "sideRight": "右",
+      "front": "正面",
+      "back": "背面"
     },
     "appearance": {
       "bodyPart": {
