@@ -447,6 +447,67 @@ namespace Ee4v.AssetManager.UI
             RebuildPreview(true);
         }
 
+        internal void UpdatePrefabReference(GameObject prefab)
+        {
+            _prefab = prefab;
+        }
+
+        internal void SetPartVisibility(
+            GameObject prefab,
+            int prefabSiblingIndex,
+            IReadOnlyList<int> siblingPath,
+            string objectName,
+            bool visible)
+        {
+            _prefab = prefab;
+            if (_instance == null || siblingPath == null)
+            {
+                ReloadPrefabPreservingView(prefab);
+                return;
+            }
+
+            var current = _instance.transform;
+            if (prefabSiblingIndex >= 0)
+            {
+                if (prefabSiblingIndex >= current.childCount)
+                {
+                    ReloadPrefabPreservingView(prefab);
+                    return;
+                }
+                current = current.GetChild(prefabSiblingIndex);
+            }
+            else if (prefabSiblingIndex != -1)
+            {
+                ReloadPrefabPreservingView(prefab);
+                return;
+            }
+            foreach (var index in siblingPath)
+            {
+                if (index < 0 || index >= current.childCount)
+                {
+                    ReloadPrefabPreservingView(prefab);
+                    return;
+                }
+                current = current.GetChild(index);
+            }
+            if (!string.Equals(current.name, objectName,
+                    StringComparison.Ordinal))
+            {
+                ReloadPrefabPreservingView(prefab);
+                return;
+            }
+
+            current.gameObject.SetActive(visible);
+            if (visible)
+            {
+                _forceSkinningRecalculation = true;
+                SetSkinningRecalculation(true);
+            }
+            _bakedMeshesDirty = true;
+            _pendingBoundsRefresh = true;
+            RequestPreviewRepaint();
+        }
+
         internal void FocusBodyPart(BodyPartCategory? part)
         {
             _focusedBodyPart = part;

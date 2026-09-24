@@ -31,6 +31,7 @@ namespace Ee4v.AssetManager.UI
         private const float MaximumBodyScale = 2f;
         private const float MinimumBodyBlendShapeWeight = 0f;
         private const float MaximumBodyBlendShapeWeight = 100f;
+        private const double PartVisibilitySaveDelaySeconds = 0.5d;
         private const string AvatarDescriptorTypeName =
             "VRC.SDK3.Avatars.Components.VRCAvatarDescriptor";
 
@@ -370,9 +371,33 @@ namespace Ee4v.AssetManager.UI
             internal int[] SiblingPath { get; set; }
             internal string Name { get; set; }
             internal bool IsVisible { get; set; }
+            internal bool IsActiveSelf { get; set; }
+            internal bool ParentActiveInHierarchy { get; set; }
             internal bool IsVisibleInHierarchy { get; set; }
             internal string Path { get; set; }
             internal IReadOnlyCollection<BodyPartCategory> Categories { get; set; }
+        }
+
+        private sealed class PrefabObjectRowState
+        {
+            internal VisualElement Row { get; set; }
+            internal Toggle Visibility { get; set; }
+        }
+
+        private sealed class PendingPartVisibility
+        {
+            internal PrefabObjectEntry Entry;
+            internal bool OriginalVisible;
+            internal bool OriginalActiveSelf;
+            internal bool Visible;
+            internal string RestoreKey;
+        }
+
+        private struct PartTagChange
+        {
+            internal string RestoreKey;
+            internal string OriginalTag;
+            internal bool Visible;
         }
 
         private sealed class PrefabPartClassifier
@@ -812,6 +837,14 @@ namespace Ee4v.AssetManager.UI
         private int? _selectedPrefabSiblingIndex;
         private string _selectedPrefabName = string.Empty;
         private IReadOnlyList<PrefabObjectEntry> _objectEntriesCache;
+        private readonly Dictionary<PrefabObjectEntry, PrefabObjectRowState>
+            _objectRows = new Dictionary<PrefabObjectEntry,
+                PrefabObjectRowState>();
+        private readonly Dictionary<PrefabObjectEntry, PendingPartVisibility>
+            _pendingPartVisibility =
+                new Dictionary<PrefabObjectEntry, PendingPartVisibility>();
+        private string _pendingPartAssetPath;
+        private double _partVisibilitySaveDueAt;
         private IReadOnlyList<int> _prefabSiblingIndices =
             Array.Empty<int>();
         private readonly HashSet<int> _hiddenPrefabSiblingIndices =
@@ -889,6 +922,7 @@ namespace Ee4v.AssetManager.UI
         private void OnDisable()
         {
             EndBodyScaleDrag(false);
+            FlushPendingPartVisibility();
             I18N.Reloaded -= Rebuild;
             AssetManagerWindowSession.ManagerInvalidated -=
                 OnManagerInvalidated;
@@ -953,10 +987,12 @@ namespace Ee4v.AssetManager.UI
 
         private void BuildWindow()
         {
+            FlushPendingPartVisibility();
             ConfigureWindow();
             DisposeEditors();
             _materialGeometryCache.Clear();
             _objectEntriesCache = null;
+            _objectRows.Clear();
             var root = rootVisualElement;
             root.Clear();
             AssetManagerWindowSession.PrepareWorkflowRoot(root);
@@ -1513,6 +1549,15 @@ namespace Ee4v.AssetManager.UI
             WorkflowCategory category,
             bool clearFeedback = true)
         {
+            if (category != WorkflowCategory.ShapeParts ||
+                _shapePartsSection != ShapePartsSection.Parts)
+            {
+                if (!FlushPendingPartVisibility())
+                {
+                    BuildWindow();
+                    return;
+                }
+            }
             if (_selectedPrefabSiblingIndex.HasValue &&
                 category != WorkflowCategory.ShapeParts &&
                 category != WorkflowCategory.Material)
@@ -1718,6 +1763,7 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement BuildObjectControls()
         {
+            _objectRows.Clear();
             var panel = new VisualElement();
             panel.AddToClassList(
                 "ee4v-modification-workflow__objects-content");
@@ -1774,13 +1820,6 @@ namespace Ee4v.AssetManager.UI
             var row = new VisualElement();
             row.AddToClassList(
                 "ee4v-modification-workflow__object-row");
-            row.EnableInClassList(
-                "ee4v-modification-workflow__object-row--parent-hidden",
-                !entry.IsVisibleInHierarchy && entry.IsVisible);
-            if (!entry.IsVisibleInHierarchy && entry.IsVisible)
-            {
-                row.tooltip = I18N.Get("workflow.objects.parentHidden");
-            }
             var text = new VisualElement();
             text.AddToClassList(
                 "ee4v-modification-workflow__object-text");
@@ -1797,16 +1836,37 @@ namespace Ee4v.AssetManager.UI
             text.Add(path);
             row.Add(text);
             var visibility = UiTextFactory.CreateToggle();
-            visibility.SetValueWithoutNotify(entry.IsVisible);
-            visibility.tooltip = I18N.Get(entry.IsVisible
-                ? "workflow.objects.turnOff"
-                : "workflow.objects.turnOn");
             visibility.AddToClassList(
                 "ee4v-modification-workflow__object-visibility");
             visibility.RegisterValueChangedCallback(evt =>
                 ChangePrefabObject(entry, evt.newValue));
             row.Add(visibility);
+            var state = new PrefabObjectRowState
+            {
+                Row = row,
+                Visibility = visibility
+            };
+            _objectRows[entry] = state;
+            UpdateObjectRow(entry, state);
             return row;
+        }
+
+        private static void UpdateObjectRow(
+            PrefabObjectEntry entry,
+            PrefabObjectRowState state)
+        {
+            var parentHidden = !entry.IsVisibleInHierarchy &&
+                               entry.IsVisible;
+            state.Row.EnableInClassList(
+                "ee4v-modification-workflow__object-row--parent-hidden",
+                parentHidden);
+            state.Row.tooltip = parentHidden
+                ? I18N.Get("workflow.objects.parentHidden")
+                : string.Empty;
+            state.Visibility.SetValueWithoutNotify(entry.IsVisible);
+            state.Visibility.tooltip = I18N.Get(entry.IsVisible
+                ? "workflow.objects.turnOff"
+                : "workflow.objects.turnOn");
         }
 
         private IReadOnlyList<PrefabObjectEntry> ReadPrefabObjects()
@@ -1884,6 +1944,9 @@ namespace Ee4v.AssetManager.UI
                                         "EditorOnly", StringComparison.Ordinal) &&
                                     (child.gameObject.hideFlags &
                                         HideFlags.HideInHierarchy) == 0,
+                                IsActiveSelf = child.gameObject.activeSelf,
+                                ParentActiveInHierarchy =
+                                    child.parent.gameObject.activeInHierarchy,
                                 IsVisibleInHierarchy =
                                     child.gameObject.activeInHierarchy,
                                 Categories = classifier.Classify(child)
@@ -1922,104 +1985,307 @@ namespace Ee4v.AssetManager.UI
             PrefabObjectEntry entry,
             bool visible)
         {
-            var scrollOffset = _controlsHost?.scrollOffset ??
-                Vector2.zero;
-            var assetPath = AssetDatabase.GetAssetPath(_workingObject);
-            var restoreKey =
-                "ee4v.asset-manager.object-tag." +
-                AssetDatabase.AssetPathToGUID(assetPath) + "." +
-                entry.PrefabSiblingIndex + "." +
-                string.Join(".", entry.SiblingPath.Select(index =>
-                    index.ToString()).ToArray()) + "." + entry.Name;
+            if (entry.IsVisible == visible)
+            {
+                return;
+            }
             try
             {
-                EditAssetChildren(root =>
+                if (!IsEditableWorkflowPrefab())
                 {
-                    var selected = ResolveObjectPrefab(
-                        root,
-                        entry.PrefabSiblingIndex,
-                        entry.PrefabName);
-                    if (selected == null)
-                    {
-                        throw new InvalidOperationException(
-                            "The selected Prefab is no longer present.");
-                    }
-                    var current = selected.transform;
-                    foreach (var index in entry.SiblingPath)
-                    {
-                        if (index < 0 || index >= current.childCount)
-                        {
-                            throw new InvalidOperationException(
-                                "The selected object changed before editing.");
-                        }
-                        current = current.GetChild(index);
-                    }
-                    if (!string.Equals(
-                            current.name,
-                            entry.Name,
-                            StringComparison.Ordinal))
-                    {
-                        throw new InvalidOperationException(
-                            "The selected object changed before editing.");
-                    }
-                    if (visible)
-                    {
-                        var source =
-                            PrefabUtility.GetCorrespondingObjectFromSource(
-                                current.gameObject) as GameObject;
-                        var tag = EditorPrefs.HasKey(restoreKey)
-                            ? EditorPrefs.GetString(restoreKey)
-                            : source != null &&
-                              !string.Equals(source.tag, "EditorOnly",
-                                  StringComparison.Ordinal)
-                                ? source.tag
-                                : "Untagged";
-                        current.gameObject.hideFlags &=
-                            ~HideFlags.HideInHierarchy;
-                        current.gameObject.tag = tag;
-                        current.gameObject.SetActive(true);
-                    }
-                    else
-                    {
-                        if (!string.Equals(current.gameObject.tag,
-                                "EditorOnly", StringComparison.Ordinal))
-                        {
-                            EditorPrefs.SetString(
-                                restoreKey, current.gameObject.tag);
-                        }
-                        current.gameObject.SetActive(false);
-                        current.gameObject.tag = "EditorOnly";
-                        current.gameObject.hideFlags |=
-                            HideFlags.HideInHierarchy;
-                    }
-                    if (PrefabUtility.IsPartOfPrefabInstance(
-                            current.gameObject))
-                    {
-                        PrefabUtility.RecordPrefabInstancePropertyModifications(
-                            current.gameObject);
-                    }
-                }, preservePreviewView: true);
-                if (visible)
-                {
-                    EditorPrefs.DeleteKey(restoreKey);
+                    throw new InvalidOperationException(
+                        "The selected Prefab is not a derived asset.");
                 }
+                var assetPath = AssetDatabase.GetAssetPath(_workingObject);
+                if (_pendingPartVisibility.Count > 0 &&
+                    !string.Equals(_pendingPartAssetPath, assetPath,
+                        StringComparison.Ordinal) &&
+                    !FlushPendingPartVisibility())
+                {
+                    BuildWindow();
+                    return;
+                }
+                if (!_pendingPartVisibility.TryGetValue(entry,
+                        out var pending))
+                {
+                    pending = new PendingPartVisibility
+                    {
+                        Entry = entry,
+                        OriginalVisible = entry.IsVisible,
+                        OriginalActiveSelf = entry.IsActiveSelf,
+                        RestoreKey = "ee4v.asset-manager.object-tag." +
+                            AssetDatabase.AssetPathToGUID(assetPath) + "." +
+                            entry.PrefabSiblingIndex + "." +
+                            string.Join(".", entry.SiblingPath.Select(index =>
+                                index.ToString()).ToArray()) + "." +
+                            entry.Name
+                    };
+                    _pendingPartVisibility.Add(entry, pending);
+                }
+                pending.Visible = visible;
+                _pendingPartAssetPath = assetPath;
+                var returningToOriginal =
+                    visible == pending.OriginalVisible;
+                var activeSelf = returningToOriginal
+                    ? pending.OriginalActiveSelf
+                    : visible;
+                if (returningToOriginal)
+                {
+                    _pendingPartVisibility.Remove(entry);
+                }
+                UpdateCachedObjectVisibility(entry, visible, activeSelf);
+                _scenePreview?.SetPartVisibility(
+                    _workingObject,
+                    entry.PrefabSiblingIndex,
+                    entry.SiblingPath,
+                    entry.Name,
+                    activeSelf);
+                if (_pendingPartVisibility.Count == 0)
+                {
+                    _pendingPartAssetPath = null;
+                    EditorApplication.update -= OnPartVisibilitySaveUpdate;
+                    return;
+                }
+                _partVisibilitySaveDueAt =
+                    EditorApplication.timeSinceStartup +
+                    PartVisibilitySaveDelaySeconds;
+                EditorApplication.update -= OnPartVisibilitySaveUpdate;
+                EditorApplication.update += OnPartVisibilitySaveUpdate;
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
                 ShowAssetError("workflow.assets.saveFailed");
             }
-            finally
+        }
+
+        private void UpdateCachedObjectVisibility(
+            PrefabObjectEntry entry,
+            bool visible,
+            bool activeSelf)
+        {
+            entry.IsVisible = visible;
+            entry.IsActiveSelf = activeSelf;
+            entry.IsVisibleInHierarchy =
+                entry.ParentActiveInHierarchy && activeSelf;
+            if (_objectRows.TryGetValue(entry, out var changedRow))
             {
-                var controls = _controlsHost;
-                controls?.schedule.Execute(() =>
+                UpdateObjectRow(entry, changedRow);
+            }
+            if (_objectEntriesCache == null)
+            {
+                return;
+            }
+
+            var activeAtDepth = new Dictionary<int, bool>
+            {
+                [entry.SiblingPath.Length] = entry.IsVisibleInHierarchy
+            };
+            foreach (var candidate in _objectEntriesCache)
+            {
+                if (candidate == entry ||
+                    candidate.PrefabSiblingIndex !=
+                        entry.PrefabSiblingIndex ||
+                    candidate.SiblingPath.Length <
+                        entry.SiblingPath.Length)
                 {
-                    if (controls == _controlsHost &&
-                        _currentCategory == WorkflowCategory.ShapeParts &&
-                        _shapePartsSection == ShapePartsSection.Parts)
+                    continue;
+                }
+                var descendant = true;
+                for (var index = 0;
+                     index < entry.SiblingPath.Length;
+                     index++)
+                {
+                    if (candidate.SiblingPath[index] ==
+                        entry.SiblingPath[index])
                     {
-                        controls.scrollOffset = scrollOffset;
+                        continue;
                     }
+                    descendant = false;
+                    break;
+                }
+                if (!descendant)
+                {
+                    continue;
+                }
+                var parentDepth = candidate.SiblingPath.Length - 1;
+                if (!activeAtDepth.TryGetValue(parentDepth,
+                        out var parentActive))
+                {
+                    throw new InvalidOperationException(
+                        "The part hierarchy changed before editing.");
+                }
+                candidate.ParentActiveInHierarchy = parentActive;
+                candidate.IsVisibleInHierarchy =
+                    parentActive && candidate.IsActiveSelf;
+                activeAtDepth[candidate.SiblingPath.Length] =
+                    candidate.IsVisibleInHierarchy;
+                if (_objectRows.TryGetValue(candidate, out var row))
+                {
+                    UpdateObjectRow(candidate, row);
+                }
+            }
+        }
+
+        private void OnPartVisibilitySaveUpdate()
+        {
+            if (EditorApplication.timeSinceStartup <
+                _partVisibilitySaveDueAt)
+            {
+                return;
+            }
+            if (!FlushPendingPartVisibility())
+            {
+                BuildWindow();
+            }
+        }
+
+        private bool FlushPendingPartVisibility()
+        {
+            EditorApplication.update -= OnPartVisibilitySaveUpdate;
+            if (_pendingPartVisibility.Count == 0)
+            {
+                return true;
+            }
+
+            var changes = _pendingPartVisibility.Values.ToArray();
+            var assetPath = _pendingPartAssetPath;
+            _pendingPartVisibility.Clear();
+            _pendingPartAssetPath = null;
+            try
+            {
+                var restoreTags = new List<PartTagChange>();
+                var root = PrefabUtility.LoadPrefabContents(assetPath);
+                try
+                {
+                    foreach (var change in changes)
+                    {
+                        ApplyPartVisibility(root, change, restoreTags);
+                    }
+                    var saved = PrefabUtility.SaveAsPrefabAsset(
+                        root, assetPath, out var success);
+                    if (!success || saved == null)
+                    {
+                        throw new InvalidOperationException(
+                            "The derived Prefab could not be saved.");
+                    }
+                }
+                finally
+                {
+                    PrefabUtility.UnloadPrefabContents(root);
+                }
+
+                foreach (var tag in restoreTags)
+                {
+                    if (tag.Visible)
+                    {
+                        EditorPrefs.DeleteKey(tag.RestoreKey);
+                    }
+                    else if (tag.OriginalTag != null)
+                    {
+                        EditorPrefs.SetString(
+                            tag.RestoreKey, tag.OriginalTag);
+                    }
+                }
+                if (_workingObject != null &&
+                    string.Equals(AssetDatabase.GetAssetPath(_workingObject),
+                        assetPath, StringComparison.Ordinal))
+                {
+                    _workingObject = AssetDatabase.LoadAssetAtPath<GameObject>(
+                        assetPath);
+                    if (_workingObject == null)
+                    {
+                        throw new InvalidOperationException(
+                            "The saved derived Prefab could not be loaded.");
+                    }
+                    if (_workingAsset != null)
+                    {
+                        _workingAsset.Prefab = _workingObject;
+                    }
+                    _scenePreview?.UpdatePrefabReference(_workingObject);
+                }
+                _assetFeedback = string.Empty;
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                _assetFeedback = I18N.Get("workflow.assets.saveFailed");
+                return false;
+            }
+        }
+
+        private static void ApplyPartVisibility(
+            GameObject root,
+            PendingPartVisibility change,
+            ICollection<PartTagChange> restoreTags)
+        {
+            var entry = change.Entry;
+            var selected = ResolveObjectPrefab(
+                root, entry.PrefabSiblingIndex, entry.PrefabName);
+            if (selected == null)
+            {
+                throw new InvalidOperationException(
+                    "The selected Prefab is no longer present.");
+            }
+            var current = selected.transform;
+            foreach (var index in entry.SiblingPath)
+            {
+                if (index < 0 || index >= current.childCount)
+                {
+                    throw new InvalidOperationException(
+                        "The selected object changed before editing.");
+                }
+                current = current.GetChild(index);
+            }
+            if (!string.Equals(current.name, entry.Name,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The selected object changed before editing.");
+            }
+
+            var gameObject = current.gameObject;
+            if (change.Visible)
+            {
+                var source = PrefabUtility.GetCorrespondingObjectFromSource(
+                    gameObject) as GameObject;
+                var tag = EditorPrefs.HasKey(change.RestoreKey)
+                    ? EditorPrefs.GetString(change.RestoreKey)
+                    : source != null &&
+                      !string.Equals(source.tag, "EditorOnly",
+                          StringComparison.Ordinal)
+                        ? source.tag
+                        : "Untagged";
+                gameObject.hideFlags &= ~HideFlags.HideInHierarchy;
+                gameObject.tag = tag;
+                gameObject.SetActive(true);
+            }
+            else
+            {
+                restoreTags.Add(new PartTagChange
+                {
+                    RestoreKey = change.RestoreKey,
+                    OriginalTag = string.Equals(gameObject.tag, "EditorOnly",
+                        StringComparison.Ordinal)
+                        ? null
+                        : gameObject.tag
+                });
+                gameObject.SetActive(false);
+                gameObject.tag = "EditorOnly";
+                gameObject.hideFlags |= HideFlags.HideInHierarchy;
+            }
+            if (PrefabUtility.IsPartOfPrefabInstance(gameObject))
+            {
+                PrefabUtility.RecordPrefabInstancePropertyModifications(
+                    gameObject);
+            }
+            if (change.Visible)
+            {
+                restoreTags.Add(new PartTagChange
+                {
+                    RestoreKey = change.RestoreKey,
+                    Visible = true
                 });
             }
         }
@@ -2224,9 +2490,13 @@ namespace Ee4v.AssetManager.UI
         }
 
         private void EditAssetChildren(
-            Action<GameObject> edit,
-            bool preservePreviewView = false)
+            Action<GameObject> edit)
         {
+            if (!FlushPendingPartVisibility())
+            {
+                throw new InvalidOperationException(
+                    "Pending part visibility could not be saved.");
+            }
             if (!IsEditableWorkflowPrefab())
             {
                 throw new InvalidOperationException(
@@ -2267,16 +2537,7 @@ namespace Ee4v.AssetManager.UI
             _hiddenMaterials.Clear();
             _feedback = string.Empty;
             _assetFeedback = string.Empty;
-            if (preservePreviewView)
-            {
-                _objectEntriesCache = null;
-                _scenePreview?.ReloadPrefabPreservingView(_workingObject);
-                ShowCategory(_currentCategory, false);
-            }
-            else
-            {
-                BuildWindow();
-            }
+            BuildWindow();
         }
 
         private void ShowAssetError(string key)
