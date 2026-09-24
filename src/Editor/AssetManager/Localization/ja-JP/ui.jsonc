@@ -45,6 +45,9 @@
       "todoTitle": "プレビュー"
     },
     "appearance": {
+      "bodyPart": {
+        "wholeBody": "全身"
+      },
       "section": {
         "material": "マテリアル",
         "size": "サイズ"
@@ -57,8 +60,8 @@
       "sizeSliderTooltip": "{0}のサイズを50%から200%の範囲で調整。数値入力では範囲外も指定できます",
       "axisScaleSliderTooltip": "{0}の{1}軸Scaleを50%から200%の範囲で調整。数値入力では範囲外も指定できます",
       "heightSliderTooltip": "身長を{0}から{1}の範囲で調整",
-      "bodyShapeTitle": "Bodyメッシュ以外のBlendShape",
       "bodyShapeEmpty": "Bodyメッシュ以外に調整できるBlendShapeはありません。",
+      "bodyShapePartEmpty": "この部位に調整できるBlendShapeはありません。",
       "bodyShapeSliderTooltip": "{0}のBlendShape値を0%から100%の範囲で調整",
       "bodyShapePart": {
         "head": "頭・首",
@@ -102,6 +105,7 @@
       "editorUnavailable": "Material Inspectorを作成できませんでした。",
       "protected": "このMaterialは派生アセット外にあります。元素材を守るため、この画面では編集できません。",
       "emptyTitle": "Materialが見つかりません",
+      "emptyPartDescription": "この部位に分類されたMaterialはありません。「全身」または「その他」も確認してください。",
       "emptyDescription": "選択した派生アセットにMaterialが設定されているか確認してください。"
     },
     "todo": {

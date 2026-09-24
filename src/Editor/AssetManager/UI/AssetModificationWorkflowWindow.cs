@@ -24,17 +24,17 @@ namespace Ee4v.AssetManager.UI
         private static readonly string[] HeadBlendShapeTerms =
         {
             "head", "neck", "face", "facial", "hair", "ear",
-            "頭", "首", "顔", "髪", "耳"
+            "eye", "brow", "頭", "首", "顔", "髪", "耳", "目", "眉"
         };
         private static readonly string[] ChestBlendShapeTerms =
         {
-            "chest", "breast", "bust", "torso", "rib",
-            "胸", "バスト", "乳", "胴"
+            "chest", "breast", "bust", "rib",
+            "胸", "バスト", "乳"
         };
         private static readonly string[] WaistBlendShapeTerms =
         {
             "waist", "hip", "pelvis", "belly", "stomach", "abdomen",
-            "腰", "尻", "お尻", "腹", "お腹"
+            "torso", "body", "腰", "尻", "お尻", "腹", "お腹", "胴"
         };
         private static readonly string[] ShoulderBlendShapeTerms =
             { "shoulder", "肩" };
@@ -95,6 +95,7 @@ namespace Ee4v.AssetManager.UI
         {
             internal string RendererPath { get; set; }
             internal int SlotIndex { get; set; }
+            internal BodyPartCategory Category { get; set; }
         }
 
         private sealed class BodyScaleDefinition
@@ -360,6 +361,7 @@ namespace Ee4v.AssetManager.UI
             WorkflowCategory.Appearance;
         private AppearanceSection _appearanceSection =
             AppearanceSection.Size;
+        private BodyPartCategory? _selectedBodyPart;
         private bool _creatingDerivedAsset;
         private string _creationItemId = string.Empty;
         private GameObject _creationPrefab;
@@ -957,6 +959,7 @@ namespace Ee4v.AssetManager.UI
             panel.AddToClassList(
                 "ee4v-modification-workflow__controls-content");
             AddFeedback(panel);
+            panel.Add(BuildBodyPartSelector());
             panel.Add(BuildAppearanceSectionTabs());
             if (_appearanceSection == AppearanceSection.Size)
             {
@@ -964,29 +967,48 @@ namespace Ee4v.AssetManager.UI
                 return panel;
             }
 
-            var materials = GetAvatarMaterials();
+            var allMaterials = GetAvatarMaterials();
+            var filteredMaterials = new List<AvatarMaterialEntry>();
+            foreach (var entry in allMaterials)
+            {
+                var usages = entry.Usages.Where(usage =>
+                    !_selectedBodyPart.HasValue ||
+                    usage.Category == _selectedBodyPart.Value).ToArray();
+                if (usages.Length == 0)
+                {
+                    continue;
+                }
+                var filtered = new AvatarMaterialEntry
+                {
+                    Material = entry.Material
+                };
+                filtered.Usages.AddRange(usages);
+                filteredMaterials.Add(filtered);
+            }
             _materialVisibilityButtons.Clear();
             _allMaterialsVisibilityButton = null;
-            if (materials.Count == 0)
+            if (filteredMaterials.Count == 0)
             {
-                _hiddenMaterials.Clear();
-                _scenePreview?.SetHiddenMaterials(null);
                 panel.Add(CreateEmptyState(
                     "workflow.appearance.emptyTitle",
-                    "workflow.appearance.emptyDescription"));
+                    _selectedBodyPart.HasValue
+                        ? "workflow.appearance.emptyPartDescription"
+                        : "workflow.appearance.emptyDescription"));
                 return panel;
             }
 
             if (_selectedMaterial == null ||
-                !materials.Any(entry =>
+                !filteredMaterials.Any(entry =>
                     entry.Material == _selectedMaterial))
             {
-                _selectedMaterial = materials[0].Material;
+                _selectedMaterial = filteredMaterials[0].Material;
             }
             var availableMaterials = new HashSet<Material>(
-                materials.Select(entry => entry.Material));
-            _hiddenMaterials.RemoveWhere(material =>
-                material == null || !availableMaterials.Contains(material));
+                filteredMaterials.Select(entry => entry.Material));
+            var allAvailableMaterials = new HashSet<Material>(
+                allMaterials.Select(entry => entry.Material));
+            _hiddenMaterials.RemoveWhere(material => material == null ||
+                !allAvailableMaterials.Contains(material));
             _scenePreview?.SetHiddenMaterials(_hiddenMaterials);
 
             var materialChoices = new VisualElement();
@@ -994,7 +1016,7 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-modification-workflow__material-list");
             materialChoices.Add(BuildAllMaterialsVisibilityRow(
                 availableMaterials));
-            foreach (var entry in materials)
+            foreach (var entry in filteredMaterials)
             {
                 var material = entry.Material;
                 var choice = new NavigationItem(
@@ -1043,6 +1065,53 @@ namespace Ee4v.AssetManager.UI
             return panel;
         }
 
+        private VisualElement BuildBodyPartSelector()
+        {
+            var selector = new VisualElement();
+            selector.AddToClassList(
+                "ee4v-modification-workflow__part-selector");
+            AddBodyPartButton(
+                selector,
+                null,
+                "workflow.appearance.bodyPart.wholeBody");
+            foreach (BodyPartCategory part in Enum.GetValues(
+                         typeof(BodyPartCategory)))
+            {
+                AddBodyPartButton(
+                    selector,
+                    part,
+                    GetBodyPartCategoryLocalizationKey(part));
+            }
+            return selector;
+        }
+
+        private void AddBodyPartButton(
+            VisualElement selector,
+            BodyPartCategory? part,
+            string labelKey)
+        {
+            var button = new UiButton(
+                I18N.Get(labelKey),
+                () =>
+                {
+                    if (_selectedBodyPart == part)
+                    {
+                        return;
+                    }
+                    EndBodyScaleDrag();
+                    _selectedBodyPart = part;
+                    _selectedMaterial = null;
+                    ShowCategory(WorkflowCategory.Appearance, false);
+                },
+                variant: UiButtonVariant.Ghost);
+            button.AddToClassList(
+                "ee4v-modification-workflow__part-button");
+            button.EnableInClassList(
+                "ee4v-modification-workflow__part-button--active",
+                _selectedBodyPart == part);
+            selector.Add(button);
+        }
+
         private VisualElement BuildBodyScaleControls()
         {
             var content = new VisualElement();
@@ -1058,45 +1127,48 @@ namespace Ee4v.AssetManager.UI
             }
 
             var animator = FindHumanoidAnimator();
-            var primaryScaleList = new VisualElement();
-            primaryScaleList.AddToClassList(
-                "ee4v-modification-workflow__size-list");
-            var wholeBody = BodyScaleDefinitions.First(definition =>
-                definition.UsesAvatarRoot);
-            var wholeBodyTargets = ResolveBodyScaleTargets(
-                wholeBody,
-                animator);
-            if (TryGetWorkingAvatarViewPosition(
-                    out var avatarDescriptor,
-                    out var currentViewPosition))
+            if (!_selectedBodyPart.HasValue)
             {
-                var baseViewPosition = GetBaseAvatarViewPosition(
-                    avatarDescriptor,
-                    currentViewPosition);
-                primaryScaleList.Add(BuildBodyHeightControl(
+                var primaryScaleList = new VisualElement();
+                primaryScaleList.AddToClassList(
+                    "ee4v-modification-workflow__size-list");
+                var wholeBody = BodyScaleDefinitions.First(definition =>
+                    definition.UsesAvatarRoot);
+                var wholeBodyTargets = ResolveBodyScaleTargets(
                     wholeBody,
-                    GetTransformPaths(wholeBodyTargets),
-                    currentViewPosition,
-                    baseViewPosition));
+                    animator);
+                if (TryGetWorkingAvatarViewPosition(
+                        out var avatarDescriptor,
+                        out var currentViewPosition))
+                {
+                    var baseViewPosition = GetBaseAvatarViewPosition(
+                        avatarDescriptor,
+                        currentViewPosition);
+                    primaryScaleList.Add(BuildBodyHeightControl(
+                        wholeBody,
+                        GetTransformPaths(wholeBodyTargets),
+                        currentViewPosition,
+                        baseViewPosition));
+                }
+                else
+                {
+                    primaryScaleList.Add(UiTextFactory.CreateHelpBox(
+                        I18N.Get("workflow.appearance.heightDescriptorRequired"),
+                        HelpBoxMessageType.Warning));
+                }
+                content.Add(primaryScaleList);
             }
-            else
-            {
-                primaryScaleList.Add(UiTextFactory.CreateHelpBox(
-                    I18N.Get("workflow.appearance.heightDescriptorRequired"),
-                    HelpBoxMessageType.Warning));
-            }
-            content.Add(primaryScaleList);
 
-            var bodyShapes = GetBodyBlendShapes();
-            var bodyShapeHeader = new SectionHeader(
-                I18N.Get("workflow.appearance.bodyShapeTitle"));
-            bodyShapeHeader.AddToClassList(
-                "ee4v-modification-workflow__size-section-header");
-            content.Add(bodyShapeHeader);
-            if (bodyShapes.Count == 0)
+            var bodyShapes = GetBodyBlendShapes()
+                .Where(definition => !_selectedBodyPart.HasValue ||
+                    definition.Category == _selectedBodyPart.Value)
+                .ToArray();
+            if (bodyShapes.Length == 0)
             {
                 content.Add(UiTextFactory.CreateHelpBox(
-                    I18N.Get("workflow.appearance.bodyShapeEmpty"),
+                    I18N.Get(_selectedBodyPart.HasValue
+                        ? "workflow.appearance.bodyShapePartEmpty"
+                        : "workflow.appearance.bodyShapeEmpty"),
                     HelpBoxMessageType.Info));
             }
             else
@@ -1116,11 +1188,15 @@ namespace Ee4v.AssetManager.UI
                         continue;
                     }
 
-                    var categoryLabel = UiTextFactory.Create(
-                        I18N.Get(GetBodyPartCategoryLocalizationKey(category)),
-                        UiClassNames.SecondaryText,
-                        "ee4v-modification-workflow__size-group-title");
-                    bodyShapeList.Add(categoryLabel);
+                    if (!_selectedBodyPart.HasValue)
+                    {
+                        var categoryLabel = UiTextFactory.Create(
+                            I18N.Get(GetBodyPartCategoryLocalizationKey(
+                                category)),
+                            UiClassNames.SecondaryText,
+                            "ee4v-modification-workflow__size-group-title");
+                        bodyShapeList.Add(categoryLabel);
+                    }
                     foreach (var bodyShape in categoryShapes)
                     {
                         bodyShapeList.Add(
@@ -1134,9 +1210,14 @@ namespace Ee4v.AssetManager.UI
             advancedList.AddToClassList(
                 "ee4v-modification-workflow__size-list");
             var hasBodyPartControls = false;
-            foreach (var definition in BodyScaleDefinitions.Where(
-                         definition => !definition.UsesAvatarRoot))
+            for (var index = 1; index < BodyScaleDefinitions.Count; index++)
             {
+                var definition = BodyScaleDefinitions[index];
+                if (_selectedBodyPart.HasValue &&
+                    (int)_selectedBodyPart.Value != index - 1)
+                {
+                    continue;
+                }
                 var targets = ResolveBodyScaleTargets(definition, animator);
                 if (targets.Count == 0)
                 {
@@ -1152,13 +1233,29 @@ namespace Ee4v.AssetManager.UI
 
             if (hasBodyPartControls)
             {
-                content.Add(BuildAdvancedBodyScaleFoldout(advancedList));
+                if (_selectedBodyPart.HasValue)
+                {
+                    content.Insert(0, advancedList);
+                }
+                else
+                {
+                    content.Add(BuildAdvancedBodyScaleFoldout(
+                        advancedList));
+                }
             }
-            else
+            else if (_selectedBodyPart != BodyPartCategory.Other)
             {
-                content.Add(UiTextFactory.CreateHelpBox(
+                var warning = UiTextFactory.CreateHelpBox(
                     I18N.Get("workflow.appearance.sizeHumanoidRequired"),
-                    HelpBoxMessageType.Warning));
+                    HelpBoxMessageType.Warning);
+                if (_selectedBodyPart.HasValue)
+                {
+                    content.Insert(0, warning);
+                }
+                else
+                {
+                    content.Add(warning);
+                }
             }
             return content;
         }
@@ -1283,12 +1380,7 @@ namespace Ee4v.AssetManager.UI
                 }
             }
 
-            slider.RegisterCallback<PointerDownEvent>(_ =>
-                BeginBodyScaleDrag());
-            slider.RegisterCallback<PointerUpEvent>(_ =>
-                EndBodyScaleDrag());
-            slider.RegisterCallback<PointerCaptureOutEvent>(_ =>
-                EndBodyScaleDrag());
+            RegisterBodySizeSliderDrag(slider);
             slider.RegisterValueChangedCallback(evt =>
             {
                 if (!rendering)
@@ -1488,12 +1580,7 @@ namespace Ee4v.AssetManager.UI
                 }
             }
 
-            slider.RegisterCallback<PointerDownEvent>(_ =>
-                BeginBodyScaleDrag());
-            slider.RegisterCallback<PointerUpEvent>(_ =>
-                EndBodyScaleDrag());
-            slider.RegisterCallback<PointerCaptureOutEvent>(_ =>
-                EndBodyScaleDrag());
+            RegisterBodySizeSliderDrag(slider);
             slider.RegisterValueChangedCallback(evt =>
             {
                 if (!rendering)
@@ -1567,12 +1654,7 @@ namespace Ee4v.AssetManager.UI
                 }
             }
 
-            slider.RegisterCallback<PointerDownEvent>(_ =>
-                BeginBodyScaleDrag());
-            slider.RegisterCallback<PointerUpEvent>(_ =>
-                EndBodyScaleDrag());
-            slider.RegisterCallback<PointerCaptureOutEvent>(_ =>
-                EndBodyScaleDrag());
+            RegisterBodySizeSliderDrag(slider);
             slider.RegisterValueChangedCallback(evt =>
             {
                 if (!rendering)
@@ -2144,6 +2226,7 @@ namespace Ee4v.AssetManager.UI
                 _scenePreview?.SetTransformScales(
                     previewScales,
                     recalculateBounds: false);
+                Repaint();
                 _pendingBodySizeChange = PendingBodySizeChange.Scale;
                 _pendingBodyScaleTargetPaths = targetPaths;
                 _pendingBodyScaleMultipliers = multipliers;
@@ -2243,6 +2326,7 @@ namespace Ee4v.AssetManager.UI
                     shapeName,
                     weight,
                     recalculateBounds: false);
+                Repaint();
                 _pendingBodySizeChange =
                     PendingBodySizeChange.BlendShape;
                 _pendingBodyBlendShapeRendererPath = rendererPath;
@@ -2287,13 +2371,30 @@ namespace Ee4v.AssetManager.UI
                     rendererPath,
                     shapeName,
                     weight,
-                    recalculateBounds: true);
+                    recalculateBounds: false);
                 SaveBodyScalePrefab(rebuildOnFailure);
             }
             catch (Exception exception)
             {
                 ReportBodyScaleFailure(exception, rebuildOnFailure);
             }
+        }
+
+        private void RegisterBodySizeSliderDrag(Slider slider)
+        {
+            var dragContainer = slider.Q<VisualElement>(
+                className: "unity-base-slider__drag-container") ?? slider;
+            dragContainer.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button == 0)
+                {
+                    BeginBodyScaleDrag();
+                }
+            }, TrickleDown.TrickleDown);
+            dragContainer.RegisterCallback<PointerUpEvent>(_ =>
+                EndBodyScaleDrag());
+            dragContainer.RegisterCallback<PointerCaptureOutEvent>(_ =>
+                EndBodyScaleDrag());
         }
 
         private void BeginBodyScaleDrag()
@@ -2341,7 +2442,9 @@ namespace Ee4v.AssetManager.UI
                     weight,
                     rebuildOnFailure);
             }
-            _scenePreview?.FlushUpdates(recalculateBounds: true);
+            _scenePreview?.FlushUpdates(
+                recalculateBounds:
+                pendingChange == PendingBodySizeChange.Scale);
             if (pendingChange == PendingBodySizeChange.None)
             {
                 SaveBodyScalePrefab(rebuildOnFailure);
@@ -2539,13 +2642,14 @@ namespace Ee4v.AssetManager.UI
         private void ToggleAllMaterialsVisibility(
             IReadOnlyCollection<Material> materials)
         {
-            if (_hiddenMaterials.Count == 0)
+            if (materials.All(material =>
+                    _hiddenMaterials.Contains(material)))
             {
-                _hiddenMaterials.UnionWith(materials);
+                _hiddenMaterials.ExceptWith(materials);
             }
             else
             {
-                _hiddenMaterials.Clear();
+                _hiddenMaterials.UnionWith(materials);
             }
 
             _scenePreview?.SetHiddenMaterials(_hiddenMaterials);
@@ -2809,6 +2913,7 @@ namespace Ee4v.AssetManager.UI
             _creatingDerivedAsset = false;
             _currentCategory = WorkflowCategory.Appearance;
             _appearanceSection = AppearanceSection.Size;
+            _selectedBodyPart = null;
             _selectedMaterial = null;
             _hiddenMaterials.Clear();
             _feedback = string.Empty;
@@ -2828,6 +2933,7 @@ namespace Ee4v.AssetManager.UI
             _avatarDescriptor = null;
             _workingAsset = null;
             _workingObject = null;
+            _selectedBodyPart = null;
             _selectedMaterial = null;
             _hiddenMaterials.Clear();
             _feedback = string.Empty;
@@ -2876,12 +2982,39 @@ namespace Ee4v.AssetManager.UI
                     entry.Usages.Add(new MaterialUsage
                     {
                         RendererPath = rendererPath,
-                        SlotIndex = index
+                        SlotIndex = index,
+                        Category = ClassifyMaterialUsage(
+                            renderer,
+                            material,
+                            rendererPath)
                     });
                 }
             }
 
             return entries;
+        }
+
+        private static BodyPartCategory ClassifyMaterialUsage(
+            Renderer renderer,
+            Material material,
+            string rendererPath)
+        {
+            var materialPart = ClassifyBodyPart(
+                material?.name,
+                string.Empty);
+            if (materialPart != BodyPartCategory.Other)
+            {
+                return materialPart;
+            }
+
+            var rendererPart = ClassifyBodyPart(
+                renderer?.name,
+                renderer is SkinnedMeshRenderer skinned
+                    ? skinned.sharedMesh?.name
+                    : string.Empty);
+            return rendererPart != BodyPartCategory.Other
+                ? rendererPart
+                : ClassifyBodyPart(rendererPath, string.Empty);
         }
 
         private static IconState CreateMaterialIcon(Material material)

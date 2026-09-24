@@ -45,6 +45,9 @@
       "todoTitle": "Preview"
     },
     "appearance": {
+      "bodyPart": {
+        "wholeBody": "Whole body"
+      },
       "section": {
         "material": "Material",
         "size": "Size"
@@ -57,8 +60,8 @@
       "sizeSliderTooltip": "Adjust {0} from 50% to 200%. Numeric input accepts values outside this range",
       "axisScaleSliderTooltip": "Adjust the {1}-axis scale of {0} from 50% to 200%. Numeric input accepts values outside this range",
       "heightSliderTooltip": "Adjust height from {0} to {1}",
-      "bodyShapeTitle": "BlendShapes outside the Body mesh",
       "bodyShapeEmpty": "No adjustable BlendShapes were found outside the Body mesh.",
+      "bodyShapePartEmpty": "No adjustable BlendShapes were found for this part.",
       "bodyShapeSliderTooltip": "Adjust the {0} BlendShape from 0% to 100%",
       "bodyShapePart": {
         "head": "Head & neck",
@@ -102,6 +105,7 @@
       "editorUnavailable": "The Material Inspector could not be created.",
       "protected": "This Material is outside the derived asset. It cannot be edited here so the source remains protected.",
       "emptyTitle": "No Materials found",
+      "emptyPartDescription": "No Materials were classified under this part. Check Whole body or Other.",
       "emptyDescription": "Check that the selected derived asset has Materials assigned."
     },
     "todo": {
