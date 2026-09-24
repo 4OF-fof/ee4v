@@ -30,6 +30,10 @@
     "applyProjectThumbnailOnImport": {
       "label": "Import時にサムネイルをProject Styleへ設定",
       "tooltip": "有効にすると、Importしたフォルダーにアイコンが未設定の場合だけ、ItemのサムネイルをProject Styleの初期アイコンとして設定します。あとからProject Styleで変更できます。"
+    },
+    "excludedPartNamePrefixes": {
+      "label": "パーツ一覧から除外する名前の接頭辞",
+      "tooltip": "名前が指定した文字列で始まるGameObjectとその子孫をパーツ一覧から除外します。大文字と小文字は区別しません。既定値はArmatureです。"
     }
   }
 }

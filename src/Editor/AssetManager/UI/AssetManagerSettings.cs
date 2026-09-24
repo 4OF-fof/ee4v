@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Ee4v.Core.Settings;
 using UnityEditor;
 
@@ -98,12 +99,34 @@ namespace Ee4v.AssetManager.UI
                         "icon"
                     });
 
+        private static readonly SettingDefinition<string>
+            ExcludedPartNamePrefixes =
+                new SettingDefinition<string>(
+                    "assetManager.excludedPartNamePrefixes",
+                    SettingScope.User,
+                    "AssetManager",
+                    "settings.section.assetManager.view",
+                    "settings.excludedPartNamePrefixes.label",
+                    "settings.excludedPartNamePrefixes.tooltip",
+                    "Armature",
+                    order: 1,
+                    keywords: new[]
+                    {
+                        "asset manager",
+                        "parts",
+                        "exclude",
+                        "armature"
+                    });
+
         private static ISettingsService _registeredSettings;
 
         internal static event Action ProjectThumbnailImportChanged;
+        internal static event Action PartListExclusionsChanged;
 
         static AssetManagerSettings()
         {
+            CommaSeparatedListSettingDrawer.Register(
+                ExcludedPartNamePrefixes);
             EnsureRegistered();
         }
 
@@ -124,6 +147,10 @@ namespace Ee4v.AssetManager.UI
 
         internal static bool ApplyProjectThumbnailOnImportEnabled =>
             Get(ApplyProjectThumbnailOnImport);
+
+        internal static IReadOnlyList<string> ExcludedPartPrefixes =>
+            CommaSeparatedListSettingDrawer.ParseItems(
+                Get(ExcludedPartNamePrefixes));
 
         private static T Get<T>(SettingDefinition<T> definition)
         {
@@ -149,6 +176,7 @@ namespace Ee4v.AssetManager.UI
             settings.Register(AutoSyncEagle);
             settings.Register(AutoSyncEe4v);
             settings.Register(ApplyProjectThumbnailOnImport);
+            settings.Register(ExcludedPartNamePrefixes);
             settings.Changed += OnSettingChanged;
             _registeredSettings = settings;
             return settings;
@@ -163,6 +191,12 @@ namespace Ee4v.AssetManager.UI
                     ApplyProjectThumbnailOnImport))
             {
                 ProjectThumbnailImportChanged?.Invoke();
+            }
+            if (ReferenceEquals(
+                    args.Definition,
+                    ExcludedPartNamePrefixes))
+            {
+                PartListExclusionsChanged?.Invoke();
             }
         }
     }

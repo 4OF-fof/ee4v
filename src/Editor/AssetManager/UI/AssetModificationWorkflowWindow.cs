@@ -402,7 +402,6 @@ namespace Ee4v.AssetManager.UI
         private string _assetFeedback = string.Empty;
         private int? _selectedPrefabSiblingIndex;
         private string _selectedPrefabName = string.Empty;
-        private string _objectSearchQuery = string.Empty;
         private IReadOnlyList<PrefabObjectEntry> _objectEntriesCache;
         private IReadOnlyList<int> _prefabSiblingIndices =
             Array.Empty<int>();
@@ -466,6 +465,10 @@ namespace Ee4v.AssetManager.UI
             Undo.undoRedoPerformed += RefreshAfterUndoRedo;
             BlendShapePresetStorage.Shared.Changed -= OnBlendShapePresetChanged;
             BlendShapePresetStorage.Shared.Changed += OnBlendShapePresetChanged;
+            AssetManagerSettings.PartListExclusionsChanged -=
+                OnPartListExclusionsChanged;
+            AssetManagerSettings.PartListExclusionsChanged +=
+                OnPartListExclusionsChanged;
             ConfigureWindow();
         }
 
@@ -482,7 +485,19 @@ namespace Ee4v.AssetManager.UI
                 OnManagerInvalidated;
             Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
             BlendShapePresetStorage.Shared.Changed -= OnBlendShapePresetChanged;
+            AssetManagerSettings.PartListExclusionsChanged -=
+                OnPartListExclusionsChanged;
             DisposeEditors();
+        }
+
+        private void OnPartListExclusionsChanged()
+        {
+            _objectEntriesCache = null;
+            if (_currentCategory == WorkflowCategory.ShapeParts &&
+                _shapePartsSection == ShapePartsSection.Parts)
+            {
+                Rebuild();
+            }
         }
 
         private void OnBlendShapePresetChanged()
@@ -1283,7 +1298,6 @@ namespace Ee4v.AssetManager.UI
             _selectedPrefabName = name ?? string.Empty;
             _selectedBodyPart = null;
             _selectedMaterial = null;
-            _objectSearchQuery = string.Empty;
             if (siblingIndex.HasValue &&
                 _currentCategory != WorkflowCategory.Material)
             {
@@ -1320,15 +1334,6 @@ namespace Ee4v.AssetManager.UI
                 return panel;
             }
 
-            panel.Add(UiTextFactory.Create(
-                I18N.Get("workflow.objects.sectionTitle"),
-                UiClassNames.SectionTitle,
-                "ee4v-modification-workflow__objects-title"));
-            panel.Add(UiTextFactory.Create(
-                I18N.Get("workflow.objects.description"),
-                UiClassNames.SecondaryText,
-                "ee4v-modification-workflow__objects-description"));
-
             if (entries.Count == 0)
             {
                 panel.Add(UiTextFactory.CreateHelpBox(
@@ -1337,61 +1342,14 @@ namespace Ee4v.AssetManager.UI
                 return panel;
             }
 
-            var search = AssetManagerControls.CreateSearchField(
-                I18N.Get("workflow.objects.search"));
-            search.Value = _objectSearchQuery;
-            search.AddToClassList(
-                "ee4v-modification-workflow__objects-search");
-            panel.Add(search);
-
-            var count = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.SecondaryText,
-                "ee4v-modification-workflow__objects-count");
-            panel.Add(count);
             var list = new VisualElement();
             list.AddToClassList(
                 "ee4v-modification-workflow__objects-list");
             panel.Add(list);
-
-            void RefreshRows()
+            foreach (var entry in entries)
             {
-                list.Clear();
-                var filtered = entries.Where(entry =>
-                    string.IsNullOrWhiteSpace(_objectSearchQuery) ||
-                    entry.Name.IndexOf(
-                        _objectSearchQuery,
-                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    entry.Path.IndexOf(
-                        _objectSearchQuery,
-                        StringComparison.OrdinalIgnoreCase) >= 0)
-                    .ToArray();
-                var shown = filtered.Take(250).ToArray();
-                count.SetText(string.Format(
-                    I18N.Get(shown.Length < filtered.Length
-                        ? "workflow.objects.countMore"
-                        : "workflow.objects.count"),
-                    shown.Length,
-                    filtered.Length));
-                if (filtered.Length == 0)
-                {
-                    list.Add(UiTextFactory.CreateHelpBox(
-                        I18N.Get("workflow.objects.noMatch"),
-                        HelpBoxMessageType.Info));
-                    return;
-                }
-                foreach (var entry in shown)
-                {
-                    list.Add(BuildObjectRow(entry));
-                }
+                list.Add(BuildObjectRow(entry));
             }
-
-            search.ValueChanged += value =>
-            {
-                _objectSearchQuery = value ?? string.Empty;
-                RefreshRows();
-            };
-            RefreshRows();
             return panel;
         }
 
@@ -1446,6 +1404,8 @@ namespace Ee4v.AssetManager.UI
             try
             {
                 var result = new List<PrefabObjectEntry>();
+                var excludedPrefixes =
+                    AssetManagerSettings.ExcludedPartPrefixes;
                 var scopes = _selectedPrefabSiblingIndex.HasValue
                     ? new[] { _selectedPrefabSiblingIndex.Value }
                     : new[] { -1 }.Concat(_prefabSiblingIndices).ToArray();
@@ -1462,7 +1422,9 @@ namespace Ee4v.AssetManager.UI
                         throw new InvalidOperationException(
                             "The selected Prefab is no longer present.");
                     }
-                    if (IsArmatureObjectName(selected.name))
+                    if (IsExcludedPartName(
+                            selected.name,
+                            excludedPrefixes))
                     {
                         continue;
                     }
@@ -1475,7 +1437,9 @@ namespace Ee4v.AssetManager.UI
                         for (var index = 0; index < parent.childCount; index++)
                         {
                             var child = parent.GetChild(index);
-                            if (IsArmatureObjectName(child.name))
+                            if (IsExcludedPartName(
+                                    child.name,
+                                    excludedPrefixes))
                             {
                                 continue;
                             }
@@ -1525,11 +1489,15 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private static bool IsArmatureObjectName(string name)
+        private static bool IsExcludedPartName(
+            string name,
+            IReadOnlyList<string> excludedPrefixes)
         {
             return !string.IsNullOrEmpty(name) &&
-                   name.StartsWith("Armature",
-                       StringComparison.OrdinalIgnoreCase);
+                   excludedPrefixes.Any(prefix =>
+                       name.StartsWith(
+                           prefix,
+                           StringComparison.OrdinalIgnoreCase));
         }
 
         private void ChangePrefabObject(

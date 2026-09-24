@@ -30,6 +30,10 @@
     "applyProjectThumbnailOnImport": {
       "label": "Set thumbnails in Project Style on import",
       "tooltip": "When enabled, set an item's thumbnail as the initial Project Style icon for an imported folder only when it has no icon. You can change it later in Project Style."
+    },
+    "excludedPartNamePrefixes": {
+      "label": "Part list excluded name prefixes",
+      "tooltip": "Exclude GameObjects whose names start with any listed prefix, along with their descendants. Matching ignores case. The default is Armature."
     }
   }
 }

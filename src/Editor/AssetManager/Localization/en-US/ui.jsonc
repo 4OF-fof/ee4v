@@ -29,13 +29,7 @@
       "saveFailed": "The derived Prefab could not be updated. Check the Console."
     },
     "objects": {
-      "sectionTitle": "Visible parts",
-      "description": "Uncheck a part to hide it and save the change to the derived Prefab.",
-      "search": "Search parts",
-      "count": "Showing {0} of {1}",
-      "countMore": "Showing {0} of {1}. Search to narrow the list.",
       "empty": "There are no parts to show or hide.",
-      "noMatch": "No matching parts.",
       "turnOn": "Show this part",
       "turnOff": "Hide this part",
       "parentHidden": "A parent part is hidden."

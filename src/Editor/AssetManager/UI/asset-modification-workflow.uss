@@ -293,24 +293,8 @@
     margin-left: var(--ee4v-space-sm);
 }
 
-.ee4v-modification-workflow__objects-title {
-    margin-bottom: var(--ee4v-space-xs);
-}
-
 .ee4v-modification-workflow__objects-content {
     min-width: 0;
-}
-
-.ee4v-modification-workflow__objects-description {
-    margin-bottom: var(--ee4v-space-lg);
-}
-
-.ee4v-modification-workflow__objects-search {
-    margin-bottom: var(--ee4v-space-sm);
-}
-
-.ee4v-modification-workflow__objects-count {
-    margin-bottom: var(--ee4v-space-xs);
 }
 
 .ee4v-modification-workflow__objects-list {

@@ -29,13 +29,7 @@
       "saveFailed": "派生Prefabを更新できませんでした。Consoleを確認してください。"
     },
     "objects": {
-      "sectionTitle": "表示するパーツ",
-      "description": "チェックを外すとパーツを非表示にし、派生Prefabへ保存します。",
-      "search": "パーツを検索",
-      "count": "{0} / {1} 件を表示",
-      "countMore": "{0} / {1} 件を表示。検索で絞り込めます。",
       "empty": "表示を切り替えられるパーツがありません。",
-      "noMatch": "一致するパーツはありません。",
       "turnOn": "このパーツを表示",
       "turnOff": "このパーツを非表示",
       "parentHidden": "親のパーツが非表示です。"
