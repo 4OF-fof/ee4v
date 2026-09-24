@@ -272,14 +272,14 @@ namespace Ee4v.AssetManager.UI
         private static readonly int PreviewControlHash =
             nameof(DerivedAssetPrefabScenePreview).GetHashCode();
         private const float PreviewFitPadding = 1.05f;
-        private const float AppearanceFullBodyDistanceScale = 0.82f;
+        private const float AppearanceFullBodyDistanceScale = 0.52f;
+        private const float AppearanceFullBodyVerticalOffsetScale = 0.025f;
         private const float CameraTransitionDuration = 0.45f;
         private const float MinimumPreviewSize = 320f;
         private const float MaximumPreviewSize = 560f;
 
         private readonly ScenePreviewViewport _viewport;
         private readonly PreviewOrbitController _orbit;
-        private readonly IVisualElementScheduledItem _cameraAnimationTask;
         private readonly VisualElement _sideToggle;
         private readonly UiButton _leftSideButton;
         private readonly UiButton _rightSideButton;
@@ -321,6 +321,7 @@ namespace Ee4v.AssetManager.UI
         private bool _bakedMeshesDirty;
         private bool _forceSkinningRecalculation;
         private bool _previewDirty = true;
+        private bool _cameraAnimationSubscribed;
         private bool _flexibleLayout;
         private BodyPartCategory? _focusedBodyPart;
         private bool _shoulderLeftSide = true;
@@ -341,9 +342,6 @@ namespace Ee4v.AssetManager.UI
             _orbit = new PreviewOrbitController(
                 PreviewControlHash,
                 RequestPreviewRepaint);
-            _cameraAnimationTask = schedule.Execute(
-                AdvanceCameraAnimation).Every(16);
-            _cameraAnimationTask.Pause();
             _sideToggle = new VisualElement();
             _sideToggle.AddToClassList(
                 "ee4v-asset-manager__preview-side-toggle");
@@ -626,6 +624,19 @@ namespace Ee4v.AssetManager.UI
             }
 
             ApplyPendingUpdates();
+            if (current.type != EventType.Repaint)
+            {
+                return;
+            }
+
+            if (_orbit.UpdateTransition(EditorApplication.timeSinceStartup))
+            {
+                _previewDirty = true;
+                if (!_orbit.IsTransitioning)
+                {
+                    StopCameraAnimation();
+                }
+            }
             var previewSize = rect.size;
             if (!_previewDirty &&
                 _previewTexture != null &&
@@ -726,8 +737,14 @@ namespace Ee4v.AssetManager.UI
 
         private void FrameWholeAvatar(bool animate)
         {
+            var bounds = _bounds;
+            if (_flexibleLayout)
+            {
+                bounds.center -= _instance.transform.up *
+                    bounds.size.y * AppearanceFullBodyVerticalOffsetScale;
+            }
             FrameBounds(
-                _bounds,
+                bounds,
                 0f,
                 Vector2.zero,
                 animate,
@@ -794,30 +811,57 @@ namespace Ee4v.AssetManager.UI
                     viewAngles.y,
                     EditorApplication.timeSinceStartup,
                     CameraTransitionDuration);
-                _cameraAnimationTask.Resume();
+                StartCameraAnimation();
             }
             else
             {
-                _cameraAnimationTask.Pause();
+                StopCameraAnimation();
                 _orbit.SetView(
                     bounds.center,
                     distance,
                     viewAngles.x,
                     viewAngles.y);
             }
-            RequestPreviewRepaint();
         }
 
         private void AdvanceCameraAnimation()
         {
+            if (_instance == null || panel == null)
+            {
+                StopCameraAnimation();
+                return;
+            }
+
             if (_orbit.UpdateTransition(EditorApplication.timeSinceStartup))
             {
                 RequestPreviewRepaint();
             }
             if (!_orbit.IsTransitioning)
             {
-                _cameraAnimationTask.Pause();
+                StopCameraAnimation();
             }
+        }
+
+        private void StartCameraAnimation()
+        {
+            if (_cameraAnimationSubscribed)
+            {
+                return;
+            }
+
+            EditorApplication.update += AdvanceCameraAnimation;
+            _cameraAnimationSubscribed = true;
+        }
+
+        private void StopCameraAnimation()
+        {
+            if (!_cameraAnimationSubscribed)
+            {
+                return;
+            }
+
+            EditorApplication.update -= AdvanceCameraAnimation;
+            _cameraAnimationSubscribed = false;
         }
 
         private bool TryGetBoneFocusBounds(
@@ -1387,7 +1431,7 @@ namespace Ee4v.AssetManager.UI
 
         private void CleanupPreview()
         {
-            _cameraAnimationTask.Pause();
+            StopCameraAnimation();
             _orbit.CancelTransition();
             DestroyBakedMeshes();
             _pendingTransformScales.Clear();
