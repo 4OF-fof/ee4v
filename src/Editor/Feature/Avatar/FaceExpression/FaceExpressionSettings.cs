@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Ee4v.Core.Settings;
 using UnityEditor;
 using UnityEngine;
@@ -145,6 +147,55 @@ namespace Ee4v.FaceExpression
 
             presetStore.Save(preset);
             return true;
+        }
+
+        internal static void EnsureNamePresets(
+            GameObject avatar,
+            IEnumerable<Mesh> meshes,
+            ISettingsService settings,
+            IBlendShapePresetStore presetStore)
+        {
+            settings = settings ?? CoreSettings.Current;
+            if (presetStore == null)
+            {
+                throw new ArgumentNullException(nameof(presetStore));
+            }
+            if (meshes == null)
+            {
+                return;
+            }
+
+            var state = presetStore.Load();
+            var separators = GetSeparators(settings);
+            foreach (var assetPath in meshes
+                         .Where(mesh => mesh != null)
+                         .Select(AssetDatabase.GetAssetPath)
+                         .Where(path => string.Equals(
+                             Path.GetExtension(path),
+                             ".fbx",
+                             StringComparison.OrdinalIgnoreCase))
+                         .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                var assetGuid = AssetDatabase.AssetPathToGUID(assetPath);
+                if (BlendShapeNamePresetSetting.Find(state, assetGuid) != null)
+                {
+                    continue;
+                }
+
+                var sourceFbx = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    assetPath);
+                var preset = BlendShapeNamePresetSetting.CreatePreset(
+                    sourceFbx,
+                    separators,
+                    avatar);
+                if (preset == null)
+                {
+                    continue;
+                }
+
+                presetStore.Save(preset);
+                BlendShapeNamePresetSetting.Upsert(state, preset);
+            }
         }
     }
 }

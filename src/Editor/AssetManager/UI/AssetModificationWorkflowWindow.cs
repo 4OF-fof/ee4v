@@ -3460,6 +3460,11 @@ namespace Ee4v.AssetManager.UI
                 return Array.Empty<BodyBlendShapeDefinition>();
             }
 
+            FaceExpressionSettings.EnsureNamePresets(
+                _workingObject,
+                renderers.Select(renderer => renderer.sharedMesh),
+                null,
+                BlendShapePresetStorage.Shared);
             var result = new List<BodyBlendShapeDefinition>();
             var separators = FaceExpressionSettings.GetSeparators();
             var namingRule = FaceExpressionSettings.GetNameRule(
