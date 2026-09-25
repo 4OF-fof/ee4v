@@ -893,8 +893,8 @@ namespace Ee4v.AssetManager.UI
             if (!TryGetBoneFocusBounds(part, avatarHeight, leftSide,
                     out var focusBounds))
             {
-                focusBounds = GetEstimatedFocusBounds(
-                    part, avatarHeight, leftSide);
+                FrameWholeAvatar(animate);
+                return;
             }
 
             if (part == BodyPartCategory.Chest)
@@ -945,6 +945,7 @@ namespace Ee4v.AssetManager.UI
             var animator = _instance
                 .GetComponentsInChildren<Animator>(true)
                 .FirstOrDefault(candidate => candidate != null &&
+                    IsInFocusScope(candidate.transform) &&
                     candidate.avatar != null &&
                     candidate.avatar.isHuman && candidate.isHuman);
             if (animator != null)
@@ -1062,27 +1063,40 @@ namespace Ee4v.AssetManager.UI
             bounds = default;
             var animator = _instance
                 .GetComponentsInChildren<Animator>(true)
-                .FirstOrDefault(candidate => candidate != null &&
-                    candidate.avatar != null &&
-                    candidate.avatar.isHuman && candidate.isHuman);
-            if (animator == null)
+                .FirstOrDefault(candidate =>
+                    candidate != null &&
+                    IsInFocusScope(candidate.transform) &&
+                    HasFocusBone(candidate, part, IsInFocusScope));
+            Vector3[] points;
+            if (animator != null)
             {
-                return false;
-            }
-
-            var bones = GetFocusBones(part, leftSide);
-            var points = bones
-                .Select(animator.GetBoneTransform)
-                .Where(bone => bone != null)
-                .Select(bone => bone.position)
-                .ToArray();
-            if (points.Length == 0)
-            {
-                points = GetFocusBones(part, !leftSide)
+                points = GetFocusBones(part, leftSide)
                     .Select(animator.GetBoneTransform)
-                    .Where(bone => bone != null)
+                    .Where(bone => bone != null && IsInFocusScope(bone))
                     .Select(bone => bone.position)
                     .ToArray();
+                if (points.Length == 0)
+                {
+                    points = GetFocusBones(part, !leftSide)
+                        .Select(animator.GetBoneTransform)
+                        .Where(bone => bone != null && IsInFocusScope(bone))
+                        .Select(bone => bone.position)
+                        .ToArray();
+                }
+            }
+            else
+            {
+                points = GetSkinnedFocusBones(
+                        _instance, part, IsInFocusScope, leftSide)
+                    .Select(bone => bone.position)
+                    .ToArray();
+                if (points.Length == 0)
+                {
+                    points = GetSkinnedFocusBones(
+                            _instance, part, IsInFocusScope, !leftSide)
+                        .Select(bone => bone.position)
+                        .ToArray();
+                }
             }
             if (points.Length == 0)
             {
@@ -1102,6 +1116,182 @@ namespace Ee4v.AssetManager.UI
             }
             bounds.Expand(avatarHeight * 0.06f);
             return true;
+        }
+
+        internal static bool HasFocusBone(
+            GameObject root,
+            BodyPartCategory part,
+            Func<Transform, bool> isInScope)
+        {
+            if (root == null)
+            {
+                return false;
+            }
+
+            return root.GetComponentsInChildren<Animator>(true)
+                       .Any(animator => isInScope(animator.transform) &&
+                           HasFocusBone(animator, part, isInScope)) ||
+                   GetSkinnedFocusBones(root, part, isInScope).Length > 0;
+        }
+
+        internal static bool HasFocusBone(
+            Animator animator,
+            BodyPartCategory part,
+            Func<Transform, bool> isInScope)
+        {
+            if (animator == null || animator.avatar == null ||
+                !animator.avatar.isHuman || !animator.isHuman)
+            {
+                return false;
+            }
+
+            return GetFocusBones(part, true)
+                .Concat(GetFocusBones(part, false))
+                .Select(animator.GetBoneTransform)
+                .Any(bone => bone != null && isInScope(bone));
+        }
+
+        private static Transform[] GetSkinnedFocusBones(
+            GameObject root,
+            BodyPartCategory part,
+            Func<Transform, bool> isInScope,
+            bool? leftSide = null)
+        {
+            return root.GetComponentsInChildren<SkinnedMeshRenderer>(true)
+                .Where(renderer => isInScope(renderer.transform))
+                // Clothing renderers can use bones outside their Prefab tab.
+                .SelectMany(renderer => renderer.bones ??
+                    Array.Empty<Transform>())
+                .Where(bone => bone != null &&
+                    MatchesFocusBoneName(bone.name, part) &&
+                    (!leftSide.HasValue ||
+                     MatchesBoneSide(bone.name, leftSide.Value)))
+                .Distinct()
+                .ToArray();
+        }
+
+        private static bool MatchesFocusBoneName(
+            string name,
+            BodyPartCategory part)
+        {
+            var words = SplitBoneName(name);
+            switch (part)
+            {
+                case BodyPartCategory.Head:
+                    return HasBoneWord(words, "head", "neck") ||
+                           HasBoneText(name, "頭", "首");
+                case BodyPartCategory.Chest:
+                    return HasBoneWord(words, "chest", "spine") ||
+                           HasBoneText(name, "胸", "背骨");
+                case BodyPartCategory.Waist:
+                    return HasBoneWord(words, "hips", "hip", "pelvis",
+                               "spine", "waist") ||
+                           HasBoneText(name, "腰", "骨盤", "背骨");
+                case BodyPartCategory.Shoulders:
+                case BodyPartCategory.Arms:
+                    return HasBoneWord(words, "shoulder", "arm", "elbow",
+                               "forearm") ||
+                           HasBoneText(name, "肩", "腕", "肘");
+                case BodyPartCategory.Hands:
+                    return HasBoneWord(words, "hand", "wrist", "finger",
+                               "thumb", "index", "middle", "ring",
+                               "little") ||
+                           HasBoneText(name, "手", "指");
+                case BodyPartCategory.Legs:
+                    return HasBoneWord(words, "leg", "thigh", "calf",
+                               "knee", "shin", "foot") ||
+                           HasBoneText(name, "脚", "腿", "膝");
+                case BodyPartCategory.Feet:
+                    return HasBoneWord(words, "foot", "toe", "toes",
+                               "ankle") ||
+                           HasBoneText(name, "足", "つま先", "足首");
+                default:
+                    return false;
+            }
+        }
+
+        private static bool MatchesBoneSide(string name, bool leftSide)
+        {
+            var words = SplitBoneName(name);
+            var left = HasBoneWord(words, "left", "l");
+            var right = HasBoneWord(words, "right", "r");
+            return left == right || (leftSide ? left : right);
+        }
+
+        private static bool HasBoneWord(
+            IReadOnlyCollection<string> words,
+            params string[] terms)
+        {
+            return words.Any(word => terms.Contains(word));
+        }
+
+        private static bool HasBoneText(
+            string name,
+            params string[] terms)
+        {
+            return terms.Any(term => name.IndexOf(
+                term, StringComparison.Ordinal) >= 0);
+        }
+
+        private static IReadOnlyCollection<string> SplitBoneName(string name)
+        {
+            var words = new List<string>();
+            var start = -1;
+            for (var index = 0; index <= name.Length; index++)
+            {
+                var end = index == name.Length ||
+                    !char.IsLetterOrDigit(name[index]);
+                var camelBreak = !end && start >= 0 &&
+                    char.IsUpper(name[index]) &&
+                    char.IsLower(name[index - 1]);
+                if ((end || camelBreak) && start >= 0)
+                {
+                    words.Add(name.Substring(start, index - start)
+                        .ToLowerInvariant());
+                    start = -1;
+                }
+                if (!end && start < 0)
+                {
+                    start = index;
+                }
+            }
+            return words;
+        }
+
+        private bool IsInFocusScope(Transform target)
+        {
+            if (target == null || _instance == null)
+            {
+                return false;
+            }
+
+            var root = _instance.transform;
+            if (target != root && !target.IsChildOf(root))
+            {
+                return false;
+            }
+            if (!_scopeSiblingIndex.HasValue)
+            {
+                return true;
+            }
+            if (_scopeSiblingIndex.Value >= 0)
+            {
+                var index = _scopeSiblingIndex.Value;
+                if (index >= root.childCount)
+                {
+                    return false;
+                }
+                var selected = root.GetChild(index);
+                return target == selected || target.IsChildOf(selected);
+            }
+
+            var current = target;
+            while (current.parent != null && current.parent != root)
+            {
+                current = current.parent;
+            }
+            return current.parent != root ||
+                   !_prefabSiblingIndices.Contains(current.GetSiblingIndex());
         }
 
         private static HumanBodyBones[] GetFocusBones(
@@ -1159,50 +1349,6 @@ namespace Ee4v.AssetManager.UI
                 default:
                     return Array.Empty<HumanBodyBones>();
             }
-        }
-
-        private Bounds GetEstimatedFocusBounds(
-            BodyPartCategory part,
-            float avatarHeight,
-            bool leftSide)
-        {
-            var offset = Vector3.zero;
-            var right = _instance.transform.right *
-                (leftSide ? -1f : 1f);
-            var up = _instance.transform.up;
-            switch (part)
-            {
-                case BodyPartCategory.Head:
-                    offset = up * avatarHeight * 0.38f;
-                    break;
-                case BodyPartCategory.Chest:
-                    offset = up * avatarHeight * 0.18f;
-                    break;
-                case BodyPartCategory.Shoulders:
-                    offset = up * avatarHeight * 0.25f +
-                        right * _bounds.extents.x * 0.5f;
-                    break;
-                case BodyPartCategory.Arms:
-                    offset = up * avatarHeight * 0.14f +
-                        right * _bounds.extents.x * 0.7f;
-                    break;
-                case BodyPartCategory.Hands:
-                    offset = up * avatarHeight * 0.08f +
-                        right * _bounds.extents.x * 0.9f;
-                    break;
-                case BodyPartCategory.Legs:
-                    offset = -up * avatarHeight * 0.25f +
-                        right * _bounds.extents.x * 0.25f;
-                    break;
-                case BodyPartCategory.Feet:
-                    offset = -up * avatarHeight * 0.43f +
-                        right * _bounds.extents.x * 0.25f;
-                    break;
-            }
-
-            return new Bounds(
-                _bounds.center + offset,
-                Vector3.one * avatarHeight * 0.06f);
         }
 
         private static float GetMinimumHalfView(BodyPartCategory part)

@@ -1642,6 +1642,13 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            if (_selectedBodyPart.HasValue &&
+                !HasFocusBone(_selectedBodyPart.Value))
+            {
+                _selectedBodyPart = null;
+                _scenePreview?.FocusBodyPart(null);
+            }
+
             _appearanceHeader.Clear();
             _appearanceHeader.style.display = DisplayStyle.Flex;
             if (category == WorkflowCategory.ShapeParts)
@@ -2721,7 +2728,14 @@ namespace Ee4v.AssetManager.UI
             button.EnableInClassList(
                 "ee4v-modification-workflow__part-button--active",
                 _selectedBodyPart == part);
+            button.SetEnabled(!part.HasValue || HasFocusBone(part.Value));
             selector.Add(button);
+        }
+
+        private bool HasFocusBone(BodyPartCategory part)
+        {
+            return DerivedAssetPrefabScenePreview.HasFocusBone(
+                _workingObject, part, IsInSelectedPrefabScope);
         }
 
         private VisualElement BuildBodyScaleControls()
