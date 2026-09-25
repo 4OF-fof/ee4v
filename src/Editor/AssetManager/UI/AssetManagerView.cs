@@ -547,44 +547,6 @@ namespace Ee4v.AssetManager.UI
         {
             _backButton.SetEnabled(_viewState.CanGoBack);
             _forwardButton.SetEnabled(_viewState.CanGoForward);
-            if (_viewState.Page == AssetManagerPage.Folder)
-            {
-                var folders = _manager.GetFolders()
-                    .ToDictionary(folder => folder.Id,
-                        StringComparer.Ordinal);
-                var path = new List<AssetFolder>();
-                var currentId = _viewState.FolderId;
-                while (currentId != null &&
-                       folders.TryGetValue(currentId, out var folder))
-                {
-                    path.Add(folder);
-                    currentId = folder.ParentId;
-                }
-                path.Reverse();
-                if (path.Count > 0)
-                {
-                    var breadcrumbs = new List<AssetManagerBreadcrumbItem>();
-                    for (var i = 0; i < path.Count; i++)
-                    {
-                        var entry = path[i];
-                        breadcrumbs.Add(new AssetManagerBreadcrumbItem(
-                            entry.Name,
-                            i == path.Count - 1 &&
-                            string.IsNullOrEmpty(_viewState.DetailItemId)
-                                ? (Action)null
-                                : () => _viewState.SelectFolder(entry.Id)));
-                    }
-                    if (!string.IsNullOrEmpty(_viewState.DetailItemId))
-                    {
-                        breadcrumbs.Add(new AssetManagerBreadcrumbItem(
-                            _manager.GetItem(_viewState.DetailItemId)?.Name ??
-                            I18N.Get("common.item")));
-                    }
-                    _breadcrumbs.SetItems(breadcrumbs);
-                    return;
-                }
-            }
-
             var pageTitle = GetPageTitle();
             if (string.IsNullOrEmpty(_viewState.DetailItemId))
             {
@@ -633,19 +595,6 @@ namespace Ee4v.AssetManager.UI
                 AssetManagerPage.Tags,
                 "tag.png"));
             _navigation.Add(primary);
-
-            var folders = _manager.GetFolders();
-            if (folders.Count > 0)
-            {
-                var folderSection = new SectionHeader(
-                    I18N.Get("navigation.eagleFolders"));
-                folderSection.AddToClassList(
-                    "ee4v-asset-manager__nav-section-header");
-                folderSection.TitleText.AddToClassList(
-                    "ee4v-asset-manager__nav-section");
-                _navigation.Add(folderSection);
-                AddFolderNavigation(_navigation, folders, null);
-            }
 
             var collections = _manager.GetCollections();
             var section = new SectionHeader(string.Format(
@@ -2807,38 +2756,6 @@ namespace Ee4v.AssetManager.UI
                 .ToArray();
         }
 
-        private void AddFolderNavigation(
-            VisualElement container,
-            IReadOnlyList<AssetFolder> folders,
-            string parentId)
-        {
-            foreach (var folder in folders
-                         .Where(value => string.Equals(value.ParentId,
-                             parentId, StringComparison.Ordinal))
-                         .OrderBy(value => value.Name,
-                             StringComparer.OrdinalIgnoreCase))
-            {
-                var button = AssetManagerControls.CreateNavigationButton(
-                    folder.Name,
-                    "folder.png",
-                    () => _viewState.SelectFolder(folder.Id),
-                    "ee4v-asset-manager__nav-button");
-                AssetManagerControls.SetNavigationSelected(button,
-                    _viewState.Page == AssetManagerPage.Folder &&
-                    string.Equals(_viewState.FolderId, folder.Id,
-                        StringComparison.Ordinal));
-                container.Add(button);
-                var children = new VisualElement();
-                children.AddToClassList(
-                    "ee4v-asset-manager__nav-folder-children");
-                AddFolderNavigation(children, folders, folder.Id);
-                if (children.childCount > 0)
-                {
-                    container.Add(children);
-                }
-            }
-        }
-
         private static IReadOnlyList<string> GetSourceTagPaths(
             AssetItem item)
         {
@@ -3329,9 +3246,6 @@ namespace Ee4v.AssetManager.UI
                 _viewState.Page == AssetManagerPage.Imported
                     ? GetImportedItemIdsInProject()
                     : null;
-            var folderIds = _viewState.Page == AssetManagerPage.Folder
-                ? GetDescendantFolderIds(_viewState.FolderId)
-                : null;
             var visibleItems = items
                 .Where(item =>
                     _viewState.Page != AssetManagerPage.Archived ||
@@ -3342,9 +3256,6 @@ namespace Ee4v.AssetManager.UI
                 .Where(item =>
                     _viewState.Page != AssetManagerPage.Tags ||
                     MatchesTag(item, _viewState.TagPath))
-                .Where(item =>
-                    _viewState.Page != AssetManagerPage.Folder ||
-                    folderIds.Contains(item.FolderId))
                 .Where(item => AssetManagerSearch.MatchesItem(
                     item,
                     _search.Value,
@@ -3353,34 +3264,6 @@ namespace Ee4v.AssetManager.UI
                 visibleItems,
                 _viewState.ItemSortField,
                 _viewState.IsItemSortReversed);
-        }
-
-        private ISet<string> GetDescendantFolderIds(string folderId)
-        {
-            var folders = _manager.GetFolders();
-            var ids = new HashSet<string>(StringComparer.Ordinal);
-            if (string.IsNullOrEmpty(folderId) ||
-                !folders.Any(folder => folder.Id == folderId))
-            {
-                return ids;
-            }
-
-            ids.Add(folderId);
-            var queue = new Queue<string>();
-            queue.Enqueue(folderId);
-            while (queue.Count > 0)
-            {
-                var parentId = queue.Dequeue();
-                foreach (var child in folders.Where(folder =>
-                             folder.ParentId == parentId))
-                {
-                    if (ids.Add(child.Id))
-                    {
-                        queue.Enqueue(child.Id);
-                    }
-                }
-            }
-            return ids;
         }
 
         private ISet<string> GetImportedItemIdsInProject()
@@ -3469,11 +3352,6 @@ namespace Ee4v.AssetManager.UI
                         .FirstOrDefault(collection =>
                             collection.Id == _viewState.CollectionId)
                         ?.Name ?? I18N.Get("common.collection");
-                case AssetManagerPage.Folder:
-                    return _manager.GetFolders()
-                        .FirstOrDefault(folder =>
-                            folder.Id == _viewState.FolderId)
-                        ?.Name ?? I18N.Get("navigation.eagleFolders");
                 case AssetManagerPage.UnassignedFiles:
                     return I18N.Get("navigation.unassignedFiles");
                 default:

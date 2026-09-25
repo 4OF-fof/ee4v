@@ -65,11 +65,6 @@ namespace Ee4v.AssetManager.Application
             return _store.SearchItems(query);
         }
 
-        public IReadOnlyList<AssetFolder> GetFolders()
-        {
-            return _store.GetFolders();
-        }
-
         public AssetSearchResult SearchCollection(
             string collectionId,
             int offset = 0,
@@ -1292,17 +1287,6 @@ namespace Ee4v.AssetManager.Application
         private static void NormalizeSourceSnapshot(
             AssetSourceSnapshot snapshot)
         {
-            var folders = snapshot == null
-                ? Array.Empty<AssetSourceSnapshotFolder>()
-                : snapshot.Folders;
-            for (var i = 0; i < folders.Count; i++)
-            {
-                if (folders[i] != null)
-                {
-                    folders[i].Name = AssetSourceText.Normalize(folders[i].Name);
-                }
-            }
-
             var items = snapshot == null
                 ? Array.Empty<AssetSourceSnapshotItem>()
                 : snapshot.Items;

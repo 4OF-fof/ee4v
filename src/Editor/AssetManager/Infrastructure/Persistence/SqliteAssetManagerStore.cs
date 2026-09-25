@@ -831,31 +831,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             });
         }
 
-        public IReadOnlyList<AssetFolder> GetFolders()
-        {
-            return Run(() =>
-            {
-                using (var connection = OpenConnection())
-                {
-                    return connection.Query<FolderRow>(
-                            @"SELECT id AS Id, parent_id AS ParentId,
-                                     name AS Name, source_type AS SourceType,
-                                     source_id AS SourceId
-                              FROM asset_folder
-                              ORDER BY name COLLATE NOCASE, id")
-                        .Select(row => new AssetFolder
-                        {
-                            Id = row.Id,
-                            ParentId = row.ParentId,
-                            Name = row.Name,
-                            SourceType = ParseSourceType(row.SourceType),
-                            SourceId = row.SourceId
-                        })
-                        .ToArray();
-                }
-            });
-        }
-
         public IReadOnlyList<AssetItem> SetItemTags(
             IReadOnlyList<string> itemIds,
             IReadOnlyList<string> normalizedPaths)
@@ -1048,11 +1023,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         connection,
                         transaction,
                         source);
-                    var folders = snapshot == null
-                        ? Array.Empty<AssetSourceSnapshotFolder>()
-                        : snapshot.Folders;
-                    var seenFolders = UpsertSourceFolders(
-                        connection, transaction, source, folders);
                     for (var i = 0; i < items.Count; i++)
                     {
                         var item = items[i];
@@ -1070,8 +1040,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                             transaction,
                             source,
                             item);
-                        SetSourceItemFolder(connection, transaction,
-                            source, itemId, item.FolderSourceId);
                         var files = item.Files ??
                                     Array.Empty<AssetSourceSnapshotFile>();
                         for (var fileIndex = 0;
@@ -1144,8 +1112,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         transaction,
                         source,
                         seenItems);
-                    DeleteMissingSourceFolders(connection, transaction,
-                        source, seenFolders);
 
                     DeleteUnusedTags(connection, transaction);
                     var after = ReadSourceState(
@@ -1320,27 +1286,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 @"CREATE UNIQUE INDEX IF NOT EXISTS ux_item_source
                     ON item(source_type, source_id)
                     WHERE source_type IS NOT NULL",
-                @"CREATE TABLE IF NOT EXISTS asset_folder(
-                    id TEXT PRIMARY KEY,
-                    parent_id TEXT REFERENCES asset_folder(id)
-                      ON DELETE CASCADE,
-                    name TEXT NOT NULL CHECK(trim(name) <> ''),
-                    source_type TEXT NOT NULL CHECK(source_type IN (
-                      'eagle', 'ee4v')),
-                    source_id TEXT NOT NULL,
-                    UNIQUE(source_type, source_id),
-                    CHECK(parent_id IS NULL OR parent_id <> id)
-                  )",
-                @"CREATE INDEX IF NOT EXISTS ix_asset_folder_parent
-                    ON asset_folder(parent_id)",
-                @"CREATE TABLE IF NOT EXISTS item_folder(
-                    item_id TEXT PRIMARY KEY REFERENCES item(id)
-                      ON DELETE CASCADE,
-                    folder_id TEXT NOT NULL REFERENCES asset_folder(id)
-                      ON DELETE CASCADE
-                  )",
-                @"CREATE INDEX IF NOT EXISTS ix_item_folder_folder
-                    ON item_folder(folder_id, item_id)",
                 @"CREATE TABLE IF NOT EXISTS item_booth_metadata(
                     item_id TEXT PRIMARY KEY
                       REFERENCES item(id) ON DELETE CASCADE,
@@ -1720,9 +1665,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     ? (AssetSourceType?)null
                     : ParseSourceType(row.SourceType),
                 SourceId = row.SourceId,
-                FolderId = ScalarString(connection, null,
-                    "SELECT folder_id FROM item_folder WHERE item_id = @p0",
-                    itemId),
                 IsArchived = row.IsArchived != 0,
                 CreatedAt = ParseDate(row.CreatedAt),
                 UpdatedAt = ParseDate(row.UpdatedAt)
@@ -2275,160 +2217,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 file.SourcePath,
                 now,
                 fileId);
-        }
-
-        private static ISet<string> UpsertSourceFolders(
-            SQLiteConnection connection,
-            DatabaseTransaction transaction,
-            string source,
-            IReadOnlyList<AssetSourceSnapshotFolder> folders)
-        {
-            var bySourceId = new Dictionary<string, AssetSourceSnapshotFolder>(
-                StringComparer.Ordinal);
-            foreach (var folder in folders ??
-                     Array.Empty<AssetSourceSnapshotFolder>())
-            {
-                if (folder == null ||
-                    string.IsNullOrWhiteSpace(folder.SourceId) ||
-                    bySourceId.ContainsKey(folder.SourceId))
-                {
-                    throw new AssetManagerException(
-                        AssetManagerErrorCode.DatasourceError,
-                        "A source folder has a missing or duplicate id.");
-                }
-                bySourceId.Add(folder.SourceId, folder);
-            }
-
-            foreach (var folder in bySourceId.Values)
-            {
-                var visited = new HashSet<string>(StringComparer.Ordinal);
-                var current = folder;
-                while (current != null)
-                {
-                    if (!visited.Add(current.SourceId))
-                    {
-                        throw new AssetManagerException(
-                            AssetManagerErrorCode.DatasourceError,
-                            "A source folder hierarchy contains a cycle.");
-                    }
-
-                    if (current.ParentSourceId == null)
-                    {
-                        break;
-                    }
-
-                    if (!bySourceId.TryGetValue(current.ParentSourceId,
-                            out current))
-                    {
-                        throw new AssetManagerException(
-                            AssetManagerErrorCode.DatasourceError,
-                            "A source folder parent was not found.");
-                    }
-                }
-            }
-
-            foreach (var folder in bySourceId.Values)
-            {
-                var id = ScalarString(connection, transaction,
-                    @"SELECT id FROM asset_folder
-                      WHERE source_type = @p0 AND source_id = @p1",
-                    source, folder.SourceId);
-                var name = string.IsNullOrWhiteSpace(folder.Name)
-                    ? folder.SourceId
-                    : folder.Name.Trim();
-                if (id == null)
-                {
-                    Execute(connection, transaction,
-                        @"INSERT INTO asset_folder(
-                            id, parent_id, name, source_type, source_id)
-                          VALUES(@p0, NULL, @p1, @p2, @p3)",
-                        NewId(), name, source, folder.SourceId);
-                }
-                else
-                {
-                    Execute(connection, transaction,
-                        @"UPDATE asset_folder
-                          SET parent_id = NULL, name = @p0
-                          WHERE id = @p1", name, id);
-                }
-            }
-
-            foreach (var folder in bySourceId.Values)
-            {
-                if (folder.ParentSourceId == null)
-                {
-                    continue;
-                }
-
-                Execute(connection, transaction,
-                    @"UPDATE asset_folder SET parent_id = (
-                        SELECT id FROM asset_folder
-                        WHERE source_type = @p0 AND source_id = @p1)
-                      WHERE source_type = @p0 AND source_id = @p2",
-                    source, folder.ParentSourceId, folder.SourceId);
-            }
-
-            return new HashSet<string>(bySourceId.Keys,
-                StringComparer.Ordinal);
-        }
-
-        private static void SetSourceItemFolder(
-            SQLiteConnection connection,
-            DatabaseTransaction transaction,
-            string source,
-            string itemId,
-            string folderSourceId)
-        {
-            Execute(connection, transaction,
-                "DELETE FROM item_folder WHERE item_id = @p0", itemId);
-            if (string.IsNullOrWhiteSpace(folderSourceId))
-            {
-                return;
-            }
-
-            var folderId = ScalarString(connection, transaction,
-                @"SELECT id FROM asset_folder
-                  WHERE source_type = @p0 AND source_id = @p1",
-                source, folderSourceId);
-            if (folderId == null)
-            {
-                throw new AssetManagerException(
-                    AssetManagerErrorCode.DatasourceError,
-                    "A source item folder was not found.");
-            }
-
-            Execute(connection, transaction,
-                @"INSERT INTO item_folder(item_id, folder_id)
-                  VALUES(@p0, @p1)", itemId, folderId);
-        }
-
-        private static void DeleteMissingSourceFolders(
-            SQLiteConnection connection,
-            DatabaseTransaction transaction,
-            string source,
-            ISet<string> seenFolders)
-        {
-            var sourceIds = QueryStrings(connection, transaction,
-                @"SELECT source_id FROM asset_folder
-                  WHERE source_type = @p0", source);
-            var missingSourceIds = sourceIds
-                .Where(sourceId => !seenFolders.Contains(sourceId))
-                .ToArray();
-            foreach (var sourceId in missingSourceIds)
-            {
-                Execute(connection, transaction,
-                    @"UPDATE asset_folder SET parent_id = NULL
-                      WHERE source_type = @p0 AND source_id = @p1",
-                    source, sourceId);
-            }
-
-            foreach (var sourceId in missingSourceIds)
-            {
-                Execute(connection, transaction,
-                    @"DELETE FROM asset_folder
-                      WHERE source_type = @p0 AND source_id = @p1",
-                    source, sourceId);
-            }
         }
 
         private static void DeleteMissingSourceFiles(
@@ -2997,7 +2785,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 BoothItemUrl = item.Booth?.ItemUrl ?? string.Empty;
                 BoothShopName = item.Booth?.ShopName ?? string.Empty;
                 BoothShopUrl = item.Booth?.ShopUrl ?? string.Empty;
-                FolderId = item.FolderId ?? string.Empty;
                 IsArchived = item.IsArchived;
                 Tags = (item.Tags ?? Array.Empty<AssetTag>())
                     .Select(tag => (tag.Path ?? string.Empty) +
@@ -3012,7 +2799,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             private string BoothItemUrl { get; }
             private string BoothShopName { get; }
             private string BoothShopUrl { get; }
-            private string FolderId { get; }
             private bool IsArchived { get; }
             private IReadOnlyList<string> Tags { get; }
 
@@ -3039,10 +2825,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                        string.Equals(
                            BoothShopUrl,
                            other.BoothShopUrl,
-                           StringComparison.Ordinal) &&
-                       string.Equals(
-                           FolderId,
-                           other.FolderId,
                            StringComparison.Ordinal) &&
                        IsArchived == other.IsArchived &&
                        Tags.SequenceEqual(other.Tags, StringComparer.Ordinal);
@@ -3136,15 +2918,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             public string Id { get; set; }
             public string Path { get; set; }
             public int IsSourceOwned { get; set; }
-        }
-
-        private sealed class FolderRow
-        {
-            public string Id { get; set; }
-            public string ParentId { get; set; }
-            public string Name { get; set; }
-            public string SourceType { get; set; }
-            public string SourceId { get; set; }
         }
 
         private sealed class CollectionRow

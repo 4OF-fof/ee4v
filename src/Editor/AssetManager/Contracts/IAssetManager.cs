@@ -81,7 +81,6 @@ namespace Ee4v.AssetManager.Contracts
         IReadOnlyList<string> GetFileImportedAssetGuids(string fileId);
         IReadOnlyList<string> GetItemImportedAssetGuids(string itemId);
         IReadOnlyList<AssetTag> GetTags();
-        IReadOnlyList<AssetFolder> GetFolders();
         IReadOnlyList<AssetItem> SetItemTags(
             IReadOnlyList<string> itemIds,
             IReadOnlyList<string> tagPaths);

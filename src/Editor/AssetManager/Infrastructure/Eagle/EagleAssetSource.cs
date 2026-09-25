@@ -58,9 +58,6 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                 }
 
                 var entries = ReadEntries(imagesPath);
-                var targetsById = targets.ToDictionary(
-                    target => target.Id,
-                    StringComparer.Ordinal);
                 var boothEntriesByFolder = new Dictionary<string, EagleEntry>(
                     StringComparer.Ordinal);
                 var boothMetadataByFolder = new Dictionary<string, EagleBoothMetadata>(
@@ -92,9 +89,6 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     }
                 }
 
-                var productFolderIds = new HashSet<string>(
-                    boothEntriesByFolder.Keys,
-                    StringComparer.Ordinal);
                 var boothEntryIds = new HashSet<string>(
                     boothEntriesByFolder.Values.Select(entry => entry.Metadata.id),
                     StringComparer.Ordinal);
@@ -144,10 +138,6 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     items.Add(new AssetSourceSnapshotItem
                     {
                         SourceId = target.Id,
-                        FolderSourceId = FindStructuralAncestor(
-                            target.ParentId,
-                            targetsById,
-                            productFolderIds),
                         Name = !string.IsNullOrWhiteSpace(booth.name)
                             ? booth.name
                             : target.Name,
@@ -164,19 +154,6 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     });
                 }
 
-                var folders = targets
-                    .Where(target => target.ParentId != null &&
-                                     !productFolderIds.Contains(target.Id))
-                    .Select(target =>
-                    new AssetSourceSnapshotFolder
-                    {
-                        SourceId = target.Id,
-                        ParentSourceId = FindStructuralAncestor(
-                            target.ParentId,
-                            targetsById,
-                            productFolderIds),
-                        Name = target.Name
-                    }).ToArray();
                 var unassignedFiles = entries
                     .Where(entry => !entry.Metadata.isDeleted &&
                                     !boothEntryIds.Contains(entry.Metadata.id) &&
@@ -189,8 +166,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     .ToArray();
                 return new AssetSourceSnapshot(
                     items,
-                    files: unassignedFiles,
-                    folders: folders);
+                    files: unassignedFiles);
             }
             catch (AssetManagerException)
             {
@@ -423,30 +399,6 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                 ShopName = booth.shopName,
                 ShopUrl = booth.shopUrl
             };
-        }
-
-        private static string FindStructuralAncestor(
-            string parentId,
-            IReadOnlyDictionary<string, EagleFolderTarget> targetsById,
-            ISet<string> productFolderIds)
-        {
-            while (!string.IsNullOrWhiteSpace(parentId) &&
-                   targetsById.TryGetValue(parentId, out var parent))
-            {
-                if (parent.ParentId == null)
-                {
-                    return null;
-                }
-
-                if (!productFolderIds.Contains(parentId))
-                {
-                    return parentId;
-                }
-
-                parentId = parent.ParentId;
-            }
-
-            return null;
         }
 
         private static string ResolveThumbnailUrl(

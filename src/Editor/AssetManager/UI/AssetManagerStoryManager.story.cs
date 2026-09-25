@@ -362,11 +362,6 @@ namespace Ee4v.AssetManager.UI
             return _items.SelectMany(item => item.Tags).ToArray();
         }
 
-        public IReadOnlyList<AssetFolder> GetFolders()
-        {
-            return Array.Empty<AssetFolder>();
-        }
-
         public IReadOnlyList<AssetItem> SetItemTags(
             IReadOnlyList<string> itemIds,
             IReadOnlyList<string> tagPaths)
