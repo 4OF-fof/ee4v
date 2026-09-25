@@ -16,6 +16,7 @@ namespace Ee4v.AssetManager.UI
     internal sealed class SearchableFileTree :
         SearchableTreeView<FileTreeNode>, IDisposable
     {
+        private const int MaxConcurrentAnalyses = 3;
         private const string RootClassName =
             "ee4v-asset-manager-file-tree";
         internal const string RowClassName =
@@ -42,7 +43,13 @@ namespace Ee4v.AssetManager.UI
                     StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, CachedAnalysis> _analysisCache =
             new Dictionary<string, CachedAnalysis>(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _fileTreeIds =
+            new Dictionary<string, int>(StringComparer.Ordinal);
         private CancellationTokenSource _reloadCancellation;
+        private Queue<AssetFile> _pendingAnalyses = new Queue<AssetFile>();
+        private HashSet<string> _requestedAnalysisIds =
+            new HashSet<string>(StringComparer.Ordinal);
+        private Dictionary<string, AssetFileAnalysis> _currentAnalyses;
         private IReadOnlyList<SearchableTreeItemData<FileTreeNode>>
             _pendingTreeItems;
         private IReadOnlyList<AssetFile> _files = Array.Empty<AssetFile>();
@@ -51,6 +58,7 @@ namespace Ee4v.AssetManager.UI
         private string _itemId = string.Empty;
         private int _reloadVersion;
         private bool _isPointerOverTree;
+        private bool _isSearching;
         private bool _suppressSelectionChanged;
 
         internal SearchableFileTree(
@@ -65,6 +73,7 @@ namespace Ee4v.AssetManager.UI
                 searchPlaceholder: I18N.Get(
                     "fileTree.searchPlaceholder"),
                 selectionType: SelectionType.Single,
+                canInteractWithItem: node => node?.IsLoading != true,
                 searchTooltip: I18N.Get("fileTree.searchTooltip"),
                 clearTooltip: I18N.Get("toolbar.search.clear"),
                 searchIconState:
@@ -125,6 +134,15 @@ namespace Ee4v.AssetManager.UI
                 _pendingTreeItems = null;
                 CancelReload();
             });
+            RegisterCallback<PointerUpEvent>(
+                _ => schedule.Execute(QueueExpandedAnalyses),
+                TrickleDown.TrickleDown);
+            RegisterCallback<ClickEvent>(
+                _ => schedule.Execute(QueueExpandedAnalyses),
+                TrickleDown.TrickleDown);
+            RegisterCallback<KeyUpEvent>(
+                _ => schedule.Execute(QueueExpandedAnalyses),
+                TrickleDown.TrickleDown);
         }
 
         internal event Action<FileTreeSelection> SelectionChanged;
@@ -175,6 +193,7 @@ namespace Ee4v.AssetManager.UI
             }
             SeedAnalysisCache(initialAnalyses);
             var analyses = CreateCachedAnalyses();
+            _currentAnalyses = analyses;
             SetFeedback(string.Empty);
             ApplyTreeItems(AssetFileTreeBuilder.Build(
                 _files,
@@ -182,14 +201,82 @@ namespace Ee4v.AssetManager.UI
                 CancellationToken.None,
                 I18N.Get("fileTree.overview"),
                 I18N.Get("fileTree.itemMeta"),
+                I18N.Get("fileTree.loading"),
                 includeOverview: !_showsTargetToggles,
                 groups: _groups));
 
-            if (!_files.Any(AssetFileTreeBuilder.CanAnalyze))
+            if (!_showsTargetToggles && !_isSearching)
+            {
+                return;
+            }
+            QueueAllAnalyses();
+        }
+
+        protected override void OnSearchValueChanged(string value)
+        {
+            _isSearching = !string.IsNullOrWhiteSpace(value);
+            if (_isSearching)
+            {
+                QueueAllAnalyses();
+            }
+        }
+
+        private void QueueAllAnalyses()
+        {
+            foreach (var file in _files)
+            {
+                QueueAnalysis(file, startImmediately: false);
+            }
+            StartQueuedAnalyses();
+        }
+
+        private void QueueExpandedAnalyses()
+        {
+            if (panel == null || _showsTargetToggles)
+            {
+                return;
+            }
+            foreach (var file in _files)
+            {
+                if (IsFileExpanded(file.Id))
+                {
+                    QueueAnalysis(file);
+                }
+            }
+        }
+
+        private bool IsFileExpanded(string fileId)
+        {
+            return _fileTreeIds.TryGetValue(fileId, out var treeId) &&
+                   IsItemExpanded(treeId);
+        }
+
+        private void QueueAnalysis(
+            AssetFile file,
+            bool startImmediately = true)
+        {
+            if (_currentAnalyses == null ||
+                !AssetFileTreeBuilder.CanAnalyze(file) ||
+                _currentAnalyses.ContainsKey(file.Id) ||
+                !_requestedAnalysisIds.Add(file.Id))
             {
                 return;
             }
 
+            _pendingAnalyses.Enqueue(file);
+            if (startImmediately)
+            {
+                StartQueuedAnalyses();
+            }
+        }
+
+        private void StartQueuedAnalyses()
+        {
+            if (_reloadCancellation != null ||
+                _pendingAnalyses.Count == 0)
+            {
+                return;
+            }
             var version = ++_reloadVersion;
             var cancellation = new CancellationTokenSource();
             _reloadCancellation = cancellation;
@@ -197,7 +284,8 @@ namespace Ee4v.AssetManager.UI
                 version,
                 cancellation,
                 _files,
-                analyses);
+                _currentAnalyses,
+                _pendingAnalyses);
         }
 
         public void Dispose()
@@ -246,50 +334,68 @@ namespace Ee4v.AssetManager.UI
             int version,
             CancellationTokenSource cancellation,
             IReadOnlyList<AssetFile> files,
-            Dictionary<string, AssetFileAnalysis> analyses)
+            Dictionary<string, AssetFileAnalysis> analyses,
+            Queue<AssetFile> pending)
         {
             var failures = new List<string>();
+            var hasUnrenderedResults = false;
             try
             {
-                for (var index = 0; index < files.Count; index++)
+                var running = new List<Task<AnalysisLoadResult>>();
+                while (pending.Count > 0 || running.Count > 0)
                 {
-                    var file = files[index];
-                    if (!AssetFileTreeBuilder.CanAnalyze(file))
+                    cancellation.Token.ThrowIfCancellationRequested();
+                    while (pending.Count > 0 &&
+                           running.Count < MaxConcurrentAnalyses)
                     {
-                        continue;
+                        running.Add(AnalyzeForTreeAsync(
+                            pending.Dequeue(),
+                            cancellation.Token));
                     }
 
-                    cancellation.Token.ThrowIfCancellationRequested();
-                    if (analyses.ContainsKey(file.Id))
+                    var completed = await Task.WhenAny(running);
+                    running.Remove(completed);
+                    var result = await completed;
+                    if (!IsCurrentReload(version, cancellation))
                     {
-                        continue;
+                        return;
                     }
-                    var cacheKey = CreateCacheKey(file);
-                    try
+                    if (result.Error is OperationCanceledException)
                     {
-                        var analysis = await _manager.AnalyzeFileAsync(
-                            file.Id,
-                            cancellation.Token);
-                        if (!IsCurrentReload(version, cancellation))
-                        {
-                            return;
-                        }
-                        analyses[file.Id] = analysis;
-                        _analysisCache[file.Id] = new CachedAnalysis(
-                            cacheKey,
-                            analysis);
-                        if (_showsTargetToggles)
-                        {
-                            await ApplyAnalysesAsync(
-                                version,
-                                cancellation,
-                                files,
-                                analyses);
-                        }
+                        throw result.Error;
                     }
-                    catch (AssetManagerException)
+                    if (result.Error != null || result.Analysis == null)
                     {
-                        failures.Add(file.FileName);
+                        if (result.Error != null &&
+                            !(result.Error is AssetManagerException))
+                        {
+                            Debug.LogException(result.Error);
+                        }
+                        failures.Add(result.File.FileName);
+                        analyses[result.File.Id] = new AssetFileAnalysis
+                        {
+                            FileId = result.File.Id,
+                            Entries = Array.Empty<AssetFileContentEntry>()
+                        };
+                    }
+                    else
+                    {
+                        analyses[result.File.Id] = result.Analysis;
+                        _analysisCache[result.File.Id] = new CachedAnalysis(
+                            CreateCacheKey(result.File),
+                            result.Analysis);
+                    }
+
+                    hasUnrenderedResults = true;
+                    if (_showsTargetToggles ||
+                        (!_isSearching && IsFileExpanded(result.File.Id)))
+                    {
+                        await ApplyAnalysesAsync(
+                            version,
+                            cancellation,
+                            files,
+                            analyses);
+                        hasUnrenderedResults = false;
                     }
                 }
 
@@ -298,7 +404,7 @@ namespace Ee4v.AssetManager.UI
                     return;
                 }
 
-                if (!_showsTargetToggles)
+                if (hasUnrenderedResults)
                 {
                     await ApplyAnalysesAsync(
                         version,
@@ -306,6 +412,7 @@ namespace Ee4v.AssetManager.UI
                         files,
                         analyses);
                 }
+
                 if (failures.Count > 0)
                 {
                     SetFeedback(string.Format(
@@ -329,9 +436,33 @@ namespace Ee4v.AssetManager.UI
                 if (ReferenceEquals(_reloadCancellation, cancellation))
                 {
                     _reloadCancellation = null;
+                    cancellation.Dispose();
+                    if (pending.Count > 0)
+                    {
+                        StartQueuedAnalyses();
+                    }
                 }
+                else
+                {
+                    cancellation.Dispose();
+                }
+            }
+        }
 
-                cancellation.Dispose();
+        private async Task<AnalysisLoadResult> AnalyzeForTreeAsync(
+            AssetFile file,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var analysis = await _manager.AnalyzeFileAsync(
+                    file.Id,
+                    cancellationToken);
+                return new AnalysisLoadResult(file, analysis, null);
+            }
+            catch (Exception exception)
+            {
+                return new AnalysisLoadResult(file, null, exception);
             }
         }
 
@@ -351,6 +482,7 @@ namespace Ee4v.AssetManager.UI
         {
             var overviewTitle = I18N.Get("fileTree.overview");
             var overviewMeta = I18N.Get("fileTree.itemMeta");
+            var loadingTitle = I18N.Get("fileTree.loading");
             var items = await Task.Run(
                 () => AssetFileTreeBuilder.Build(
                     files,
@@ -358,6 +490,7 @@ namespace Ee4v.AssetManager.UI
                     cancellation.Token,
                     overviewTitle,
                     overviewMeta,
+                    loadingTitle,
                     includeOverview: !_showsTargetToggles,
                     groups: _groups),
                 cancellation.Token);
@@ -369,7 +502,7 @@ namespace Ee4v.AssetManager.UI
                 }
                 else
                 {
-                    ApplyTreeItems(items);
+                    ApplyTreeItems(items, preserveSelection: true);
                 }
             }
         }
@@ -383,7 +516,7 @@ namespace Ee4v.AssetManager.UI
 
             var items = _pendingTreeItems;
             _pendingTreeItems = null;
-            ApplyTreeItems(items);
+            ApplyTreeItems(items, preserveSelection: true);
         }
 
         private void SeedAnalysisCache(
@@ -415,19 +548,40 @@ namespace Ee4v.AssetManager.UI
         }
 
         private void ApplyTreeItems(
-            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> items)
+            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> items,
+            bool preserveSelection = false)
         {
+            _fileTreeIds.Clear();
+            CollectFileTreeIds(items);
             ConfigureTargetNodes(items);
             _suppressSelectionChanged = true;
             try
             {
                 SetItems(
                     items,
-                    preserveExpansion: true);
+                    preserveExpansion: true,
+                    preserveSelection: preserveSelection);
             }
             finally
             {
                 _suppressSelectionChanged = false;
+            }
+        }
+
+        private void CollectFileTreeIds(
+            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> items)
+        {
+            foreach (var item in items)
+            {
+                var node = item.Data;
+                if (node?.File != null && node.Entry == null)
+                {
+                    _fileTreeIds[node.File.Id] = item.Id;
+                }
+                if (node?.IsGroup == true)
+                {
+                    CollectFileTreeIds(item.Children);
+                }
             }
         }
 
@@ -490,7 +644,9 @@ namespace Ee4v.AssetManager.UI
 
         private static Texture2D ResolveTreeIcon(FileTreeNode node)
         {
-            var iconName = node?.IsGroup == true
+            var iconName = node?.IsLoading == true
+                ? "arrow_clockwise.png"
+                : node?.IsGroup == true
                 ? "folder.png"
                 : node == null || node.IsOverview
                     ? "info.png"
@@ -709,6 +865,9 @@ namespace Ee4v.AssetManager.UI
         private void CancelReload()
         {
             _reloadVersion++;
+            _pendingAnalyses = new Queue<AssetFile>();
+            _requestedAnalysisIds =
+                new HashSet<string>(StringComparer.Ordinal);
             if (_reloadCancellation == null)
             {
                 return;
@@ -734,6 +893,23 @@ namespace Ee4v.AssetManager.UI
 
             internal string Version { get; }
             internal AssetFileAnalysis Analysis { get; }
+        }
+
+        private sealed class AnalysisLoadResult
+        {
+            internal AnalysisLoadResult(
+                AssetFile file,
+                AssetFileAnalysis analysis,
+                Exception error)
+            {
+                File = file;
+                Analysis = analysis;
+                Error = error;
+            }
+
+            internal AssetFile File { get; }
+            internal AssetFileAnalysis Analysis { get; }
+            internal Exception Error { get; }
         }
     }
 

@@ -37,6 +37,7 @@ namespace Ee4v.AssetManager.UI
                 CancellationToken cancellationToken,
                 string overviewTitle,
                 string overviewMeta,
+                string loadingTitle,
                 bool includeOverview,
                 IReadOnlyList<FileTreeGroup> groups = null)
         {
@@ -74,6 +75,7 @@ namespace Ee4v.AssetManager.UI
                             return CreateFileItem(
                                 file,
                                 analysis,
+                                loadingTitle,
                                 usedIds,
                                 cancellationToken);
                         })
@@ -102,6 +104,7 @@ namespace Ee4v.AssetManager.UI
                 items.Add(CreateFileItem(
                     file,
                     analysis,
+                    loadingTitle,
                     usedIds,
                     cancellationToken));
             }
@@ -124,6 +127,7 @@ namespace Ee4v.AssetManager.UI
         private static SearchableTreeItemData<FileTreeNode> CreateFileItem(
             AssetFile file,
             AssetFileAnalysis analysis,
+            string loadingTitle,
             ISet<int> usedIds,
             CancellationToken cancellationToken)
         {
@@ -132,13 +136,36 @@ namespace Ee4v.AssetManager.UI
                 GetMeta(file),
                 file,
                 null);
-            var children = analysis == null
-                ? Array.Empty<SearchableTreeItemData<FileTreeNode>>()
-                : BuildEntryItems(
+            IReadOnlyList<SearchableTreeItemData<FileTreeNode>> children;
+            if (analysis != null)
+            {
+                children = BuildEntryItems(
                     file,
                     analysis.Entries,
                     usedIds,
                     cancellationToken);
+            }
+            else if (CanAnalyze(file))
+            {
+                children = new[]
+                {
+                    CreateTreeItem(
+                        CreateKey(file.Id, "loading"),
+                        new FileTreeNode(
+                            loadingTitle,
+                            string.Empty,
+                            null,
+                            null,
+                            isLoading: true),
+                        Array.Empty<SearchableTreeItemData<FileTreeNode>>(),
+                        usedIds,
+                        cancellationToken)
+                };
+            }
+            else
+            {
+                children = Array.Empty<SearchableTreeItemData<FileTreeNode>>();
+            }
             return CreateTreeItem(
                 CreateKey(file.Id, null),
                 node,
@@ -182,13 +209,9 @@ namespace Ee4v.AssetManager.UI
             }
 
             var current = root;
-            var path = string.Empty;
             foreach (var segment in normalized.Split('/'))
             {
-                path = path.Length == 0
-                    ? segment
-                    : path + "/" + segment;
-                current = current.GetOrAdd(segment, path);
+                current = current.GetOrAdd(segment);
             }
             current.Entry = entry;
         }
@@ -355,11 +378,13 @@ namespace Ee4v.AssetManager.UI
                 Entry?.Kind == AssetFileContentEntryKind.File &&
                 _children.Count == 0;
 
-            internal PathNode GetOrAdd(string name, string path)
+            internal PathNode GetOrAdd(string name)
             {
                 if (!_children.TryGetValue(name, out var child))
                 {
-                    child = new PathNode(name, path);
+                    child = new PathNode(
+                        name,
+                        Path.Length == 0 ? name : Path + "/" + name);
                     _children.Add(name, child);
                 }
                 return child;
@@ -375,7 +400,8 @@ namespace Ee4v.AssetManager.UI
             AssetFile file,
             AssetFileContentEntry entry,
             bool isGroup = false,
-            bool startsNewSection = false)
+            bool startsNewSection = false,
+            bool isLoading = false)
         {
             Title = title ?? string.Empty;
             Meta = meta ?? string.Empty;
@@ -383,6 +409,7 @@ namespace Ee4v.AssetManager.UI
             Entry = entry;
             IsGroup = isGroup;
             StartsNewSection = startsNewSection;
+            IsLoading = isLoading;
         }
 
         internal string Title { get; }
@@ -390,7 +417,8 @@ namespace Ee4v.AssetManager.UI
         internal AssetFile File { get; }
         internal AssetFileContentEntry Entry { get; }
         internal bool IsGroup { get; }
-        internal bool IsOverview => File == null && !IsGroup;
+        internal bool IsLoading { get; }
+        internal bool IsOverview => File == null && !IsGroup && !IsLoading;
         internal bool StartsNewSection { get; }
         internal bool ShowsTargetToggle { get; set; }
         internal bool IsTarget { get; set; }

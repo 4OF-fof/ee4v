@@ -102,10 +102,12 @@ namespace Ee4v.UI
             _searchField.AddToClassList(SearchClassName);
             _searchField.ValueChanged += value =>
             {
+                var searchValue = value ?? string.Empty;
                 if (_onSearchValueChanged != null)
                 {
-                    _onSearchValueChanged(value ?? string.Empty);
+                    _onSearchValueChanged(searchValue);
                 }
+                OnSearchValueChanged(searchValue);
             };
             Add(_searchField);
 
@@ -143,9 +145,24 @@ namespace Ee4v.UI
 
         public void SetItems(IReadOnlyList<SearchableTreeItemData<TData>> items, bool preserveExpansion)
         {
+            SetItems(items, preserveExpansion, preserveSelection: false);
+        }
+
+        public void SetItems(
+            IReadOnlyList<SearchableTreeItemData<TData>> items,
+            bool preserveExpansion,
+            bool preserveSelection)
+        {
+            var selectedIds = preserveSelection
+                ? _selectedTreeItems.Select(item => item.Id).ToArray()
+                : Array.Empty<int>();
             _sourceItems = items ?? Array.Empty<SearchableTreeItemData<TData>>();
             _selectedTreeItems = Array.Empty<SearchableTreeItemData<TData>>();
             RefreshTree(preserveExpansion);
+            if (selectedIds.Length > 0)
+            {
+                _treeView.SetSelectionById(selectedIds);
+            }
         }
 
         public void SetEmptyText(string emptyText)
@@ -187,6 +204,15 @@ namespace Ee4v.UI
         {
             _onSelectionChanged = onSelectionChanged;
             _onContextClick = onContextClick;
+        }
+
+        protected virtual void OnSearchValueChanged(string value)
+        {
+        }
+
+        protected bool IsItemExpanded(int itemId)
+        {
+            return _treeView.IsExpanded(itemId);
         }
 
         private void BindItem(VisualElement element, int index)

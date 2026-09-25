@@ -50,6 +50,7 @@ namespace Ee4v.AssetManager.UI
                 showFooter: true,
                 closeTooltip: I18N.Get("action.cancel"));
             var form = new ScrollView(ScrollViewMode.Vertical);
+            form.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             form.AddToClassList(
                 "ee4v-asset-manager__collection-popup-form");
 

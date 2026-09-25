@@ -694,8 +694,20 @@
 
 .ee4v-asset-manager__collection-popup-form {
     flex-grow: 1;
+    min-width: 0;
     min-height: 0;
     padding: var(--ee4v-space-xl);
+}
+
+.ee4v-asset-manager__collection-popup-form .unity-scroll-view__content-container {
+    width: 100%;
+    min-width: 0;
+}
+
+.ee4v-asset-manager-filter-editor,
+.ee4v-asset-manager__collection-popup-group,
+.ee4v-asset-manager__collection-popup-condition {
+    min-width: 0;
 }
 
 .ee4v-asset-manager__collection-popup-conditions-title {
@@ -717,18 +729,33 @@
 
 .ee4v-asset-manager__collection-popup-group-header {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-asset-manager__collection-popup-group-header > .ee4v-ui-action-bar__leading,
+.ee4v-asset-manager__collection-popup-condition-controls > .ee4v-ui-action-bar__leading {
+    flex-direction: column;
+    align-items: stretch;
 }
 
 .ee4v-asset-manager__collection-popup-group-mode {
     flex-grow: 1;
+    flex-shrink: 1;
+    width: auto;
+    min-width: 0;
     margin-bottom: var(--ee4v-space-none);
+}
+
+.ee4v-asset-manager__collection-popup-group-mode > .ee4v-ui-form-input__input,
+.ee4v-asset-manager__collection-popup-condition-type > .ee4v-ui-form-input__input {
+    width: auto;
 }
 
 .ee4v-asset-manager__collection-popup-group-inverted {
     flex-shrink: 0;
-    margin-left: var(--ee4v-space-lg);
+    align-self: flex-start;
+    margin-left: var(--ee4v-space-none);
     margin-right: var(--ee4v-space-sm);
 }
 
@@ -742,8 +769,9 @@
 }
 
 .ee4v-asset-manager__collection-popup-group-children {
-    margin-left: var(--ee4v-space-md);
-    padding-left: var(--ee4v-space-md);
+    min-width: 0;
+    margin-left: var(--ee4v-space-sm);
+    padding-left: var(--ee4v-space-sm);
     border-left-width: var(--ee4v-border-hairline);
     border-left-color: var(--ee4v-color-border-default);
 }
@@ -768,18 +796,22 @@
 
 .ee4v-asset-manager__collection-popup-condition-controls {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: var(--ee4v-space-sm);
 }
 
 .ee4v-asset-manager__collection-popup-condition-type {
     flex-grow: 1;
+    flex-shrink: 1;
+    width: auto;
+    min-width: 0;
     margin-bottom: var(--ee4v-space-none);
 }
 
 .ee4v-asset-manager__collection-popup-condition-inverted {
     flex-shrink: 0;
-    margin-left: var(--ee4v-space-lg);
+    align-self: flex-start;
+    margin-left: var(--ee4v-space-none);
     margin-right: var(--ee4v-space-sm);
 }
 

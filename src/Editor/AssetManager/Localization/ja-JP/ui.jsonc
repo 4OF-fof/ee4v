@@ -203,6 +203,7 @@
     "empty": "このItemに所属するFileはありません。",
     "searchPlaceholder": "File Treeを検索",
     "searchTooltip": "File Treeを検索",
+    "loading": "解析中…",
     "analysisFailed": "内容を解析できないFileがあります: {0}",
     "analysisUnavailable": "File Treeを読み込めませんでした。Consoleを確認してください。"
   },

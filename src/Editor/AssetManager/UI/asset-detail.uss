@@ -171,6 +171,11 @@
     align-items: flex-start;
 }
 
+.ee4v-asset-manager__derived-assets-grid > .ee4v-asset-grid-card {
+    margin-right: var(--ee4v-space-2xl);
+    margin-bottom: var(--ee4v-space-2xl);
+}
+
 .ee4v-asset-manager__derived-assets-add-card {
     flex-shrink: 0;
 }

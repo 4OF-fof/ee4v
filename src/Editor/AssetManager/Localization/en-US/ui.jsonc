@@ -203,6 +203,7 @@
     "empty": "There are no files assigned to this item.",
     "searchPlaceholder": "Search file tree",
     "searchTooltip": "Search file tree",
+    "loading": "Analyzing…",
     "analysisFailed": "Some files could not be analyzed: {0}",
     "analysisUnavailable": "The file tree could not be loaded. Check the Console."
   },

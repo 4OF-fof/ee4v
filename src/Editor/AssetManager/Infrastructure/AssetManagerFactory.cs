@@ -23,7 +23,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 new EagleAssetSource(),
                 new Ee4vAssetSource(),
                 new AssetTargetImporter(),
-                new AssetFileAnalyzer(),
+                new AssetFileAnalyzer(databasePath),
                 new AssetThumbnailProvider(databasePath));
         }
     }
