@@ -83,6 +83,8 @@
       "bodyShapeEmpty": "見た目用に調整できるBlendShapeはありません。",
       "bodyShapePartEmpty": "この部位に調整できるBlendShapeはありません。",
       "bodyShapeSliderTooltip": "{0}のBlendShape値を0%から100%の範囲で調整",
+      "bodyShapeExpand": "{0}の個別設定を表示",
+      "bodyShapeCollapse": "{0}の個別設定を非表示",
       "bodyShapePart": {
         "head": "頭・首",
         "chest": "胸",

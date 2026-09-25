@@ -83,6 +83,8 @@
       "bodyShapeEmpty": "No adjustable appearance BlendShapes were found.",
       "bodyShapePartEmpty": "No adjustable BlendShapes were found for this part.",
       "bodyShapeSliderTooltip": "Adjust the {0} BlendShape from 0% to 100%",
+      "bodyShapeExpand": "Show individual settings for {0}",
+      "bodyShapeCollapse": "Hide individual settings for {0}",
       "bodyShapePart": {
         "head": "Head & neck",
         "chest": "Chest",

@@ -687,6 +687,10 @@
     padding-left: var(--ee4v-space-3xl);
 }
 
+.ee4v-modification-workflow__size-control--blendshape-child {
+    padding-left: 52px;
+}
+
 .ee4v-modification-workflow__size-axis-toggle.ee4v-ui-button {
     width: var(--ee4v-size-20);
     min-width: var(--ee4v-size-20);

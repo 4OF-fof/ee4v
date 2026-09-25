@@ -6,6 +6,7 @@ using Ee4v.Core.I18n;
 using Ee4v.FaceExpression;
 using Ee4v.PhysBoneCollider;
 using Ee4v.UI;
+using nadena.dev.modular_avatar.core;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -142,7 +143,6 @@ namespace Ee4v.AssetManager.UI
             internal string RendererName { get; set; }
             internal string ShapeName { get; set; }
             internal string DisplayName { get; set; }
-            internal int DuplicateIndex { get; set; }
             internal BodyPartCategory Category { get; set; }
             internal string Group { get; set; }
             internal float Value { get; set; }
@@ -861,9 +861,14 @@ namespace Ee4v.AssetManager.UI
         private string _pendingBodyBlendShapeRendererPath;
         private string _pendingBodyBlendShapeName;
         private float _pendingBodyBlendShapeWeight;
+        private IReadOnlyList<BodyBlendShapeDefinition>
+            _pendingBodyBlendShapeGroup;
+        private BodyBlendShapeDefinition _pendingIndividualBlendShape;
         private bool _bodyScaleDirty;
         private bool _advancedBodyScaleExpanded;
         private readonly HashSet<string> _expandedBodyScaleAxes =
+            new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _expandedBodyBlendShapeGroups =
             new HashSet<string>(StringComparer.Ordinal);
         private readonly Dictionary<string, Vector3> _bodyScaleBaseScales =
             new Dictionary<string, Vector3>(StringComparer.Ordinal);
@@ -2768,7 +2773,9 @@ namespace Ee4v.AssetManager.UI
                 content.Add(primaryScaleList);
             }
 
-            var bodyShapes = GetBodyBlendShapes()
+            var allBodyShapes = GetBodyBlendShapes();
+            EnsureBodyBlendShapeSyncBindings(allBodyShapes);
+            var bodyShapes = allBodyShapes
                 .Where(definition =>
                     MatchesSelectedBodyPart(definition.Category))
                 .ToArray();
@@ -2812,19 +2819,23 @@ namespace Ee4v.AssetManager.UI
                             "ee4v-modification-workflow__size-group-title");
                         bodyShapeList.Add(categoryLabel);
                     }
-                    var roleGroups = categoryShapes
-                        .Select((shape, index) => new
+                    var shapeGroups = categoryShapes
+                        .GroupBy(shape => shape.ShapeName,
+                            StringComparer.Ordinal)
+                        .ToArray();
+                    var roleGroups = shapeGroups
+                        .Select((shapes, index) => new
                         {
-                            Shape = shape,
-                            Key = string.IsNullOrWhiteSpace(shape.Group)
+                            Shapes = shapes.ToArray(),
+                            Key = string.IsNullOrWhiteSpace(shapes.First().Group)
                                 ? "\0" + index
-                                : shape.Group
+                                : shapes.First().Group
                         })
                         .GroupBy(item => item.Key, StringComparer.Ordinal);
                     foreach (var roleGroup in roleGroups)
                     {
                         var groupedShapes = roleGroup
-                            .Select(item => item.Shape)
+                            .SelectMany(item => item.Shapes)
                             .ToArray();
                         var hasRoleTitle = !string.IsNullOrWhiteSpace(
                                                groupedShapes[0].Group) &&
@@ -2840,10 +2851,18 @@ namespace Ee4v.AssetManager.UI
                                 UiClassNames.SecondaryText,
                                 "ee4v-modification-workflow__size-role-title"));
                         }
-                        foreach (var bodyShape in groupedShapes)
+                        foreach (var shapeGroup in roleGroup)
                         {
-                            var control = BuildBodyBlendShapeControl(
-                                bodyShape);
+                            var control = shapeGroup.Shapes.Length == 1
+                                ? BuildBodyBlendShapeControl(
+                                    shapeGroup.Shapes[0],
+                                    weight => ApplyBodyBlendShape(
+                                        shapeGroup.Shapes[0].RendererPath,
+                                        shapeGroup.Shapes[0].ShapeName,
+                                        weight),
+                                    out _)
+                                : BuildGroupedBodyBlendShapeControl(
+                                    shapeGroup.Shapes);
                             if (hasRoleTitle)
                             {
                                 control.AddToClassList(
@@ -3268,20 +3287,125 @@ namespace Ee4v.AssetManager.UI
             return row;
         }
 
-        private VisualElement BuildBodyBlendShapeControl(
-            BodyBlendShapeDefinition definition)
+        private VisualElement BuildGroupedBodyBlendShapeControl(
+            IReadOnlyList<BodyBlendShapeDefinition> definitions)
         {
-            var label = definition.DuplicateIndex > 0
-                ? $"[{definition.DuplicateIndex}] {definition.DisplayName}"
-                : definition.DisplayName;
-            var tooltip = definition.DuplicateIndex > 0
+            var group = new VisualElement();
+            group.AddToClassList(
+                "ee4v-modification-workflow__size-scale-group");
+            var first = definitions[0];
+            var key = first.Category + "|" + first.ShapeName;
+            var children = new VisualElement();
+            children.AddToClassList(
+                "ee4v-modification-workflow__size-axis-rows");
+            UiButton toggle = null;
+            void UpdateFoldout()
+            {
+                var expanded = _expandedBodyBlendShapeGroups.Contains(key);
+                toggle.SetIcon(AssetManagerControls.LoadFluentIconState(
+                    expanded ? "chevron_down.png" : "chevron_right.png",
+                    UiSizeTokens.Size12));
+                toggle.tooltip = I18N.Get(expanded
+                    ? "workflow.appearance.bodyShapeCollapse"
+                    : "workflow.appearance.bodyShapeExpand", first.DisplayName);
+                children.EnableInClassList(
+                    "ee4v-modification-workflow__hidden", !expanded);
+            }
+            void ToggleChildren()
+            {
+                if (!_expandedBodyBlendShapeGroups.Add(key))
+                {
+                    _expandedBodyBlendShapeGroups.Remove(key);
+                }
+                UpdateFoldout();
+            }
+            toggle = AssetManagerControls.CreateIconButton(
+                string.Empty,
+                "chevron_right.png",
+                UiSizeTokens.Size12,
+                UiButtonVariant.Ghost,
+                ToggleChildren,
+                "ee4v-modification-workflow__size-axis-toggle");
+
+            var source = ResolveBodyBlendShapeGroupSource(definitions);
+            var sourceValue = source == null
+                ? first.Value
+                : GetEffectiveBodyBlendShapeWeight(
+                    source, first.ShapeName);
+            var sourceDefinition = definitions.FirstOrDefault(definition =>
+                IsBodyBlendShapeGroupSource(definition, source));
+            var parentDefinition = new BodyBlendShapeDefinition
+            {
+                DisplayName = first.DisplayName,
+                Value = sourceValue,
+                BaseValue = sourceDefinition?.BaseValue ?? first.BaseValue
+            };
+            var childRenderers = new List<Action<float>>();
+            var parent = BuildBodyBlendShapeControl(
+                parentDefinition,
+                weight =>
+                {
+                    ApplyBodyBlendShapeGroup(definitions, weight);
+                    foreach (var render in childRenderers)
+                    {
+                        render(weight);
+                    }
+                },
+                out var renderParent,
+                leading: toggle,
+                labelClicked: ToggleChildren);
+            group.Add(parent);
+            foreach (var definition in definitions
+                         .OrderBy(definition =>
+                             IsBodyBlendShapeGroupSource(
+                                 definition, source) ? 0 : 1))
+            {
+                var child = BuildBodyBlendShapeControl(
+                    definition,
+                    weight =>
+                    {
+                        ApplyIndividualBodyBlendShape(
+                            definitions, definition, weight);
+                        if (IsBodyBlendShapeGroupSource(
+                                definition, source))
+                        {
+                            renderParent(weight);
+                        }
+                    },
+                    out var renderChild,
+                    isChild: true,
+                    showRenderer: true);
+                child.AddToClassList(
+                    "ee4v-modification-workflow__size-control--blendshape-child");
+                children.Add(child);
+                childRenderers.Add(renderChild);
+            }
+            group.Add(children);
+            UpdateFoldout();
+            return group;
+        }
+
+        private VisualElement BuildBodyBlendShapeControl(
+            BodyBlendShapeDefinition definition,
+            Action<float> changed,
+            out Action<float> render,
+            bool isChild = false,
+            VisualElement leading = null,
+            Action labelClicked = null,
+            bool showRenderer = false)
+        {
+            var label = definition.DisplayName;
+            var tooltip = showRenderer
                 ? $"{definition.RendererDisplayPath}\n{definition.ShapeName}"
                 : label;
             var row = CreateSizeControlRow(
                 label,
                 out var controls,
+                isChild: isChild,
+                leading: leading,
+                labelClicked: labelClicked,
                 tooltip: tooltip,
-                detail: definition.DuplicateIndex > 0
+                detail: showRenderer
                     ? definition.RendererName
                     : null);
             var slider = new Slider(
@@ -3291,7 +3415,7 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-modification-workflow__size-slider");
             slider.tooltip = I18N.Get(
                 "workflow.appearance.bodyShapeSliderTooltip",
-                label) + (definition.DuplicateIndex > 0
+                label) + (showRenderer
                     ? $"\n{definition.RendererDisplayPath}\n{definition.ShapeName}"
                     : string.Empty);
             controls.Add(slider);
@@ -3308,7 +3432,7 @@ namespace Ee4v.AssetManager.UI
                 Mathf.Round(definition.Value),
                 MinimumBodyBlendShapeWeight,
                 MaximumBodyBlendShapeWeight);
-            void SetWeight(float weight, bool apply)
+            void RenderWeight(float weight)
             {
                 var normalized = Mathf.Clamp(
                     Mathf.Round(weight),
@@ -3321,14 +3445,18 @@ namespace Ee4v.AssetManager.UI
                 reset.SetEnabled(!Mathf.Approximately(
                     normalized,
                     definition.BaseValue));
-                if (apply &&
-                    !Mathf.Approximately(normalized, appliedWeight))
+                appliedWeight = normalized;
+            }
+            void SetWeight(float weight)
+            {
+                var normalized = Mathf.Clamp(
+                    Mathf.Round(weight),
+                    MinimumBodyBlendShapeWeight,
+                    MaximumBodyBlendShapeWeight);
+                if (!Mathf.Approximately(normalized, appliedWeight))
                 {
-                    appliedWeight = normalized;
-                    ApplyBodyBlendShape(
-                        definition.RendererPath,
-                        definition.ShapeName,
-                        normalized);
+                    RenderWeight(normalized);
+                    changed?.Invoke(normalized);
                 }
             }
 
@@ -3337,7 +3465,7 @@ namespace Ee4v.AssetManager.UI
             {
                 if (!rendering)
                 {
-                    SetWeight(evt.newValue, true);
+                    SetWeight(evt.newValue);
                 }
             });
             value.RegisterValueChangedCallback(evt =>
@@ -3346,10 +3474,11 @@ namespace Ee4v.AssetManager.UI
                     !float.IsNaN(evt.newValue) &&
                     !float.IsInfinity(evt.newValue))
                 {
-                    SetWeight(evt.newValue, true);
+                    SetWeight(evt.newValue);
                 }
             });
-            SetWeight(definition.Value, false);
+            render = RenderWeight;
+            RenderWeight(definition.Value);
             return row;
         }
 
@@ -3539,28 +3668,256 @@ namespace Ee4v.AssetManager.UI
                             mapping?.appearanceGroup)
                             ? mapping?.role?.Trim() ?? string.Empty
                             : mapping.appearanceGroup.Trim(),
-                        Value = Mathf.Clamp(
-                            renderer.GetBlendShapeWeight(shapeIndex),
-                            MinimumBodyBlendShapeWeight,
-                            MaximumBodyBlendShapeWeight),
+                        Value = GetEffectiveBodyBlendShapeWeight(
+                            renderer, shapeName),
                         BaseValue = GetBaseBlendShapeWeight(
                             renderer,
                             shapeName)
                     });
                 }
             }
-            foreach (var duplicates in result
-                         .GroupBy(shape => shape.DisplayName,
-                             StringComparer.Ordinal)
-                         .Where(group => group.Count() > 1))
+            AddSyncedBodyBlendShapes(result);
+            return result;
+        }
+
+        private void AddSyncedBodyBlendShapes(
+            List<BodyBlendShapeDefinition> definitions)
+        {
+            var synced = definitions
+                .Where(definition => ResolveBodyBlendShapeSource(
+                    GetBodyBlendShapeRenderer(definition),
+                    definition.ShapeName) != null)
+                .GroupBy(definition => definition.ShapeName,
+                    StringComparer.Ordinal)
+                .ToArray();
+            foreach (var group in synced)
             {
-                var index = 1;
-                foreach (var shape in duplicates)
+                var representative = group.First();
+                foreach (var renderer in _workingObject
+                             .GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 {
-                    shape.DuplicateIndex = index++;
+                    if (renderer?.sharedMesh == null ||
+                        renderer.sharedMesh.GetBlendShapeIndex(group.Key) < 0)
+                    {
+                        continue;
+                    }
+                    var path = AnimationUtility.CalculateTransformPath(
+                        renderer.transform, _workingObject.transform);
+                    if (definitions.Any(definition =>
+                            definition.RendererPath == path &&
+                            definition.ShapeName == group.Key))
+                    {
+                        continue;
+                    }
+                    definitions.Add(new BodyBlendShapeDefinition
+                    {
+                        RendererPath = path,
+                        RendererDisplayPath = path,
+                        RendererName = renderer.name,
+                        ShapeName = group.Key,
+                        DisplayName = representative.DisplayName,
+                        Category = representative.Category,
+                        Group = representative.Group,
+                        Value = GetEffectiveBodyBlendShapeWeight(
+                            renderer, group.Key),
+                        BaseValue = GetBaseBlendShapeWeight(renderer, group.Key)
+                    });
+                }
+                var source = ResolveBodyBlendShapeGroupSource(group.ToArray());
+                var sourceDefinition = definitions.FirstOrDefault(definition =>
+                    definition.ShapeName == group.Key &&
+                    GetBodyBlendShapeRenderer(definition) == source);
+                var category = sourceDefinition == null
+                    ? representative.Category
+                    : sourceDefinition.Category;
+                foreach (var definition in definitions.Where(definition =>
+                             definition.ShapeName == group.Key))
+                {
+                    definition.Category = category;
+                    definition.Group = representative.Group;
                 }
             }
-            return result;
+        }
+
+        private SkinnedMeshRenderer GetBodyBlendShapeRenderer(
+            BodyBlendShapeDefinition definition)
+        {
+            if (_workingObject == null || definition == null)
+            {
+                return null;
+            }
+            var target = string.IsNullOrEmpty(definition.RendererPath)
+                ? _workingObject.transform
+                : _workingObject.transform.Find(definition.RendererPath);
+            return target == null
+                ? null
+                : target.GetComponent<SkinnedMeshRenderer>();
+        }
+
+        private SkinnedMeshRenderer ResolveBodyBlendShapeGroupSource(
+            IReadOnlyList<BodyBlendShapeDefinition> definitions)
+        {
+            foreach (var definition in definitions)
+            {
+                var source = ResolveBodyBlendShapeSource(
+                    GetBodyBlendShapeRenderer(definition),
+                    definition.ShapeName);
+                if (source != null)
+                {
+                    return source;
+                }
+            }
+            return definitions.Count == 0
+                ? null
+                : GetBodyBlendShapeRenderer(definitions[0]);
+        }
+
+        private bool IsBodyBlendShapeGroupSource(
+            BodyBlendShapeDefinition definition,
+            SkinnedMeshRenderer source)
+        {
+            return source != null &&
+                   GetBodyBlendShapeRenderer(definition) == source;
+        }
+
+        private SkinnedMeshRenderer ResolveBodyBlendShapeSource(
+            SkinnedMeshRenderer target,
+            string localShapeName)
+        {
+            if (target == null || _workingObject == null)
+            {
+                return null;
+            }
+            var sync = target.GetComponent<ModularAvatarBlendshapeSync>();
+            if (sync?.Bindings == null)
+            {
+                return null;
+            }
+            foreach (var binding in sync.Bindings)
+            {
+                var localName = string.IsNullOrWhiteSpace(
+                    binding.LocalBlendshape)
+                    ? binding.Blendshape
+                    : binding.LocalBlendshape;
+                if (localName != localShapeName ||
+                    binding.ReferenceMesh == null)
+                {
+                    continue;
+                }
+                var path = binding.ReferenceMesh.referencePath;
+                GameObject sourceObject = null;
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var sourceTransform = path ==
+                        AvatarObjectReference.AVATAR_ROOT
+                        ? _workingObject.transform
+                        : _workingObject.transform.Find(path);
+                    sourceObject = sourceTransform == null
+                        ? null
+                        : sourceTransform.gameObject;
+                }
+                if (sourceObject == null)
+                {
+                    sourceObject = binding.ReferenceMesh.Get(sync);
+                }
+                var source = sourceObject == null
+                    ? null
+                    : sourceObject.GetComponent<SkinnedMeshRenderer>();
+                if (source?.sharedMesh != null &&
+                    source.sharedMesh.GetBlendShapeIndex(
+                        binding.Blendshape) >= 0)
+                {
+                    return source;
+                }
+            }
+            return null;
+        }
+
+        private static bool HasBodyBlendShapeSyncBinding(
+            SkinnedMeshRenderer target,
+            string shapeName)
+        {
+            var sync = target == null
+                ? null
+                : target.GetComponent<ModularAvatarBlendshapeSync>();
+            return sync?.Bindings != null && sync.Bindings.Any(binding =>
+                (string.IsNullOrWhiteSpace(binding.LocalBlendshape)
+                    ? binding.Blendshape
+                    : binding.LocalBlendshape) == shapeName);
+        }
+
+        private float GetEffectiveBodyBlendShapeWeight(
+            SkinnedMeshRenderer renderer,
+            string shapeName)
+        {
+            var index = renderer?.sharedMesh == null
+                ? -1
+                : renderer.sharedMesh.GetBlendShapeIndex(shapeName);
+            if (index < 0)
+            {
+                return 0f;
+            }
+            var sync = renderer.GetComponent<ModularAvatarBlendshapeSync>();
+            if (sync?.Bindings != null)
+            {
+                foreach (var binding in sync.Bindings)
+                {
+                    var localName = string.IsNullOrWhiteSpace(
+                        binding.LocalBlendshape)
+                        ? binding.Blendshape
+                        : binding.LocalBlendshape;
+                    if (localName != shapeName)
+                    {
+                        continue;
+                    }
+                    var source = ResolveBodyBlendShapeSource(
+                        renderer, shapeName);
+                    var sourceIndex = source?.sharedMesh == null
+                        ? -1
+                        : source.sharedMesh.GetBlendShapeIndex(
+                            binding.Blendshape);
+                    if (sourceIndex >= 0)
+                    {
+                        var weight = source.GetBlendShapeWeight(sourceIndex);
+                        return Mathf.Clamp(
+                            binding.RemapCurveIsValid
+                                ? EvaluateBodyBlendShapeRemap(
+                                    binding.RemapCurve, weight)
+                                : weight,
+                            MinimumBodyBlendShapeWeight,
+                            MaximumBodyBlendShapeWeight);
+                    }
+                }
+            }
+            return Mathf.Clamp(renderer.GetBlendShapeWeight(index),
+                MinimumBodyBlendShapeWeight,
+                MaximumBodyBlendShapeWeight);
+        }
+
+        private static float EvaluateBodyBlendShapeRemap(
+            AnimationCurve curve,
+            float weight)
+        {
+            if (curve == null || curve.length < 2)
+            {
+                return weight;
+            }
+            var keys = curve.keys;
+            for (var index = 1; index < keys.Length; index++)
+            {
+                if (weight > keys[index].time && index < keys.Length - 1)
+                {
+                    continue;
+                }
+                var previous = keys[index - 1];
+                var next = keys[index];
+                var duration = next.time - previous.time;
+                return Mathf.Approximately(duration, 0f)
+                    ? next.value
+                    : Mathf.LerpUnclamped(previous.value, next.value,
+                        (weight - previous.time) / duration);
+            }
+            return keys[keys.Length - 1].value;
         }
 
         private static bool TryGetPresetBodyPart(
@@ -4186,6 +4543,340 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
+        private void ApplyBodyBlendShapeGroup(
+            IReadOnlyList<BodyBlendShapeDefinition> definitions,
+            float weight,
+            bool rebuildOnFailure = true)
+        {
+            if (definitions == null || definitions.Count == 0 ||
+                _workingObject == null)
+            {
+                return;
+            }
+            if (_bodyScaleDragging)
+            {
+                PreviewBodyBlendShapeGroup(definitions, weight);
+                _pendingBodySizeChange = PendingBodySizeChange.BlendShape;
+                _pendingBodyBlendShapeGroup = definitions;
+                _pendingIndividualBlendShape = null;
+                _pendingBodyBlendShapeWeight = weight;
+                return;
+            }
+            if (!IsEditableWorkflowPrefab())
+            {
+                return;
+            }
+
+            try
+            {
+                var source = ResolveBodyBlendShapeGroupSource(definitions);
+                var shapeName = definitions[0].ShapeName;
+                var undoGroup = Undo.GetCurrentGroup();
+                Undo.SetCurrentGroupName(
+                    I18N.Get("workflow.appearance.sizeUndo"));
+                var targets = new HashSet<SkinnedMeshRenderer>();
+                foreach (var definition in definitions)
+                {
+                    var target = GetBodyBlendShapeRenderer(definition);
+                    if (target?.sharedMesh == null)
+                    {
+                        continue;
+                    }
+                    var existingSource = ResolveBodyBlendShapeSource(
+                        target, definition.ShapeName);
+                    var bindingSource = existingSource ?? source;
+                    if (bindingSource != null && target != bindingSource)
+                    {
+                        SetBodyBlendShapeSyncBinding(
+                            target,
+                            bindingSource,
+                            definition.ShapeName,
+                            null);
+                        targets.Add(bindingSource);
+                    }
+                    targets.Add(target);
+                }
+                foreach (var target in targets)
+                {
+                    SetBodyBlendShapeRendererWeight(
+                        target, shapeName, weight);
+                }
+                Undo.CollapseUndoOperations(undoGroup);
+                _bodyScaleDirty = true;
+                PreviewBodyBlendShapeGroup(definitions, weight);
+                SaveBodyScalePrefab(rebuildOnFailure);
+            }
+            catch (Exception exception)
+            {
+                ReportBodyScaleFailure(exception, rebuildOnFailure);
+            }
+        }
+
+        private void EnsureBodyBlendShapeSyncBindings(
+            IReadOnlyList<BodyBlendShapeDefinition> definitions)
+        {
+            if (!IsEditableWorkflowPrefab())
+            {
+                return;
+            }
+            var changed = false;
+            try
+            {
+                var undoGroup = -1;
+                foreach (var group in definitions
+                             .GroupBy(definition => new
+                             {
+                                 definition.Category,
+                                 definition.ShapeName
+                             })
+                             .Where(group => group.Count() > 1))
+                {
+                    var members = group.ToArray();
+                    var source = ResolveBodyBlendShapeGroupSource(members);
+                    var sourceIndex = source?.sharedMesh == null
+                        ? -1
+                        : source.sharedMesh.GetBlendShapeIndex(
+                            group.Key.ShapeName);
+                    if (sourceIndex < 0)
+                    {
+                        continue;
+                    }
+                    var sourceWeight = source.GetBlendShapeWeight(sourceIndex);
+                    foreach (var definition in members)
+                    {
+                        var target = GetBodyBlendShapeRenderer(definition);
+                        if (target == null || target == source ||
+                            HasBodyBlendShapeSyncBinding(
+                                target, definition.ShapeName))
+                        {
+                            continue;
+                        }
+                        if (!changed)
+                        {
+                            Undo.IncrementCurrentGroup();
+                            undoGroup = Undo.GetCurrentGroup();
+                            Undo.SetCurrentGroupName(
+                                I18N.Get("workflow.appearance.sizeUndo"));
+                        }
+                        SetBodyBlendShapeSyncBinding(
+                            target, source, definition.ShapeName, null);
+                        SetBodyBlendShapeRendererWeight(
+                            target, definition.ShapeName, sourceWeight);
+                        definition.Value = sourceWeight;
+                        changed = true;
+                    }
+                }
+                if (changed)
+                {
+                    Undo.CollapseUndoOperations(undoGroup);
+                    _bodyScaleDirty = true;
+                    SaveBodyScalePrefab(false);
+                }
+            }
+            catch (Exception exception)
+            {
+                ReportBodyScaleFailure(exception, false);
+            }
+        }
+
+        private void ApplyIndividualBodyBlendShape(
+            IReadOnlyList<BodyBlendShapeDefinition> group,
+            BodyBlendShapeDefinition definition,
+            float weight,
+            bool rebuildOnFailure = true)
+        {
+            if (_workingObject == null || definition == null)
+            {
+                return;
+            }
+            if (_bodyScaleDragging)
+            {
+                _scenePreview?.SetBlendShapeWeight(
+                    definition.RendererPath,
+                    definition.ShapeName,
+                    weight,
+                    recalculateBounds: false);
+                Repaint();
+                _pendingBodySizeChange = PendingBodySizeChange.BlendShape;
+                _pendingBodyBlendShapeGroup = group;
+                _pendingIndividualBlendShape = definition;
+                _pendingBodyBlendShapeWeight = weight;
+                return;
+            }
+            if (!IsEditableWorkflowPrefab())
+            {
+                return;
+            }
+
+            try
+            {
+                var target = GetBodyBlendShapeRenderer(definition);
+                if (target?.sharedMesh == null)
+                {
+                    return;
+                }
+                var source = ResolveBodyBlendShapeSource(
+                    target, definition.ShapeName) ??
+                    ResolveBodyBlendShapeGroupSource(group);
+                var editsSource = source == target;
+                if (source != null && source != target)
+                {
+                    var sourceIndex = source.sharedMesh.GetBlendShapeIndex(
+                        definition.ShapeName);
+                    if (sourceIndex >= 0)
+                    {
+                        SetBodyBlendShapeSyncBinding(
+                            target,
+                            source,
+                            definition.ShapeName,
+                            BuildIndividualBodyBlendShapeRemap(
+                                source.GetBlendShapeWeight(sourceIndex),
+                                weight));
+                    }
+                }
+                SetBodyBlendShapeRendererWeight(
+                    target, definition.ShapeName, weight);
+                _bodyScaleDirty = true;
+                _scenePreview?.SetBlendShapeWeight(
+                    definition.RendererPath,
+                    definition.ShapeName,
+                    weight,
+                    recalculateBounds: false);
+                SaveBodyScalePrefab(rebuildOnFailure);
+                if (editsSource && rootVisualElement.panel != null)
+                {
+                    rootVisualElement.schedule.Execute(() =>
+                        ShowCategory(WorkflowCategory.ShapeParts, false));
+                }
+            }
+            catch (Exception exception)
+            {
+                ReportBodyScaleFailure(exception, rebuildOnFailure);
+            }
+        }
+
+        private void PreviewBodyBlendShapeGroup(
+            IReadOnlyList<BodyBlendShapeDefinition> definitions,
+            float weight)
+        {
+            var paths = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var definition in definitions)
+            {
+                paths.Add(definition.RendererPath);
+            }
+            var source = ResolveBodyBlendShapeGroupSource(definitions);
+            if (source != null)
+            {
+                paths.Add(AnimationUtility.CalculateTransformPath(
+                    source.transform, _workingObject.transform));
+            }
+            foreach (var path in paths)
+            {
+                _scenePreview?.SetBlendShapeWeight(
+                    path,
+                    definitions[0].ShapeName,
+                    weight,
+                    recalculateBounds: false);
+            }
+            Repaint();
+        }
+
+        private void SetBodyBlendShapeRendererWeight(
+            SkinnedMeshRenderer renderer,
+            string shapeName,
+            float weight)
+        {
+            var index = renderer?.sharedMesh == null
+                ? -1
+                : renderer.sharedMesh.GetBlendShapeIndex(shapeName);
+            if (index < 0 || Mathf.Approximately(
+                    renderer.GetBlendShapeWeight(index), weight))
+            {
+                return;
+            }
+            Undo.RecordObject(renderer,
+                I18N.Get("workflow.appearance.sizeUndo"));
+            renderer.SetBlendShapeWeight(index, weight);
+            if (PrefabUtility.IsPartOfPrefabInstance(renderer))
+            {
+                PrefabUtility.RecordPrefabInstancePropertyModifications(
+                    renderer);
+            }
+            EditorUtility.SetDirty(renderer);
+        }
+
+        private void SetBodyBlendShapeSyncBinding(
+            SkinnedMeshRenderer target,
+            SkinnedMeshRenderer source,
+            string shapeName,
+            AnimationCurve remap)
+        {
+            var sync = target.GetComponent<ModularAvatarBlendshapeSync>();
+            if (sync == null)
+            {
+                sync = Undo.AddComponent<ModularAvatarBlendshapeSync>(
+                    target.gameObject);
+            }
+            Undo.RecordObject(sync,
+                I18N.Get("workflow.appearance.sizeUndo"));
+            if (sync.Bindings == null)
+            {
+                sync.Bindings = new List<BlendshapeBinding>();
+            }
+            var index = sync.Bindings.FindIndex(binding =>
+                (string.IsNullOrWhiteSpace(binding.LocalBlendshape)
+                    ? binding.Blendshape
+                    : binding.LocalBlendshape) == shapeName);
+            var bindingValue = index >= 0
+                ? sync.Bindings[index]
+                : new BlendshapeBinding
+                {
+                    ReferenceMesh = new AvatarObjectReference
+                    {
+                        referencePath = AnimationUtility.CalculateTransformPath(
+                            source.transform, _workingObject.transform)
+                    },
+                    Blendshape = shapeName,
+                    LocalBlendshape = string.Empty
+                };
+            bindingValue.RemapCurveIsValid = true;
+            bindingValue.RemapCurve = remap ??
+                AnimationCurve.Linear(0f, 0f, 100f, 100f);
+            if (index >= 0)
+            {
+                sync.Bindings[index] = bindingValue;
+            }
+            else
+            {
+                sync.Bindings.Add(bindingValue);
+            }
+            if (PrefabUtility.IsPartOfPrefabInstance(sync))
+            {
+                PrefabUtility.RecordPrefabInstancePropertyModifications(sync);
+            }
+            EditorUtility.SetDirty(sync);
+        }
+
+        private static AnimationCurve BuildIndividualBodyBlendShapeRemap(
+            float sourceWeight,
+            float targetWeight)
+        {
+            var source = Mathf.Clamp(sourceWeight, 0f, 100f);
+            var target = Mathf.Clamp(targetWeight, 0f, 100f);
+            if (source <= 0f)
+            {
+                return AnimationCurve.Linear(0f, target, 100f, 100f);
+            }
+            if (source >= 100f)
+            {
+                return AnimationCurve.Linear(0f, 0f, 100f, target);
+            }
+            return new AnimationCurve(
+                new Keyframe(0f, 0f),
+                new Keyframe(source, target),
+                new Keyframe(100f, 100f));
+        }
+
         private void RegisterBodySizeSliderDrag(Slider slider)
         {
             var dragContainer = slider.Q<VisualElement>(
@@ -4230,6 +4921,8 @@ namespace Ee4v.AssetManager.UI
             var rendererPath = _pendingBodyBlendShapeRendererPath;
             var shapeName = _pendingBodyBlendShapeName;
             var weight = _pendingBodyBlendShapeWeight;
+            var blendShapeGroup = _pendingBodyBlendShapeGroup;
+            var individualBlendShape = _pendingIndividualBlendShape;
             ClearPendingBodySizeChange();
             _bodyScaleDragging = false;
             if (pendingChange == PendingBodySizeChange.Scale)
@@ -4242,11 +4935,29 @@ namespace Ee4v.AssetManager.UI
             }
             else if (pendingChange == PendingBodySizeChange.BlendShape)
             {
-                ApplyBodyBlendShape(
-                    rendererPath,
-                    shapeName,
-                    weight,
-                    rebuildOnFailure);
+                if (individualBlendShape != null)
+                {
+                    ApplyIndividualBodyBlendShape(
+                        blendShapeGroup,
+                        individualBlendShape,
+                        weight,
+                        rebuildOnFailure);
+                }
+                else if (blendShapeGroup != null)
+                {
+                    ApplyBodyBlendShapeGroup(
+                        blendShapeGroup,
+                        weight,
+                        rebuildOnFailure);
+                }
+                else
+                {
+                    ApplyBodyBlendShape(
+                        rendererPath,
+                        shapeName,
+                        weight,
+                        rebuildOnFailure);
+                }
             }
             _scenePreview?.FlushUpdates(
                 recalculateBounds:
@@ -4264,6 +4975,8 @@ namespace Ee4v.AssetManager.UI
             _pendingBodyScaleUpdatesViewPosition = false;
             _pendingBodyBlendShapeRendererPath = null;
             _pendingBodyBlendShapeName = null;
+            _pendingBodyBlendShapeGroup = null;
+            _pendingIndividualBlendShape = null;
         }
 
         private void SaveBodyScalePrefab(bool rebuildOnFailure = true)
@@ -4663,6 +5376,7 @@ namespace Ee4v.AssetManager.UI
             _bodyScaleBaseScales.Clear();
             _advancedBodyScaleExpanded = false;
             _expandedBodyScaleAxes.Clear();
+            _expandedBodyBlendShapeGroups.Clear();
             _baseAvatarViewPosition = null;
             _avatarDescriptor = null;
             _workingAsset = asset;
@@ -4692,6 +5406,7 @@ namespace Ee4v.AssetManager.UI
             _bodyScaleBaseScales.Clear();
             _advancedBodyScaleExpanded = false;
             _expandedBodyScaleAxes.Clear();
+            _expandedBodyBlendShapeGroups.Clear();
             _baseAvatarViewPosition = null;
             _avatarDescriptor = null;
             _workingAsset = null;
