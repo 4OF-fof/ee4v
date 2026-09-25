@@ -81,9 +81,6 @@ namespace Ee4v.AssetManager.Contracts
         Task<AssetFileAnalysis> AnalyzeFileAsync(
             string fileId,
             CancellationToken cancellationToken = default);
-        Task<AssetFileAnalysis> AnalyzeFileAsync(
-            AssetFile file,
-            CancellationToken cancellationToken = default);
         IReadOnlyList<string> GetFileImportedAssetGuids(string fileId);
         IReadOnlyList<string> GetItemImportedAssetGuids(string itemId);
         IReadOnlyList<AssetTag> GetTags();

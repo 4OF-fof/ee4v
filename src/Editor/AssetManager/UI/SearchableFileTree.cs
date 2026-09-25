@@ -17,7 +17,6 @@ namespace Ee4v.AssetManager.UI
         SearchableTreeView<FileTreeNode>, IDisposable
     {
         private const int MaxConcurrentAnalyses = 3;
-        private const int MaximumSearchAnalysisBatchSize = 32;
         private const int MaximumCachedImagePreviews = 24;
         private const string RootClassName =
             "ee4v-asset-manager-file-tree";
@@ -49,8 +48,6 @@ namespace Ee4v.AssetManager.UI
             new Dictionary<string, CachedAnalysis>(StringComparer.Ordinal);
         private readonly Dictionary<string, int> _fileTreeIds =
             new Dictionary<string, int>(StringComparer.Ordinal);
-        private readonly HashSet<string> _observedExpandedFileIds =
-            new HashSet<string>(StringComparer.Ordinal);
         private readonly Dictionary<string, Texture2D> _imagePreviewCache =
             new Dictionary<string, Texture2D>(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource _reloadCancellation;
@@ -66,8 +63,6 @@ namespace Ee4v.AssetManager.UI
         private Dictionary<string, AssetFileAnalysis> _currentAnalyses;
         private IReadOnlyList<SearchableTreeItemData<FileTreeNode>>
             _pendingTreeItems;
-        private IReadOnlyList<SearchableTreeItemData<FileTreeNode>>
-            _currentTreeItems;
         private IReadOnlyList<AssetFile> _files = Array.Empty<AssetFile>();
         private IReadOnlyList<FileTreeGroup> _groups =
             Array.Empty<FileTreeGroup>();
@@ -75,7 +70,6 @@ namespace Ee4v.AssetManager.UI
         private int _reloadVersion;
         private bool _isPointerPressedOnTree;
         private bool _isSearching;
-        private string _searchQuery = string.Empty;
         private bool _suppressSelectionChanged;
 
         internal SearchableFileTree(
@@ -257,7 +251,7 @@ namespace Ee4v.AssetManager.UI
             var analyses = CreateCachedAnalyses();
             _currentAnalyses = analyses;
             SetFeedback(string.Empty);
-            _currentTreeItems = AssetFileTreeBuilder.Build(
+            var items = AssetFileTreeBuilder.Build(
                 _files,
                 analyses,
                 CancellationToken.None,
@@ -266,15 +260,7 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("fileTree.loading"),
                 includeOverview: !_showsTargetToggles,
                 groups: _groups);
-            ApplyTreeItems(_currentTreeItems, preserveSelection);
-            _observedExpandedFileIds.Clear();
-            foreach (var file in _files)
-            {
-                if (IsFileExpanded(file.Id))
-                {
-                    _observedExpandedFileIds.Add(file.Id);
-                }
-            }
+            ApplyTreeItems(items, preserveSelection);
 
             if (!_isSearching)
             {
@@ -285,8 +271,7 @@ namespace Ee4v.AssetManager.UI
 
         protected override void OnSearchValueChanged(string value)
         {
-            _searchQuery = (value ?? string.Empty).Trim();
-            _isSearching = _searchQuery.Length > 0;
+            _isSearching = !string.IsNullOrWhiteSpace(value);
             if (_isSearching)
             {
                 QueueAllAnalyses();
@@ -298,40 +283,6 @@ namespace Ee4v.AssetManager.UI
             foreach (var file in _files)
             {
                 QueueAnalysis(file, startImmediately: false);
-            }
-            if (_searchQuery.Length > 0 && _pendingAnalyses.Count > 1)
-            {
-                var matchingGroupFileIds = new HashSet<string>(
-                    _groups
-                        .Where(group => group.Title.IndexOf(
-                            _searchQuery,
-                            StringComparison.OrdinalIgnoreCase) >= 0)
-                        .SelectMany(group => group.Files)
-                        .Where(file => file != null)
-                        .Select(file => file.Id),
-                    StringComparer.Ordinal);
-                var queued = _pendingAnalyses.ToArray();
-                _pendingAnalyses.Clear();
-                foreach (var file in queued)
-                {
-                    if (file.FileName.IndexOf(
-                            _searchQuery,
-                            StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        matchingGroupFileIds.Contains(file.Id))
-                    {
-                        _pendingAnalyses.Enqueue(file);
-                    }
-                }
-                foreach (var file in queued)
-                {
-                    if (file.FileName.IndexOf(
-                            _searchQuery,
-                            StringComparison.OrdinalIgnoreCase) < 0 &&
-                        !matchingGroupFileIds.Contains(file.Id))
-                    {
-                        _pendingAnalyses.Enqueue(file);
-                    }
-                }
             }
             StartQueuedAnalyses();
         }
@@ -346,14 +297,7 @@ namespace Ee4v.AssetManager.UI
             {
                 if (IsFileExpanded(file.Id))
                 {
-                    if (_observedExpandedFileIds.Add(file.Id))
-                    {
-                        QueueAnalysis(file, startImmediately: false);
-                    }
-                }
-                else
-                {
-                    _observedExpandedFileIds.Remove(file.Id);
+                    QueueAnalysis(file, startImmediately: false);
                 }
             }
             StartQueuedAnalyses();
@@ -457,8 +401,6 @@ namespace Ee4v.AssetManager.UI
         {
             var failures = new List<string>();
             var hasUnrenderedResults = false;
-            var searchResultsSinceRefresh = 0;
-            var searchRefreshBatchSize = 1;
             try
             {
                 var running = new List<Task<AnalysisLoadResult>>();
@@ -506,32 +448,16 @@ namespace Ee4v.AssetManager.UI
                             result.Analysis);
                     }
 
-                    var hadUnrenderedResults = hasUnrenderedResults;
                     hasUnrenderedResults = true;
-                    var refreshExpandedFile = !_isSearching &&
-                                              IsFileExpanded(result.File.Id);
-                    var refreshSearchResults = _showsTargetToggles &&
-                                               _isSearching &&
-                                               ++searchResultsSinceRefresh >=
-                                               searchRefreshBatchSize;
-                    if (refreshExpandedFile || refreshSearchResults)
+                    if ((!_isSearching && IsFileExpanded(result.File.Id)) ||
+                        (_showsTargetToggles && _isSearching))
                     {
                         await ApplyAnalysesAsync(
                             version,
                             cancellation,
                             files,
-                            analyses,
-                            refreshExpandedFile && !hadUnrenderedResults
-                                ? result.File
-                                : null);
+                            analyses);
                         hasUnrenderedResults = false;
-                        if (refreshSearchResults)
-                        {
-                            searchResultsSinceRefresh = 0;
-                            searchRefreshBatchSize = Math.Min(
-                                searchRefreshBatchSize * 4,
-                                MaximumSearchAnalysisBatchSize);
-                        }
                     }
                 }
 
@@ -592,7 +518,7 @@ namespace Ee4v.AssetManager.UI
             try
             {
                 var analysis = await _manager.AnalyzeFileAsync(
-                    file,
+                    file.Id,
                     cancellationToken);
                 return new AnalysisLoadResult(file, analysis, null);
             }
@@ -614,40 +540,24 @@ namespace Ee4v.AssetManager.UI
             int version,
             CancellationTokenSource cancellation,
             IReadOnlyList<AssetFile> files,
-            IReadOnlyDictionary<string, AssetFileAnalysis> analyses,
-            AssetFile updatedFile = null)
+            IReadOnlyDictionary<string, AssetFileAnalysis> analyses)
         {
             var overviewTitle = I18N.Get("fileTree.overview");
             var overviewMeta = I18N.Get("fileTree.itemMeta");
             var loadingTitle = I18N.Get("fileTree.loading");
-            var previousItems = _currentTreeItems;
-            AssetFileAnalysis updatedAnalysis = null;
-            if (updatedFile != null)
-            {
-                analyses.TryGetValue(updatedFile.Id, out updatedAnalysis);
-            }
             var items = await Task.Run(
-                () => (updatedFile == null
-                        ? null
-                        : AssetFileTreeBuilder.ReplaceFile(
-                            previousItems,
-                            updatedFile,
-                            updatedAnalysis,
-                            loadingTitle,
-                            cancellation.Token)) ??
-                      AssetFileTreeBuilder.Build(
-                          files,
-                          analyses,
-                          cancellation.Token,
-                          overviewTitle,
-                          overviewMeta,
-                          loadingTitle,
-                          includeOverview: !_showsTargetToggles,
-                          groups: _groups),
+                () => AssetFileTreeBuilder.Build(
+                    files,
+                    analyses,
+                    cancellation.Token,
+                    overviewTitle,
+                    overviewMeta,
+                    loadingTitle,
+                    includeOverview: !_showsTargetToggles,
+                    groups: _groups),
                 cancellation.Token);
             if (IsCurrentReload(version, cancellation))
             {
-                _currentTreeItems = items;
                 if (_showsTargetToggles && _isPointerPressedOnTree)
                 {
                     _pendingTreeItems = items;

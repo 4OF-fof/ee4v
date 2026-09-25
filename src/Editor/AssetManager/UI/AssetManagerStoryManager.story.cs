@@ -336,14 +336,6 @@ namespace Ee4v.AssetManager.UI
             return Task.FromResult(AnalyzeFile(fileId));
         }
 
-        public Task<AssetFileAnalysis> AnalyzeFileAsync(
-            AssetFile file,
-            CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(AnalyzeFile(file.Id));
-        }
-
         public IReadOnlyList<string> GetFileImportedAssetGuids(string fileId)
         {
             return new[] { SampleGuid };

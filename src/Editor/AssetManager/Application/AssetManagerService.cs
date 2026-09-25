@@ -1055,20 +1055,7 @@ namespace Ee4v.AssetManager.Application
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return AnalyzeFileAsync(
-                GetFileForAnalysis(fileId),
-                cancellationToken);
-        }
-
-        public Task<AssetFileAnalysis> AnalyzeFileAsync(
-            AssetFile file,
-            CancellationToken cancellationToken = default)
-        {
-            if (file == null)
-            {
-                throw new ArgumentNullException(nameof(file));
-            }
-            cancellationToken.ThrowIfCancellationRequested();
+            var file = GetFileForAnalysis(fileId);
             return Task.Run(
                 () => _fileAnalyzer.Analyze(file, cancellationToken),
                 cancellationToken);

@@ -13,15 +13,7 @@ namespace Ee4v.AssetManager.Infrastructure
 {
     internal sealed class AssetFileAnalyzer : IAssetFileAnalyzer
     {
-        private const int MaximumMemoryCachedFiles = 512;
-        private const int MaximumMemoryCachedEntries = 50000;
         private readonly AnalysisCache _cache;
-        private readonly object _memoryCacheLock = new object();
-        private readonly Dictionary<string, MemoryAnalysis> _memoryCache =
-            new Dictionary<string, MemoryAnalysis>(StringComparer.Ordinal);
-        private readonly LinkedList<string> _memoryCacheOrder =
-            new LinkedList<string>();
-        private int _memoryCachedEntries;
 
         internal AssetFileAnalyzer(string databasePath)
         {
@@ -37,7 +29,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 throw new ArgumentNullException(nameof(file));
             }
 
-            if (string.IsNullOrWhiteSpace(file.SourcePath))
+            if (string.IsNullOrWhiteSpace(file.SourcePath) ||
+                !File.Exists(file.SourcePath))
             {
                 throw new AssetManagerException(
                     AssetManagerErrorCode.NotFound,
@@ -45,13 +38,6 @@ namespace Ee4v.AssetManager.Infrastructure
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            var sourceStamp = _cache.GetStamp(file.SourcePath);
-            if (!sourceStamp.HasValue && !File.Exists(file.SourcePath))
-            {
-                throw new AssetManagerException(
-                    AssetManagerErrorCode.NotFound,
-                    "The source file was not found.");
-            }
             try
             {
                 var extension = Path.GetExtension(file.SourcePath);
@@ -73,15 +59,7 @@ namespace Ee4v.AssetManager.Infrastructure
                         "Only ZIP and UnityPackage files can be analyzed.");
                 }
 
-                if (sourceStamp.HasValue &&
-                    TryGetMemoryAnalysis(
-                        file.Id,
-                        kind.Value,
-                        sourceStamp.Value,
-                        out var memoryAnalysis))
-                {
-                    return memoryAnalysis;
-                }
+                var sourceStamp = _cache?.GetStamp(file.SourcePath);
                 var cached = sourceStamp.HasValue
                     ? _cache.TryLoad(
                         file.Id,
@@ -91,7 +69,6 @@ namespace Ee4v.AssetManager.Infrastructure
                     : null;
                 if (cached != null)
                 {
-                    RememberAnalysis(sourceStamp.Value, cached);
                     return cached;
                 }
 
@@ -112,7 +89,6 @@ namespace Ee4v.AssetManager.Infrastructure
                         sourceStamp.Value,
                         analysis,
                         cancellationToken);
-                    RememberAnalysis(sourceStamp.Value, analysis);
                 }
                 return analysis;
             }
@@ -130,103 +106,6 @@ namespace Ee4v.AssetManager.Infrastructure
                     "The asset file could not be analyzed.",
                     exception);
             }
-        }
-
-        private bool TryGetMemoryAnalysis(
-            string fileId,
-            AssetFileAnalysisKind kind,
-            AnalysisCache.SourceStamp stamp,
-            out AssetFileAnalysis analysis)
-        {
-            lock (_memoryCacheLock)
-            {
-                if (_memoryCache.TryGetValue(fileId, out var cached) &&
-                    cached.Analysis.Kind == kind &&
-                    cached.Stamp.Equals(stamp))
-                {
-                    _memoryCacheOrder.Remove(cached.OrderNode);
-                    _memoryCacheOrder.AddFirst(cached.OrderNode);
-                    analysis = cached.Analysis;
-                    return true;
-                }
-
-                if (cached != null)
-                {
-                    RemoveMemoryAnalysis(cached);
-                }
-            }
-
-            analysis = null;
-            return false;
-        }
-
-        private void RememberAnalysis(
-            AnalysisCache.SourceStamp stamp,
-            AssetFileAnalysis analysis)
-        {
-            var entryCount = analysis.Entries?.Count ?? 0;
-            if (entryCount > MaximumMemoryCachedEntries)
-            {
-                return;
-            }
-            var currentStamp = _cache.GetStamp(stamp.Path);
-            if (!currentStamp.HasValue ||
-                !stamp.Equals(currentStamp.Value))
-            {
-                return;
-            }
-
-            lock (_memoryCacheLock)
-            {
-                if (_memoryCache.TryGetValue(
-                        analysis.FileId,
-                        out var existing))
-                {
-                    RemoveMemoryAnalysis(existing);
-                }
-                while (_memoryCache.Count >= MaximumMemoryCachedFiles ||
-                       _memoryCachedEntries + entryCount >
-                       MaximumMemoryCachedEntries)
-                {
-                    var oldestFileId = _memoryCacheOrder.Last?.Value;
-                    if (oldestFileId == null)
-                    {
-                        break;
-                    }
-                    RemoveMemoryAnalysis(_memoryCache[oldestFileId]);
-                }
-
-                var orderNode = _memoryCacheOrder.AddFirst(analysis.FileId);
-                _memoryCache[analysis.FileId] = new MemoryAnalysis(
-                    stamp,
-                    analysis,
-                    orderNode);
-                _memoryCachedEntries += entryCount;
-            }
-        }
-
-        private void RemoveMemoryAnalysis(MemoryAnalysis cached)
-        {
-            _memoryCache.Remove(cached.Analysis.FileId);
-            _memoryCacheOrder.Remove(cached.OrderNode);
-            _memoryCachedEntries -= cached.Analysis.Entries?.Count ?? 0;
-        }
-
-        private sealed class MemoryAnalysis
-        {
-            internal MemoryAnalysis(
-                AnalysisCache.SourceStamp stamp,
-                AssetFileAnalysis analysis,
-                LinkedListNode<string> orderNode)
-            {
-                Stamp = stamp;
-                Analysis = analysis;
-                OrderNode = orderNode;
-            }
-
-            internal AnalysisCache.SourceStamp Stamp { get; }
-            internal AssetFileAnalysis Analysis { get; }
-            internal LinkedListNode<string> OrderNode { get; }
         }
 
         private static IReadOnlyList<AssetFileContentEntry> ReadZip(
