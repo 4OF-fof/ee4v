@@ -78,11 +78,12 @@ namespace Ee4v.ProjectTabs
                 _session.Changed -= OnSessionChanged;
             }
 
+            _favoriteStore = new UnityProjectFavoriteFolderStore();
             _session = new ProjectTabsSession(
                 ProjectTabsStateStore.instance,
-                UnityProjectBrowserNavigator.CreateDefaultLocation());
+                UnityProjectBrowserNavigator.CreateDefaultLocation(),
+                _favoriteStore);
             _session.Changed += OnSessionChanged;
-            _favoriteStore = new UnityProjectFavoriteFolderStore();
             _favoriteSynchronizer =
                 new ProjectTabsFavoriteSynchronizer(
                     _session,

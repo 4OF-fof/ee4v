@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 
 namespace Ee4v.ProjectTabs.Tests
@@ -13,6 +15,7 @@ namespace Ee4v.ProjectTabs.Tests
             var session = new ProjectTabsSession(
                 new MemoryProjectTabsStore(),
                 defaultLocation,
+                new MemoryProjectFavoriteFolderStore(),
                 () => "tab");
             var tabId = session.State.Tabs[0].Id;
             session.SetPinned(tabId, true);
@@ -42,6 +45,40 @@ namespace Ee4v.ProjectTabs.Tests
             public void Save(ProjectTabsState state)
             {
                 _state = state;
+            }
+        }
+
+        private sealed class MemoryProjectFavoriteFolderStore
+            : IProjectFavoriteFolderStore
+        {
+            private readonly List<ProjectTabLocation> _locations =
+                new List<ProjectTabLocation>();
+
+            public event Action Changed;
+
+            public bool TryGetAll(
+                out IReadOnlyList<ProjectTabLocation> locations)
+            {
+                locations = _locations.ToArray();
+                return true;
+            }
+
+            public bool TryAdd(ProjectTabLocation location)
+            {
+                _locations.Add(location);
+                Changed?.Invoke();
+                return true;
+            }
+
+            public bool TryRemove(ProjectTabLocation location)
+            {
+                _locations.RemoveAll(existing =>
+                    string.Equals(
+                        existing.FolderPath,
+                        location.FolderPath,
+                        StringComparison.Ordinal));
+                Changed?.Invoke();
+                return true;
             }
         }
     }

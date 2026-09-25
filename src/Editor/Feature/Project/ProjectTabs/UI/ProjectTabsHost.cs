@@ -101,6 +101,7 @@ namespace Ee4v.ProjectTabs
                 _selectedTabId,
                 tabId,
                 StringComparison.Ordinal);
+            var previousSelectedTabId = _selectedTabId;
             ProjectTabLocation replacementLocation = null;
             if (wasSelected && state.Tabs.Count > 1)
             {
@@ -110,7 +111,13 @@ namespace Ee4v.ProjectTabs
                 replacementLocation = replacement.CurrentLocation;
             }
 
-            if (_session.Remove(tabId) && wasSelected)
+            if (!_session.Remove(tabId))
+            {
+                _selectedTabId = previousSelectedTabId;
+                return;
+            }
+
+            if (wasSelected)
             {
                 Open(replacementLocation);
             }

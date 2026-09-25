@@ -113,12 +113,17 @@ namespace Ee4v.ProjectTabs
 
         public bool CanGoBack
         {
-            get { return HistoryIndex > 0; }
+            get { return !IsPinned && HistoryIndex > 0; }
         }
 
         public bool CanGoForward
         {
-            get { return HistoryIndex >= 0 && HistoryIndex < History.Count - 1; }
+            get
+            {
+                return !IsPinned &&
+                    HistoryIndex >= 0 &&
+                    HistoryIndex < History.Count - 1;
+            }
         }
     }
 

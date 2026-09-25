@@ -8,18 +8,23 @@ namespace Ee4v.ProjectTabs
     {
         private const int MaximumHistoryEntries = 50;
         private readonly IProjectTabsStateStore _store;
+        private readonly IProjectFavoriteFolderStore _favorites;
         private readonly Func<string> _idFactory;
         private readonly ProjectTabLocation _defaultLocation;
         private readonly List<MutableTab> _tabs = new List<MutableTab>();
+        private bool _changingFavorites;
 
         public ProjectTabsSession(
             IProjectTabsStateStore store,
             ProjectTabLocation defaultLocation,
+            IProjectFavoriteFolderStore favorites,
             Func<string> idFactory = null)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _defaultLocation = defaultLocation ??
                 throw new ArgumentNullException(nameof(defaultLocation));
+            _favorites = favorites ??
+                throw new ArgumentNullException(nameof(favorites));
             _idFactory = idFactory ?? (() => Guid.NewGuid().ToString("N"));
             Restore();
         }
@@ -85,9 +90,29 @@ namespace Ee4v.ProjectTabs
         public bool Remove(string tabId)
         {
             var index = FindIndex(tabId);
-            if (index < 0)
+            if (index < 0 ||
+                !TryGetFavoriteFolders(out var favoriteFolders))
             {
                 return false;
+            }
+
+            var location = _tabs[index].CurrentLocation;
+            if (favoriteFolders.Contains(location.FolderPath))
+            {
+                _changingFavorites = true;
+                try
+                {
+                    if (!_favorites.TryRemove(location) ||
+                        !TryGetFavoriteFolders(out var updatedFolders) ||
+                        updatedFolders.Contains(location.FolderPath))
+                    {
+                        return false;
+                    }
+                }
+                finally
+                {
+                    _changingFavorites = false;
+                }
             }
 
             _tabs.RemoveAt(index);
@@ -103,29 +128,98 @@ namespace Ee4v.ProjectTabs
         public bool SetPinned(string tabId, bool isPinned)
         {
             var index = FindIndex(tabId);
-            if (index < 0)
+            if (index < 0 ||
+                !TryGetFavoriteFolders(out var favoriteFolders))
             {
                 return false;
             }
 
             var tab = _tabs[index];
-            if (tab.IsPinned == isPinned)
+            var location = tab.CurrentLocation;
+            if (favoriteFolders.Contains(location.FolderPath) == isPinned)
             {
                 return false;
             }
 
-            if (isPinned)
+            _changingFavorites = true;
+            try
             {
+                if (!(isPinned
+                        ? _favorites.TryAdd(location)
+                        : _favorites.TryRemove(location)) ||
+                    !TryGetFavoriteFolders(out var updatedFolders) ||
+                    updatedFolders.Contains(location.FolderPath) !=
+                        isPinned)
+                {
+                    return false;
+                }
+            }
+            finally
+            {
+                _changingFavorites = false;
+            }
+
+            RefreshFromFavorites();
+            return true;
+        }
+
+        internal void RefreshFromFavorites()
+        {
+            if (_changingFavorites ||
+                !_favorites.TryGetAll(out var favoriteLocations))
+            {
+                return;
+            }
+
+            favoriteLocations = favoriteLocations ??
+                Array.Empty<ProjectTabLocation>();
+            var changed = false;
+            foreach (var location in favoriteLocations)
+            {
+                if (location == null ||
+                    string.IsNullOrWhiteSpace(location.FolderPath) ||
+                    _tabs.Any(tab => string.Equals(
+                        tab.CurrentLocation?.FolderPath,
+                        location.FolderPath,
+                        StringComparison.Ordinal)))
+                {
+                    continue;
+                }
+
+                _tabs.Add(CreateTab(location));
+                changed = true;
+            }
+
+            var favoriteFolders = new HashSet<string>(
+                favoriteLocations
+                    .Where(location => location != null)
+                    .Select(location => location.FolderPath),
+                StringComparer.Ordinal);
+            foreach (var tab in _tabs)
+            {
+                if (!favoriteFolders.Contains(
+                        tab.CurrentLocation.FolderPath) ||
+                    (tab.History.Count == 1 &&
+                     tab.HistoryIndex == 0))
+                {
+                    continue;
+                }
+
                 var currentLocation = tab.CurrentLocation;
                 tab.History.Clear();
                 tab.History.Add(currentLocation);
                 tab.HistoryIndex = 0;
+                changed = true;
             }
 
-            tab.IsPinned = isPinned;
-
-            PersistAndNotify();
-            return true;
+            if (changed)
+            {
+                PersistAndNotify();
+            }
+            else
+            {
+                Changed?.Invoke();
+            }
         }
 
         public bool ShouldOpenInNewTab(
@@ -133,7 +227,7 @@ namespace Ee4v.ProjectTabs
             ProjectTabLocation location)
         {
             var tab = Find(tabId);
-            if (tab == null || !tab.IsPinned)
+            if (tab == null || !IsPinned(tab.CurrentLocation))
             {
                 return false;
             }
@@ -160,7 +254,7 @@ namespace Ee4v.ProjectTabs
                 return false;
             }
 
-            if (tab.IsPinned)
+            if (IsPinned(current))
             {
                 if (HasSameFolder(current, normalized))
                 {
@@ -206,7 +300,7 @@ namespace Ee4v.ProjectTabs
         {
             var tab = Find(tabId);
             if (tab == null ||
-                tab.IsPinned ||
+                IsPinned(tab.CurrentLocation) ||
                 tab.HistoryIndex <= 0 ||
                 steps <= 0)
             {
@@ -227,7 +321,7 @@ namespace Ee4v.ProjectTabs
         {
             var tab = Find(tabId);
             if (tab == null ||
-                tab.IsPinned ||
+                IsPinned(tab.CurrentLocation) ||
                 tab.HistoryIndex >= tab.History.Count - 1 ||
                 steps <= 0)
             {
@@ -273,19 +367,10 @@ namespace Ee4v.ProjectTabs
                     var historyIndex = Math.Max(
                         0,
                         Math.Min(tab.HistoryIndex, history.Count - 1));
-                    if (tab.IsPinned)
-                    {
-                        var pinnedLocation = history[historyIndex];
-                        history.Clear();
-                        history.Add(pinnedLocation);
-                        historyIndex = 0;
-                    }
-
                     _tabs.Add(new MutableTab(
                         tab.Id,
                         history,
-                        historyIndex,
-                        tab.IsPinned));
+                        historyIndex));
                 }
             }
 
@@ -297,13 +382,43 @@ namespace Ee4v.ProjectTabs
 
         private ProjectTabsState CreateSnapshot()
         {
+            TryGetFavoriteFolders(out var favoriteFolders);
             return new ProjectTabsState(
                 _tabs.Select(tab => new ProjectTabState(
                         tab.Id,
                         tab.History.ToArray(),
                         tab.HistoryIndex,
-                        tab.IsPinned))
+                        favoriteFolders.Contains(
+                            tab.CurrentLocation.FolderPath)))
                     .ToArray());
+        }
+
+        private bool IsPinned(ProjectTabLocation location)
+        {
+            return location != null &&
+                TryGetFavoriteFolders(out var favoriteFolders) &&
+                favoriteFolders.Contains(location.FolderPath);
+        }
+
+        private bool TryGetFavoriteFolders(
+            out HashSet<string> favoriteFolders)
+        {
+            favoriteFolders = new HashSet<string>(StringComparer.Ordinal);
+            if (!_favorites.TryGetAll(out var locations))
+            {
+                return false;
+            }
+
+            foreach (var location in locations ??
+                Array.Empty<ProjectTabLocation>())
+            {
+                if (location != null)
+                {
+                    favoriteFolders.Add(location.FolderPath);
+                }
+            }
+
+            return true;
         }
 
         private ProjectTabLocation NormalizeLocation(
@@ -340,8 +455,7 @@ namespace Ee4v.ProjectTabs
             return new MutableTab(
                 CreateUniqueId(),
                 new[] { NormalizeLocation(location) },
-                0,
-                false);
+                0);
         }
 
         private MutableTab Find(string tabId)
@@ -381,13 +495,11 @@ namespace Ee4v.ProjectTabs
             public MutableTab(
                 string id,
                 IEnumerable<ProjectTabLocation> history,
-                int historyIndex,
-                bool isPinned)
+                int historyIndex)
             {
                 Id = id;
                 History = new List<ProjectTabLocation>(history);
                 HistoryIndex = historyIndex;
-                IsPinned = isPinned;
             }
 
             public string Id { get; }
@@ -395,8 +507,6 @@ namespace Ee4v.ProjectTabs
             public List<ProjectTabLocation> History { get; }
 
             public int HistoryIndex { get; set; }
-
-            public bool IsPinned { get; set; }
 
             public ProjectTabLocation CurrentLocation
             {

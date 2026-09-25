@@ -32,8 +32,8 @@
       </section>
 
       <section id="favorites">
-        <p class="section-label">Pinned tabs</p><h2>固定tabはProject Favoritesと同期する</h2>
-        <p>tabを固定するとUnityのProject Favoritesと同期します。固定時は履歴を現在位置の1件へ縮め、戻る・進む操作は無効になります。固定tabでは、選択中かどうかにかかわらず閉じるbuttonを表示しません。</p>
+        <p class="section-label">Pinned tabs</p><h2>固定状態はProject Favoritesで管理する</h2>
+        <p>FolderをUnityのProject Favoritesへ追加すると、そのFolderのtabが固定されます。tabを固定・固定解除するとFavoritesも変わります。固定tabを削除すると対応するFavoriteも削除します。固定時は履歴を現在位置の1件へ縮め、戻る・進む操作は無効になります。固定tabでは、選択中かどうかにかかわらず閉じるbuttonを表示しません。</p>
         <p>固定tabから別Folderへ移動しようとした場合は通常tabを追加し、固定tabの位置を維持します。</p>
       </section>
 
@@ -44,8 +44,8 @@
 
       <section id="persistence">
         <p class="section-label">Persistence</p><h2>設定は利用者ごとに保持する</h2>
-        <div class="table-wrap"><table><thead><tr><th>内容</th><th>保存先</th></tr></thead><tbody><tr><td>Folderの色、icon、最近使ったicon</td><td><code>UserSettings/ee4v.item-styles.asset</code></td></tr><tr><td>tab、履歴、固定状態</td><td><code>UserSettings/ee4v.project-tabs.asset</code></td></tr></tbody></table></div>
-        <p>Project Windowの復元時は、Unity側で開いているFolderと一致する保存済みtabを選びます。検索文字列だけが違う場合も同じFolderのtabを再利用します。</p>
+        <div class="table-wrap"><table><thead><tr><th>内容</th><th>保存先</th></tr></thead><tbody><tr><td>Folderの色、icon、最近使ったicon</td><td><code>UserSettings/ee4v.item-styles.asset</code></td></tr><tr><td>tab、履歴</td><td><code>UserSettings/ee4v.project-tabs.asset</code></td></tr><tr><td>固定状態</td><td>UnityのProject Favorites</td></tr></tbody></table></div>
+        <p>Project Windowの復元時は、Unity側で開いているFolderと一致する保存済みtabを選びます。検索文字列だけが違う場合も同じFolderのtabを再利用します。固定状態はProject Favoritesから復元します。</p>
       </section>
 
       <section id="related"><p class="section-label">Related</p><h2>関連するガイド</h2><div class="related-grid"><a href="asset-manager.html"><strong>Asset Manager</strong><span>Import先FolderへItem thumbnailを設定</span></a><a href="hierarchy-tools.html"><strong>Hierarchy tools</strong><span>GameObjectにも同じ操作感で色とiconを設定</span></a><a href="settings.html"><strong>設定</strong><span>生成Assetの共通root</span></a><a href="window-groups.html"><strong>Window Groups</strong><span>Project WindowをほかのWindowと一緒に前面化</span></a></div></section>
