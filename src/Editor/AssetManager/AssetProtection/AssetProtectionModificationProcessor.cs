@@ -74,11 +74,6 @@ namespace Ee4v.AssetProtection
             AssemblyReloadEvents.beforeAssemblyReload +=
                 ClearProtection;
             EditorApplication.quitting += ClearProtection;
-            EditorApplication.update += ApplyEditorObjectProtection;
-            EditorApplication.update +=
-                AssetInspectorProtectionOverlay.Update;
-            EditorApplication.update +=
-                PrefabStageProtectionOverlay.Update;
         }
 
         internal static void Configure(
@@ -105,7 +100,8 @@ namespace Ee4v.AssetProtection
 
         internal static bool IsProtected(string assetOrMetaPath)
         {
-            if (string.IsNullOrEmpty(assetOrMetaPath))
+            if (ProtectedGuids.Count == 0 ||
+                string.IsNullOrEmpty(assetOrMetaPath))
             {
                 return false;
             }
@@ -148,6 +144,15 @@ namespace Ee4v.AssetProtection
                     ProtectedGuids.Add(association.AssetGuid);
                 }
             }
+
+            if (ProtectedGuids.Count > 0)
+            {
+                EditorApplication.update += ApplyEditorObjectProtection;
+                EditorApplication.update +=
+                    AssetInspectorProtectionOverlay.Update;
+                EditorApplication.update +=
+                    PrefabStageProtectionOverlay.Update;
+            }
         }
 
         private static void ApplyEditorObjectProtection()
@@ -187,6 +192,7 @@ namespace Ee4v.AssetProtection
         internal static bool ProtectObject(UnityEngine.Object asset)
         {
             if (asset == null ||
+                ProtectedGuids.Count == 0 ||
                 !IsProtected(AssetDatabase.GetAssetPath(asset)))
             {
                 return false;
@@ -203,6 +209,11 @@ namespace Ee4v.AssetProtection
 
         private static void ClearProtection()
         {
+            EditorApplication.update -= ApplyEditorObjectProtection;
+            EditorApplication.update -=
+                AssetInspectorProtectionOverlay.Update;
+            EditorApplication.update -=
+                PrefabStageProtectionOverlay.Update;
             foreach (var asset in ManagedNotEditableObjects)
             {
                 if (asset != null)

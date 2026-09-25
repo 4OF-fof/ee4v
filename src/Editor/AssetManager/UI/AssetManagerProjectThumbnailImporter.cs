@@ -112,7 +112,9 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var importedItemIds = _pendingImportedItemIds.ToArray();
+            var importedItemIds = new HashSet<string>(
+                _pendingImportedItemIds,
+                StringComparer.Ordinal);
             var refreshItemIds = _pendingRefreshItemIds
                 .Where(HasGeneratedThumbnailAsset)
                 .ToArray();
@@ -123,18 +125,41 @@ namespace Ee4v.AssetManager.UI
             _applyCancellation = cancellation;
             try
             {
-                var associations =
-                    _manager.GetImportedAssetAssociations();
-                var folders = SelectTopmostImportedFolders(associations)
-                    .Where(pair => importedItemIds.Contains(
-                        pair.Value,
-                        StringComparer.Ordinal))
-                    .ToArray();
-                var itemIdsWithEligibleFolders = folders
-                    .Where(pair => CanApplyGeneratedThumbnail(pair.Key))
-                    .Select(pair => pair.Value)
-                    .Distinct(StringComparer.Ordinal)
-                    .ToArray();
+                var foldersByItemId =
+                    new Dictionary<string, List<string>>(
+                        StringComparer.Ordinal);
+                var itemIdsWithEligibleFolders = new List<string>();
+                var eligibleItemIds = new HashSet<string>(
+                    StringComparer.Ordinal);
+                if (importedItemIds.Count > 0)
+                {
+                    var associations =
+                        _manager.GetImportedAssetAssociations();
+                    foreach (var pair in
+                             SelectTopmostImportedFolders(associations))
+                    {
+                        if (!importedItemIds.Contains(pair.Value))
+                        {
+                            continue;
+                        }
+
+                        if (!foldersByItemId.TryGetValue(
+                                pair.Value,
+                                out var itemFolders))
+                        {
+                            itemFolders = new List<string>();
+                            foldersByItemId.Add(pair.Value, itemFolders);
+                        }
+
+                        itemFolders.Add(pair.Key);
+                        if (CanApplyGeneratedThumbnail(pair.Key) &&
+                            eligibleItemIds.Add(pair.Value))
+                        {
+                            itemIdsWithEligibleFolders.Add(pair.Value);
+                        }
+                    }
+                }
+
                 var requestedItemIds = itemIdsWithEligibleFolders
                     .Concat(refreshItemIds)
                     .Distinct(StringComparer.Ordinal)
@@ -162,15 +187,13 @@ namespace Ee4v.AssetManager.UI
                         continue;
                     }
 
-                    var folderGuids = folders
-                        .Where(pair =>
-                            string.Equals(
-                                pair.Value,
-                                itemId,
-                                StringComparison.Ordinal) &&
-                            CanApplyGeneratedThumbnail(pair.Key))
-                        .Select(pair => pair.Key)
-                        .ToArray();
+                    var folderGuids = foldersByItemId.TryGetValue(
+                            itemId,
+                            out var itemFolderGuids)
+                        ? itemFolderGuids
+                            .Where(CanApplyGeneratedThumbnail)
+                            .ToArray()
+                        : Array.Empty<string>();
                     var iconGuid = GetOrCreateThumbnailAsset(
                         itemId,
                         thumbnail.Data);
@@ -370,13 +393,26 @@ namespace Ee4v.AssetManager.UI
                     candidate => candidate.Guid,
                     StringComparer.Ordinal)
                 .ToArray();
-            var selectedPaths = new List<string>();
+            var selectedPaths = new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
             var selected = new Dictionary<string, string>(
                 StringComparer.Ordinal);
             foreach (var candidate in candidates)
             {
-                if (selectedPaths.Any(path =>
-                        IsSameOrDescendant(path, candidate.Path)))
+                var ancestor = candidate.Path;
+                var isCovered = false;
+                while (!string.IsNullOrEmpty(ancestor))
+                {
+                    if (selectedPaths.Contains(ancestor))
+                    {
+                        isCovered = true;
+                        break;
+                    }
+
+                    ancestor = ParentPath(ancestor);
+                }
+
+                if (isCovered)
                 {
                     continue;
                 }

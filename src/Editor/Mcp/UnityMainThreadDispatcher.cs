@@ -47,6 +47,11 @@ namespace Ee4v.Mcp
             Action[] pending;
             lock (Queue)
             {
+                if (Queue.Count == 0)
+                {
+                    return;
+                }
+
                 pending = Queue.ToArray();
                 Queue.Clear();
             }

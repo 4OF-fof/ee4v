@@ -27,6 +27,7 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 - 認証は持たない。同じ端末のprocessはendpointへ接続できるため、外部interfaceへproxyまたは公開しない。
 - `/mcp`はJSON-RPCの`initialize`、`ping`、`tools/list`、`tools/call`とnotificationを処理する。`/health`はserverの生存確認だけに使用する。
 - Unity objectへ触れるtool実行は`EditorApplication.update`からmain threadへdispatchする。
+- dispatch待ちの操作がないEditor frameではqueueの配列を生成しない。
 - tool結果は機械処理用の`structuredContent`と、同じ内容のtext contentを返す。preview PNGはimage contentも返す。
 - tool annotationでread-only、破壊性、冪等性、open-world accessを宣言する。
 - AssetManagerでは同期、削除、File登録、Unity ProjectへのImport、新規Item／Collection作成をMCPへ公開しない。書き込みは、事前に読み取った値を再設定すれば元へ戻せるmetadata編集だけに限定する。
