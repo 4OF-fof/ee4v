@@ -180,7 +180,7 @@
     const syncBase = core().normalizeMeta({
       ...storedMeta,
       itemUrl,
-      name: core().safeString(item.name).trim(),
+      name: core().safeString(storedMeta.name).trim() || core().safeString(item.name).trim(),
       description: core().safeString(item.annotation)
     });
 
@@ -203,11 +203,6 @@
         });
         shouldSaveMeta = true;
 
-        if (item.name !== nextItemName) {
-          item.name = nextItemName;
-          shouldSaveItem = true;
-        }
-
         if (item.url !== nextItemUrl) {
           item.url = nextItemUrl;
           shouldSaveItem = true;
@@ -220,6 +215,12 @@
       } catch (error) {
         console.error(error);
       }
+    }
+
+    const safeItemName = core().resolveEagleItemName(nextMeta.name, item.id);
+    if (item.name !== safeItemName) {
+      item.name = safeItemName;
+      shouldSaveItem = true;
     }
 
     const originalTags = Array.isArray(item.tags) ? item.tags : [];

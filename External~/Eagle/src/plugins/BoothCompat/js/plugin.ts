@@ -310,16 +310,17 @@
     const nextMeta = core().normalizeMeta({
       ...latestMeta,
       ...snapshot,
-      name: snapshot.name || core().safeString(item.name).trim() || latestMeta.name,
+      name: snapshot.name || latestMeta.name || core().safeString(item.name).trim(),
       attachedAt: latestMeta.attachedAt || new Date().toISOString(),
       downloads: latestMeta.downloads
     });
 
+    const itemName = core().resolveEagleItemName(nextMeta.name, item.id);
     const normalizedTags = core().ensureBoothMetaTag(item.tags);
-    if (item.name !== nextMeta.name || item.url !== nextMeta.itemUrl
+    if (item.name !== itemName || item.url !== nextMeta.itemUrl
       || item.annotation !== nextMeta.description
       || JSON.stringify(item.tags) !== JSON.stringify(normalizedTags)) {
-      item.name = nextMeta.name;
+      item.name = itemName;
       item.url = nextMeta.itemUrl;
       item.annotation = nextMeta.description;
       item.tags = normalizedTags;

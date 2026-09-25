@@ -175,6 +175,7 @@
     "archived": "Archived",
     "unassignedFiles": "Unassigned",
     "tags": "Tags",
+    "eagleFolders": "EAGLE FOLDERS",
     "collectionsWithCount": "COLLECTIONS ({0})",
     "newCollection": "New collection"
   },
@@ -233,6 +234,7 @@
       "selectedCount": "{0} items selected",
       "tagsNew": "Add Tag",
       "tagsRemove": "Remove \"{0}\"",
+      "tagsSourceReadOnly": "Edit this Eagle tag in Eagle",
       "tagsPickerTitle": "Select Tag",
       "tagsClose": "Close",
       "tagsSearch": "Search tags",

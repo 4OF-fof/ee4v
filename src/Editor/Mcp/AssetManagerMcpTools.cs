@@ -146,7 +146,7 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_update_item",
-                "Updates a local AssetManager item's name and description. Eagle-sourced names and descriptions are owned by Eagle and cannot be changed with this tool; their tags, archive state, and import settings remain editable through the corresponding tools.",
+                "Updates a local AssetManager item's name and description. Eagle-sourced names, descriptions, folders, and Eagle-owned tags are edited in Eagle; locally added tags, archive state, and import settings remain editable through the corresponding tools.",
                 McpSchemas.Object(new JObject
                 {
                     ["itemId"] = McpSchemas.String(),
@@ -167,7 +167,7 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_set_tags",
-                "Replaces tags on one or more AssetManager items.",
+                "Replaces locally managed tags on one or more AssetManager items. Eagle-owned tags remain read-only and are synchronized from Eagle.",
                 McpSchemas.Object(new JObject
                 {
                     ["itemIds"] = McpSchemas.Array(McpSchemas.String()),

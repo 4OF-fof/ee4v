@@ -78,7 +78,7 @@
         <p class="section-label">Layout</p>
         <h2>Windowごとの役割</h2>
         <div class="key-points">
-          <article><h3>Navigation</h3><p>最上部のImport済みに続き、全件、未所属、Archive、Tag、Collectionの表示先を切り替えます。</p></article>
+          <article><h3>Navigation</h3><p>最上部のImport済みに続き、全件、未所属、Archive、Tag、Eagleの整理用フォルダ、Collectionの表示先を切り替えます。</p></article>
           <article><h3>Main</h3><p>Item一覧、File一覧、検索、並び替え、Item詳細を表示する作業領域です。</p></article>
           <article><h3>Information</h3><p>最後に選択したItemのサムネイル、名前、説明、Tag、BOOTH情報などを表示します。</p></article>
           <article><h3>状態の共有</h3><p>Navigationで表示先を変えたりMainでItemを選んだりすると、ほかのWindowにも反映されます。</p></article>
@@ -90,7 +90,7 @@
         <p class="section-label">Browse</p>
         <h2>Itemを探して選ぶ</h2>
         <ol class="steps">
-          <li><strong>表示先を選ぶ。</strong> NavigationからImport済み、全件、未所属、Archive、TagまたはCollectionを選びます。最上部のImport済みでは、現在のProject内に取り込み済みの実Assetが存在するItemだけを表示し、取り込み先フォルダーだけが残るItemは除外します。</li>
+          <li><strong>表示先を選ぶ。</strong> NavigationからImport済み、全件、未所属、Archive、Tag、EagleフォルダまたはCollectionを選びます。EagleフォルダにはVRCAsset自体とBoothMetaを直接含む商品フォルダは表示せず、その間の整理用フォルダだけを表示します。Eagleフォルダを選ぶとその子フォルダも含むItemを表示します。最上部のImport済みでは、現在のProject内に取り込み済みの実Assetが存在するItemだけを表示し、取り込み先フォルダーだけが残るItemは除外します。</li>
           <li><strong>必要なら検索対象を変える。</strong> Mainの検索欄にある検索iconから、名前、説明、Tagを個別に対象へ含めます。未所属Fileでは名前検索がFile名へ適用されます。</li>
           <li><strong>並び順を選ぶ。</strong> Itemは名前、作成日、更新日、File数で並び替えられ、逆順にもできます。</li>
           <li><strong>選択する。</strong> 通常clickで単一選択、Ctrlで追加・解除、Shiftで直前の基準Itemから範囲選択します。</li>
@@ -128,7 +128,7 @@
         <p class="section-label">Organize</p>
         <h2>Tag、Collection、Archiveで整理する</h2>
         <h3>名前・説明・Tag</h3>
-        <p>名前と説明は入力欄からfocusが外れた時点、Tagは選択Popupを閉じた時点で保存されます。保存buttonはありません。Eagle由来Itemの名前と説明は読み取り専用ですが、Tagは編集できます。</p>
+        <p>名前と説明は入力欄からfocusが外れた時点、Tagは選択Popupを閉じた時点で保存されます。保存buttonはありません。Eagle由来Itemの名前と説明、EagleフォルダとEagle由来TagはEagle側で編集します。ee4vで追加したTagは編集できます。Eagleのカスタムサムネイルも同期し、再読み込み後に表示へ反映します。</p>
         <h3>Collection</h3>
         <p>NavigationのCollection見出しから作成します。条件はGroupごとにANDまたはORを選び、条件またはGroupをNOTで反転できます。編集と削除はCollectionの右click menuから行います。</p>
         <h3>Archive</h3>

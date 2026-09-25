@@ -16,6 +16,7 @@ namespace Ee4v.AssetManager.UI
         Imported,
         Archived,
         Tags,
+        Folder,
         Collection,
         UnassignedFiles
     }
@@ -44,6 +45,7 @@ namespace Ee4v.AssetManager.UI
         public AssetManagerPage Page { get; private set; }
         public string CollectionId { get; private set; }
         public string TagPath { get; private set; }
+        public string FolderId { get; private set; }
         public string DetailItemId { get; private set; }
         public bool IsDerivedAssetsPage { get; private set; }
         public IReadOnlyList<string> SelectedItemIds => _selectedItemIds;
@@ -72,6 +74,13 @@ namespace Ee4v.AssetManager.UI
                 null));
         }
 
+        public void SelectFolder(string folderId)
+        {
+            Navigate(new NavigationLocation(
+                AssetManagerPage.Folder, null, null,
+                folderId: folderId));
+        }
+
         public void SelectTag(string tagPath)
         {
             if (string.IsNullOrWhiteSpace(tagPath))
@@ -98,7 +107,8 @@ namespace Ee4v.AssetManager.UI
                 Page,
                 CollectionId,
                 itemId,
-                TagPath));
+                TagPath,
+                FolderId));
         }
 
         public void OpenDerivedAssetsPage(string itemId)
@@ -135,7 +145,8 @@ namespace Ee4v.AssetManager.UI
                 Page,
                 CollectionId,
                 null,
-                TagPath));
+                TagPath,
+                FolderId));
         }
 
         public void GoBack()
@@ -271,6 +282,7 @@ namespace Ee4v.AssetManager.UI
             Page = location.Page;
             CollectionId = location.CollectionId;
             TagPath = location.TagPath;
+            FolderId = location.FolderId;
             DetailItemId = location.ItemId;
             IsDerivedAssetsPage = false;
             ResetSelectionAndInformation();
@@ -316,18 +328,21 @@ namespace Ee4v.AssetManager.UI
                 AssetManagerPage page,
                 string collectionId,
                 string itemId,
-                string tagPath = null)
+                string tagPath = null,
+                string folderId = null)
             {
                 Page = page;
                 CollectionId = collectionId;
                 ItemId = itemId;
                 TagPath = tagPath;
+                FolderId = folderId;
             }
 
             public AssetManagerPage Page { get; }
             public string CollectionId { get; }
             public string ItemId { get; }
             public string TagPath { get; }
+            public string FolderId { get; }
 
             public bool IsSame(NavigationLocation other)
             {
@@ -344,6 +359,10 @@ namespace Ee4v.AssetManager.UI
                     string.Equals(
                         TagPath,
                         other.TagPath,
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        FolderId,
+                        other.FolderId,
                         StringComparison.Ordinal);
             }
         }

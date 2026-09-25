@@ -646,7 +646,11 @@
   }
 
   function resolveEagleItemName(name: unknown, fallbackName: unknown): string {
-    const fallback = safeString(fallbackName).trim() || "Booth Item";
+    const fallback = safeString(fallbackName)
+      .replace(/[\\/:*?"<>|]/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/[. ]+$/g, "")
+      .trim() || "Booth Item";
     const sanitized = safeString(name)
       .replace(/[\\/:*?"<>|]/g, " ")
       .replace(/\s+/g, " ")

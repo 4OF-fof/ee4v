@@ -80,11 +80,12 @@ namespace Ee4v.Core.Images
                 return cached;
             }
 
-            var texture = new Texture2D(2, 2)
+            var texture = new Texture2D(
+                2, 2, TextureFormat.RGBA32, false)
             {
                 hideFlags = HideFlags.HideAndDontSave
             };
-            if (!texture.LoadImage(encodedImage))
+            if (!texture.LoadImage(encodedImage, true))
             {
                 UnityEngine.Object.DestroyImmediate(texture);
                 texture = null;

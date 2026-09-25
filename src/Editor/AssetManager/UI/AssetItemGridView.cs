@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ee4v.Core.Images;
 using Ee4v.UI;
 using UnityEngine;
@@ -61,6 +62,8 @@ namespace Ee4v.AssetManager.UI
         private int _boundFirstRow = -1;
         private int _boundVisibleRowCount = -1;
         private float _boundContentHeight = -1f;
+        private IReadOnlyList<string> _notifiedVisibleItemIds =
+            Array.Empty<string>();
 
         public AssetItemGridView()
             : this(new CachedImageCache(), true)
@@ -105,6 +108,7 @@ namespace Ee4v.AssetManager.UI
         public event Action<IReadOnlyList<string>, VisualElement>
             ContextMenuRequested;
         public event Action<int> RecommendedMinimumItemsPerRowChanged;
+        public event Action<IReadOnlyList<string>> VisibleItemsChanged;
 
         public int ItemsPerRow => _itemsPerRow;
         public int RecommendedMinimumItemsPerRow =>
@@ -205,7 +209,7 @@ namespace Ee4v.AssetManager.UI
             _imageCache.SetSource(itemId, thumbnail);
             if (IsItemVisible(itemId))
             {
-                InvalidateVisibleRows();
+                RefreshVisibleItem(itemId);
             }
         }
 
@@ -213,6 +217,26 @@ namespace Ee4v.AssetManager.UI
         {
             return !string.IsNullOrEmpty(itemId) &&
                 _imageCache.HasSource(itemId);
+        }
+
+        public IReadOnlyList<string> GetVisibleItemIds()
+        {
+            if (_boundFirstRow < 0 || _boundVisibleRowCount <= 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var firstIndex = _boundFirstRow * _itemsPerRow;
+            var lastIndex = Mathf.Min(
+                _items.Count,
+                (_boundFirstRow + _boundVisibleRowCount) * _itemsPerRow);
+            var result = new string[lastIndex - firstIndex];
+            for (var index = firstIndex; index < lastIndex; index++)
+            {
+                result[index - firstIndex] = _items[index].Id;
+            }
+
+            return result;
         }
 
         public void ClearThumbnails()
@@ -761,6 +785,13 @@ namespace Ee4v.AssetManager.UI
 
             _boundFirstRow = firstRow;
             _boundVisibleRowCount = visibleRowCount;
+            var visibleItemIds = GetVisibleItemIds();
+            if (_notifiedVisibleItemIds.Count != visibleItemIds.Count ||
+                !_notifiedVisibleItemIds.SequenceEqual(visibleItemIds))
+            {
+                _notifiedVisibleItemIds = visibleItemIds;
+                VisibleItemsChanged?.Invoke(visibleItemIds);
+            }
         }
 
         private void InvalidateVisibleRows()
@@ -787,6 +818,29 @@ namespace Ee4v.AssetManager.UI
             var rowIndex = itemIndex / _itemsPerRow;
             return rowIndex >= _boundFirstRow &&
                 rowIndex < _boundFirstRow + _boundVisibleRowCount;
+        }
+
+        private void RefreshVisibleItem(string itemId)
+        {
+            var itemIndex = _itemIndices[itemId];
+            var rowIndex = itemIndex / _itemsPerRow;
+            for (var poolIndex = 0; poolIndex < _rowPool.Count; poolIndex++)
+            {
+                var row = _rowPool[poolIndex];
+                if (!(row.userData is int boundRow) ||
+                    boundRow != rowIndex)
+                {
+                    continue;
+                }
+
+                var column = itemIndex % _itemsPerRow;
+                var card = row.ElementAt(column).ElementAt(0) as
+                    AssetItemGridCard;
+                card?.SetState(
+                    _items[itemIndex],
+                    _selectedItemIds.Contains(itemId));
+                return;
+            }
         }
 
         private void EnsureRowPoolCount(int count)

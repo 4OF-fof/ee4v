@@ -65,6 +65,11 @@ namespace Ee4v.AssetManager.Application
             return _store.SearchItems(query);
         }
 
+        public IReadOnlyList<AssetFolder> GetFolders()
+        {
+            return _store.GetFolders();
+        }
+
         public AssetSearchResult SearchCollection(
             string collectionId,
             int offset = 0,
@@ -103,7 +108,7 @@ namespace Ee4v.AssetManager.Application
         {
             AssetManagerRequestValidator.Require(itemId, "item id");
             return _thumbnailProvider.Get(
-                _store.GetItem(itemId.Trim()),
+                _store.GetThumbnailItem(itemId.Trim()),
                 cancellationToken);
         }
 
@@ -115,7 +120,7 @@ namespace Ee4v.AssetManager.Application
                 itemIds,
                 "item ids");
             return _thumbnailProvider.GetMany(
-                ids.Select(_store.GetItem).ToArray(),
+                ids.Select(_store.GetThumbnailItem).ToArray(),
                 cancellationToken);
         }
 
@@ -1152,10 +1157,14 @@ namespace Ee4v.AssetManager.Application
             Func<AssetSourceSnapshot> read)
         {
             AssetSourceSnapshot snapshot;
+            AssetSyncResult result;
             try
             {
                 snapshot = read();
                 NormalizeSourceSnapshot(snapshot);
+                result = _store.ApplySourceSnapshot(
+                    sourceType,
+                    snapshot);
             }
             catch (AssetManagerException exception)
             {
@@ -1172,9 +1181,6 @@ namespace Ee4v.AssetManager.Application
                     new[] { exception.Message });
             }
 
-            var result = _store.ApplySourceSnapshot(
-                sourceType,
-                snapshot);
             Publish(
                 AssetManagerChangeKind.SourceSynchronized,
                 result.AffectedItemIds,
@@ -1286,6 +1292,17 @@ namespace Ee4v.AssetManager.Application
         private static void NormalizeSourceSnapshot(
             AssetSourceSnapshot snapshot)
         {
+            var folders = snapshot == null
+                ? Array.Empty<AssetSourceSnapshotFolder>()
+                : snapshot.Folders;
+            for (var i = 0; i < folders.Count; i++)
+            {
+                if (folders[i] != null)
+                {
+                    folders[i].Name = AssetSourceText.Normalize(folders[i].Name);
+                }
+            }
+
             var items = snapshot == null
                 ? Array.Empty<AssetSourceSnapshotItem>()
                 : snapshot.Items;

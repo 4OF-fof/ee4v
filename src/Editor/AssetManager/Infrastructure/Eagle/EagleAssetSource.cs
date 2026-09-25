@@ -58,6 +58,46 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                 }
 
                 var entries = ReadEntries(imagesPath);
+                var targetsById = targets.ToDictionary(
+                    target => target.Id,
+                    StringComparer.Ordinal);
+                var boothEntriesByFolder = new Dictionary<string, EagleEntry>(
+                    StringComparer.Ordinal);
+                var boothMetadataByFolder = new Dictionary<string, EagleBoothMetadata>(
+                    StringComparer.Ordinal);
+                foreach (var target in targets.Where(target =>
+                             target.ParentId != null))
+                {
+                    var boothEntries = entries
+                        .Where(entry => HasFolder(
+                            entry.Metadata.folders,
+                            target.Id))
+                        .Select(entry => new
+                        {
+                            Entry = entry,
+                            Booth = ReadBoothMetadata(entry)
+                        })
+                        .Where(value => value.Booth != null)
+                        .ToArray();
+                    if (boothEntries.Length > 1)
+                    {
+                        throw Error("Eagle folder has multiple BoothMeta items: " +
+                                    target.Path);
+                    }
+
+                    if (boothEntries.Length == 1)
+                    {
+                        boothEntriesByFolder[target.Id] = boothEntries[0].Entry;
+                        boothMetadataByFolder[target.Id] = boothEntries[0].Booth;
+                    }
+                }
+
+                var productFolderIds = new HashSet<string>(
+                    boothEntriesByFolder.Keys,
+                    StringComparer.Ordinal);
+                var boothEntryIds = new HashSet<string>(
+                    boothEntriesByFolder.Values.Select(entry => entry.Metadata.id),
+                    StringComparer.Ordinal);
                 var claimedFiles = new HashSet<string>(
                     StringComparer.Ordinal);
                 var items = new List<AssetSourceSnapshotItem>();
@@ -69,20 +109,26 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                                  value => value.Id,
                                  StringComparer.Ordinal))
                 {
+                    if (!boothEntriesByFolder.TryGetValue(
+                            target.Id,
+                            out var boothEntry))
+                    {
+                        continue;
+                    }
+
+                    var booth = boothMetadataByFolder[target.Id];
                     var folderEntries = entries
                         .Where(entry => HasFolder(
                             entry.Metadata.folders,
                             target.Id))
                         .ToArray();
-                    var booth = folderEntries
-                        .Select(ReadBoothMetadata)
-                        .FirstOrDefault(value => value != null);
                     var files = new List<AssetSourceSnapshotFile>();
                     for (var i = 0; i < folderEntries.Length; i++)
                     {
                         var entry = folderEntries[i];
-                        if (ReadBoothMetadata(entry) != null ||
-                            !claimedFiles.Add(entry.Metadata.id))
+                        if (entry.Metadata.isDeleted ||
+                            boothEntryIds.Contains(entry.Metadata.id) ||
+                            claimedFiles.Contains(entry.Metadata.id))
                         {
                             continue;
                         }
@@ -90,6 +136,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                         var file = ToFile(entry);
                         if (file != null)
                         {
+                            claimedFiles.Add(entry.Metadata.id);
                             files.Add(file);
                         }
                     }
@@ -97,23 +144,53 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     items.Add(new AssetSourceSnapshotItem
                     {
                         SourceId = target.Id,
-                        Name = booth != null &&
-                               !string.IsNullOrWhiteSpace(booth.name)
+                        FolderSourceId = FindStructuralAncestor(
+                            target.ParentId,
+                            targetsById,
+                            productFolderIds),
+                        Name = !string.IsNullOrWhiteSpace(booth.name)
                             ? booth.name
                             : target.Name,
-                        Description = booth == null
-                            ? string.Empty
-                            : booth.description ?? string.Empty,
+                        Description = booth.description ?? string.Empty,
                         Booth = ToBoothMetadata(booth),
-                        ThumbnailUrl = booth == null
-                            ? null
-                            : booth.thumbnailUrl,
-                        Tags = null,
+                        ThumbnailUrl = ResolveThumbnailUrl(boothEntry, booth),
+                        Tags = (boothEntry.Metadata.tags ??
+                               Array.Empty<string>())
+                            .Where(tag => !string.Equals(
+                                tag?.Trim(), "BoothMeta",
+                                StringComparison.OrdinalIgnoreCase))
+                            .ToArray(),
                         Files = files
                     });
                 }
 
-                return new AssetSourceSnapshot(items);
+                var folders = targets
+                    .Where(target => target.ParentId != null &&
+                                     !productFolderIds.Contains(target.Id))
+                    .Select(target =>
+                    new AssetSourceSnapshotFolder
+                    {
+                        SourceId = target.Id,
+                        ParentSourceId = FindStructuralAncestor(
+                            target.ParentId,
+                            targetsById,
+                            productFolderIds),
+                        Name = target.Name
+                    }).ToArray();
+                var unassignedFiles = entries
+                    .Where(entry => !entry.Metadata.isDeleted &&
+                                    !boothEntryIds.Contains(entry.Metadata.id) &&
+                                    !claimedFiles.Contains(entry.Metadata.id) &&
+                                    targets.Any(target => HasFolder(
+                                        entry.Metadata.folders,
+                                        target.Id)))
+                    .Select(ToFile)
+                    .Where(file => file != null)
+                    .ToArray();
+                return new AssetSourceSnapshot(
+                    items,
+                    files: unassignedFiles,
+                    folders: folders);
             }
             catch (AssetManagerException)
             {
@@ -176,6 +253,12 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     StringComparison.OrdinalIgnoreCase))
             {
                 targetFound = true;
+                result.Add(new EagleFolderTarget
+                {
+                    Id = node.id,
+                    Name = node.name,
+                    Path = path
+                });
                 AddDescendants(node, path, result);
                 return;
             }
@@ -207,6 +290,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                 result.Add(new EagleFolderTarget
                 {
                     Id = child.id,
+                    ParentId = parent.id,
                     Name = string.IsNullOrWhiteSpace(child.name)
                         ? child.id
                         : child.name,
@@ -249,6 +333,16 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
         private static EagleBoothMetadata ReadBoothMetadata(
             EagleEntry entry)
         {
+            if (entry.Metadata.isDeleted ||
+                !string.Equals(entry.Metadata.ext?.TrimStart('.'),
+                    "json", StringComparison.OrdinalIgnoreCase) ||
+                !(entry.Metadata.tags ?? Array.Empty<string>()).Any(
+                    tag => string.Equals(tag?.Trim(), "BoothMeta",
+                        StringComparison.OrdinalIgnoreCase)))
+            {
+                return null;
+            }
+
             var paths = Directory.GetFiles(
                 entry.DirectoryPath,
                 "*.json",
@@ -271,10 +365,15 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                     continue;
                 }
 
-                return JsonUtility.FromJson<EagleBoothMetadata>(json);
+                var metadata = JsonUtility.FromJson<EagleBoothMetadata>(json);
+                if (metadata != null && metadata.boothItemId > 0)
+                {
+                    return metadata;
+                }
             }
 
-            return null;
+            throw Error("Eagle BoothMeta JSON is missing or invalid: " +
+                        entry.DirectoryPath);
         }
 
         private static AssetSourceSnapshotFile ToFile(EagleEntry entry)
@@ -324,6 +423,52 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
                 ShopName = booth.shopName,
                 ShopUrl = booth.shopUrl
             };
+        }
+
+        private static string FindStructuralAncestor(
+            string parentId,
+            IReadOnlyDictionary<string, EagleFolderTarget> targetsById,
+            ISet<string> productFolderIds)
+        {
+            while (!string.IsNullOrWhiteSpace(parentId) &&
+                   targetsById.TryGetValue(parentId, out var parent))
+            {
+                if (parent.ParentId == null)
+                {
+                    return null;
+                }
+
+                if (!productFolderIds.Contains(parentId))
+                {
+                    return parentId;
+                }
+
+                parentId = parent.ParentId;
+            }
+
+            return null;
+        }
+
+        private static string ResolveThumbnailUrl(
+            EagleEntry boothEntry,
+            EagleBoothMetadata booth)
+        {
+            if (boothEntry.Metadata.customThumbnail)
+            {
+                var name = Path.GetFileName(boothEntry.Metadata.name);
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    var path = Path.Combine(
+                        boothEntry.DirectoryPath,
+                        name + "_thumbnail.png");
+                    if (File.Exists(path))
+                    {
+                        return new Uri(Path.GetFullPath(path)).AbsoluteUri;
+                    }
+                }
+            }
+
+            return booth.thumbnailUrl;
         }
 
         private static string GetFileName(EagleItemMetadata metadata)
@@ -437,6 +582,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
             public string[] folders;
             public string[] tags;
             public bool isDeleted;
+            public bool customThumbnail;
         }
 
         [Serializable]
@@ -460,6 +606,7 @@ namespace Ee4v.AssetManager.Infrastructure.Eagle
         private sealed class EagleFolderTarget
         {
             internal string Id { get; set; }
+            internal string ParentId { get; set; }
             internal string Name { get; set; }
             internal string Path { get; set; }
         }

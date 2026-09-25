@@ -11,6 +11,7 @@ namespace Ee4v.AssetManager.Application.Ports
         AssetSearchResult SearchItems(AssetItemQuery query);
         bool MatchesItem(string itemId, AssetFilterNode filter);
         AssetItem GetItem(string itemId);
+        AssetItem GetThumbnailItem(string itemId);
         AssetItem CreateItem(CreateAssetItemRequest request);
         AssetItem UpdateItem(
             string itemId,
@@ -65,6 +66,7 @@ namespace Ee4v.AssetManager.Application.Ports
             AssetSourceSnapshotItem item);
 
         IReadOnlyList<AssetTag> GetTags();
+        IReadOnlyList<AssetFolder> GetFolders();
         IReadOnlyList<AssetItem> SetItemTags(
             IReadOnlyList<string> itemIds,
             IReadOnlyList<string> normalizedPaths);
@@ -145,19 +147,30 @@ namespace Ee4v.AssetManager.Application.Ports
     {
         internal AssetSourceSnapshot(
             IReadOnlyList<AssetSourceSnapshotItem> items,
-            IReadOnlyList<AssetSourceSnapshotFile> files = null)
+            IReadOnlyList<AssetSourceSnapshotFile> files = null,
+            IReadOnlyList<AssetSourceSnapshotFolder> folders = null)
         {
             Items = items ?? Array.Empty<AssetSourceSnapshotItem>();
             Files = files ?? Array.Empty<AssetSourceSnapshotFile>();
+            Folders = folders ?? Array.Empty<AssetSourceSnapshotFolder>();
         }
 
         internal IReadOnlyList<AssetSourceSnapshotItem> Items { get; }
         internal IReadOnlyList<AssetSourceSnapshotFile> Files { get; }
+        internal IReadOnlyList<AssetSourceSnapshotFolder> Folders { get; }
+    }
+
+    internal sealed class AssetSourceSnapshotFolder
+    {
+        internal string SourceId { get; set; }
+        internal string ParentSourceId { get; set; }
+        internal string Name { get; set; }
     }
 
     internal sealed class AssetSourceSnapshotItem
     {
         internal string SourceId { get; set; }
+        internal string FolderSourceId { get; set; }
         internal string Name { get; set; }
         internal string Description { get; set; }
         internal AssetBoothMetadata Booth { get; set; }

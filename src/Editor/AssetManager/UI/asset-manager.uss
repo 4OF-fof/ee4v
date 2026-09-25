@@ -401,6 +401,10 @@
     -unity-text-align: middle-left;
 }
 
+.ee4v-asset-manager__nav-folder-children {
+    margin-left: var(--ee4v-space-md);
+}
+
 .ee4v-asset-manager__nav-button:hover {
     border-color: var(--ee4v-color-transparent);
     background-color: var(--ee4v-color-surface-hover);

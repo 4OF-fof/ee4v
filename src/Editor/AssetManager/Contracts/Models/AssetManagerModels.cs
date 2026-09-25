@@ -12,6 +12,7 @@ namespace Ee4v.AssetManager.Contracts
         public string ThumbnailUrl { get; set; }
         public AssetSourceType? SourceType { get; set; }
         public string SourceId { get; set; }
+        public string FolderId { get; set; }
         public IReadOnlyList<AssetTag> Tags { get; set; }
         public IReadOnlyList<AssetFile> Files { get; set; }
         public bool IsArchived { get; set; }
@@ -126,6 +127,16 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string Id { get; set; }
         public string Path { get; set; }
+        public bool IsSourceOwned { get; set; }
+    }
+
+    public sealed class AssetFolder
+    {
+        public string Id { get; set; }
+        public string ParentId { get; set; }
+        public string Name { get; set; }
+        public AssetSourceType SourceType { get; set; }
+        public string SourceId { get; set; }
     }
 
     public sealed class AssetCollection

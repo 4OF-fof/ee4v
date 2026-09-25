@@ -19,7 +19,7 @@
 | `ItemAndCollectionChanges_IdentifyMutationAndSubjects` | ItemとCollectionの通知が種別と対象IDを含む | UIの差分更新が依存する公開イベント契約である |
 | `FileChanges_IdentifyFilesAndAffectedItems` | File通知が対象Fileと影響Itemを含み、Item Target通知が対象Itemと参照Fileを含む | 関連Itemだけを更新する公開イベント契約である |
 | `EagleSync_ReusesIdsAndDeletesMissingFile` | Eagleの再同期でItem IDを維持し、消えたFileを除く | 外部SourceとDBの同一性を保つ接続契約である |
-| `EagleSync_PreservesManagedTagsAndTargets` | Booth商品・ストア情報を取り込み、AssetManagerで設定したTagとTargetを再同期後も保持する | 外部Sourceのメタデータ変換とAssetManager管理状態の所有境界である |
+| `EagleSync_PreservesManagedTagsAndTargets` | Booth商品・ストア情報とEagle由来Tagを取り込み、AssetManagerで設定したTagとTargetを再同期後も保持する | 外部Sourceのメタデータ変換とAssetManager管理状態の所有境界である |
 | `EagleSync_MissingTargetPreservesData` | 対象rootがない同期で既存データを保持する | 設定誤りによる全削除を防ぐデータ保全である |
 | `ThumbnailApis_ReturnMissingWithoutAThumbnailSource` | サムネイル元がない場合に単体・一括APIがmissingを返す | 非同期画像取得の欠落結果を統一する公開契約である |
 | `FileRegistration_RejectsDirectoriesFromEverySource` | Eagleとee4vのどちらでもdirectoryをFileにしない | 外部Sourceから扱えない実体がDBへ入るのを防ぐ |

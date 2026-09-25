@@ -55,6 +55,15 @@ namespace Ee4v.AssetManager.Infrastructure
                 throw new ArgumentNullException(nameof(item));
             }
 
+            if (item.SourceType == AssetSourceType.Eagle &&
+                Uri.TryCreate(item.ThumbnailUrl, UriKind.Absolute,
+                    out var localUri) &&
+                localUri.IsFile && !localUri.IsUnc)
+            {
+                return GetLocal(localUri, item.ThumbnailUrl,
+                    cancellationToken);
+            }
+
             return Get(item.Id, item.ThumbnailUrl, cancellationToken);
         }
 
@@ -75,10 +84,7 @@ namespace Ee4v.AssetManager.Infrastructure
                     await gate.WaitAsync(cancellationToken);
                     try
                     {
-                        return await Get(
-                            item.Id,
-                            item.ThumbnailUrl,
-                            cancellationToken);
+                        return await Get(item, cancellationToken);
                     }
                     finally
                     {
@@ -95,6 +101,78 @@ namespace Ee4v.AssetManager.Infrastructure
                 }
 
                 return result;
+            }
+        }
+
+        private static Task<AssetThumbnail> GetLocal(
+            Uri uri,
+            string sourceUrl,
+            CancellationToken cancellationToken)
+        {
+            return Task.Run(() => ReadLocal(
+                uri.LocalPath,
+                sourceUrl,
+                cancellationToken), cancellationToken);
+        }
+
+        private static AssetThumbnail ReadLocal(
+            string path,
+            string sourceUrl,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                using (var stream = new FileStream(
+                           path,
+                           FileMode.Open,
+                           FileAccess.Read,
+                           FileShare.ReadWrite | FileShare.Delete,
+                           65536,
+                           FileOptions.SequentialScan))
+                {
+                    if (stream.Length > MaximumThumbnailBytes)
+                    {
+                        return Missing(
+                            "Thumbnail file exceeded the 16 MiB limit.",
+                            path, sourceUrl);
+                    }
+
+                    var data = new byte[(int)stream.Length];
+                    var offset = 0;
+                    while (offset < data.Length)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var read = stream.Read(
+                            data,
+                            offset,
+                            data.Length - offset);
+                        if (read == 0)
+                        {
+                            return Missing(
+                                "Thumbnail file changed while reading.",
+                                path, sourceUrl);
+                        }
+
+                        offset += read;
+                    }
+
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return data.Length > 0
+                        ? Found(data, path, sourceUrl)
+                        : Missing("Thumbnail file was empty.",
+                            path, sourceUrl);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                return Missing(
+                    "Thumbnail file could not be read: " + exception.Message,
+                    path, sourceUrl);
             }
         }
 

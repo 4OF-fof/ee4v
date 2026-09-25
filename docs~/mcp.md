@@ -95,7 +95,7 @@ AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_exp
 | Import設定 | `ee4v_asset_set_targets`、`ee4v_asset_set_dependencies` |
 | Collection | `ee4v_asset_list_collections`、`ee4v_asset_update_collection` |
 
-MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・編集します。DB fileはUser Settingsの共通data rootにある`asset-manager-v1.db`です。MCP独自のDB書き込みやschemaは持ちません。Eagle由来Itemの名前と説明はEagleが所有するため`ee4v_asset_update_item`では変更できませんが、Tag、Archive、Import Target、Dependencyは対応するtoolで編集できます。同期、Import、新規登録、作成、削除はAssetManager UIで利用者が明示的に実行します。
+MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・編集します。DB fileはUser Settingsの共通data rootにある`asset-manager-v1.db`です。MCP独自のDB書き込みやschemaは持ちません。Eagle由来Itemの名前と説明はEagleが所有するため`ee4v_asset_update_item`では変更できませんが、AssetManagerで追加したTag、Archive、Import Target、Dependencyは対応するtoolで編集できます。Eagle由来TagはEagle側で編集します。同期、Import、新規登録、作成、削除はAssetManager UIで利用者が明示的に実行します。
 
 ### 実Prefabを比較する流れ
 

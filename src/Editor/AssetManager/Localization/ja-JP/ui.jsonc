@@ -175,6 +175,7 @@
     "archived": "アーカイブ",
     "unassignedFiles": "未所属",
     "tags": "タグ",
+    "eagleFolders": "Eagle フォルダ",
     "collectionsWithCount": "コレクション ({0})",
     "newCollection": "コレクションを作成"
   },
@@ -233,6 +234,7 @@
       "selectedCount": "{0}件を選択中",
       "tagsNew": "タグを追加",
       "tagsRemove": "「{0}」を削除",
+      "tagsSourceReadOnly": "Eagle 由来のタグは Eagle で編集します",
       "tagsPickerTitle": "タグを選択",
       "tagsClose": "閉じる",
       "tagsSearch": "タグを検索",

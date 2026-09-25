@@ -158,6 +158,8 @@ namespace Ee4v.AssetManager.UI
         private IReadOnlyList<AssetTagOption> _available =
             Array.Empty<AssetTagOption>();
         private IReadOnlyList<string> _values = Array.Empty<string>();
+        private ISet<string> _readOnlyValues =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private Vector2? _pickerPanelPosition;
 
         public AssetTagField()
@@ -184,9 +186,13 @@ namespace Ee4v.AssetManager.UI
 
         public void SetValues(
             IReadOnlyList<AssetTagOption> available,
-            IReadOnlyList<string> values)
+            IReadOnlyList<string> values,
+            IReadOnlyList<string> readOnlyValues = null)
         {
             _available = available ?? Array.Empty<AssetTagOption>();
+            _readOnlyValues = new HashSet<string>(
+                readOnlyValues ?? Array.Empty<string>(),
+                StringComparer.OrdinalIgnoreCase);
             SetValuesWithoutNotify(values);
         }
 
@@ -208,13 +214,21 @@ namespace Ee4v.AssetManager.UI
             for (var index = 0; index < _values.Count; index++)
             {
                 var tag = _values[index];
+                var readOnly = _readOnlyValues.Contains(tag);
                 var chip = new TagPill(
                     new TagPillState(
                         tag,
-                        string.Format(
-                            I18N.Get("detail.item.tagsRemove"),
-                            tag)),
-                    () => Remove(tag));
+                        readOnly
+                            ? null
+                            : string.Format(
+                                I18N.Get("detail.item.tagsRemove"),
+                                tag)),
+                    readOnly ? (Action)null : () => Remove(tag));
+                if (readOnly)
+                {
+                    chip.tooltip = I18N.Get(
+                        "detail.item.tagsSourceReadOnly");
+                }
                 chip.AddToClassList(
                     "ee4v-asset-manager-tag-field__tag");
                 _tags.Add(chip);

@@ -39,7 +39,7 @@
       </section>
       <section id="refresh">
         <p class="section-label">Refresh</p><h2>Eagleで選択したアイテムを再取得する</h2>
-        <p>Eagleで<code>BoothMeta</code>タグ付きのJSONアイテムを1件または複数選択し、右クリックメニューから<strong>Booth Compat</strong>を実行します。選択アイテムのBOOTH商品情報とカスタムサムネイルを順番に再取得します。1件失敗しても残りを続け、最後に更新件数と失敗件数を通知します。取り込み済みdownloadの履歴とEagleで付けたタグは維持します。</p>
+        <p>Eagleで<code>BoothMeta</code>タグ付きのJSONアイテムを1件または複数選択し、右クリックメニューから<strong>Booth Compat</strong>を実行します。選択アイテムのBOOTH商品情報とカスタムサムネイルを順番に再取得します。商品名に<code>/</code>が含まれていても、Eagleアイテム名では空白へ置き換え、JSONには元の商品名を残します。1件失敗しても残りを続け、最後に更新件数と失敗件数を通知します。取り込み済みdownloadの履歴とEagleで付けたタグは維持します。</p>
         <p>BoothMeta以外のアイテムが混ざっている場合は対象外として通知します。選択内にBoothMetaがない場合は、通常のBOOTH商品URL入力画面が開きます。</p>
       </section>
       <section id="flow">

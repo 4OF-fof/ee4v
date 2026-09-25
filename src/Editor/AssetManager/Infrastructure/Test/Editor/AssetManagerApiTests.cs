@@ -384,7 +384,9 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             Assert.That(item.Name, Is.EqualTo("Lemon*"));
             Assert.That(item.Files.Single().FileName, Is.EqualTo("Noir*.zip"));
             Assert.That(item.Files.Single().Extension, Is.EqualTo("zip"));
-            Assert.That(item.Tags, Is.Empty);
+            Assert.That(item.Tags.Select(tag => tag.Path),
+                Is.EqualTo(new[] { "internal-only" }));
+            Assert.That(item.Tags.Single().IsSourceOwned, Is.True);
             Assert.That(
                 item.Booth.ItemUrl,
                 Is.EqualTo("https://booth.pm/ja/items/1"));
@@ -403,9 +405,8 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
             _manager.SyncEagle(new EagleSyncRequest(library));
 
             var synchronized = _manager.GetItem(item.Id);
-            Assert.That(
-                synchronized.Tags.Single().Path,
-                Is.EqualTo("managed"));
+            Assert.That(synchronized.Tags.Select(tag => tag.Path),
+                Is.EqualTo(new[] { "internal-only", "managed" }));
             Assert.That(
                 _manager.GetItemTargets(item.Id).Single().TargetPath,
                 Is.EqualTo("Assets/Sample.prefab"));
@@ -1416,6 +1417,17 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                 "{\"folders\":[{\"id\":\"root\",\"name\":\"VRCAsset\",\"children\":[{\"id\":\"avatar-folder\",\"name\":\"" +
                 folderName +
                 "\",\"children\":[]}]}]}");
+            var entry = Path.Combine(
+                Path.GetDirectoryName(path),
+                "images",
+                "booth-entry.info");
+            Directory.CreateDirectory(entry);
+            File.WriteAllText(
+                Path.Combine(entry, "metadata.json"),
+                "{\"id\":\"booth-entry\",\"name\":\"booth\",\"ext\":\"json\",\"folders\":[\"avatar-folder\"],\"tags\":[\"BoothMeta\"],\"isDeleted\":false}");
+            File.WriteAllText(
+                Path.Combine(entry, "booth.json"),
+                "{\"boothItemId\":1}");
         }
 
         private static void WriteUnityPackage(

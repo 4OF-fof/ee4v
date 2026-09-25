@@ -2,7 +2,7 @@
 
 `Ee4v.Core.Images`は、エンコード済み画像をUI Toolkitで表示する共通コンポーネントです。
 
-`CachedImageCache.SetSource(key, data)`は画像の取得結果をkey単位で保持します。空のdataも結果として保持できるため、画像がない対象を繰り返し取得する必要はありません。`CachedImage.SetSource(key)`は保持済みdataを必要なときだけTextureへデコードし、同じcache、key、dataを使う要素間でTextureを共有します。
+`CachedImageCache.SetSource(key, data)`は画像の取得結果をkey単位で保持します。空のdataも結果として保持できるため、画像がない対象を繰り返し取得する必要はありません。`CachedImage.SetSource(key)`は保持済みdataを必要なときだけTextureへデコードし、同じcache、key、dataを使う要素間でTextureを共有します。表示用TextureはmipmapとCPU側のピクセル保持を無効にし、画像一覧の読み込みとメモリ使用量を抑えます。
 
 cacheがTextureの生成と破棄を所有します。利用側は表示単位で`CachedImageCache`を共有し、Source更新時に`Clear`、表示の破棄時に`Dispose`を呼びます。`CachedImage`自身はTextureを破棄しません。
 
