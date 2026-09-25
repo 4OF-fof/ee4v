@@ -3,6 +3,7 @@
   "rootNamespace": "Ee4v.PhysBoneCollider",
   "references": [
     "Ee4v.Core.Contracts.Editor",
+    "Ee4v.Core.Editor",
     "Ee4v.Core.Presentation.Editor",
     "Ee4v.UI.Editor"
   ],

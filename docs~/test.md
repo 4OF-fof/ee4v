@@ -52,6 +52,7 @@
 | --- | --- | --- |
 | `Apply_GeneratesGestureMatrixAndControlsBlinkAndMouthBindings` | 左右ジェスチャーとExpression Menuを排他的に遷移させ、未割り当てをNeutral＋Neutralへ戻し、顔メッシュの未指定BlendShapeを既定値で上書きする。まばたき有効時は3〜8秒間隔で表情のBlink値から100へ往復する。口固定が無効ならVisemeカーブを除外し、`Voice`駆動Blend Treeで発話中だけプリセットの口形状を既定値へ戻し、`Voice`が戻ると元の表情Motionへ戻す | メニューとジェスチャーの競合、未割り当ての既定表情、元FXからの表情値残り、生成物の重複、表情値を基準にした瞬きとリップシンク制御の契約は元クリップの確認だけでは検出できない |
 | `MouthMorphBindings_UseVisemeGroupWithoutVisemes` | プリセットの初期候補として、Visemeと同じ区切り見出し内のBlendShapeだけを口形状にし、Viseme自体と次の見出し以降を除外する | 自動分類の範囲が広がると目などの表情まで口形状として保存されるため、生成クリップだけでは誤分類を特定できない |
+| `Copy_CreatesIndependentClipWithCurves` | 複製した表情クリップが元のカーブを保持し、その後の編集が元クリップへ影響しない | 複製後に元アセットを書き換える破壊的な参照共有を防ぐ |
 | `Read_ConvertsHeadersAndIncludesSelectedMeshes` | 複数の区切り文字をヘッダーとして読み、グループウィンドウで選択した各RendererパスのBlendShapeを列挙する | 複数メッシュの同名BlendShapeを正しいAnimationカーブへ結ぶ契約を維持する |
 | `BlendShapeRows_NestSidesUnderNormal` | FBX別プリセットで同じ見出し内の役割について通常版を親行、LとRを子行にし、番号などが異なる役割は別の親子行にする | 左右以外の名前まで誤って同じ親へまとめる問題は実名一覧だけでは検出できない |
 | `BlendShapeRows_KeepClipChannelsSeparateWithoutSideControls` | クリップ内表示ではFBX別プリセットで対応した各BlendShapeも個別行にし、左右切替コントロールを生成しない | 使用中カーブの再集約や、廃止した左右切替UIの再混入を防ぐ |
@@ -95,7 +96,7 @@
 
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
-| `UiTextFactoryTests.FactoryButton_UpdatesDisplayedText` | Factoryで作ったButtonの表示文字を作成後に更新できる | Unityの文字描画問題を避ける共通境界である |
+| `UiTextFactoryTests.UiButton_UpdatesDisplayedText` | `UiButton`の表示文字を作成後に更新できる | Unityの文字描画問題を避ける共通境界である |
 | `UiStoryTests.Catalog_DiscoversExternalStoryProviders` | 別assemblyのStory providerを検出する | reflectionによる拡張境界を確認する |
 | `UiStoryTests.CatalogStories_DeclareUsageLocations` | 機能Storyが実使用箇所を宣言する | 未使用componentの残存を通常の表示確認では検出できない |
 | `UiIconTests.UiBuiltinIconResolver_TryResolve_AllRegisteredIcons` | 全登録アイコンをUnity textureへ解決する | Unity versionで変わり得る外部アイコン契約である |

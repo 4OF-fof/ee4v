@@ -121,6 +121,7 @@ instance ID が `0`、内部 API が非対応、対象項目がない場合は `
 | メンバー | 戻り値・動作 | 副作用 |
 |---|---|---|
 | `TryClearDirtiness(scene)` | シーンの dirty 状態を解除できれば `true` | シーンの保存要求を解除する |
+| `HidePreviewHierarchy(root)` | Preview用の複製階層を再帰的に非表示・非保存へ設定する | rootと全子GameObjectの`hideFlags`を`HideAndDontSave`へ変更する |
 
 無効なシーン、Unity内部APIが非対応、reflectionが失敗した場合は`false`です。シーン内容は変更しません。
 

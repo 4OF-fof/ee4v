@@ -11,9 +11,8 @@ ee4vのEditor UIで使うMicrosoft Fluent UI System Iconsを、
 - Style: Filled
 - Imported icons: `add`, `archive`, `arrow_clockwise`, `arrow_left`,
   `arrow_right`, `arrow_sort`, `checkmark`, `chevron_down`, `chevron_right`,
-  `code`, `cube`, `dismiss`, `document`, `eye_off`, `folder`, `folder_zip`, `image`,
-  `info`, `library`, `music_note_2`, `pin`, `search`, `star`, `subtract`,
-  `tag`, `video`
+  `cube`, `dismiss`, `eye_off`, `folder`, `folder_zip`, `image`,
+  `info`, `library`, `pin`, `search`, `star`, `subtract`, `tag`
 
 `Source/Filled/`のSVGが元データです。白色へ正規化したSVGから、
 Unity用の透明な512px PNGを

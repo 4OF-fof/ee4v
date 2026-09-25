@@ -704,7 +704,7 @@ namespace Ee4v.AssetManager.UI
                 {
                     return BodyPartCategory.Other;
                 }
-                var words = SplitStructuralName(name);
+                var words = AssetManagerPrefabUtility.SplitName(name);
                 if (ContainsWord(words, "head", "neck", "face", "facial",
                         "hair", "ear", "eye", "brow", "goggle", "goggles",
                         "visor") || ContainsJapanese(name, "頭", "首", "顔", "髪", "耳"))
@@ -751,32 +751,6 @@ namespace Ee4v.AssetManager.UI
                     return BodyPartCategory.Waist;
                 }
                 return BodyPartCategory.Other;
-            }
-
-            private static IReadOnlyCollection<string> SplitStructuralName(
-                string name)
-            {
-                var words = new List<string>();
-                var start = -1;
-                for (var index = 0; index <= name.Length; index++)
-                {
-                    var end = index == name.Length ||
-                        !char.IsLetterOrDigit(name[index]);
-                    var camelBreak = !end && start >= 0 &&
-                        char.IsUpper(name[index]) &&
-                        char.IsLower(name[index - 1]);
-                    if ((end || camelBreak) && start >= 0)
-                    {
-                        words.Add(name.Substring(start, index - start)
-                            .ToLowerInvariant());
-                        start = -1;
-                    }
-                    if (!end && start < 0)
-                    {
-                        start = index;
-                    }
-                }
-                return words;
             }
 
             private static bool ContainsWord(
@@ -5451,35 +5425,11 @@ namespace Ee4v.AssetManager.UI
             Transform target,
             Transform root)
         {
-            if (root == null || target == null)
-            {
-                return false;
-            }
-            if (target != root && !target.IsChildOf(root))
-            {
-                return false;
-            }
-            if (!_selectedPrefabSiblingIndex.HasValue)
-            {
-                return true;
-            }
-            if (_selectedPrefabSiblingIndex.Value >= 0)
-            {
-                var index = _selectedPrefabSiblingIndex.Value;
-                if (index >= root.childCount)
-                {
-                    return false;
-                }
-                var selected = root.GetChild(index);
-                return target == selected || target.IsChildOf(selected);
-            }
-            var current = target;
-            while (current.parent != null && current.parent != root)
-            {
-                current = current.parent;
-            }
-            return current.parent != root ||
-                   !_prefabSiblingIndices.Contains(current.GetSiblingIndex());
+            return AssetManagerPrefabUtility.IsInScope(
+                target,
+                root,
+                _selectedPrefabSiblingIndex,
+                _prefabSiblingIndices);
         }
 
         private IReadOnlyList<AvatarMaterialEntry> GetAvatarMaterials()

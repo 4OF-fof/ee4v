@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.Settings;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -406,7 +407,7 @@ namespace Ee4v.Mcp
                     }
 
                     _instance.name = prefab.name + " (ee4v MCP Preview)";
-                    SetHideFlags(_instance.transform);
+                    EditorSceneApi.HidePreviewHierarchy(_instance.transform);
                     DisableBehaviours(_instance);
                     foreach (var renderer in _instance
                                  .GetComponentsInChildren<SkinnedMeshRenderer>(true))
@@ -661,15 +662,6 @@ namespace Ee4v.Mcp
                     particle.Stop(
                         true,
                         ParticleSystemStopBehavior.StopEmittingAndClear);
-                }
-            }
-
-            private static void SetHideFlags(Transform transform)
-            {
-                transform.gameObject.hideFlags = HideFlags.HideAndDontSave;
-                for (var index = 0; index < transform.childCount; index++)
-                {
-                    SetHideFlags(transform.GetChild(index));
                 }
             }
 

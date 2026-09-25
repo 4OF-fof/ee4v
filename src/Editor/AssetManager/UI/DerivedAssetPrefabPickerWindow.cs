@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
@@ -9,6 +10,69 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
 {
+    internal static class AssetManagerPrefabUtility
+    {
+        internal static IReadOnlyCollection<string> SplitName(string name)
+        {
+            var words = new List<string>();
+            var start = -1;
+            for (var index = 0; index <= name.Length; index++)
+            {
+                var end = index == name.Length ||
+                    !char.IsLetterOrDigit(name[index]);
+                var camelBreak = !end && start >= 0 &&
+                    char.IsUpper(name[index]) &&
+                    char.IsLower(name[index - 1]);
+                if ((end || camelBreak) && start >= 0)
+                {
+                    words.Add(name.Substring(start, index - start)
+                        .ToLowerInvariant());
+                    start = -1;
+                }
+                if (!end && start < 0)
+                {
+                    start = index;
+                }
+            }
+            return words;
+        }
+
+        internal static bool IsInScope(
+            Transform target,
+            Transform root,
+            int? selectedSiblingIndex,
+            IReadOnlyCollection<int> prefabSiblingIndices)
+        {
+            if (root == null || target == null ||
+                (target != root && !target.IsChildOf(root)))
+            {
+                return false;
+            }
+            if (!selectedSiblingIndex.HasValue)
+            {
+                return true;
+            }
+            if (selectedSiblingIndex.Value >= 0)
+            {
+                var index = selectedSiblingIndex.Value;
+                if (index >= root.childCount)
+                {
+                    return false;
+                }
+                var selected = root.GetChild(index);
+                return target == selected || target.IsChildOf(selected);
+            }
+
+            var current = target;
+            while (current.parent != null && current.parent != root)
+            {
+                current = current.parent;
+            }
+            return current.parent != root ||
+                   !prefabSiblingIndices.Contains(current.GetSiblingIndex());
+        }
+    }
+
     internal sealed class DerivedAssetPrefabSelector : NavigationItem
     {
         private readonly IReadOnlyList<GameObject> _candidates;
@@ -735,7 +799,7 @@ namespace Ee4v.AssetManager.UI
                             .SetActive(true);
                     }
                 }
-                SetHideFlags(_instance.transform);
+                EditorSceneApi.HidePreviewHierarchy(_instance.transform);
                 ApplyInitialShapeChanges();
                 _renderers = _instance
                     .GetComponentsInChildren<Renderer>(true);
@@ -1174,7 +1238,7 @@ namespace Ee4v.AssetManager.UI
             string name,
             BodyPartCategory part)
         {
-            var words = SplitBoneName(name);
+            var words = AssetManagerPrefabUtility.SplitName(name);
             switch (part)
             {
                 case BodyPartCategory.Head:
@@ -1212,7 +1276,7 @@ namespace Ee4v.AssetManager.UI
 
         private static bool MatchesBoneSide(string name, bool leftSide)
         {
-            var words = SplitBoneName(name);
+            var words = AssetManagerPrefabUtility.SplitName(name);
             var left = HasBoneWord(words, "left", "l");
             var right = HasBoneWord(words, "right", "r");
             return left == right || (leftSide ? left : right);
@@ -1233,65 +1297,13 @@ namespace Ee4v.AssetManager.UI
                 term, StringComparison.Ordinal) >= 0);
         }
 
-        private static IReadOnlyCollection<string> SplitBoneName(string name)
-        {
-            var words = new List<string>();
-            var start = -1;
-            for (var index = 0; index <= name.Length; index++)
-            {
-                var end = index == name.Length ||
-                    !char.IsLetterOrDigit(name[index]);
-                var camelBreak = !end && start >= 0 &&
-                    char.IsUpper(name[index]) &&
-                    char.IsLower(name[index - 1]);
-                if ((end || camelBreak) && start >= 0)
-                {
-                    words.Add(name.Substring(start, index - start)
-                        .ToLowerInvariant());
-                    start = -1;
-                }
-                if (!end && start < 0)
-                {
-                    start = index;
-                }
-            }
-            return words;
-        }
-
         private bool IsInFocusScope(Transform target)
         {
-            if (target == null || _instance == null)
-            {
-                return false;
-            }
-
-            var root = _instance.transform;
-            if (target != root && !target.IsChildOf(root))
-            {
-                return false;
-            }
-            if (!_scopeSiblingIndex.HasValue)
-            {
-                return true;
-            }
-            if (_scopeSiblingIndex.Value >= 0)
-            {
-                var index = _scopeSiblingIndex.Value;
-                if (index >= root.childCount)
-                {
-                    return false;
-                }
-                var selected = root.GetChild(index);
-                return target == selected || target.IsChildOf(selected);
-            }
-
-            var current = target;
-            while (current.parent != null && current.parent != root)
-            {
-                current = current.parent;
-            }
-            return current.parent != root ||
-                   !_prefabSiblingIndices.Contains(current.GetSiblingIndex());
+            return AssetManagerPrefabUtility.IsInScope(
+                target,
+                _instance == null ? null : _instance.transform,
+                _scopeSiblingIndex,
+                _prefabSiblingIndices);
         }
 
         private static HumanBodyBones[] GetFocusBones(
@@ -1895,15 +1907,6 @@ namespace Ee4v.AssetManager.UI
                         new BlendShapePreviewTarget(renderer, index);
                 }
                 _blendShapeTargets[path] = shapes;
-            }
-        }
-
-        private static void SetHideFlags(Transform transform)
-        {
-            transform.gameObject.hideFlags = HideFlags.HideAndDontSave;
-            for (var index = 0; index < transform.childCount; index++)
-            {
-                SetHideFlags(transform.GetChild(index));
             }
         }
 

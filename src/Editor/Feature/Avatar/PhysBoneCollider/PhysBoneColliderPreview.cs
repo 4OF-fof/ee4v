@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -57,7 +58,7 @@ namespace Ee4v.PhysBoneCollider
             _utility.lights[1].intensity = 0.7f;
             _clone = UnityEngine.Object.Instantiate(avatar);
             _clone.name = avatar.name + " (PhysBone Collider Preview)";
-            SetHideFlags(_clone.transform);
+            EditorSceneApi.HidePreviewHierarchy(_clone.transform);
             CreatePreviewAssets();
             _physBones = physBones ?? Array.Empty<PhysBoneTarget>();
 
@@ -502,15 +503,6 @@ namespace Ee4v.PhysBoneCollider
             AddLine(vertices, indices, center + Vector3.left * size, center + Vector3.right * size);
             AddLine(vertices, indices, center + Vector3.down * size, center + Vector3.up * size);
             AddLine(vertices, indices, center + Vector3.back * size, center + Vector3.forward * size);
-        }
-
-        private static void SetHideFlags(Transform transform)
-        {
-            transform.gameObject.hideFlags = HideFlags.HideAndDontSave;
-            for (var index = 0; index < transform.childCount; index++)
-            {
-                SetHideFlags(transform.GetChild(index));
-            }
         }
 
         private void Cleanup()

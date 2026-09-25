@@ -1,10 +1,10 @@
 # コードベース監査
 
-最終監査日: 2026-09-23
+最終更新日: 2026-09-25
 
 ## 対象と方法
 
-`src`配下から同梱Third Partyを除いたC# 339 files、75,439 linesと、Editor assembly 40個を対象にした。内訳はproduction 289 files／65,693 lines、test 18 files／4,325 lines、Story 32 files／5,421 linesである。
+`src`配下から同梱Third Partyを除いたC# 343 files、85,074 linesと、Editor assembly 40個を対象にした。内訳はproduction 292 files／75,202 lines、test 18 files／4,374 lines、Story 33 files／5,498 linesである。
 
 次の境界を横断して確認した。
 
@@ -32,17 +32,27 @@
 4. 外部サムネイルとcacheは1画像16 MiBに制限する。Item IDはcache file名へ直接連結せずhash化し、path separatorや無効文字をfile pathへ持ち込まない。
 5. AssetManager UIの`async void`を0件にした。UI callbackは例外処理を内包する`Task`を明示的に開始し、cancel sourceは実行中taskが`finally`で破棄する。cancel側は破棄済みsourceをcontinuationが参照する競合を作らない。
 
+## 2026-09-25の整理
+
+- AssetManagerの改変Windowと派生Prefab選択Previewに重複していた、名前の単語分割とPrefab内選択範囲の判定を`AssetManagerPrefabUtility`へ統合した。部位分類と選択範囲の条件は維持する。
+- AssetManager、Face Expression、PhysBone Collider、MCPのPreviewで重複していた複製階層の`HideFlags`設定を`EditorSceneApi.HidePreviewHierarchy`へ統合した。
+- 同梱Fluent UI System Iconsから、コード、USS、資料、GUID参照のない`code.png`、`document.png`、`music_note_2.png`、`video.png`と対応する`.meta`、元SVGを除き、選定リストとベンダー資料を更新した。
+- EditModeテストは公開契約、状態遷移、外部境界に対応しており、同一保証を重ねたテストは確認されなかった。`test.md`の表と実際のテスト名のずれを修正し、クリップ複製の保証を追記した。
+- 公開API型、UnityのMenuItem・初期化・AssetPostprocessor、旧生成物の再適用時の除去処理は、単純な参照数だけで削除しない。
+
 ## 残る構造課題
 
-production classのうち16 filesが800 lines以上である。特に次は変更理由が複数集まっており、以後の機能変更と同時に段階分割する。
+production classのうち19 filesが800 lines以上である。特に次は変更理由が複数集まっており、以後の機能変更と同時に段階分割する。
 
 | File | Lines | 集約されている責務 | 分割境界 |
 |---|---:|---|---|
-| `AssetManagerView.cs` | 3,504 | navigation、一覧、詳細、編集、import、非同期画像 | page presenter、detail presenter、async operation owner |
-| `SqliteAssetManagerStore.cs` | 2,839 | schema、query、row mapping、transaction | schema bootstrap、item/file repository、collection repository |
-| `FaceExpressionView.cs` | 1,608 | clip UI、channel UI、filter、interaction state | clip header、channel list、pose controls |
+| `AssetModificationWorkflowWindow.cs` | 6,012 | 派生Prefab操作、部位編集、Material、Preview、保存 | 操作状態、Preview、カテゴリ別編集 |
+| `AssetManagerView.cs` | 3,560 | navigation、一覧、詳細、編集、import、非同期画像 | page presenter、detail presenter、async operation owner |
+| `SqliteAssetManagerStore.cs` | 2,940 | schema、query、row mapping、transaction | schema bootstrap、item/file repository、collection repository |
+| `DerivedAssetPrefabPickerWindow.cs` | 2,150 | 候補選択、Preview、部位絞り込み | 候補一覧、Preview操作 |
+| `FaceExpressionView.cs` | 1,613 | clip UI、channel UI、filter、interaction state | clip header、channel list、pose controls |
 | `FaceExpressionApi.cs` | 1,602 | inspect、write、validate、preview | query API、command API、preview adapter |
-| `AssetManagerService.cs` | 1,445 | application command全般、同期、import、通知 | item/file command、source sync、import orchestration |
+| `AssetManagerService.cs` | 1,446 | application command全般、同期、import、通知 | item/file command、source sync、import orchestration |
 | `FaceExpressionClipEditor.cs` | 1,368 | clip読取、pose編集、binding変換 | reader、pose editor、binding mapper |
 | `GestureMatrixControllerWriter.cs` | 1,332 | controller読取と生成、menu状態変換 | reader、plan builder、controller writer |
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -41,7 +42,7 @@ namespace Ee4v.FaceExpression
             _utility.lights[1].intensity = 0.7f;
             _clone = UnityEngine.Object.Instantiate(avatar);
             _clone.name = avatar.name + " (Face Preview)";
-            SetHideFlags(_clone.transform);
+            EditorSceneApi.HidePreviewHierarchy(_clone.transform);
             _utility.AddSingleGO(_clone);
 
             _bodyRenderer = FaceExpressionClipEditor.FindBodyRenderer(_clone);
@@ -229,15 +230,6 @@ namespace Ee4v.FaceExpression
             }
 
             return bounds;
-        }
-
-        private static void SetHideFlags(Transform transform)
-        {
-            transform.gameObject.hideFlags = HideFlags.HideAndDontSave;
-            for (var index = 0; index < transform.childCount; index++)
-            {
-                SetHideFlags(transform.GetChild(index));
-            }
         }
 
         private void Cleanup()
