@@ -13,6 +13,9 @@ namespace Ee4v.Mcp
     {
         internal static void Register()
         {
+            RegisterListBlendShapePresets();
+            RegisterGetBlendShapePreset();
+            RegisterUpdateBlendShapePreset();
             RegisterInspectFace();
             RegisterWriteClip();
             RegisterInspectAnimation();
@@ -28,6 +31,88 @@ namespace Ee4v.Mcp
             RegisterSetGestureExpression();
             RegisterPlanApply();
             RegisterApply();
+        }
+
+        private static void RegisterListBlendShapePresets()
+        {
+            McpToolRegistry.Register(new McpToolDefinition(
+                "ee4v_list_blendshape_presets",
+                "Lists saved FBX BlendShape presets with their asset GUIDs, paths, and mapping counts.",
+                McpSchemas.Object(),
+                _ => Task.FromResult(McpToolResult.Success(McpJson.From(new
+                {
+                    ok = true,
+                    presets = BlendShapePresetApi.ListPresets()
+                }))),
+                readOnly: true));
+        }
+
+        private static void RegisterGetBlendShapePreset()
+        {
+            McpToolRegistry.Register(new McpToolDefinition(
+                "ee4v_get_blendshape_preset",
+                "Reads one saved FBX BlendShape preset, including every mapping and its revision. Use meshLocalId and shapeName to identify mappings when updating.",
+                McpSchemas.Object(new JObject
+                {
+                    ["assetGuid"] = McpSchemas.String(
+                        "FBX asset GUID returned by ee4v_list_blendshape_presets.")
+                }, "assetGuid"),
+                arguments =>
+                {
+                    var preset = BlendShapePresetApi.GetPreset(
+                        (string)arguments["assetGuid"]);
+                    if (preset == null)
+                    {
+                        throw new McpToolException("preset_not_found",
+                            "The saved FBX BlendShape preset was not found.");
+                    }
+
+                    return Task.FromResult(McpToolResult.Success(McpJson.From(new
+                    {
+                        ok = true,
+                        preset
+                    })));
+                },
+                readOnly: true));
+        }
+
+        private static void RegisterUpdateBlendShapePreset()
+        {
+            var changeSchema = McpSchemas.Object(new JObject
+            {
+                ["meshLocalId"] = McpSchemas.String(
+                    "Mesh local ID as a string from ee4v_get_blendshape_preset."),
+                ["shapeName"] = McpSchemas.String(),
+                ["role"] = McpSchemas.String("Set to an empty string to clear."),
+                ["side"] = McpSchemas.Enum(string.Empty, "L", "R"),
+                ["mouthMorph"] = McpSchemas.Boolean(),
+                ["appearancePart"] = McpSchemas.Enum(
+                    string.Empty, "expression", "head", "chest", "waist",
+                    "shoulders", "arms", "hands", "legs", "feet", "other"),
+                ["appearanceGroup"] = McpSchemas.String(
+                    "Set to an empty string to clear.")
+            }, "meshLocalId", "shapeName");
+
+            McpToolRegistry.Register(new McpToolDefinition(
+                "ee4v_update_blendshape_preset",
+                "Partially updates named mappings in an existing FBX BlendShape preset. Unspecified fields and mappings are preserved. Requires the revision from get_blendshape_preset; dryRun validates without saving.",
+                McpSchemas.Object(new JObject
+                {
+                    ["assetGuid"] = McpSchemas.String(),
+                    ["expectedRevision"] = McpSchemas.String(),
+                    ["changes"] = McpSchemas.Array(changeSchema),
+                    ["dryRun"] = McpSchemas.Boolean()
+                }, "assetGuid", "expectedRevision", "changes"),
+                arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
+                    BlendShapePresetApi.UpdatePreset(
+                        (string)arguments["assetGuid"],
+                        McpJson.To<List<BlendShapePresetMappingChange>>(
+                            arguments["changes"]),
+                        (string)arguments["expectedRevision"],
+                        (bool?)arguments["dryRun"] ?? false)))),
+                readOnly: false,
+                destructive: false,
+                idempotent: true));
         }
 
         private static void RegisterInspectFace()

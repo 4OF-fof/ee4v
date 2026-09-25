@@ -57,6 +57,9 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 
 | tool | 動作 |
 |---|---|
+| `ee4v_list_blendshape_presets` | 保存済みFBX別BlendShapeプリセットのGUID、path、Mapping数を列挙する |
+| `ee4v_get_blendshape_preset` | 指定FBXの全Mappingとrevisionを返す |
+| `ee4v_update_blendshape_preset` | Mappingの役割名、左右、口形状、見た目の部位・グループ名を部分更新する |
 | `ee4v_inspect_face` | Avatarの編集可能なBlendShape channelとpreset分類を列挙する。`clipPath`指定時はClip値、revision、validation結果も返す |
 | `ee4v_upsert_expression_clip` | 静止表情Clipを`create`、`patch`、`replace`のいずれかで作成・更新する。複数ポーズClipの更新は拒否する |
 | `ee4v_inspect_expression_animation` | ポーズ順、時刻、遷移時間、任意名、参照Clip、Loop、revisionを返す。必要な場合だけ各ポーズのchannel値も返す |
@@ -74,6 +77,8 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 | `ee4v_apply_facial_set` | FX Controller、Expression Parameters、Expression Menu、Modular Avatar installerを生成・更新する。`dryRun`では設定と前提条件だけを検証する |
 
 AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。同じ内容を再指定した場合は`changed: false`としてAssetを書き直しません。複数ポーズClipはこの静止表情toolで誤って単一frameへ戻さず、アニメーション専用toolだけで更新します。
+
+自動生成済みのFBX別プリセットをagentが整える場合は、一覧から`assetGuid`を選び、詳細の`revision`、`meshLocalId`（文字列）、`shapeName`を取得します。更新toolの`changes`には編集するMappingと項目だけを指定します。`role`と`appearanceGroup`は空文字で消去でき、`side`は空文字／`L`／`R`、`appearancePart`は空文字（自動）／`expression`／`head`／`chest`／`waist`／`shoulders`／`arms`／`hands`／`legs`／`feet`／`other`を指定できます。区切り見出しは編集できません。`expectedRevision`が一致しない場合は再取得が必要です。`dryRun: true`は変更件数と適用後のrevisionを返しますが、保存しません。書き込みは既存プリセットに限り、他のMappingと未指定項目を維持します。保存時はUIと同じ保存先・通知を使用します。
 
 アニメーション編集は`ee4v_inspect_expression_animation`でポーズindexとrevisionを取得し、書き込みtoolをまず`dryRun: true`で呼んでから同じ入力で適用します。ポーズ追加は指定ポーズの表情を複製し、`transitionDuration`後へ挿入します。ポーズ更新では参照Clipと明示的なchannel値を同時に指定できません。参照Clipをローカル編集へ戻して値も変更する場合は、空の`sourceClipPath`と`channels`を同じ呼び出しへ指定します。参照Clipとポーズ名はUIと同じ`.anim`内のsub-assetへ保存され、移動と削除にも追従します。更新用revisionはアニメーション調査の結果を使用します。
 
