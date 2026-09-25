@@ -267,6 +267,23 @@ namespace Ee4v.Mcp
                 readOnly: true));
 
             McpToolRegistry.Register(new McpToolDefinition(
+                "ee4v_asset_create_collection",
+                "Creates an AssetManager smart collection. Filter nodes use type And, Or, Not, or Condition and conditionType NameContains, DescriptionContains, HasTag, or HasFileExtension.",
+                McpSchemas.Object(new JObject
+                {
+                    ["name"] = McpSchemas.String(),
+                    ["filter"] = new JObject { ["type"] = "object" }
+                }, "name", "filter"),
+                arguments => AssetResult(() => Success(Manager().CreateCollection(
+                    new CreateAssetCollectionRequest
+                    {
+                        Name = Required(arguments, "name"),
+                        Root = McpJson.To<AssetFilterNode>(arguments["filter"])
+                    }))),
+                readOnly: false,
+                idempotent: false));
+
+            McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_update_collection",
                 "Updates an existing AssetManager smart collection. Filter nodes use type And, Or, Not, or Condition and conditionType NameContains, DescriptionContains, HasTag, or HasFileExtension.",
                 McpSchemas.Object(new JObject
@@ -290,6 +307,25 @@ namespace Ee4v.Mcp
                         }));
                 }),
                 readOnly: false));
+
+            McpToolRegistry.Register(new McpToolDefinition(
+                "ee4v_asset_delete_collection",
+                "Deletes one AssetManager smart collection by ID and returns its former name and filter tree.",
+                McpSchemas.Object(new JObject
+                {
+                    ["collectionId"] = McpSchemas.String()
+                }, "collectionId"),
+                arguments => AssetResult(() =>
+                {
+                    var manager = Manager();
+                    var id = Required(arguments, "collectionId");
+                    var collection = manager.GetCollection(id);
+                    manager.DeleteCollection(id);
+                    return Success(collection);
+                }),
+                readOnly: false,
+                destructive: true,
+                idempotent: false));
         }
 
         private static IAssetManager Manager()

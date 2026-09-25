@@ -30,7 +30,7 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 - dispatch待ちの操作がないEditor frameではqueueの配列を生成しない。
 - tool結果は機械処理用の`structuredContent`と、同じ内容のtext contentを返す。preview PNGはimage contentも返す。
 - tool annotationでread-only、破壊性、冪等性、open-world accessを宣言する。
-- AssetManagerでは同期、削除、File登録、Unity ProjectへのImport、新規Item／Collection作成をMCPへ公開しない。書き込みは、事前に読み取った値を再設定すれば元へ戻せるmetadata編集だけに限定する。
+- AssetManagerでは同期、Item／Fileの削除、File登録、Unity ProjectへのImport、新規Item作成をMCPへ公開しない。Collectionの作成・削除は例外として公開し、削除toolは削除前の名前と条件を返す。その他の書き込みは、事前に読み取った値を再設定すれば元へ戻せるmetadata編集だけに限定する。
 - AssetManagerのPrefab調査は、既にUnity Projectへ取り込まれたPrefab assetとAssetManagerで作成済みの派生Prefabだけを対象にする。ZIP、unitypackage、未Import assetをtool呼び出しからImportしない。
 - Prefab previewはUnityの内部Preview sceneへだけinstanceを作成し、Play Mode、利用者のScene、Prefab assetを変更しない。外部APIへ画像を送信しない。
 - 表情Clipと表情アニメーションの更新は`expectedRevision`で競合を検出できる。静止Clipの作成、部分更新、完全置換と、ポーズ単位の追加・更新・並び替え・削除を分け、`dryRun`で書き込み前の結果を確認できる。
@@ -94,11 +94,11 @@ AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_exp
 | Item metadata | `ee4v_asset_update_item`、`ee4v_asset_set_tags`、`ee4v_asset_set_archived` |
 | File解析 | `ee4v_asset_analyze_file` |
 | Import設定 | `ee4v_asset_set_targets`、`ee4v_asset_set_dependencies` |
-| Collection | `ee4v_asset_list_collections`、`ee4v_asset_update_collection` |
+| Collection | `ee4v_asset_list_collections`、`ee4v_asset_create_collection`、`ee4v_asset_update_collection`、`ee4v_asset_delete_collection` |
 
 `ee4v_asset_set_dependencies`は`dependentTargets`と`dependencyTargets`の両方に`fileId`と`targetPath`の組を渡します。ZIPは空pathで指定せず、解析で得た内部実体のpathを指定します。
 
-MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・編集します。DB fileはUser Settingsの共通data rootにある`asset-manager-v1.db`です。MCP独自のDB書き込みやschemaは持ちません。Eagle由来Itemの名前と説明はEagleが所有するため`ee4v_asset_update_item`では変更できませんが、AssetManagerで追加したTag、Archive、Import Target、Dependencyは対応するtoolで編集できます。Eagle由来TagはEagle側で編集します。同期、Import、新規登録、作成、削除はAssetManager UIで利用者が明示的に実行します。
+MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・編集します。DB fileはUser Settingsの共通data rootにある`asset-manager-v1.db`です。MCP独自のDB書き込みやschemaは持ちません。Eagle由来Itemの名前と説明はEagleが所有するため`ee4v_asset_update_item`では変更できませんが、AssetManagerで追加したTag、Archive、Import Target、Dependencyは対応するtoolで編集できます。Eagle由来TagはEagle側で編集します。Collectionの作成・削除はMCPからも実行でき、削除toolは復元の参考になる元のCollectionを返します。同期、Import、新規Item／File登録、Item／File削除はAssetManager UIで利用者が明示的に実行します。
 
 ### 実Prefabを比較する流れ
 
