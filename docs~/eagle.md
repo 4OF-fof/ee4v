@@ -1,0 +1,7 @@
+# Eagle連携
+
+`External~/Eagle/src/plugins/BoothCompat`はBOOTH商品のメタデータをEagleの`BoothMeta`タグ付きJSONアイテムとして管理する。JSON本文がBOOTH情報とdownload履歴の正本で、Eagleアイテムの名前・URL・注釈・カスタムサムネイルを併用する。
+
+Eagleで`BoothMeta`タグ付きJSONアイテムを1件または複数選択し、右クリックメニューからBooth Compatを実行すると、選択アイテムの商品URLを使ってBOOTH情報を順番に再取得する。取得した商品名、説明、商品URL、ショップ、タグ、サムネイルURLをJSONへ保存し、アイテムの名前・URL・注釈も更新する。`attachedAt`と`downloads`は直前に保存されているJSONから引き継ぎ、Eagle上で付けたタグは保持する。その後、最新のサムネイルURLから画像を取得してカスタムサムネイルへ設定する。
+
+1件の再取得では成功・失敗を通知し、BOOTH情報だけ更新できた場合はサムネイルの失敗を別に示す。複数選択では1件の失敗後も残りを続け、更新・失敗・対象外・未処理の件数と最初の問題を1件の通知へまとめる。BoothMeta以外が混在していればそのアイテムは対象外にする。選択内にBoothMetaがない場合は通常のURL入力popupを開く。Inspectorには再取得操作を置かない。

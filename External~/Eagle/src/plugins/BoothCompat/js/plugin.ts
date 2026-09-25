@@ -10,6 +10,7 @@
     isDomReady: boolean;
     isPluginReady: boolean;
     errorMessage: string;
+    libraryRevision: number;
   }
 
   interface PluginElements {
@@ -21,12 +22,19 @@
     cancelButton: HTMLButtonElement;
   }
 
+  interface RefreshResult {
+    name: string;
+    thumbnailError: string;
+    error: string;
+  }
+
   const state: PluginState = {
     rootFolder: null,
     isBusy: false,
     isDomReady: false,
     isPluginReady: false,
-    errorMessage: ""
+    errorMessage: "",
+    libraryRevision: 0
   };
 
   const elements = {} as PluginElements;
@@ -47,6 +55,7 @@
       applyTheme(theme).catch(console.error);
     });
     eagle.onLibraryChanged(() => {
+      state.libraryRevision += 1;
       state.rootFolder = null;
       state.errorMessage = "";
       reloadState().catch(console.error);
@@ -63,6 +72,25 @@
   });
 
   async function handlePluginRun(): Promise<void> {
+    if (state.isBusy) {
+      return;
+    }
+
+    const selectedItems = await eagle.item.getSelected();
+    const selectedIds = Array.from(new Set(selectedItems.map(item => item.id)));
+    const boothMetaItems: EagleItem[] = [];
+    for (const id of selectedIds) {
+      const item = await eagle.item.getById(id);
+      if (core().isBoothMetaItem(item)) {
+        boothMetaItems.push(item);
+      }
+    }
+    if (boothMetaItems.length > 0) {
+      await eagle.window.hide();
+      await refreshSelectedBoothMetaItems(boothMetaItems, selectedIds.length - boothMetaItems.length);
+      return;
+    }
+
     resetForm();
     await centerPopupWindow();
     await reloadState();
@@ -192,6 +220,125 @@
       await eagle.item.select([result.item.id]);
       await closeWindow();
     });
+  }
+
+  async function refreshSelectedBoothMetaItems(items: EagleItem[], skippedCount: number): Promise<void> {
+    const results: RefreshResult[] = [];
+    const libraryRevision = state.libraryRevision;
+    const succeeded = await runBusy(async () => {
+      for (const selectedItem of items) {
+        if (libraryRevision !== state.libraryRevision) {
+          break;
+        }
+        try {
+          const refreshed = await refreshBoothMetaItem(selectedItem, libraryRevision);
+          results.push({ ...refreshed, error: "" });
+        } catch (error) {
+          console.error(error);
+          results.push({
+            name: core().safeString(selectedItem.name) || selectedItem.id,
+            thumbnailError: "",
+            error: errorMessage(error) || t("window.unknownError", "An unexpected error occurred.")
+          });
+        }
+      }
+    });
+
+    let body: string;
+    if (!succeeded) {
+      body = t("notification.refreshFailed", "Could not refresh BOOTH information: {{message}}", {
+        message: state.errorMessage || t("window.unknownError", "An unexpected error occurred.")
+      });
+    } else if (items.length === 1 && skippedCount === 0 && results.length === 1) {
+      const result = results[0];
+      body = result.error
+        ? t("notification.refreshFailed", "Could not refresh BOOTH information: {{message}}", { message: result.error })
+        : result.thumbnailError
+          ? t("notification.refreshPartial", "Updated BOOTH information for {{name}}, but the thumbnail could not be updated: {{message}}", {
+            name: result.name,
+            message: result.thumbnailError
+          })
+          : t("notification.refreshComplete", "Updated BOOTH information and thumbnail for {{name}}.", { name: result.name });
+    } else {
+      const updatedCount = results.filter(result => !result.error).length;
+      const thumbnailFailedCount = results.filter(result => result.thumbnailError).length;
+      const failedCount = results.filter(result => result.error).length;
+      body = t("notification.batchComplete", "BOOTH info updated: {{updated}}; thumbnail failures: {{thumbnailFailed}}; refresh failures: {{failed}}; other selected items: {{skipped}}; not processed: {{remaining}}.", {
+        updated: updatedCount,
+        thumbnailFailed: thumbnailFailedCount,
+        failed: failedCount,
+        skipped: skippedCount,
+        remaining: items.length - results.length
+      });
+      const firstIssue = results.find(result => result.error || result.thumbnailError);
+      if (firstIssue) {
+        body += ` ${t("notification.batchFirstIssue", "First issue: {{name}} — {{message}}", {
+          name: firstIssue.name,
+          message: firstIssue.error || firstIssue.thumbnailError
+        })}`;
+      }
+    }
+    await eagle.notification.show({
+      title: t("notification.title", "Booth Compat"),
+      body,
+      mute: true,
+      duration: results.some(result => result.error || result.thumbnailError) || results.length < items.length ? 5000 : 3000
+    });
+  }
+
+  async function refreshBoothMetaItem(selectedItem: EagleItem, libraryRevision: number): Promise<Pick<RefreshResult, "name" | "thumbnailError">> {
+    const storedMeta = await core().loadMetaFromItem(selectedItem);
+    const boothRef = core().parseBoothItemReference(selectedItem.url)
+      || core().parseBoothItemReference(storedMeta.itemUrl);
+    if (!boothRef) {
+      throw new Error(t("error.invalidItemUrl", "Enter a valid BOOTH item URL."));
+    }
+
+    const snapshot = await core().fetchBoothSnapshot(boothRef);
+    if (libraryRevision !== state.libraryRevision) {
+      throw new Error(t("notification.libraryChanged", "The Eagle library changed during refresh."));
+    }
+    const item = await eagle.item.getById(selectedItem.id);
+    if (!core().isBoothMetaItem(item)) {
+      throw new Error(t("notification.itemUnavailable", "The selected BoothMeta item is no longer available."));
+    }
+
+    const latestMeta = await core().loadMetaFromItem(item);
+    if (libraryRevision !== state.libraryRevision) {
+      throw new Error(t("notification.libraryChanged", "The Eagle library changed during refresh."));
+    }
+    const nextMeta = core().normalizeMeta({
+      ...latestMeta,
+      ...snapshot,
+      name: snapshot.name || core().safeString(item.name).trim() || latestMeta.name,
+      attachedAt: latestMeta.attachedAt || new Date().toISOString(),
+      downloads: latestMeta.downloads
+    });
+
+    const normalizedTags = core().ensureBoothMetaTag(item.tags);
+    if (item.name !== nextMeta.name || item.url !== nextMeta.itemUrl
+      || item.annotation !== nextMeta.description
+      || JSON.stringify(item.tags) !== JSON.stringify(normalizedTags)) {
+      item.name = nextMeta.name;
+      item.url = nextMeta.itemUrl;
+      item.annotation = nextMeta.description;
+      item.tags = normalizedTags;
+      await item.save();
+    }
+    await core().saveMetaToItem(item, nextMeta);
+
+    let thumbnailError = "";
+    if (!nextMeta.thumbnailUrl) {
+      thumbnailError = t("notification.thumbnailMissing", "No thumbnail URL was found.");
+    } else {
+      try {
+        await core().applyThumbnailToItem(item, nextMeta.thumbnailUrl, await Promise.resolve(eagle.app.getPath("temp")), true);
+      } catch (error) {
+        console.error(error);
+        thumbnailError = errorMessage(error) || t("window.unknownError", "An unexpected error occurred.");
+      }
+    }
+    return { name: nextMeta.name, thumbnailError };
   }
 
   async function handleWindowKeydown(event: KeyboardEvent): Promise<void> {

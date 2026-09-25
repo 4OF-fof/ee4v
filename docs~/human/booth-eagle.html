@@ -21,7 +21,7 @@
   <nav class="page-nav" aria-label="利用ガイド"><ul><li><a href="index.html">概要</a></li><li><a href="mcp.html">MCP</a></li><li><a href="asset-manager.html">Asset Manager</a></li><li><a href="asset-protection.html">Asset Protection</a></li><li><a href="booth-eagle.html" aria-current="page">BOOTH / Eagle</a></li><li><a href="face-expression.html">Face Expression</a></li><li><a href="physbone-collider.html">PhysBone Collider</a></li><li><a href="play-mode-component-suppression.html">Play Mode</a></li><li><a href="project-tools.html">Project</a></li><li><a href="hierarchy-tools.html">Hierarchy</a></li><li><a href="window-groups.html">Window Groups</a></li><li><a href="settings.html">設定</a></li></ul></nav>
 
   <main id="main" class="content-shell">
-    <aside class="toc" aria-label="このページの目次"><p>On this page</p><ol><li><a href="#pages">対応画面</a></li><li><a href="#single">単品取り込み</a></li><li><a href="#batch">一括取り込み</a></li><li><a href="#flow">処理の流れ</a></li><li><a href="#related">関連機能</a></li></ol></aside>
+    <aside class="toc" aria-label="このページの目次"><p>On this page</p><ol><li><a href="#pages">対応画面</a></li><li><a href="#single">単品取り込み</a></li><li><a href="#batch">一括取り込み</a></li><li><a href="#refresh">情報の再取得</a></li><li><a href="#flow">処理の流れ</a></li><li><a href="#related">関連機能</a></li></ol></aside>
     <article class="prose">
       <section id="pages">
         <p class="section-label">Pages</p><h2>library、gifts、商品ページに対応</h2>
@@ -36,6 +36,11 @@
         <p>libraryとgiftsでは、表示中の商品から未取り込みのdownloadを集め、画面右下へ商品名とFile名を一覧表示します。</p>
         <ol class="steps"><li>一覧で取り込み対象を確認します。</li><li><strong>すべて取り込む</strong>を選びます。</li><li>取り込み待ちではない対象を上から順番に処理します。</li></ol>
         <p>表示中の対象がすべて取り込み済みになると、一覧は非表示になります。</p>
+      </section>
+      <section id="refresh">
+        <p class="section-label">Refresh</p><h2>Eagleで選択したアイテムを再取得する</h2>
+        <p>Eagleで<code>BoothMeta</code>タグ付きのJSONアイテムを1件または複数選択し、右クリックメニューから<strong>Booth Compat</strong>を実行します。選択アイテムのBOOTH商品情報とカスタムサムネイルを順番に再取得します。1件失敗しても残りを続け、最後に更新件数と失敗件数を通知します。取り込み済みdownloadの履歴とEagleで付けたタグは維持します。</p>
+        <p>BoothMeta以外のアイテムが混ざっている場合は対象外として通知します。選択内にBoothMetaがない場合は、通常のBOOTH商品URL入力画面が開きます。</p>
       </section>
       <section id="flow">
         <p class="section-label">Download flow</p><h2>BOOTH標準downloadを使う</h2>

@@ -26,6 +26,17 @@
     "addTag": "Add {{tag}} to Eagle tags",
     "removeTag": "Remove {{tag}} from Eagle tags"
   },
+  "notification": {
+    "title": "Booth Compat",
+    "itemUnavailable": "The selected BoothMeta item is no longer available.",
+    "libraryChanged": "The Eagle library changed during refresh.",
+    "thumbnailMissing": "No thumbnail URL was found.",
+    "refreshFailed": "Could not refresh BOOTH information: {{message}}",
+    "refreshPartial": "Updated BOOTH information for {{name}}, but the thumbnail could not be updated: {{message}}",
+    "refreshComplete": "Updated BOOTH information and thumbnail for {{name}}.",
+    "batchComplete": "BOOTH info updated: {{updated}}; thumbnail failures: {{thumbnailFailed}}; refresh failures: {{failed}}; other selected items: {{skipped}}; not processed: {{remaining}}.",
+    "batchFirstIssue": "First issue: {{name}} — {{message}}"
+  },
   "error": {
     "invalidItemUrl": "Enter a valid BOOTH item URL.",
     "rootFolderMissing": "The VRCAsset folder was not found at the library root.",

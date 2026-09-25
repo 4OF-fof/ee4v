@@ -27,6 +27,7 @@ npm run check
 - `serviceMode: false`
 - 右クリックメニュー / 通常 plugin 起動用
 - 通常起動では frameless の疑似 popup を開き、Booth item URL から `VRCAsset/<商品名>` folder と `BoothMeta` タグ付き JSON item を作成する
+- `BoothMeta`タグ付きJSON itemを1件または複数選択して右クリックメニューから実行すると、popupを開かずにBOOTH情報とカスタムサムネイルを順番に再取得し、結果を通知する。1件の失敗で後続を止めず、download履歴とEagle上のタグは維持する
 - `BoothMeta` タグ付き JSON item 選択時は inspector を右ペインへ表示する
 - Booth metadata は JSON item 本文が唯一の正本
 - Window / Inspector は Eagle の locale、theme、library 変更へ追従する

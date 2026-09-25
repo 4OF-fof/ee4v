@@ -26,6 +26,17 @@
     "addTag": "{{tag}} を Eagle タグに追加",
     "removeTag": "{{tag}} を Eagle タグから削除"
   },
+  "notification": {
+    "title": "Booth Compat",
+    "itemUnavailable": "選択した BoothMeta アイテムが見つかりません。",
+    "libraryChanged": "再取得中に Eagle ライブラリが切り替わりました。",
+    "thumbnailMissing": "サムネイルの URL がありません。",
+    "refreshFailed": "BOOTH 情報を再取得できませんでした: {{message}}",
+    "refreshPartial": "{{name}} の BOOTH 情報を更新しましたが、サムネイルを更新できませんでした: {{message}}",
+    "refreshComplete": "{{name}} の BOOTH 情報とサムネイルを更新しました。",
+    "batchComplete": "BOOTH 情報 {{updated}} 件更新、サムネイル失敗 {{thumbnailFailed}} 件、再取得失敗 {{failed}} 件、対象外 {{skipped}} 件、未処理 {{remaining}} 件。",
+    "batchFirstIssue": "最初の問題: {{name}} — {{message}}"
+  },
   "error": {
     "invalidItemUrl": "有効な BOOTH アイテム URL を入力してください。",
     "rootFolderMissing": "ライブラリ直下に VRCAsset フォルダーが見つかりません。",

@@ -309,7 +309,7 @@
     await item.replaceFile(tempPath);
   }
 
-  async function applyThumbnailToItem(item: EagleItem, thumbnailUrl: string, tempDir: string): Promise<void> {
+  async function applyThumbnailToItem(item: EagleItem, thumbnailUrl: string, tempDir: string, strict = false): Promise<void> {
     const normalizedThumbnailUrl = normalizeUrl(thumbnailUrl);
     if (!normalizedThumbnailUrl) {
       return;
@@ -321,6 +321,9 @@
       await downloadFile(normalizedThumbnailUrl, thumbnailPath);
       await item.setCustomThumbnail(thumbnailPath);
     } catch (error) {
+      if (strict) {
+        throw error;
+      }
       console.warn(`Failed to apply custom thumbnail: ${errorMessage(error)}`);
     }
   }

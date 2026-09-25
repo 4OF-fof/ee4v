@@ -178,7 +178,7 @@ interface BoothCompatCore {
   findDirectChildFolder(parentId: string, name: string): Promise<EagleFolder | null>;
   loadMetaFromItem(item: EagleItem): Promise<BoothMeta>;
   saveMetaToItem(item: EagleItem, meta: Partial<BoothMeta>): Promise<void>;
-  applyThumbnailToItem(item: EagleItem, thumbnailUrl: string, tempDir: string): Promise<void>;
+  applyThumbnailToItem(item: EagleItem, thumbnailUrl: string, tempDir: string, strict?: boolean): Promise<void>;
   fetchBoothSnapshot(boothRef: BoothItemReference): Promise<BoothSnapshot>;
   normalizeMeta(meta: Partial<BoothMeta> | BoothProductInput | unknown): BoothMeta;
   normalizeDownloads(downloads: unknown): BoothDownloadMeta[];
