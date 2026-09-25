@@ -513,14 +513,34 @@ namespace Ee4v.AssetManager.Application
                     .ToArray();
                 var targetPaths = new Dictionary<string, List<string>>(
                     StringComparer.Ordinal);
-                for (var targetIndex = 0;
-                     targetIndex < selected.Length;
-                     targetIndex++)
+                var pendingTargets = new Queue<AssetFileTarget>(selected);
+                var visitedTargets = new HashSet<string>(
+                    StringComparer.OrdinalIgnoreCase);
+                while (pendingTargets.Count > 0)
                 {
+                    var target = pendingTargets.Dequeue();
+                    if (!visitedTargets.Add(
+                            target.FileId + "\n" + target.TargetPath))
+                    {
+                        continue;
+                    }
                     AddTargetPath(
                         targetPaths,
-                        selected[targetIndex].FileId,
-                        selected[targetIndex].TargetPath);
+                        target.FileId,
+                        target.TargetPath);
+                    foreach (var dependency in _store.GetFileDependencies(
+                                 target.FileId).Where(dependency =>
+                                 string.Equals(
+                                     dependency.DependentTargetPath,
+                                     target.TargetPath,
+                                     StringComparison.OrdinalIgnoreCase)))
+                    {
+                        pendingTargets.Enqueue(new AssetFileTarget
+                        {
+                            FileId = dependency.DependencyFileId,
+                            TargetPath = dependency.TargetPath
+                        });
+                    }
                 }
                 var order = new List<string>();
                 var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -538,23 +558,6 @@ namespace Ee4v.AssetManager.Application
                         {
                             order.Add(dependencyFileId);
                         }
-                    }
-                }
-
-                for (var fileIndex = 0;
-                     fileIndex < order.Count;
-                     fileIndex++)
-                {
-                    var dependencies = _store.GetFileDependencies(
-                        order[fileIndex]);
-                    for (var dependencyIndex = 0;
-                         dependencyIndex < dependencies.Count;
-                         dependencyIndex++)
-                    {
-                        AddTargetPath(
-                            targetPaths,
-                            dependencies[dependencyIndex].DependencyFileId,
-                            dependencies[dependencyIndex].TargetPath);
                     }
                 }
 
@@ -675,28 +678,98 @@ namespace Ee4v.AssetManager.Application
                 AssetManagerRequestValidator.NormalizeIds(
                     dependentFileIds,
                     "dependent file ids");
-            for (var i = 0; i < normalizedFileIds.Count; i++)
-            {
-                _store.GetFile(normalizedFileIds[i]);
-            }
+            return SetFileDependencies(
+                normalizedFileIds.Select(fileId => new AssetFileTarget
+                {
+                    FileId = fileId,
+                    TargetPath = string.Empty
+                }).ToArray(),
+                dependencyTargets);
+        }
 
+        public IReadOnlyList<AssetFileDependency> SetFileDependencies(
+            IReadOnlyList<AssetFileTarget> dependentTargets,
+            IReadOnlyList<AssetFileTarget> dependencyTargets)
+        {
+            var normalizedSources = NormalizeDependencyTargets(
+                dependentTargets);
+            if (normalizedSources.Count == 0)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Dependent targets are required.");
+            }
             var normalizedTargets = NormalizeDependencyTargets(
                 dependencyTargets);
-            var dependencyIds = normalizedTargets
-                .Select(target => target.FileId)
-                .Distinct(StringComparer.Ordinal)
-                .ToArray();
-            AssetManagerRequestValidator.ValidateDependencyReplacement(
-                normalizedFileIds,
-                dependencyIds,
-                GetDependencyIds);
+            ValidateDependencyReplacement(
+                normalizedSources,
+                normalizedTargets);
             var dependencies = _store.ReplaceFileDependencies(
-                normalizedFileIds,
+                normalizedSources,
                 normalizedTargets);
             Publish(
                 AssetManagerChangeKind.FileDependenciesChanged,
-                normalizedFileIds);
+                normalizedSources.Select(source => source.FileId)
+                    .Distinct(StringComparer.Ordinal).ToArray());
             return dependencies;
+        }
+
+        private void ValidateDependencyReplacement(
+            IReadOnlyList<AssetFileTarget> sources,
+            IReadOnlyList<AssetFileTarget> targets)
+        {
+            foreach (var source in sources)
+            {
+                if (targets.Any(target =>
+                        AssetFileTarget.HasSameIdentity(source, target)))
+                {
+                    throw new AssetManagerException(
+                        AssetManagerErrorCode.InvalidRequest,
+                        "A target cannot depend on itself.");
+                }
+            }
+
+            var sourcesByFile = sources.GroupBy(
+                    source => source.FileId,
+                    StringComparer.Ordinal)
+                .ToDictionary(group => group.Key,
+                    group => group.ToArray(),
+                    StringComparer.Ordinal);
+            IReadOnlyList<string> GetDependencies(string fileId)
+            {
+                var existing = _store.GetFileDependencies(fileId);
+                if (!sourcesByFile.TryGetValue(
+                        fileId,
+                        out var replacedSources))
+                {
+                    return existing.Select(dependency =>
+                            dependency.DependencyFileId)
+                        .Where(id => !string.Equals(
+                            id, fileId, StringComparison.Ordinal))
+                        .Distinct(StringComparer.Ordinal)
+                        .ToArray();
+                }
+
+                return existing
+                    .Where(dependency => !replacedSources.Any(source =>
+                        string.Equals(
+                            source.TargetPath,
+                            dependency.DependentTargetPath,
+                            StringComparison.OrdinalIgnoreCase)))
+                    .Select(dependency => dependency.DependencyFileId)
+                    .Concat(targets.Select(target => target.FileId))
+                    .Where(id => !string.Equals(
+                        id, fileId, StringComparison.Ordinal))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray();
+            }
+
+            foreach (var fileId in sourcesByFile.Keys)
+            {
+                AssetManagerRequestValidator.ResolveDependencyOrder(
+                    fileId,
+                    GetDependencies);
+            }
         }
 
         private IReadOnlyList<AssetFileTarget> NormalizeDependencyTargets(
@@ -966,6 +1039,9 @@ namespace Ee4v.AssetManager.Application
         {
             return _store.GetFileDependencies(fileId)
                 .Select(dependency => dependency.DependencyFileId)
+                .Where(id => !string.Equals(
+                    id, fileId, StringComparison.Ordinal))
+                .Distinct(StringComparer.Ordinal)
                 .ToArray();
         }
 
@@ -979,7 +1055,20 @@ namespace Ee4v.AssetManager.Application
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var file = GetFileForAnalysis(fileId);
+            return AnalyzeFileAsync(
+                GetFileForAnalysis(fileId),
+                cancellationToken);
+        }
+
+        public Task<AssetFileAnalysis> AnalyzeFileAsync(
+            AssetFile file,
+            CancellationToken cancellationToken = default)
+        {
+            if (file == null)
+            {
+                throw new ArgumentNullException(nameof(file));
+            }
+            cancellationToken.ThrowIfCancellationRequested();
             return Task.Run(
                 () => _fileAnalyzer.Analyze(file, cancellationToken),
                 cancellationToken);

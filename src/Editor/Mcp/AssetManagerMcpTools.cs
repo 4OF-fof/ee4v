@@ -243,14 +243,15 @@ namespace Ee4v.Mcp
             }, "fileId", "targetPath");
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_set_dependencies",
-                "Replaces file-level dependency targets used to order and supplement imports.",
+                "Replaces dependencies from selected file contents to selected target contents.",
                 McpSchemas.Object(new JObject
                 {
-                    ["dependentFileIds"] = McpSchemas.Array(McpSchemas.String()),
+                    ["dependentTargets"] = McpSchemas.Array(target),
                     ["dependencyTargets"] = McpSchemas.Array(target)
-                }, "dependentFileIds", "dependencyTargets"),
+                }, "dependentTargets", "dependencyTargets"),
                 arguments => AssetResult(() => Success(Manager().SetFileDependencies(
-                    RequiredStrings(arguments, "dependentFileIds"),
+                    McpJson.To<List<AssetFileTarget>>(arguments["dependentTargets"]) ??
+                    new List<AssetFileTarget>(),
                     McpJson.To<List<AssetFileTarget>>(arguments["dependencyTargets"]) ??
                     new List<AssetFileTarget>()))),
                 readOnly: false));

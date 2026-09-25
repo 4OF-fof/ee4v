@@ -74,9 +74,15 @@ namespace Ee4v.AssetManager.Contracts
         IReadOnlyList<AssetFileDependency> SetFileDependencies(
             IReadOnlyList<string> dependentFileIds,
             IReadOnlyList<AssetFileTarget> dependencyTargets);
+        IReadOnlyList<AssetFileDependency> SetFileDependencies(
+            IReadOnlyList<AssetFileTarget> dependentTargets,
+            IReadOnlyList<AssetFileTarget> dependencyTargets);
         AssetFileAnalysis AnalyzeFile(string fileId);
         Task<AssetFileAnalysis> AnalyzeFileAsync(
             string fileId,
+            CancellationToken cancellationToken = default);
+        Task<AssetFileAnalysis> AnalyzeFileAsync(
+            AssetFile file,
             CancellationToken cancellationToken = default);
         IReadOnlyList<string> GetFileImportedAssetGuids(string fileId);
         IReadOnlyList<string> GetItemImportedAssetGuids(string itemId);

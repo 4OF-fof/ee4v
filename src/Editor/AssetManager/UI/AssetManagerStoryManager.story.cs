@@ -294,6 +294,13 @@ namespace Ee4v.AssetManager.UI
             return Array.Empty<AssetFileDependency>();
         }
 
+        public IReadOnlyList<AssetFileDependency> SetFileDependencies(
+            IReadOnlyList<AssetFileTarget> dependentTargets,
+            IReadOnlyList<AssetFileTarget> dependencyTargets)
+        {
+            return Array.Empty<AssetFileDependency>();
+        }
+
         public AssetFileAnalysis AnalyzeFile(string fileId)
         {
             var file = GetFile(fileId);
@@ -327,6 +334,14 @@ namespace Ee4v.AssetManager.UI
         {
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(AnalyzeFile(fileId));
+        }
+
+        public Task<AssetFileAnalysis> AnalyzeFileAsync(
+            AssetFile file,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(AnalyzeFile(file.Id));
         }
 
         public IReadOnlyList<string> GetFileImportedAssetGuids(string fileId)

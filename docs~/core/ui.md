@@ -64,6 +64,8 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 
 `CustomPopup`は`c31a22adf8a49e6fc91addde1febed94a98ea85b`の`old/Editor/Core/UI/Window/BaseWindow.cs`を基準にしたpopup外枠です。同じ`old`配下の`FolderStyleSelectorWindow`などが使用していた操作を移植し、外観は共通トークンを使う単純なパネルへ変更しています。外枠は1pxとし、HeaderとFooterは本文との面の濃度差と境界線で区切ります。現行の`UiTextFactory`、`FluentUiIcons`、`EditorPopupApi`へ接続し、画面内への位置補正とUnity標準Pickerのfocus処理を加えています。popup用Windowは`CustomPopupWindow`を継承し、`ShowAsPopup`で表示して`SetPopup(CustomPopup)`で外枠を設定します。
 
+Footerに並ぶボタンの間隔は共通スタイルで12px確保します。
+
 | API | 動作 |
 |---|---|
 | `HeaderLeading` | ヘッダータイトルの左側へアイコンなどを追加する |

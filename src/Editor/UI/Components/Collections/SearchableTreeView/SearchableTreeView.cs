@@ -215,6 +215,11 @@ namespace Ee4v.UI
             return _treeView.IsExpanded(itemId);
         }
 
+        protected IReadOnlyList<TData> GetSelectedData()
+        {
+            return _selectedTreeItems.Select(item => item.Data).ToArray();
+        }
+
         private void BindItem(VisualElement element, int index)
         {
             var item = _treeView.GetItemDataForIndex<SearchableTreeItemData<TData>>(index);

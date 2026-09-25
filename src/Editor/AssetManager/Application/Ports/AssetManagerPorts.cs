@@ -45,7 +45,7 @@ namespace Ee4v.AssetManager.Application.Ports
         IReadOnlyList<AssetFileDependency> GetFileDependencies(
             string fileId);
         IReadOnlyList<AssetFileDependency> ReplaceFileDependencies(
-            IReadOnlyList<string> dependentFileIds,
+            IReadOnlyList<AssetFileTarget> dependentTargets,
             IReadOnlyList<AssetFileTarget> dependencyTargets);
         IReadOnlyList<string> GetDependentFileIds(
             IReadOnlyList<string> dependencyFileIds);

@@ -73,6 +73,7 @@ namespace Ee4v.AssetManager.Contracts
     public sealed class AssetFileDependency
     {
         public string DependentFileId { get; set; }
+        public string DependentTargetPath { get; set; }
         public string DependencyFileId { get; set; }
         public string TargetPath { get; set; }
     }

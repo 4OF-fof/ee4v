@@ -221,8 +221,8 @@
     "derivedAssetPreviewReset": "Reset preview view",
     "derivedAssetPreviewBackground": "Toggle preview background",
     "settings": "SETTINGS",
-    "contents": "CONTENTS",
-    "contentsNote": "Analyze the file or enter one entry path per line to import.",
+    "fileTreeSelectedCount": "{0} selected",
+    "batchDependenciesTooltip": "Common dependency targets are shown. Saving replaces the dependencies of every selected file with the same targets.",
     "targetGroupNote": "One target with the same group name is imported. An empty group is always imported.",
     "targetImportChoiceNote": "Choose one target to import from each group.",
     "itemTargetPickerTitle": "Edit Item Targets",
@@ -319,8 +319,6 @@
     "saveDependencies": "Save dependencies",
     "addTarget": "Add Target",
     "removeTarget": "Remove Target",
-    "analyze": "Analyze",
-    "importEntries": "Import entries",
     "importEntry": "Import this entry",
     "change": "Change",
     "move": "Move",
@@ -342,6 +340,10 @@
     "deleteFile": {
       "title": "Delete file",
       "message": "Delete this file record?"
+    },
+    "deleteFiles": {
+      "title": "Delete files",
+      "message": "Delete the selected {0} file records?"
     },
     "deleteCollection": {
       "title": "Delete collection",

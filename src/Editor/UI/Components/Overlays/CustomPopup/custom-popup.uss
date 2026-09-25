@@ -56,8 +56,8 @@
     background-color: var(--ee4v-color-surface-subtle);
 }
 
-.ee4v-ui-custom-popup__footer > * {
-    margin-left: var(--ee4v-space-md);
+.ee4v-ui-custom-popup__footer > .ee4v-ui-button {
+    margin-left: var(--ee4v-space-xl);
 }
 
 .ee4v-ui-custom-popup__footer--hidden {

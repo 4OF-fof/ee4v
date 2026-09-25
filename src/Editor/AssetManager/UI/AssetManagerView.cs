@@ -137,6 +137,7 @@ namespace Ee4v.AssetManager.UI
             private string _saveLabel;
             private IReadOnlyList<AssetFile> _files;
             private IReadOnlyList<AssetFileTarget> _targets;
+            private IReadOnlyList<AssetFileTarget> _unavailableTargets;
             private IReadOnlyDictionary<string, AssetFileAnalysis>
                 _initialAnalyses;
             private IReadOnlyList<FileTreeGroup> _groups;
@@ -154,7 +155,8 @@ namespace Ee4v.AssetManager.UI
                 Action<IReadOnlyList<AssetFileTarget>> save,
                 IReadOnlyDictionary<string, AssetFileAnalysis>
                     initialAnalyses = null,
-                IReadOnlyList<FileTreeGroup> groups = null)
+                IReadOnlyList<FileTreeGroup> groups = null,
+                IReadOnlyList<AssetFileTarget> unavailableTargets = null)
             {
                 if (anchor == null || manager == null || save == null)
                 {
@@ -169,6 +171,7 @@ namespace Ee4v.AssetManager.UI
                 window._files = files ?? Array.Empty<AssetFile>();
                 window._targets = targets ??
                                   Array.Empty<AssetFileTarget>();
+                window._unavailableTargets = unavailableTargets;
                 window._initialAnalyses = initialAnalyses;
                 window._groups = groups ?? Array.Empty<FileTreeGroup>();
                 window._save = save;
@@ -191,7 +194,8 @@ namespace Ee4v.AssetManager.UI
                     closeTooltip: I18N.Get("action.cancel"));
                 _tree = new SearchableFileTree(
                     _manager,
-                    showTargetToggles: true);
+                    showTargetToggles: true,
+                    unavailableTargets: _unavailableTargets);
                 _tree.AddToClassList(
                     "ee4v-asset-manager__item-target-picker-tree");
                 _tree.SetItem(
@@ -255,11 +259,11 @@ namespace Ee4v.AssetManager.UI
         private AssetThumbnailStack _itemOverviewThumbnailStack;
         private SearchableFileTree _fileTree;
         private ScrollView _itemDetailPane;
-        private FileTreeSelection _fileTreeSelection;
+        private IReadOnlyList<FileTreeSelection> _fileTreeSelections =
+            Array.Empty<FileTreeSelection>();
         private CancellationTokenSource _thumbnailCancellation;
         private CancellationTokenSource _itemOverviewThumbnailCancellation;
         private CancellationTokenSource _gridThumbnailCancellation;
-        private CancellationTokenSource _fileAnalysisCancellation;
         private ISet<string> _importedItemIdsInProject;
         private bool _defersManagerRefresh;
         private bool _managerRefreshPending;
@@ -349,7 +353,6 @@ namespace Ee4v.AssetManager.UI
             CancelGridThumbnails();
             CancelThumbnail();
             CancelItemOverviewThumbnail();
-            CancelFileAnalysis();
             ClearDetailThumbnail();
             ClearItemOverviewThumbnail();
             _breadcrumbs?.Dispose();
@@ -712,7 +715,6 @@ namespace Ee4v.AssetManager.UI
 
             CancelItemOverviewThumbnail();
             ClearItemOverviewThumbnail();
-            CancelFileAnalysis();
             switch (_viewState.Page)
             {
                 case AssetManagerPage.Tags:
@@ -1316,11 +1318,6 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var entries = AssetManagerControls.CreateTextField(
-                string.Empty,
-                "ee4v-asset-manager__setting-input",
-                "ee4v-asset-manager__contents-input");
-            entries.multiline = true;
             var extension = GetFileExtension(file);
             var eyebrow = I18N.Get("detail.file.eyebrow") +
                           (string.IsNullOrEmpty(extension)
@@ -1333,9 +1330,15 @@ namespace Ee4v.AssetManager.UI
                 eyebrow,
                 file.SourcePath,
                 CreateAssetStatusState(file.IsArchived));
-            header.AddAction(AssetManagerControls.CreateButton(
-                I18N.Get("action.analyze"),
-                () => _ = AnalyzeFileAsync(file.Id, entries)));
+            if (SearchableFileTree.CanImport(
+                    new FileTreeSelection(file, null)))
+            {
+                header.AddAction(AssetManagerControls.CreateButton(
+                    I18N.Get("action.import"),
+                    () => ImportFileTreeEntry(
+                        new FileTreeSelection(file, null)),
+                    "ee4v-asset-manager__primary-action"));
+            }
             header.AddAction(AssetManagerControls.CreateButton(
                 I18N.Get(file.IsArchived
                     ? "action.restore"
@@ -1349,71 +1352,92 @@ namespace Ee4v.AssetManager.UI
             }
             host.Add(header);
 
+            BuildFileSettings(
+                host,
+                new[] { file },
+                SearchableFileTree.CanImport(
+                    new FileTreeSelection(file, null))
+                    ? new[] { new AssetFileTarget
+                    {
+                        FileId = file.Id,
+                        TargetPath = string.Empty
+                    } }
+                    : Array.Empty<AssetFileTarget>(),
+                showFileId: true);
+        }
+
+        private void BuildFileSettings(
+            VisualElement host,
+            IReadOnlyList<AssetFile> files,
+            IReadOnlyList<AssetFileTarget> dependencySources,
+            bool showFileId)
+        {
+            var fileIds = files.Select(file => file.Id).ToArray();
+            var assignedItemId = files[0].ItemId;
             var settings = new AssetDetailSection(
                 I18N.Get("detail.settings"));
             var settingList = new AssetDetailSettingList();
             var itemId = AssetManagerControls.CreateTextField(
                 string.Empty,
                 "ee4v-asset-manager__setting-input");
-            itemId.value = file.ItemId ?? string.Empty;
+            itemId.value = assignedItemId ?? string.Empty;
             settingList.Add(AssetDetailSettingRow.Editable(
                 I18N.Get("field.assignedItem"),
-                string.IsNullOrWhiteSpace(file.ItemId)
+                string.IsNullOrWhiteSpace(assignedItemId)
                     ? I18N.Get("common.none")
-                    : file.ItemId,
+                    : assignedItemId,
                 itemId,
                 AssetManagerControls.CreateButton(
                     I18N.Get("action.moveFile"),
-                    () => MoveFile(file.Id, itemId.value)),
+                    () => MoveFiles(fileIds, itemId.value)),
                 I18N.Get("action.move")));
 
-            var dependencyTargets = _manager
-                .GetFileDependencies(file.Id)
-                .Select(dependency => new AssetFileTarget
-                {
-                    FileId = dependency.DependencyFileId,
-                    TargetPath = dependency.TargetPath
-                })
-                .ToArray();
+            AddDependencySetting(settingList, dependencySources);
+            if (showFileId)
+            {
+                settingList.Add(new AssetDetailSettingRow(
+                    I18N.Get("field.fileId"),
+                    CreateMonoValue(fileIds[0])));
+            }
+            settings.Add(settingList);
+            host.Add(settings);
+        }
+
+        private void AddDependencySetting(
+            AssetDetailSettingList settingList,
+            IReadOnlyList<AssetFileTarget> sources)
+        {
+            if (sources == null || sources.Count == 0)
+            {
+                return;
+            }
+
+            var dependencyTargets = GetCommonFileDependencies(sources);
             var dependencySummary = dependencyTargets
                 .Select(target => FormatTargetName(
-                    _manager.GetFile(target.FileId),
-                    target))
+                    _manager.GetFile(target.FileId), target))
                 .ToArray();
             UiButton editDependencies = null;
             editDependencies = AssetManagerControls.CreateButton(
                 I18N.Get("action.edit"),
                 () => ShowDependencyEditor(
                     editDependencies,
-                    file.Id,
+                    sources,
                     dependencyTargets));
-            var dependencySummaryText = UiTextFactory.Create(
+            if (sources.Count > 1)
+            {
+                editDependencies.tooltip = I18N.Get(
+                    "detail.batchDependenciesTooltip");
+            }
+            var summary = UiTextFactory.Create(
                 dependencySummary.Length == 0
                     ? I18N.Get("common.none")
                     : string.Join(" · ", dependencySummary));
-            dependencySummaryText.SetWhiteSpace(WhiteSpace.Normal);
+            summary.SetWhiteSpace(WhiteSpace.Normal);
             settingList.Add(new AssetDetailSettingRow(
                 I18N.Get("field.dependencies"),
-                dependencySummaryText,
+                summary,
                 editDependencies));
-            settingList.Add(new AssetDetailSettingRow(
-                I18N.Get("field.fileId"),
-                CreateMonoValue(file.Id)));
-            settings.Add(settingList);
-            host.Add(settings);
-
-            var contents = new AssetDetailSection(
-                I18N.Get("detail.contents"));
-            contents.Add(UiTextFactory.Create(
-                I18N.Get("detail.contentsNote"),
-                UiClassNames.SecondaryText,
-                "ee4v-asset-manager__section-note"));
-            contents.Add(entries);
-            contents.Add(AssetManagerControls.CreateButton(
-                I18N.Get("action.importEntries"),
-                () => ImportEntries(file.Id, entries.value),
-                "ee4v-asset-manager__primary-action"));
-            host.Add(contents);
         }
 
         private void SelectFile(AssetFile file)
@@ -1424,7 +1448,6 @@ namespace Ee4v.AssetManager.UI
         private void BuildItemDetail()
         {
             CancelGridThumbnails();
-            CancelFileAnalysis();
             _content.Clear();
             _search.style.display = DisplayStyle.None;
             _sortButton.style.display = DisplayStyle.None;
@@ -1453,7 +1476,7 @@ namespace Ee4v.AssetManager.UI
                 _fileTree = new SearchableFileTree(
                     _manager,
                     RegisterCurrentItemFile,
-                    ImportFileTreeEntry);
+                    selections => _ = ImportFileTreeEntriesAsync(selections));
                 _fileTree.SelectionChanged += OnFileTreeSelectionChanged;
             }
             treePane.Add(_fileTree);
@@ -1469,8 +1492,15 @@ namespace Ee4v.AssetManager.UI
             layout.Add(_itemDetailPane);
             _content.Add(layout);
 
-            _fileTreeSelection = null;
+            if (!string.Equals(
+                    _fileTree.ItemId,
+                    item.Id,
+                    StringComparison.Ordinal))
+            {
+                _fileTreeSelections = Array.Empty<FileTreeSelection>();
+            }
             _fileTree.SetItem(item.Id, files);
+            _fileTreeSelections = _fileTree.SelectedSelections;
             RefreshItemDetailPane(item, files);
         }
 
@@ -1479,7 +1509,7 @@ namespace Ee4v.AssetManager.UI
             CancelItemOverviewThumbnail();
             ClearItemOverviewThumbnail();
             _itemDetailPane = null;
-            _fileTreeSelection = null;
+            _fileTreeSelections = Array.Empty<FileTreeSelection>();
             var page = new VisualElement();
             page.AddToClassList(
                 "ee4v-asset-manager__derived-assets-page");
@@ -1711,12 +1741,23 @@ namespace Ee4v.AssetManager.UI
             CancelItemOverviewThumbnail();
             ClearItemOverviewThumbnail();
             _itemDetailPane.Clear();
-            if (_fileTreeSelection?.Entry != null)
+            if (_fileTreeSelections.Count > 1)
+            {
+                BuildFileTreeSelectionDetail(
+                    _itemDetailPane,
+                    _fileTreeSelections);
+                return;
+            }
+
+            var selection = _fileTreeSelections.Count == 1
+                ? _fileTreeSelections[0]
+                : null;
+            if (selection?.Entry != null)
             {
                 BuildFileEntryDetail(
                     _itemDetailPane,
-                    _fileTreeSelection.File,
-                    _fileTreeSelection.Entry);
+                    selection.File,
+                    selection.Entry);
                 return;
             }
 
@@ -2367,9 +2408,21 @@ namespace Ee4v.AssetManager.UI
                     IsEntryImported(file, entry)
                         ? "common.yes"
                         : "common.no"))));
+            if (SearchableFileTree.CanImport(
+                    new FileTreeSelection(file, entry)))
+            {
+                AddDependencySetting(settingList, new[]
+                {
+                    new AssetFileTarget
+                    {
+                        FileId = file.Id,
+                        TargetPath = entry.Path
+                    }
+                });
+            }
             information.Add(settingList);
-            if (entry.Kind != AssetFileContentEntryKind.Directory &&
-                file != null)
+            if (SearchableFileTree.CanImport(
+                    new FileTreeSelection(file, entry)))
             {
                 information.Add(AssetManagerControls.CreateButton(
                     I18N.Get("action.importEntry"),
@@ -2379,10 +2432,95 @@ namespace Ee4v.AssetManager.UI
             detail.Add(information);
         }
 
-        private void OnFileTreeSelectionChanged(FileTreeSelection selection)
+        private void BuildFileTreeSelectionDetail(
+            VisualElement detail,
+            IReadOnlyList<FileTreeSelection> selections)
         {
-            _fileTreeSelection = selection;
-            _viewState.SelectFile(selection?.File?.Id);
+            var importable = selections
+                .Where(SearchableFileTree.CanImport)
+                .ToArray();
+            var files = selections
+                .Where(selection => selection.File != null)
+                .Select(selection => selection.File)
+                .GroupBy(file => file.Id, StringComparer.Ordinal)
+                .Select(group => group.First())
+                .ToArray();
+            if (files.Length == 0)
+            {
+                detail.Add(AssetManagerControls.CreateNotice(
+                    I18N.Get("notice.selectFile")));
+                return;
+            }
+
+            var firstFile = files[0];
+            var extension = GetFileExtension(firstFile);
+            var commonExtension = files.All(file => string.Equals(
+                GetFileExtension(file),
+                extension,
+                StringComparison.OrdinalIgnoreCase));
+            var commonSource = files.All(file =>
+                file.SourceType == firstFile.SourceType);
+            var eyebrow = I18N.Get("detail.file.eyebrow") +
+                          (commonExtension && !string.IsNullOrEmpty(extension)
+                              ? " · " + extension.ToUpperInvariant()
+                              : string.Empty) +
+                          (commonSource
+                              ? " · " + firstFile.SourceType.ToString()
+                                  .ToUpperInvariant()
+                              : string.Empty);
+            var allArchived = files.All(file => file.IsArchived);
+            var fileIds = files.Select(file => file.Id).ToArray();
+            var header = new AssetDetailHeader(
+                files.Length == 1
+                    ? firstFile.FileName
+                    : string.Format(
+                        I18N.Get("detail.fileTreeSelectedCount"),
+                        selections.Count),
+                eyebrow,
+                files.Length == 1 ? firstFile.SourcePath : null,
+                CreateAssetStatusState(allArchived));
+            if (importable.Length > 0)
+            {
+                header.AddAction(AssetManagerControls.CreateButton(
+                    I18N.Get("action.import"),
+                    () => _ = ImportFileTreeEntriesAsync(importable),
+                    "ee4v-asset-manager__primary-action"));
+            }
+            header.AddAction(AssetManagerControls.CreateButton(
+                I18N.Get(allArchived
+                    ? "action.restore"
+                    : "action.archive"),
+                () => ArchiveFiles(fileIds, !allArchived)));
+            if (allArchived)
+            {
+                header.AddAction(AssetManagerControls.CreateDangerButton(
+                    I18N.Get("action.delete"),
+                    () => DeleteFiles(fileIds)));
+            }
+            detail.Add(header);
+            BuildFileSettings(
+                detail,
+                files,
+                importable.Select(selection => new AssetFileTarget
+                {
+                    FileId = selection.File.Id,
+                    TargetPath = selection.Entry?.Path ?? string.Empty
+                }).GroupBy(target =>
+                        target.FileId + "\n" + target.TargetPath,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group => group.First())
+                    .ToArray(),
+                showFileId: false);
+        }
+
+        private void OnFileTreeSelectionChanged(
+            IReadOnlyList<FileTreeSelection> selection)
+        {
+            _fileTreeSelections = selection ??
+                Array.Empty<FileTreeSelection>();
+            _viewState.SelectFile(_fileTreeSelections.Count == 1
+                ? _fileTreeSelections[0].File?.Id
+                : null);
         }
 
         private void BuildUnassignedFiles()
@@ -2843,91 +2981,65 @@ namespace Ee4v.AssetManager.UI
                 Path.GetFileName(filePath));
         }
 
-        private void MoveFile(string fileId, string itemId)
+        private void MoveFiles(
+            IReadOnlyList<string> fileIds,
+            string itemId)
         {
             Run(() =>
                 _manager.SetFileItem(
-                    new[] { fileId },
+                    fileIds,
                     string.IsNullOrWhiteSpace(itemId) ? null : itemId.Trim()));
         }
 
         private void ArchiveFile(string id, bool archived)
         {
+            ArchiveFiles(new[] { id }, archived);
+        }
+
+        private void ArchiveFiles(
+            IReadOnlyList<string> fileIds,
+            bool archived)
+        {
             Run(() =>
-                _manager.SetFileArchived(new[] { id }, archived));
+                _manager.SetFileArchived(fileIds, archived));
         }
 
         private void DeleteFile(string id)
         {
+            DeleteFiles(new[] { id });
+        }
+
+        private void DeleteFiles(IReadOnlyList<string> fileIds)
+        {
             if (!Confirm(
-                    I18N.Get("confirm.deleteFile.title"),
-                    I18N.Get("confirm.deleteFile.message")))
+                    I18N.Get(fileIds.Count == 1
+                        ? "confirm.deleteFile.title"
+                        : "confirm.deleteFiles.title"),
+                    fileIds.Count == 1
+                        ? I18N.Get("confirm.deleteFile.message")
+                        : string.Format(
+                            I18N.Get("confirm.deleteFiles.message"),
+                            fileIds.Count)))
             {
                 return;
             }
 
             Run(() =>
             {
-                _manager.DeleteFile(new[] { id });
+                _manager.DeleteFile(fileIds);
+                _fileTreeSelections = Array.Empty<FileTreeSelection>();
                 _viewState.SelectFile(null);
             });
         }
 
         private void SaveDependencies(
-            string fileId,
+            IReadOnlyList<AssetFileTarget> sources,
             IReadOnlyList<AssetFileTarget> dependencyTargets)
         {
             Run(() =>
                 _manager.SetFileDependencies(
-                    new[] { fileId },
+                    sources,
                     dependencyTargets));
-        }
-
-        private async Task AnalyzeFileAsync(
-            string fileId,
-            AssetManagerTextField output)
-        {
-            CancelFileAnalysis();
-            var cancellation = new CancellationTokenSource();
-            _fileAnalysisCancellation = cancellation;
-            try
-            {
-                var analysis = await _manager.AnalyzeFileAsync(
-                    fileId,
-                    cancellation.Token);
-                if (!ReferenceEquals(
-                        _fileAnalysisCancellation,
-                        cancellation) ||
-                    output.panel == null)
-                {
-                    return;
-                }
-
-                output.value = string.Join(
-                    "\n",
-                    (analysis?.Entries ??
-                     Array.Empty<AssetFileContentEntry>())
-                    .Where(entry => entry != null)
-                    .Select(entry => entry.Path));
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-            }
-            finally
-            {
-                if (ReferenceEquals(
-                        _fileAnalysisCancellation,
-                        cancellation))
-                {
-                    _fileAnalysisCancellation = null;
-                }
-
-                cancellation.Dispose();
-            }
         }
 
         private void ImportEntries(string fileId, string paths)
@@ -2938,14 +3050,50 @@ namespace Ee4v.AssetManager.UI
 
         private void ImportFileTreeEntry(FileTreeSelection selection)
         {
-            if (selection?.File == null)
+            if (!SearchableFileTree.CanImport(selection))
             {
                 return;
             }
 
-            _ = RunImport(() => _manager.ImportFileEntries(
-                selection.File.Id,
-                new[] { selection.Entry?.Path ?? string.Empty }));
+            _ = ImportFileTreeEntriesAsync(new[] { selection });
+        }
+
+        private async Task ImportFileTreeEntriesAsync(
+            IReadOnlyList<FileTreeSelection> selections)
+        {
+            var groups = selections
+                .Where(SearchableFileTree.CanImport)
+                .GroupBy(selection => selection.File.Id, StringComparer.Ordinal)
+                .ToArray();
+            foreach (var group in groups)
+            {
+                var paths = group
+                    .Select(selection => selection.Entry?.Path ?? string.Empty)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                if (paths.Contains(string.Empty))
+                {
+                    paths = new[] { string.Empty };
+                }
+                try
+                {
+                    var result = await _manager.ImportFileEntries(
+                        group.Key,
+                        paths);
+                    if (!result.Succeeded)
+                    {
+                        Debug.LogError(
+                            "Asset import failed: " + result.State + " · " +
+                            result.ErrorMessage);
+                        return;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                    return;
+                }
+            }
         }
 
         private void ShowItemTargetEditor(
@@ -2966,13 +3114,55 @@ namespace Ee4v.AssetManager.UI
                 _fileTree?.GetCachedAnalyses());
         }
 
+        private IReadOnlyList<AssetFileTarget> GetCommonFileDependencies(
+            IReadOnlyList<AssetFileTarget> sources)
+        {
+            var common = _manager.GetFileDependencies(sources[0].FileId)
+                .Where(dependency => string.Equals(
+                    dependency.DependentTargetPath,
+                    sources[0].TargetPath,
+                    StringComparison.OrdinalIgnoreCase))
+                .Select(dependency => new AssetFileTarget
+                {
+                    FileId = dependency.DependencyFileId,
+                    TargetPath = dependency.TargetPath
+                })
+                .ToArray();
+            for (var index = 1; index < sources.Count; index++)
+            {
+                var source = sources[index];
+                var dependencies = _manager.GetFileDependencies(source.FileId)
+                    .Where(dependency => string.Equals(
+                        dependency.DependentTargetPath,
+                        source.TargetPath,
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+                common = common.Where(target => dependencies.Any(dependency =>
+                    string.Equals(
+                        dependency.DependencyFileId,
+                        target.FileId,
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        dependency.TargetPath,
+                        target.TargetPath,
+                        StringComparison.OrdinalIgnoreCase)))
+                    .ToArray();
+            }
+            return common;
+        }
+
         private void ShowDependencyEditor(
             VisualElement anchor,
-            string fileId,
+            IReadOnlyList<AssetFileTarget> sources,
             IReadOnlyList<AssetFileTarget> dependencyTargets)
         {
-            var sourceFile = _manager.GetFile(fileId);
+            var sourceFile = _manager.GetFile(sources[0].FileId);
             var sourceItemId = sourceFile?.ItemId ?? string.Empty;
+            var excludedFileIds = new HashSet<string>(
+                sources.Where(source => string.IsNullOrEmpty(
+                        source.TargetPath))
+                    .Select(source => source.FileId),
+                StringComparer.Ordinal);
             var groupedFiles = (_manager.SearchItems(new AssetItemQuery
                 {
                     IncludeArchived = true
@@ -2982,12 +3172,8 @@ namespace Ee4v.AssetManager.UI
                 {
                     Item = item,
                     Files = (item.Files ?? Array.Empty<AssetFile>())
-                        .Where(file =>
-                            file != null &&
-                            !string.Equals(
-                                file.Id,
-                                fileId,
-                                StringComparison.Ordinal))
+                        .Where(file => file != null &&
+                                       !excludedFileIds.Contains(file.Id))
                         .OrderBy(
                             file => file.FileName,
                             StringComparer.OrdinalIgnoreCase)
@@ -3039,9 +3225,10 @@ namespace Ee4v.AssetManager.UI
                 dependencyTargets,
                 I18N.Get("detail.dependencyTargetPickerTitle"),
                 I18N.Get("action.saveDependencies"),
-                targets => SaveDependencies(fileId, targets),
+                targets => SaveDependencies(sources, targets),
                 _fileTree?.GetCachedAnalyses(),
-                groups);
+                groups,
+                sources);
         }
 
         private void ShowItemTargetImport(
@@ -3511,11 +3698,6 @@ namespace Ee4v.AssetManager.UI
         private void CancelGridThumbnails()
         {
             Cancel(ref _gridThumbnailCancellation);
-        }
-
-        private void CancelFileAnalysis()
-        {
-            Cancel(ref _fileAnalysisCancellation);
         }
 
         private static void Cancel(ref CancellationTokenSource cancellation)

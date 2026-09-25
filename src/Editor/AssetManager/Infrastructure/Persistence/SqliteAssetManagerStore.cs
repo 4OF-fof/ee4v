@@ -604,7 +604,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         }
 
         public IReadOnlyList<AssetFileDependency> ReplaceFileDependencies(
-            IReadOnlyList<string> dependentFileIds,
+            IReadOnlyList<AssetFileTarget> dependentTargets,
             IReadOnlyList<AssetFileTarget> dependencyTargets)
         {
             return Run(() =>
@@ -612,11 +612,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 using (var connection = OpenConnection())
                 using (var transaction = new DatabaseTransaction(connection))
                 {
-                    for (var i = 0; i < dependentFileIds.Count; i++)
+                    for (var i = 0; i < dependentTargets.Count; i++)
                     {
                         RequireFile(
                             connection,
-                            dependentFileIds[i],
+                            dependentTargets[i].FileId,
                             transaction);
                     }
 
@@ -629,19 +629,21 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     }
 
                     for (var dependentIndex = 0;
-                         dependentIndex < dependentFileIds.Count;
+                         dependentIndex < dependentTargets.Count;
                          dependentIndex++)
                     {
                         Execute(
                             connection,
                             transaction,
-                            @"DELETE FROM file_dependency
-                              WHERE dependent_file_id = @p0",
-                            dependentFileIds[dependentIndex]);
+                            @"DELETE FROM file_content_dependency
+                              WHERE dependent_file_id = @p0
+                                AND dependent_target_path = @p1",
+                            dependentTargets[dependentIndex].FileId,
+                            dependentTargets[dependentIndex].TargetPath);
                     }
 
                     for (var dependentIndex = 0;
-                         dependentIndex < dependentFileIds.Count;
+                         dependentIndex < dependentTargets.Count;
                          dependentIndex++)
                     {
                         for (var dependencyIndex = 0;
@@ -652,22 +654,28 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                             Execute(
                                 connection,
                                 transaction,
-                                @"INSERT INTO file_dependency(
+                                @"INSERT INTO file_content_dependency(
                                     dependent_file_id,
+                                    dependent_target_path,
                                     dependency_file_id,
                                     target_path)
-                                  VALUES(@p0, @p1, @p2)",
-                                dependentFileIds[dependentIndex],
+                                  VALUES(@p0, @p1, @p2, @p3)",
+                                dependentTargets[dependentIndex].FileId,
+                                dependentTargets[dependentIndex].TargetPath,
                                 target.FileId,
                                 target.TargetPath);
                         }
                     }
 
                     transaction.Commit();
-                    return dependentFileIds
-                        .SelectMany(id => ReadFileDependencies(
+                    return dependentTargets
+                        .SelectMany(source => ReadFileDependencies(
                             connection,
-                            id))
+                            source.FileId).Where(dependency =>
+                            string.Equals(
+                                dependency.DependentTargetPath,
+                                source.TargetPath,
+                                StringComparison.OrdinalIgnoreCase)))
                         .ToArray();
                 }
             });
@@ -690,7 +698,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         connection,
                         null,
                         "SELECT DISTINCT dependent_file_id " +
-                        "FROM file_dependency " +
+                        "FROM file_content_dependency " +
                         "WHERE dependency_file_id IN (" +
                         string.Join(",", Enumerable.Repeat(
                             "?",
@@ -1362,9 +1370,24 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     DELETE FROM item_target
                     WHERE file_id = NEW.id;
                   END",
-                @"CREATE TABLE IF NOT EXISTS file_dependency(
+                @"CREATE TABLE IF NOT EXISTS file_content_dependency(
                     dependent_file_id TEXT NOT NULL
                       REFERENCES file(id) ON DELETE CASCADE,
+                    dependent_target_path TEXT NOT NULL COLLATE NOCASE
+                      CHECK(dependent_target_path = trim(dependent_target_path))
+                      CHECK(instr(dependent_target_path, '\') = 0)
+                      CHECK(instr(dependent_target_path, ':') = 0)
+                      CHECK(instr(dependent_target_path, char(0)) = 0)
+                      CHECK(substr(dependent_target_path, 1, 1) <> '/')
+                      CHECK(substr(dependent_target_path, -1, 1) <> '/')
+                      CHECK(instr(dependent_target_path, '//') = 0)
+                      CHECK(dependent_target_path NOT IN ('.', '..'))
+                      CHECK(dependent_target_path NOT LIKE './%')
+                      CHECK(dependent_target_path NOT LIKE '../%')
+                      CHECK(dependent_target_path NOT LIKE '%/./%')
+                      CHECK(dependent_target_path NOT LIKE '%/../%')
+                      CHECK(dependent_target_path NOT LIKE '%/.')
+                      CHECK(dependent_target_path NOT LIKE '%/..'),
                     dependency_file_id TEXT NOT NULL
                       REFERENCES file(id) ON DELETE CASCADE,
                     target_path TEXT NOT NULL COLLATE NOCASE
@@ -1384,14 +1407,17 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                       CHECK(target_path NOT LIKE '%/..'),
                     PRIMARY KEY(
                       dependent_file_id,
+                      dependent_target_path,
                       dependency_file_id,
                       target_path),
-                    CHECK(dependent_file_id <> dependency_file_id)
+                    CHECK(dependent_file_id <> dependency_file_id
+                      OR dependent_target_path <> target_path)
                   )",
                 @"CREATE INDEX IF NOT EXISTS
-                    ix_file_dependency_reverse
-                    ON file_dependency(
-                      dependency_file_id, dependent_file_id)",
+                    ix_file_content_dependency_reverse
+                    ON file_content_dependency(
+                      dependency_file_id, target_path,
+                      dependent_file_id, dependent_target_path)",
                 @"CREATE TABLE IF NOT EXISTS file_imported_asset_guid(
                     file_id TEXT NOT NULL
                       REFERENCES file(id) ON DELETE CASCADE,
@@ -1405,25 +1431,29 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 @"CREATE INDEX IF NOT EXISTS ix_file_imported_asset_guid
                     ON file_imported_asset_guid(asset_guid, file_id)",
                 @"CREATE TRIGGER IF NOT EXISTS
-                    prevent_file_dependency_cycle
-                  BEFORE INSERT ON file_dependency
+                    prevent_file_content_dependency_cycle
+                  BEFORE INSERT ON file_content_dependency
                   BEGIN
                     SELECT RAISE(
                       ABORT, 'file dependency cycle')
                     WHERE EXISTS(
-                      WITH RECURSIVE dependencies(id) AS (
-                        SELECT dependency_file_id
-                        FROM file_dependency
+                      WITH RECURSIVE dependencies(file_id, path) AS (
+                        SELECT dependency_file_id, target_path
+                        FROM file_content_dependency
                         WHERE dependent_file_id =
                           NEW.dependency_file_id
+                          AND dependent_target_path = NEW.target_path
                         UNION
-                        SELECT edge.dependency_file_id
-                        FROM file_dependency edge
+                        SELECT edge.dependency_file_id,
+                               edge.target_path
+                        FROM file_content_dependency edge
                         INNER JOIN dependencies current
-                          ON edge.dependent_file_id = current.id
+                          ON edge.dependent_file_id = current.file_id
+                         AND edge.dependent_target_path = current.path
                       )
                       SELECT 1 FROM dependencies
-                      WHERE id = NEW.dependent_file_id
+                      WHERE file_id = NEW.dependent_file_id
+                        AND path = NEW.dependent_target_path
                     );
                   END",
                 @"CREATE TABLE IF NOT EXISTS tag(
@@ -1773,16 +1803,19 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         {
             return connection.Query<FileDependencyRow>(
                     @"SELECT dependent_file_id AS DependentFileId,
+                             dependent_target_path AS DependentTargetPath,
                              dependency_file_id AS DependencyFileId,
                              target_path AS TargetPath
-                      FROM file_dependency
+                      FROM file_content_dependency
                       WHERE dependent_file_id = ?
-                      ORDER BY dependency_file_id,
+                      ORDER BY dependent_target_path COLLATE NOCASE,
+                               dependency_file_id,
                                target_path COLLATE NOCASE",
                     fileId)
                 .Select(row => new AssetFileDependency
                 {
                     DependentFileId = row.DependentFileId,
+                    DependentTargetPath = row.DependentTargetPath,
                     DependencyFileId = row.DependencyFileId,
                     TargetPath = row.TargetPath
                 })
@@ -2312,7 +2345,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 connection,
                 transaction,
                 @"SELECT DISTINCT dependency.dependent_file_id
-                  FROM file_dependency dependency
+                  FROM file_content_dependency dependency
                   INNER JOIN file source_file
                     ON source_file.id = dependency.dependency_file_id
                   WHERE source_file.source_type = @p0",
@@ -2901,6 +2934,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         private sealed class FileDependencyRow
         {
             public string DependentFileId { get; set; }
+            public string DependentTargetPath { get; set; }
             public string DependencyFileId { get; set; }
             public string TargetPath { get; set; }
         }

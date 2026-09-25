@@ -221,8 +221,8 @@
     "derivedAssetPreviewReset": "プレビュー表示をリセット",
     "derivedAssetPreviewBackground": "プレビュー背景の明暗を切り替え",
     "settings": "設定",
-    "contents": "内容",
-    "contentsNote": "解析するか、取り込む項目を1行に1件入力します。",
+    "fileTreeSelectedCount": "{0}件を選択中",
+    "batchDependenciesTooltip": "共通の依存Targetを表示しています。保存すると選択した全Fileの依存設定を同じ内容に置き換えます。",
     "targetGroupNote": "同じGroup名のTargetから1件を選択して取り込みます。空欄は常に取り込みます。",
     "targetImportChoiceNote": "Groupごとに取り込むTargetを1つ選択します。",
     "itemTargetPickerTitle": "Item Targetを編集",
@@ -319,8 +319,6 @@
     "saveDependencies": "依存関係を保存",
     "addTarget": "Targetに追加",
     "removeTarget": "Targetから解除",
-    "analyze": "解析",
-    "importEntries": "項目を取り込み",
     "importEntry": "この項目を取り込む",
     "change": "変更",
     "move": "移動",
@@ -342,6 +340,10 @@
     "deleteFile": {
       "title": "Fileを削除",
       "message": "このFileの登録を削除しますか？"
+    },
+    "deleteFiles": {
+      "title": "Fileを削除",
+      "message": "選択した{0}件のFileの登録を削除しますか？"
     },
     "deleteCollection": {
       "title": "コレクションを削除",

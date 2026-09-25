@@ -46,9 +46,15 @@ Navigation上部ではImport済み、全件、未所属、アーカイブ、タ�
 
 Item詳細の派生アセットカードは、追加カードを含めて列間・行間に16pxの余白を置き、複数件でもカードの境界を見分けられるようにします。
 
-Item詳細はHTMLモックの比率と視覚階層を基準にします。File Treeは詳細領域の31%を基本幅とし、見出しとFile登録ボタン、検索欄、30pxのアイコン付き行を配置します。右側は上下20px、左右24pxを基準に余白を取り、概要の先頭へ128pxのサムネイル、15pxのItem名、12pxのTagをまとめます。ItemのImportボタンは名前とTagに隣接する概要上部へ常に表示します。状態バッジはアーカイブ時だけ表示し、有効時は表示しません。その下へFile数、形式、データソースを3列で表示し、縦線は列間の区切りだけに置きます。取り込み設定はItem Targetを境界線付きツリーで表示し、TargetはFile Treeと同じアイコンを実体名の前だけに付け、`実体名(File名)`で表示します。Target一覧右端の編集ボタンは一覧の高さにかかわらず1行の高さで中央へ配置し、検索付きFile Tree形式のポップアップを開きます。FileまたはFile内実体のトグルからItem Targetを追加・解除します。Target一覧はGroupを親、そのGroupのTargetだけを子とする30px行で構成します。GroupなしのTargetは専用Groupを置かずルート直下へ表示し、複数行では項目名を一覧全体の高さ中央へ揃えます。ルート直下のTarget同士を重ねるとGroupを作成し、既存GroupまたはTargetへのドロップで移動・統合します。Target項目名または一覧の空き領域へドロップするとGroupを解除します。一覧には選択欄や操作説明を置かず、Importボタンを押した時だけGroupごとにTargetを1件選ぶポップアップを表示します。取り込み設定と情報の間には派生アセット一覧を置き、Item一覧と同じ形式のGridで表示します。派生アセットがない場合は追加アイコン付きカードを1枚だけ表示し、選択すると作成画面へ遷移します。この画面は履歴とパンくずには参加しません。通常ツールバーとFile Treeも表示せず、左上の戻るボタンだけでItem概要へ戻ります。戻るボタンは透過背景のアイコンだけで構成し、第三者製Fluent UI System Iconsの`Arrow Left`を使用します。作成画面では名前、Prefab、説明を入力します。Prefab欄は`CustomPopup` componentを土台にした専用selectorです。現在のItemへ取り込まれたGUIDから解決したPrefabだけを平坦な一覧で表示します。候補はPrefab名またはProject内パスで検索でき、選ぶとselectorへ反映して一覧を閉じます。ドラッグなどで直接入力した場合も、選択AssetのGUIDが現在のItemの取り込み済みGUIDと一致するときだけ受け付けます。候補がなければ作成を無効にします。作成したルートPrefab Variantは`Assets/!ee4vAsset/Variant/<名前>/<名前>.prefab`へ保存します。参照スロットを持つMaterialだけをMaterial Variantとして`Assets/Materials`へ保存し、作成Prefab内の参照を差し替えます。Animator Controllerを含むその他の参照アセットはコピーせず、元を共有します。説明と親Item IDは作成Prefabのimporter metadataへ保存し、概要の派生一覧からPrefabを選択できます。個別Fileの依存関係はFile詳細の設定一覧から、Item Targetと同じ検索付きFile Tree形式のポップアップで実体単位に編集します。Dependency Targetの候補は所属Itemを親とする階層で表示し、設定元Fileと同じItemを先頭に置き、別Itemのグループとの間に区切り線を表示します。Target選択Tree上にポインターがある間はArchive解析による再構築を保留し、Treeから離れた時に最新状態を1回だけ反映します。File詳細は形式付き見出し、操作ボタン、設定一覧、内容操作の順に配置します。長い見出しとSource pathは右端で切り、全文をツールチップで確認できるようにします。右ペインはInputFieldと同じ細いスクロールバーで縦方向だけをスクロールします。
+Item詳細はHTMLモックの比率と視覚階層を基準にします。File Treeは詳細領域の31%を基本幅とし、見出しとFile登録ボタン、検索欄、30pxのアイコン付き行を配置します。右側は上下20px、左右24pxを基準に余白を取り、概要の先頭へ128pxのサムネイル、15pxのItem名、12pxのTagをまとめます。ItemのImportボタンは名前とTagに隣接する概要上部へ常に表示します。状態バッジはアーカイブ時だけ表示し、有効時は表示しません。その下へFile数、形式、データソースを3列で表示し、縦線は列間の区切りだけに置きます。取り込み設定はItem Targetを境界線付きツリーで表示し、TargetはFile Treeと同じアイコンを実体名の前だけに付け、`実体名(File名)`で表示します。Target一覧右端の編集ボタンは一覧の高さにかかわらず1行の高さで中央へ配置し、検索付きFile Tree形式のポップアップを開きます。FileまたはFile内実体のトグルからItem Targetを追加・解除します。Target一覧はGroupを親、そのGroupのTargetだけを子とする30px行で構成します。GroupなしのTargetは専用Groupを置かずルート直下へ表示し、複数行では項目名を一覧全体の高さ中央へ揃えます。ルート直下のTarget同士を重ねるとGroupを作成し、既存GroupまたはTargetへのドロップで移動・統合します。Target項目名または一覧の空き領域へドロップするとGroupを解除します。一覧には選択欄や操作説明を置かず、Importボタンを押した時だけGroupごとにTargetを1件選ぶポップアップを表示します。取り込み設定と情報の間には派生アセット一覧を置き、Item一覧と同じ形式のGridで表示します。派生アセットがない場合は追加アイコン付きカードを1枚だけ表示し、選択すると作成画面へ遷移します。この画面は履歴とパンくずには参加しません。通常ツールバーとFile Treeも表示せず、左上の戻るボタンだけでItem概要へ戻ります。戻るボタンは透過背景のアイコンだけで構成し、第三者製Fluent UI System Iconsの`Arrow Left`を使用します。作成画面では名前、Prefab、説明を入力します。Prefab欄は`CustomPopup` componentを土台にした専用selectorです。現在のItemへ取り込まれたGUIDから解決したPrefabだけを平坦な一覧で表示します。候補はPrefab名またはProject内パスで検索でき、選ぶとselectorへ反映して一覧を閉じます。ドラッグなどで直接入力した場合も、選択AssetのGUIDが現在のItemの取り込み済みGUIDと一致するときだけ受け付けます。候補がなければ作成を無効にします。作成したルートPrefab Variantは`Assets/!ee4vAsset/Variant/<名前>/<名前>.prefab`へ保存します。参照スロットを持つMaterialだけをMaterial Variantとして`Assets/Materials`へ保存し、作成Prefab内の参照を差し替えます。Animator Controllerを含むその他の参照アセットはコピーせず、元を共有します。説明と親Item IDは作成Prefabのimporter metadataへ保存し、概要の派生一覧からPrefabを選択できます。依存関係はFile自身またはZIP内実体の詳細から、Item Targetと同じ検索付きFile Tree形式のポップアップで実体単位に編集します。Dependency Targetの候補は所属Itemを親とする階層で表示し、設定元Fileと同じItemを先頭に置き、別Itemのグループとの間に区切り線を表示します。Target選択TreeではArchive解析の完了ごとに候補を反映し、ポインター操作中に完了した場合だけ操作終了まで再構築を保留します。File詳細は形式付き見出し、操作ボタン、設定一覧の順に配置します。長い見出しとSource pathは右端で切り、全文をツールチップで確認できるようにします。右ペインはInputFieldと同じ細いスクロールバーで縦方向だけをスクロールします。
 
 Item詳細のFile Treeでは、PNG、JPEG、PSDの行にポインターを置くと画像とFile名をポップアップで表示する。単体FileとZIP・unitypackage内の実体に対応し、PSDは合成画像を最大300×240pxで表示する。画像はホバー時に読み込み、行を離れるか画面を閉じるとポップアップを閉じる。プレビューできない画像は表示しない。
+
+File Treeは通常クリックで単一選択、Ctrlクリックで個別の追加・解除、Shiftクリックで起点からの範囲選択を行う。複数選択時の右ペインは単体File詳細と同じヘッダーと設定一覧を使い、File ID行だけを表示しない。所属Itemの移動、Archive・復元・削除は選択したFileへ一括適用する。Dependency Target編集は取り込み可能な選択実体へ一括適用する。選択済み行の右クリックではImportとItem Target操作を選択全体へ適用し、未選択行の右クリックではその行だけを操作する。ImportとItem Targetの操作は取り込み可能な選択実体だけへ適用し、Directory、ZIP自身、ZIP内のZIPは対象外とする。同じFileの複数実体をImportする場合はpathをまとめて1回の`ImportFileEntries`を呼び、複数Fileは順に取り込んで失敗・キャンセル時に停止する。Dependency Targetは選択した実体のFile IDと内部pathの組ごとに適用し、共通の依存先を初期表示する。保存時は対象実体の依存先を同じ一覧へ一括置換する。File詳細にはFile Treeと重複する「内容」欄と手動解析ボタンを置かない。
+
+Item TargetとDependency Targetの選択ポップアップでは、取り込み可能な実体の行またはチェックボックスをクリックしてTargetを追加・解除する。ZIP自身、ZIP内のZIP、Directoryは選べず、ZIPの内容を選ぶには展開して中の実体をクリックする。
+
+Dependency Targetの候補からは依存元自身を除外する。同じZIP内の別実体は候補として残し、依存元実体だけをツリーから取り除く。
 
 ### 派生Asset作成フォーム
 
@@ -183,7 +189,7 @@ Eagle同期で作成したItemの名前と説明はEagleを正本とし、`Updat
 - Item Target選択ポップアップには概要を表示しない
 - Item TargetのGroup名はItem内で共通に扱い、同じGroup名のTargetを選択肢とする。GroupなしのTargetは常に取り込む
 - Target pathは区切りを`/`へ統一し、絶対path、空segment、`.`、`..`を拒否する
-- File Dependency Targetは依存先FileとFile内pathの組で保持し、別Itemと別SourceのFileも許可する
+- File Dependencyは依存元・依存先ともFile IDとFile内pathの組で保持し、別Itemと別SourceのFileも許可する
 - 自己依存と直接または間接的な循環を拒否する
 - Fileとして登録できる実体は通常Fileだけとし、directoryを拒否する
 
@@ -219,25 +225,27 @@ Import後のサムネイル反映では、選択済みの親folderを集合で�
 
 ## File内容の解析
 
-通常のFile TreeはFile一覧とZIP・UnityPackageの展開トグルを先に表示します。Archive解析は展開時に対象Fileだけを開始し、開いた直後は「解析中」を子行へ表示します。検索時は内容も検索するため未解析Archiveを読み込みます。複数の解析要求は最大3件を並列実行します。通常のTreeは展開中のFileの解析完了時、または要求した解析がすべて終わった時に更新し、開いていないFileの完了ごとには再構築しません。Target選択画面は候補を表示するため未解析Archiveを初期表示時に読み込みます。再構築では展開状態と選択状態を維持し、キャッシュ済みのFileは再解析しません。UnityPackageの走査は読み飛ばし用bufferを再利用し、階層構築では既存Directoryのpath文字列を作り直しません。
+通常のFile TreeはFile一覧とZIP・UnityPackageの展開トグルを先に表示します。Archive解析は展開時に対象Fileだけを開始し、開いた直後は「解析中」を子行へ表示します。検索時は内容も検索するため未解析Archiveを読み込みます。複数の解析要求は最大3件を並列実行します。通常のTreeは展開中のFileの解析完了時、または要求した解析がすべて終わった時に更新し、開いていないFileの完了ごとには再構築しません。Target選択画面でも未解析Archiveを展開した時に対象Fileを解析し、内容検索時は未解析の候補を読み込みます。再構築では展開状態と選択状態を維持し、キャッシュ済みのFileは再解析しません。UnityPackageの走査は読み飛ばし用bufferを再利用し、階層構築では既存Directoryのpath文字列を作り直しません。
 
-`AnalyzeFile`はFile実体を同期的に読み、`AnalyzeFileAsync`は同じ解析をバックグラウンドで実行してZIPまたはUnityPackageの内容を返します。非同期APIは`CancellationToken`を受け取り、File Treeの再構築や画面移動時に不要になった解析を中断します。UIはFile一覧を先に表示し、解析結果をFile IDとSource path、更新日時の組み合わせで現在のItem内だけにキャッシュします。Target選択画面は詳細画面のキャッシュを初期表示に再利用し、未解析のArchiveは1件の解析が終わるたびに階層とトグルを反映します。通常のFile Treeは展開したArchiveの解析結果を優先して反映し、検索で一括解析する場合は完了結果をまとめて反映します。DBアクセスは呼び出し元で完了させてSQLite接続を別スレッドへ持ち出しません。Archive走査と階層データ構築はUIスレッドから分離し、Unity UIへの反映だけをメインスレッドで行います。ZIPは各entryの相対path、種別、非圧縮sizeを返します。全entryがZIP名と同じ単一root directory内にある場合は、そのrootをpathから省略します。UnityPackageはAsset path、FileまたはDirectoryの種別、size、Unity Asset GUIDを返します。ZIPとUnityPackage以外は解析対象外です。UIの解析ボタンは返されたpathをアーカイブ項目欄へ設定し、取り込み対象として編集できる状態にします。
+`AnalyzeFile`はFile実体を同期的に読み、`AnalyzeFileAsync`は同じ解析をバックグラウンドで実行してZIPまたはUnityPackageの内容を返します。非同期APIは`CancellationToken`を受け取り、File Treeの再構築や画面移動時に不要になった解析を中断します。UIはFile一覧を先に表示し、解析結果をFile IDとSource path、更新日時の組み合わせで現在のItem内だけにキャッシュします。Target選択画面は詳細画面のキャッシュを初期表示に再利用し、展開したArchiveの解析を待機列の先頭へ移して完了時に階層とトグルを反映します。展開したArchiveの解析結果は該当Fileの枝だけを作り直します。検索で一括解析する場合、通常のFile Treeは完了結果を最後にまとめて反映します。Target選択画面は最初の完了結果をすぐに表示し、その後の結果は段階的にまとめて反映して全ツリー再構築の回数を抑えます。DBアクセスは呼び出し元で完了させてSQLite接続を別スレッドへ持ち出しません。Archive走査と階層データ構築はUIスレッドから分離し、Unity UIへの反映だけをメインスレッドで行います。ZIPは各entryの相対path、種別、非圧縮sizeを返します。全entryがZIP名と同じ単一root directory内にある場合は、そのrootをpathから省略します。UnityPackageはAsset path、FileまたはDirectoryの種別、size、Unity Asset GUIDを返します。ZIPとUnityPackage以外は解析対象外です。UIの解析ボタンは返されたpathをアーカイブ項目欄へ設定し、取り込み対象として編集できる状態にします。
 
-解析結果はDBとは別に、DBと同じdirectoryの`cache/asset-manager/file-analyses/`へArchiveのpath単位で永続化します。File内容は保存せず、entryのpath・種別・size・GUIDだけを保存します。読み込み時は元Archiveの絶対path・ファイルサイズ・最終更新日時と解析形式のversionを照合し、不一致やcache破損時は再解析します。解析中に元Archiveが更新された場合はcacheへ保存しません。cacheの保存失敗は解析結果に影響させず、1ファイル32 MiB・全体512 MiBを上限として古いcacheから削除します。初回のArchive走査時間は変わりませんが、Item切り替えやEditor再起動後の再解析を省けます。
+Target選択画面でArchiveをマウス展開した時は、TreeViewの展開矢印から伝わる`ClickEvent`の後に新たに展開されたFileだけを解析要求し、他の展開状態のFileを一括して要求しません。展開矢印からは`PointerUpEvent`が親Treeへ伝わらないため、`ClickEvent`で解析要求と保留中のツリー更新を処理します。キーボード操作でも新たに展開したFileだけを要求します。Target選択画面の展開状態は通常のFile Treeと共有しません。一括解析は、表示用に取得済みの`AssetFile`を`AnalyzeFileAsync(AssetFile)`へ渡し、FileごとのSQLite再取得を省きます。IDを指定する`AnalyzeFileAsync(string)`は既存の呼び出し向けに維持します。検索語がFile名またはItem名と一致するArchiveは解析待機列で優先します。
+
+解析結果はDBとは別に、DBと同じdirectoryの`cache/asset-manager/file-analyses/`へArchiveのpath単位で永続化します。File内容は保存せず、entryのpath・種別・size・GUIDだけを保存します。読み込み時は元Archiveの絶対path・ファイルサイズ・最終更新日時と解析形式のversionを照合し、不一致やcache破損時は再解析します。解析中に元Archiveが更新された場合はcacheへ保存しません。cacheの保存失敗は解析結果に影響させず、1ファイル32 MiB・全体512 MiBを上限として古いcacheから削除します。さらにEditorセッション中は最大512 File・合計50000 entryをメモリに保持し、更新日時またはサイズが変わったFileは読み直します。これによりセレクタを開き直した際の大量のディスクキャッシュ読み込みを省きます。初回のArchive走査時間は変わりませんが、Item切り替えやEditor再起動後の再解析を省けます。
 
 ## Targetの取り込み
 
 `SetItemTargets`は1つのItemに対するItem Target一覧を、参照するFile IDとFile内pathの組み合わせで完全置換します。空の一覧で未設定へ戻し、同じTargetの大文字小文字違いは重複として除外します。置換前後に残るGroup名は保持します。`SetItemTargetGroup`はItem TargetへGroup名を設定し、空のGroup名でGroupから外します。ZIP自身を表す空pathと、拡張子が`.zip`の内部entryは拒否します。
 
-`SetFileDependencies`は複数の依存元Fileを受け取り、全Fileの依存Targetを1 transactionで同じ一覧へ完全置換します。依存Targetは依存先File IDとFile内pathの組で指定し、同じ依存先Fileの複数実体を保持できます。複数Fileを同時に変更した結果も含めて循環をFile単位で検証し、失敗時はどのFileも変更しません。
+`SetFileDependencies`は依存元と依存先をそれぞれFile IDとFile内pathの組で受け取り、選択した依存元実体の依存先を1 transactionで完全置換します。ZIP自身は依存元・依存先に指定できず、内部実体を指定します。同じ依存先Fileの複数実体を保持できます。自己依存と循環を検証し、失敗時はどの実体も変更しません。
 
 `ImportFileEntries(fileId, paths)`は指定したpathだけを`Assets/<Item名>/<File名から拡張子を除いた名前>/`へ取り込み、保存済みItem TargetとDependency Targetは変更しません。これにより`AnalyzeFile`で得たZIP内の1要素を一時的に選んで取り込めます。空pathはFile自身を表しますが、File自身がZIPの場合は拒否します。ZIP内要素は相対pathを保って展開し、ZIP名と同じ単一root directoryは省略して指定できます。内部のZIPも拒否し、`.unitypackage`はコピーせずUnity packageとして取り込みます。
 
-`ImportItemTargets`は保存済みItem TargetからGroupごとに選択した1件とGroupなしの全Targetを取り込みます。対象Fileに依存関係がある場合は、各Dependency Targetの実体を依存先から順に取り込みます。選択漏れ、同一Groupの複数選択、別ItemやGroup外のTarget指定は拒否します。`ImportFileEntries`と`ImportItemTargets`は`Task<AssetImportResult>`を返し、結果は成功・失敗・キャンセル、処理対象File ID、取り込んだGUID、失敗理由を保持します。キャンセル時は後続Fileとentryの開始を止めますが、Unityへ既に渡したUnityPackageの処理自体は停止できません。
+`ImportItemTargets`は保存済みItem TargetからGroupごとに選択した1件とGroupなしの全Targetを取り込みます。選ばれた実体の依存関係をpath単位で推移的にたどり、必要なDependency Targetだけを依存先から順に取り込みます。同じFile内の実体は1回のImportへまとめます。選択漏れ、同一Groupの複数選択、別ItemやGroup外のTarget指定は拒否します。`ImportFileEntries`と`ImportItemTargets`は`Task<AssetImportResult>`を返し、結果は成功・失敗・キャンセル、処理対象File ID、取り込んだGUID、失敗理由を保持します。キャンセル時は後続Fileとentryの開始を止めますが、Unityへ既に渡したUnityPackageの処理自体は停止できません。
 
 Target未設定での取り込みは何も行いません。未所属またはアーカイブ済みのFileにTargetが設定されている場合は取り込みを拒否します。
 
-Fileに依存先が設定されている場合は推移的な依存先を解決し、依存先から依存元の順に各Fileを1回だけ取り込みます。依存関係自体に順序は持たせず、順序が必要な場合は追加の依存関係で表現します。`.unitypackage`は完了を待ってから次のFileへ進み、失敗またはキャンセル時は後続の取り込みを停止します。
+選択した実体に依存先が設定されている場合はその実体から推移的な依存先を解決し、依存先から依存元の順に各Fileを1回だけ取り込みます。異なるFile間の循環は拒否します。`.unitypackage`は完了を待ってから次のFileへ進み、失敗またはキャンセル時は後続の取り込みを停止します。
 
 取り込みに成功すると、通常FileはUnity refresh後に解決した取り込み先ルートfolderと各実体のGUID、UnityPackageはpackage内の全GUIDをFile単位で完全置換します。`.meta`を直接取り込んだ場合は対応するAssetのGUIDとして解決します。失敗またはキャンセル時は既存GUIDを変更しません。`GetFileImportedAssetGuids`はFile単位、`GetItemImportedAssetGuids`は所属Fileを集約したItem単位のGUIDを返します。`GetImportedAssetAssociations`は全関連または指定GUIDに一致するItem ID・File ID・取り込み時刻を返します。[Asset Protection](./asset-protection.md)はこの関連GUIDを保護対象として使用します。
 
@@ -250,7 +258,7 @@ file       ── 0..1 item
 item       ── 0..* item_target
 file       ── 0..* item_target
 item       ── 0..1 item_booth_metadata
-file       ── 0..* file_dependency
+file       ── 0..* file_content_dependency
 file       ── 0..* file_imported_asset_guid
 item       ── 0..* tag       （item_tag経由）
 item       ── 0..* tag       （item_source_tag経由）
@@ -314,15 +322,16 @@ EagleのBooth metadataがあるItemだけに保存します。再同期でBooth�
 
 `item_id`、`file_id`、`target_path`を複合PKにします。同じItem内で`group_name`が一致するTargetを1つの選択Groupとして扱います。Fileが別Itemへ移動した場合はそのFileを参照するItem Targetを削除し、ItemまたはFileの削除時も連鎖削除します。空文字はFile自身を表します。空文字以外は区切りを`/`に統一し、絶対pathとpath traversalをDB制約でも拒否します。ApplicationはZIP自身を表す空文字と、拡張子が`.zip`の内部entryを拒否します。
 
-### `file_dependency`
+### `file_content_dependency`
 
 | column | 保持する値 | 制約 |
 | --- | --- | --- |
 | `dependent_file_id` | 依存元File | File FK |
+| `dependent_target_path` | 依存元File内の実体path | NULL不可。大文字小文字を区別しない |
 | `dependency_file_id` | 依存先File | File FK |
 | `target_path` | 依存先File内の実体path | NULL不可。大文字小文字を区別しない |
 
-3列を複合PKにします。自己依存はCHECK制約、間接的な循環は挿入triggerで拒否します。同じ依存先Fileの異なる実体pathは複数保持できます。path制約とZIP拒否はItem Targetと同じです。File削除時は依存元と依存先の関係を連鎖削除し、アーカイブでは関係を維持します。
+4列を複合PKにします。同一実体への自己依存はCHECK制約、間接的な循環は挿入triggerで拒否します。同じFileの異なる実体間にも依存を設定できます。path制約とZIP拒否はItem Targetと同じです。File削除時は依存元と依存先の関係を連鎖削除し、アーカイブでは関係を維持します。旧`file_dependency`のFile単位の関係は参照せず、新しい実体単位の関係を使用します。
 
 ### `file_imported_asset_guid`
 
@@ -363,7 +372,7 @@ PKと一意制約に加え、次の検索用索引を作成します。
 - `file(item_id)`と`file(extension, item_id)`
 - `item_tag(tag_id, item_id)`
 - `collection_node(collection_id, parent_node_id, sort_order)`
-- `file_dependency(dependency_file_id, dependent_file_id)`
+- `file_content_dependency(dependency_file_id, target_path, dependent_file_id, dependent_target_path)`
 - `file_imported_asset_guid(asset_guid, file_id)`
 - `item_target(file_id, item_id)`
 

@@ -17,6 +17,7 @@ namespace Ee4v.AssetManager.UI
         SearchableTreeView<FileTreeNode>, IDisposable
     {
         private const int MaxConcurrentAnalyses = 3;
+        private const int MaximumSearchAnalysisBatchSize = 32;
         private const int MaximumCachedImagePreviews = 24;
         private const string RootClassName =
             "ee4v-asset-manager-file-tree";
@@ -37,7 +38,9 @@ namespace Ee4v.AssetManager.UI
         private readonly IAssetManager _manager;
         private readonly UiTextElement _feedback;
         private readonly bool _showsTargetToggles;
-        private readonly Action<FileTreeSelection> _importRequested;
+        private readonly HashSet<string> _unavailableTargetKeys;
+        private readonly Action<IReadOnlyList<FileTreeSelection>>
+            _importRequested;
         private readonly Dictionary<string, AssetFileTarget>
             _targetSelection =
                 new Dictionary<string, AssetFileTarget>(
@@ -46,6 +49,8 @@ namespace Ee4v.AssetManager.UI
             new Dictionary<string, CachedAnalysis>(StringComparer.Ordinal);
         private readonly Dictionary<string, int> _fileTreeIds =
             new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly HashSet<string> _observedExpandedFileIds =
+            new HashSet<string>(StringComparer.Ordinal);
         private readonly Dictionary<string, Texture2D> _imagePreviewCache =
             new Dictionary<string, Texture2D>(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource _reloadCancellation;
@@ -61,27 +66,33 @@ namespace Ee4v.AssetManager.UI
         private Dictionary<string, AssetFileAnalysis> _currentAnalyses;
         private IReadOnlyList<SearchableTreeItemData<FileTreeNode>>
             _pendingTreeItems;
+        private IReadOnlyList<SearchableTreeItemData<FileTreeNode>>
+            _currentTreeItems;
         private IReadOnlyList<AssetFile> _files = Array.Empty<AssetFile>();
         private IReadOnlyList<FileTreeGroup> _groups =
             Array.Empty<FileTreeGroup>();
         private string _itemId = string.Empty;
         private int _reloadVersion;
-        private bool _isPointerOverTree;
+        private bool _isPointerPressedOnTree;
         private bool _isSearching;
+        private string _searchQuery = string.Empty;
         private bool _suppressSelectionChanged;
 
         internal SearchableFileTree(
             IAssetManager manager,
             Action registerFileRequested = null,
-            Action<FileTreeSelection> importRequested = null,
-            bool showTargetToggles = false)
+            Action<IReadOnlyList<FileTreeSelection>> importRequested = null,
+            bool showTargetToggles = false,
+            IReadOnlyList<AssetFileTarget> unavailableTargets = null)
             : base(
                 CreateTreeItem,
                 BindTreeItem,
                 emptyText: I18N.Get("fileTree.empty"),
                 searchPlaceholder: I18N.Get(
                     "fileTree.searchPlaceholder"),
-                selectionType: SelectionType.Single,
+                selectionType: showTargetToggles
+                    ? SelectionType.None
+                    : SelectionType.Multiple,
                 canInteractWithItem: node => node?.IsLoading != true,
                 searchTooltip: I18N.Get("fileTree.searchTooltip"),
                 clearTooltip: I18N.Get("toolbar.search.clear"),
@@ -100,6 +111,12 @@ namespace Ee4v.AssetManager.UI
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
             _showsTargetToggles = showTargetToggles;
+            _unavailableTargetKeys = new HashSet<string>(
+                (unavailableTargets ?? Array.Empty<AssetFileTarget>())
+                    .Where(target => target != null)
+                    .Select(target => TargetKey(
+                        target.FileId, target.TargetPath)),
+                StringComparer.OrdinalIgnoreCase);
             _importRequested = importRequested;
             AddToClassList(RootClassName);
             SetInteractionHandlers(
@@ -120,7 +137,9 @@ namespace Ee4v.AssetManager.UI
             Insert(0, header);
 
             SetViewDataKey(
-                "ee4v-asset-manager-item-detail-file-tree");
+                _showsTargetToggles
+                    ? string.Empty
+                    : "ee4v-asset-manager-item-detail-file-tree");
 
             _feedback = UiTextFactory.Create(
                 string.Empty,
@@ -131,11 +150,9 @@ namespace Ee4v.AssetManager.UI
             _feedback.style.display = DisplayStyle.None;
             Add(_feedback);
 
-            RegisterCallback<PointerEnterEvent>(_ =>
-                _isPointerOverTree = true);
             RegisterCallback<PointerLeaveEvent>(_ =>
             {
-                _isPointerOverTree = false;
+                _isPointerPressedOnTree = false;
                 ApplyPendingTreeItems();
             });
             RegisterCallback<DetachFromPanelEvent>(_ =>
@@ -145,18 +162,46 @@ namespace Ee4v.AssetManager.UI
                 _pendingTreeItems = null;
                 CancelReload();
             });
-            RegisterCallback<PointerUpEvent>(
-                _ => schedule.Execute(QueueExpandedAnalyses),
-                TrickleDown.TrickleDown);
-            RegisterCallback<ClickEvent>(
-                _ => schedule.Execute(QueueExpandedAnalyses),
-                TrickleDown.TrickleDown);
+            RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (_showsTargetToggles &&
+                    evt.button == (int)MouseButton.LeftMouse)
+                {
+                    _isPointerPressedOnTree = true;
+                }
+            }, TrickleDown.TrickleDown);
+            RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (_showsTargetToggles &&
+                    evt.button == (int)MouseButton.LeftMouse)
+                {
+                    _isPointerPressedOnTree = false;
+                    schedule.Execute(ApplyPendingTreeItems).StartingIn(1);
+                }
+                schedule.Execute(QueueExpandedAnalyses);
+            }, TrickleDown.TrickleDown);
+            RegisterCallback<ClickEvent>(_ =>
+            {
+                _isPointerPressedOnTree = false;
+                schedule.Execute(() =>
+                {
+                    ApplyPendingTreeItems();
+                    QueueExpandedAnalyses();
+                }).StartingIn(1);
+            }, TrickleDown.TrickleDown);
             RegisterCallback<KeyUpEvent>(
                 _ => schedule.Execute(QueueExpandedAnalyses),
                 TrickleDown.TrickleDown);
         }
 
-        internal event Action<FileTreeSelection> SelectionChanged;
+        internal event Action<IReadOnlyList<FileTreeSelection>> SelectionChanged;
+
+        internal string ItemId => _itemId;
+
+        internal IReadOnlyList<FileTreeSelection> SelectedSelections =>
+            GetSelectedData()
+                .Select(node => new FileTreeSelection(node.File, node.Entry))
+                .ToArray();
 
         internal void SetItem(
             string itemId,
@@ -175,6 +220,10 @@ namespace Ee4v.AssetManager.UI
             {
                 _analysisCache.Clear();
             }
+            var preserveSelection = string.Equals(
+                _itemId,
+                nextItemId,
+                StringComparison.Ordinal);
             _itemId = nextItemId;
             _targetSelection.Clear();
             foreach (var target in targets ??
@@ -208,7 +257,7 @@ namespace Ee4v.AssetManager.UI
             var analyses = CreateCachedAnalyses();
             _currentAnalyses = analyses;
             SetFeedback(string.Empty);
-            ApplyTreeItems(AssetFileTreeBuilder.Build(
+            _currentTreeItems = AssetFileTreeBuilder.Build(
                 _files,
                 analyses,
                 CancellationToken.None,
@@ -216,9 +265,18 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("fileTree.itemMeta"),
                 I18N.Get("fileTree.loading"),
                 includeOverview: !_showsTargetToggles,
-                groups: _groups));
+                groups: _groups);
+            ApplyTreeItems(_currentTreeItems, preserveSelection);
+            _observedExpandedFileIds.Clear();
+            foreach (var file in _files)
+            {
+                if (IsFileExpanded(file.Id))
+                {
+                    _observedExpandedFileIds.Add(file.Id);
+                }
+            }
 
-            if (!_showsTargetToggles && !_isSearching)
+            if (!_isSearching)
             {
                 return;
             }
@@ -227,7 +285,8 @@ namespace Ee4v.AssetManager.UI
 
         protected override void OnSearchValueChanged(string value)
         {
-            _isSearching = !string.IsNullOrWhiteSpace(value);
+            _searchQuery = (value ?? string.Empty).Trim();
+            _isSearching = _searchQuery.Length > 0;
             if (_isSearching)
             {
                 QueueAllAnalyses();
@@ -240,12 +299,46 @@ namespace Ee4v.AssetManager.UI
             {
                 QueueAnalysis(file, startImmediately: false);
             }
+            if (_searchQuery.Length > 0 && _pendingAnalyses.Count > 1)
+            {
+                var matchingGroupFileIds = new HashSet<string>(
+                    _groups
+                        .Where(group => group.Title.IndexOf(
+                            _searchQuery,
+                            StringComparison.OrdinalIgnoreCase) >= 0)
+                        .SelectMany(group => group.Files)
+                        .Where(file => file != null)
+                        .Select(file => file.Id),
+                    StringComparer.Ordinal);
+                var queued = _pendingAnalyses.ToArray();
+                _pendingAnalyses.Clear();
+                foreach (var file in queued)
+                {
+                    if (file.FileName.IndexOf(
+                            _searchQuery,
+                            StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        matchingGroupFileIds.Contains(file.Id))
+                    {
+                        _pendingAnalyses.Enqueue(file);
+                    }
+                }
+                foreach (var file in queued)
+                {
+                    if (file.FileName.IndexOf(
+                            _searchQuery,
+                            StringComparison.OrdinalIgnoreCase) < 0 &&
+                        !matchingGroupFileIds.Contains(file.Id))
+                    {
+                        _pendingAnalyses.Enqueue(file);
+                    }
+                }
+            }
             StartQueuedAnalyses();
         }
 
         private void QueueExpandedAnalyses()
         {
-            if (panel == null || _showsTargetToggles)
+            if (panel == null || _isSearching)
             {
                 return;
             }
@@ -253,9 +346,17 @@ namespace Ee4v.AssetManager.UI
             {
                 if (IsFileExpanded(file.Id))
                 {
-                    QueueAnalysis(file);
+                    if (_observedExpandedFileIds.Add(file.Id))
+                    {
+                        QueueAnalysis(file, startImmediately: false);
+                    }
+                }
+                else
+                {
+                    _observedExpandedFileIds.Remove(file.Id);
                 }
             }
+            StartQueuedAnalyses();
         }
 
         private bool IsFileExpanded(string fileId)
@@ -270,13 +371,15 @@ namespace Ee4v.AssetManager.UI
         {
             if (_currentAnalyses == null ||
                 !AssetFileTreeBuilder.CanAnalyze(file) ||
-                _currentAnalyses.ContainsKey(file.Id) ||
-                !_requestedAnalysisIds.Add(file.Id))
+                _currentAnalyses.ContainsKey(file.Id))
             {
                 return;
             }
 
-            _pendingAnalyses.Enqueue(file);
+            if (_requestedAnalysisIds.Add(file.Id))
+            {
+                _pendingAnalyses.Enqueue(file);
+            }
             if (startImmediately)
             {
                 StartQueuedAnalyses();
@@ -354,6 +457,8 @@ namespace Ee4v.AssetManager.UI
         {
             var failures = new List<string>();
             var hasUnrenderedResults = false;
+            var searchResultsSinceRefresh = 0;
+            var searchRefreshBatchSize = 1;
             try
             {
                 var running = new List<Task<AnalysisLoadResult>>();
@@ -401,16 +506,32 @@ namespace Ee4v.AssetManager.UI
                             result.Analysis);
                     }
 
+                    var hadUnrenderedResults = hasUnrenderedResults;
                     hasUnrenderedResults = true;
-                    if (_showsTargetToggles ||
-                        (!_isSearching && IsFileExpanded(result.File.Id)))
+                    var refreshExpandedFile = !_isSearching &&
+                                              IsFileExpanded(result.File.Id);
+                    var refreshSearchResults = _showsTargetToggles &&
+                                               _isSearching &&
+                                               ++searchResultsSinceRefresh >=
+                                               searchRefreshBatchSize;
+                    if (refreshExpandedFile || refreshSearchResults)
                     {
                         await ApplyAnalysesAsync(
                             version,
                             cancellation,
                             files,
-                            analyses);
+                            analyses,
+                            refreshExpandedFile && !hadUnrenderedResults
+                                ? result.File
+                                : null);
                         hasUnrenderedResults = false;
+                        if (refreshSearchResults)
+                        {
+                            searchResultsSinceRefresh = 0;
+                            searchRefreshBatchSize = Math.Min(
+                                searchRefreshBatchSize * 4,
+                                MaximumSearchAnalysisBatchSize);
+                        }
                     }
                 }
 
@@ -471,7 +592,7 @@ namespace Ee4v.AssetManager.UI
             try
             {
                 var analysis = await _manager.AnalyzeFileAsync(
-                    file.Id,
+                    file,
                     cancellationToken);
                 return new AnalysisLoadResult(file, analysis, null);
             }
@@ -493,25 +614,41 @@ namespace Ee4v.AssetManager.UI
             int version,
             CancellationTokenSource cancellation,
             IReadOnlyList<AssetFile> files,
-            IReadOnlyDictionary<string, AssetFileAnalysis> analyses)
+            IReadOnlyDictionary<string, AssetFileAnalysis> analyses,
+            AssetFile updatedFile = null)
         {
             var overviewTitle = I18N.Get("fileTree.overview");
             var overviewMeta = I18N.Get("fileTree.itemMeta");
             var loadingTitle = I18N.Get("fileTree.loading");
+            var previousItems = _currentTreeItems;
+            AssetFileAnalysis updatedAnalysis = null;
+            if (updatedFile != null)
+            {
+                analyses.TryGetValue(updatedFile.Id, out updatedAnalysis);
+            }
             var items = await Task.Run(
-                () => AssetFileTreeBuilder.Build(
-                    files,
-                    analyses,
-                    cancellation.Token,
-                    overviewTitle,
-                    overviewMeta,
-                    loadingTitle,
-                    includeOverview: !_showsTargetToggles,
-                    groups: _groups),
+                () => (updatedFile == null
+                        ? null
+                        : AssetFileTreeBuilder.ReplaceFile(
+                            previousItems,
+                            updatedFile,
+                            updatedAnalysis,
+                            loadingTitle,
+                            cancellation.Token)) ??
+                      AssetFileTreeBuilder.Build(
+                          files,
+                          analyses,
+                          cancellation.Token,
+                          overviewTitle,
+                          overviewMeta,
+                          loadingTitle,
+                          includeOverview: !_showsTargetToggles,
+                          groups: _groups),
                 cancellation.Token);
             if (IsCurrentReload(version, cancellation))
             {
-                if (_showsTargetToggles && _isPointerOverTree)
+                _currentTreeItems = items;
+                if (_showsTargetToggles && _isPointerPressedOnTree)
                 {
                     _pendingTreeItems = items;
                 }
@@ -566,6 +703,14 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyList<SearchableTreeItemData<FileTreeNode>> items,
             bool preserveSelection = false)
         {
+            if (_unavailableTargetKeys.Count > 0)
+            {
+                items = (items ??
+                         Array.Empty<SearchableTreeItemData<FileTreeNode>>())
+                    .Select(FilterUnavailableTarget)
+                    .Where(item => item != null)
+                    .ToArray();
+            }
             _fileTreeIds.Clear();
             CollectFileTreeIds(items);
             ConfigureTargetNodes(items);
@@ -581,6 +726,42 @@ namespace Ee4v.AssetManager.UI
             {
                 _suppressSelectionChanged = false;
             }
+        }
+
+        private SearchableTreeItemData<FileTreeNode>
+            FilterUnavailableTarget(
+                SearchableTreeItemData<FileTreeNode> item)
+        {
+            var node = item.Data;
+            if (node?.File != null &&
+                _unavailableTargetKeys.Contains(TargetKey(
+                    node.File.Id,
+                    node.Entry?.Path)))
+            {
+                return null;
+            }
+
+            var children = item.Children
+                .Select(FilterUnavailableTarget)
+                .Where(child => child != null)
+                .ToArray();
+            if (children.Length == 0 &&
+                (node?.IsGroup == true ||
+                 item.Children.Count > 0 &&
+                 (node?.Entry?.Kind ==
+                      AssetFileContentEntryKind.Directory ||
+                  node?.File != null && node.Entry == null &&
+                  IsZip(node.File))))
+            {
+                return null;
+            }
+
+            return new SearchableTreeItemData<FileTreeNode>(
+                item.Id,
+                node,
+                item.SearchText,
+                item.TooltipText,
+                children);
         }
 
         private void CollectFileTreeIds(
@@ -610,6 +791,8 @@ namespace Ee4v.AssetManager.UI
                 FindOwningTree(row)?.OnImageRowPointerMove(row, evt));
             row.RegisterCallback<PointerLeaveEvent>(_ =>
                 FindOwningTree(row)?.OnImageRowPointerLeave(row));
+            row.RegisterCallback<PointerUpEvent>(evt =>
+                FindOwningTree(row)?.OnTargetRowPointerUp(row, evt));
             var targetToggle = UiTextFactory.CreateToggle(
                 string.Empty,
                 RootClassName + "__target-toggle");
@@ -954,18 +1137,28 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            var selectedNodes = selection != null &&
+                                selection.Count > 1 &&
+                                selection.Contains(node)
+                ? selection
+                : new[] { node };
+            var selectedTargets = selectedNodes
+                .Select(selected => new FileTreeSelection(
+                    selected.File,
+                    selected.Entry))
+                .Where(CanImport)
+                .ToArray();
             var menu = new GenericMenu();
             var targetPath = node.Entry?.Path ?? string.Empty;
-            var canImport = _importRequested != null && CanImport(node);
+            var canImport = _importRequested != null &&
+                            selectedTargets.Length > 0;
             if (canImport)
             {
                 menu.AddItem(
                     UiTextFactory.CreateGuiContent(
                         I18N.Get("action.import")),
                     false,
-                    () => _importRequested(new FileTreeSelection(
-                        node.File,
-                        node.Entry)));
+                    () => _importRequested(selectedTargets));
             }
             else
             {
@@ -986,11 +1179,30 @@ namespace Ee4v.AssetManager.UI
                         target.TargetPath,
                         targetPath,
                         StringComparison.OrdinalIgnoreCase));
-            var canSetTarget = CanSetTarget(node);
+            var canSetTarget = selectedTargets.Length > 0;
             if (string.IsNullOrWhiteSpace(_itemId) || !canSetTarget)
             {
                 menu.AddDisabledItem(UiTextFactory.CreateGuiContent(
                     I18N.Get("action.addTarget")));
+            }
+            else if (selectedNodes.Count > 1)
+            {
+                menu.AddItem(
+                    UiTextFactory.CreateGuiContent(
+                        I18N.Get("action.addTarget")),
+                    false,
+                    () => SetTargets(
+                        selectedTargets,
+                        configuredTargets,
+                        true));
+                menu.AddItem(
+                    UiTextFactory.CreateGuiContent(
+                        I18N.Get("action.removeTarget")),
+                    false,
+                    () => SetTargets(
+                        selectedTargets,
+                        configuredTargets,
+                        false));
             }
             else
             {
@@ -1000,46 +1212,43 @@ namespace Ee4v.AssetManager.UI
                             ? "action.addTarget"
                             : "action.removeTarget")),
                     false,
-                    () => SetTarget(
-                        node.File.Id,
-                        targetPath,
+                    () => SetTargets(
+                        selectedTargets,
                         configuredTargets,
-                        configuredTarget != null));
+                        configuredTarget == null));
             }
 
             menu.ShowAsContext();
         }
 
-        private void SetTarget(
-            string fileId,
-            string targetPath,
+        private void SetTargets(
+            IReadOnlyList<FileTreeSelection> selections,
             IReadOnlyList<AssetFileTarget> configuredTargets,
-            bool isConfigured)
+            bool add)
         {
+            var existingTargets = configuredTargets ??
+                Array.Empty<AssetFileTarget>();
+            var selectedTargets = selections
+                .Select(selection => new AssetFileTarget
+                {
+                    FileId = selection.File.Id,
+                    TargetPath = selection.Entry?.Path ?? string.Empty
+                })
+                .ToArray();
             _manager.SetItemTargets(
                 _itemId,
-                (isConfigured
-                    ? (configuredTargets ??
-                       Array.Empty<AssetFileTarget>())
-                        .Where(target => !(
-                            string.Equals(
-                                target.FileId,
-                                fileId,
-                                StringComparison.Ordinal) &&
-                            string.Equals(
-                                target.TargetPath,
-                                targetPath,
-                                StringComparison.OrdinalIgnoreCase)))
-                    : (configuredTargets ??
-                       Array.Empty<AssetFileTarget>())
-                        .Concat(new[]
-                        {
-                            new AssetFileTarget
-                            {
-                                FileId = fileId,
-                                TargetPath = targetPath
-                            }
-                        }))
+                (add
+                    ? existingTargets
+                        .Concat(selectedTargets.Where(target =>
+                            !existingTargets.Any(existing =>
+                                AssetFileTarget.HasSameIdentity(
+                                    existing,
+                                    target))))
+                    : existingTargets
+                        .Where(existing => !selectedTargets.Any(target =>
+                            AssetFileTarget.HasSameIdentity(
+                                existing,
+                                target))))
                 .ToArray());
         }
 
@@ -1087,25 +1296,65 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private static bool CanSetTarget(FileTreeNode node)
+        private void OnTargetRowPointerUp(
+            VisualElement row,
+            PointerUpEvent evt)
         {
-            return CanImport(node);
+            if (!_showsTargetToggles ||
+                evt.button != (int)MouseButton.LeftMouse)
+            {
+                return;
+            }
+
+            var node = ResolveBoundNode(row);
+            if (node?.ShowsTargetToggle != true)
+            {
+                return;
+            }
+
+            var toggle = row.Q<Toggle>(TargetToggleElementName);
+            for (var target = evt.target as VisualElement;
+                 target != null && !ReferenceEquals(target, row);
+                 target = target.parent)
+            {
+                if (ReferenceEquals(target, toggle))
+                {
+                    return;
+                }
+            }
+
+            OnTargetChanged(node, !node.IsTarget);
+            toggle?.SetValueWithoutNotify(node.IsTarget);
         }
 
-        private static bool CanImport(FileTreeNode node)
+        private bool CanSetTarget(FileTreeNode node)
         {
-            if (node?.File == null)
+            return CanImport(node) &&
+                   !_unavailableTargetKeys.Contains(TargetKey(
+                       node.File.Id,
+                       node.Entry?.Path));
+        }
+
+        internal static bool CanImport(FileTreeSelection selection)
+        {
+            if (selection?.File == null)
             {
                 return false;
             }
 
-            return node.Entry == null
-                ? !IsZip(node.File)
-                : node.Entry.Kind == AssetFileContentEntryKind.File &&
+            return selection.Entry == null
+                ? !IsZip(selection.File)
+                : selection.Entry.Kind == AssetFileContentEntryKind.File &&
                   !string.Equals(
-                      Path.GetExtension(node.Entry.Path),
+                      Path.GetExtension(selection.Entry.Path),
                       ".zip",
                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool CanImport(FileTreeNode node)
+        {
+            return node != null && CanImport(
+                new FileTreeSelection(node.File, node.Entry));
         }
 
         private static string TargetKey(string fileId, string targetPath)
@@ -1138,12 +1387,9 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var node = selection == null || selection.Count == 0
-                ? null
-                : selection[selection.Count - 1];
-            SelectionChanged?.Invoke(node == null
-                ? null
-                : new FileTreeSelection(node.File, node.Entry));
+            SelectionChanged?.Invoke((selection ?? Array.Empty<FileTreeNode>())
+                .Select(node => new FileTreeSelection(node.File, node.Entry))
+                .ToArray());
         }
 
         private void CancelReload()

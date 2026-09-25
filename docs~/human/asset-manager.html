@@ -103,21 +103,27 @@
         <h2>Fileの中身と取り込み先を確認する</h2>
         <p>Item詳細は、左の検索付きFile Treeと右の詳細表示に分かれます。File Treeの先頭にItem概要、その下に所属Fileを表示します。ZIPとUnityPackageは展開すると内容を読み込み、読み込み中は「解析中…」と表示します。File Treeで検索した場合は未解析のFileも読み込み、内容を検索します。</p>
         <p>File TreeのPNG・JPEG・PSDへマウスを重ねると、画像とFile名をプレビューできます。ZIPとUnityPackageの中にある画像にも対応します。行からマウスを離すとプレビューは閉じます。</p>
+        <p>File TreeではCtrl+クリックで選択を追加・解除し、Shift+クリックで起点からまとめて選択できます。複数選択時も右側には単体Fileと同じヘッダーと設定を表示し、File IDだけを省きます。所属Itemの移動、Archive・復元・削除は選択したFileへまとめて適用されます。依存Targetの編集は取り込み可能な選択実体へまとめて適用されます。選択済みの行を右クリックすると、ImportとTarget操作を選択全体へ適用できます。ImportとTarget設定は取り込み可能なFile・実体だけが対象です。依存Targetは選択した実体ごとに設定され、保存すると選択した全実体の依存先が同じ内容に置き換わります。ZIP自身には設定できないため、中のFileを選択します。</p>
+        <p>Target選択のポップアップでは、候補の行またはチェックボックスをクリックして選びます。ZIP自身は選べないため、ZIPを展開して中のFileを選んでから保存してください。</p>
+        <p>依存先の候補には依存元自身を表示しません。同じZIPに別の実体がある場合、その実体は候補に残ります。</p>
+        <p class="callout"><strong>以前の依存設定:</strong> File単位の依存関係は実体単位へ自動変換されません。ZIP内の依存元実体を選んで設定し直してください。</p>
+        <p>ポップアップは開くたびに候補を折りたたんで表示します。未解析のZIPやUnityPackageは展開したFileだけを解析し、完了後に内容を表示します。内容を検索した場合は未解析の候補も読み込みます。</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>選択対象</th><th>右側に表示する内容</th></tr></thead>
             <tbody>
               <tr><td>概要</td><td>名前、Tag、Item Target、File数、形式、Source、BOOTH情報、合計size、作成・更新日時</td></tr>
-              <tr><td>File</td><td>形式、操作、実体単位のDependency Targetなどの取り込み設定</td></tr>
-              <tr><td>File内の内容</td><td>path、種別、size、取り込み済みかどうか</td></tr>
+              <tr><td>File</td><td>形式、操作、所属Item。ZIP以外のFile自身には依存Targetも設定可能</td></tr>
+              <tr><td>複数選択</td><td>単体Fileと同じヘッダーと設定一覧。File IDは表示しない</td></tr>
+              <tr><td>File内の内容</td><td>path、種別、size、取り込み済みかどうか。取り込み可能な実体には依存Targetも設定可能</td></tr>
             </tbody>
           </table>
         </div>
         <h3>取り込みの流れ</h3>
         <ol class="steps">
           <li>FileまたはFile内の実体へItem Targetを設定します。TargetをGroupにすると、Import時にGroupごとに1件を選べます。</li>
-          <li>必要な場合はFile詳細からDependency Targetを設定します。</li>
-          <li>ItemのImport、またはFile Treeのcontext menuから1実体のImportを実行します。</li>
+          <li>必要な場合は、依存元になるFile自身またはZIP内の実体をFile Treeで選び、その詳細からDependency Targetを設定します。</li>
+          <li>ItemのImport、File Treeのcontext menuから1実体のImport、またはFile Treeで複数選択してImportを実行します。</li>
         </ol>
         <p class="callout"><strong>取り込めない対象:</strong> ZIP自身、ZIP内のZIP、Directoryは1実体Importの対象になりません。ItemのImportは単一Itemが選択され、Item Targetが設定済みの場合に有効になります。</p>
         <h3>Codexで取り込み済みPrefabを確認する</h3>

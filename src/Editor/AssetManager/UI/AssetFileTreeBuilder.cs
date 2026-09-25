@@ -124,6 +124,117 @@ namespace Ee4v.AssetManager.UI
                        StringComparison.OrdinalIgnoreCase);
         }
 
+        internal static IReadOnlyList<SearchableTreeItemData<FileTreeNode>>
+            ReplaceFile(
+                IReadOnlyList<SearchableTreeItemData<FileTreeNode>> items,
+                AssetFile file,
+                AssetFileAnalysis analysis,
+                string loadingTitle,
+                CancellationToken cancellationToken)
+        {
+            if (items == null || file == null)
+            {
+                return null;
+            }
+
+            var usedIds = new HashSet<int>();
+            var found = false;
+            foreach (var item in items)
+            {
+                CollectOtherIds(
+                    item,
+                    file.Id,
+                    usedIds,
+                    ref found,
+                    cancellationToken);
+            }
+            if (!found)
+            {
+                return null;
+            }
+
+            var replacement = CreateFileItem(
+                file,
+                analysis,
+                loadingTitle,
+                usedIds,
+                cancellationToken);
+            return items.Select(item => ReplaceFileItem(
+                    item,
+                    file.Id,
+                    replacement,
+                    cancellationToken))
+                .ToArray();
+        }
+
+        private static void CollectOtherIds(
+            SearchableTreeItemData<FileTreeNode> item,
+            string fileId,
+            ISet<int> usedIds,
+            ref bool found,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (IsFileRoot(item, fileId))
+            {
+                found = true;
+                return;
+            }
+
+            usedIds.Add(item.Id);
+            foreach (var child in item.Children)
+            {
+                CollectOtherIds(
+                    child,
+                    fileId,
+                    usedIds,
+                    ref found,
+                    cancellationToken);
+            }
+        }
+
+        private static SearchableTreeItemData<FileTreeNode> ReplaceFileItem(
+            SearchableTreeItemData<FileTreeNode> item,
+            string fileId,
+            SearchableTreeItemData<FileTreeNode> replacement,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (IsFileRoot(item, fileId))
+            {
+                return replacement;
+            }
+            if (item.Data?.IsGroup != true)
+            {
+                return item;
+            }
+
+            var children = item.Children.Select(child => ReplaceFileItem(
+                    child,
+                    fileId,
+                    replacement,
+                    cancellationToken))
+                .ToArray();
+            return new SearchableTreeItemData<FileTreeNode>(
+                item.Id,
+                item.Data,
+                item.SearchText,
+                item.TooltipText,
+                children);
+        }
+
+        private static bool IsFileRoot(
+            SearchableTreeItemData<FileTreeNode> item,
+            string fileId)
+        {
+            return item.Data?.File != null &&
+                   item.Data.Entry == null &&
+                   string.Equals(
+                       item.Data.File.Id,
+                       fileId,
+                       StringComparison.Ordinal);
+        }
+
         private static SearchableTreeItemData<FileTreeNode> CreateFileItem(
             AssetFile file,
             AssetFileAnalysis analysis,
