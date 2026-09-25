@@ -17,6 +17,7 @@ namespace Ee4v.AssetManager.UI
         SearchableTreeView<FileTreeNode>, IDisposable
     {
         private const int MaxConcurrentAnalyses = 3;
+        private const int MaximumCachedImagePreviews = 24;
         private const string RootClassName =
             "ee4v-asset-manager-file-tree";
         internal const string RowClassName =
@@ -45,7 +46,15 @@ namespace Ee4v.AssetManager.UI
             new Dictionary<string, CachedAnalysis>(StringComparer.Ordinal);
         private readonly Dictionary<string, int> _fileTreeIds =
             new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly Dictionary<string, Texture2D> _imagePreviewCache =
+            new Dictionary<string, Texture2D>(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource _reloadCancellation;
+        private CancellationTokenSource _imagePreviewCancellation;
+        private FileTreeImageTooltipWindow _imageTooltipWindow;
+        private VisualElement _hoveredImageRow;
+        private FileTreeNode _hoveredImageNode;
+        private Vector2 _hoveredPanelPosition;
+        private int _imagePreviewVersion;
         private Queue<AssetFile> _pendingAnalyses = new Queue<AssetFile>();
         private HashSet<string> _requestedAnalysisIds =
             new HashSet<string>(StringComparer.Ordinal);
@@ -131,6 +140,8 @@ namespace Ee4v.AssetManager.UI
             });
             RegisterCallback<DetachFromPanelEvent>(_ =>
             {
+                HideImageTooltip();
+                ClearImagePreviewCache();
                 _pendingTreeItems = null;
                 CancelReload();
             });
@@ -155,6 +166,8 @@ namespace Ee4v.AssetManager.UI
                 initialAnalyses = null,
             IReadOnlyList<FileTreeGroup> groups = null)
         {
+            HideImageTooltip();
+            ClearImagePreviewCache();
             CancelReload();
             _pendingTreeItems = null;
             var nextItemId = itemId ?? string.Empty;
@@ -290,6 +303,8 @@ namespace Ee4v.AssetManager.UI
 
         public void Dispose()
         {
+            HideImageTooltip();
+            ClearImagePreviewCache();
             CancelReload();
         }
 
@@ -589,6 +604,12 @@ namespace Ee4v.AssetManager.UI
         {
             var row = new ItemRow();
             row.AddToClassList(RowClassName);
+            row.RegisterCallback<PointerEnterEvent>(evt =>
+                FindOwningTree(row)?.OnImageRowPointerEnter(row, evt));
+            row.RegisterCallback<PointerMoveEvent>(evt =>
+                FindOwningTree(row)?.OnImageRowPointerMove(row, evt));
+            row.RegisterCallback<PointerLeaveEvent>(_ =>
+                FindOwningTree(row)?.OnImageRowPointerLeave(row));
             var targetToggle = UiTextFactory.CreateToggle(
                 string.Empty,
                 RootClassName + "__target-toggle");
@@ -611,6 +632,33 @@ namespace Ee4v.AssetManager.UI
             VisualElement element,
             FileTreeNode node)
         {
+            var owner = FindOwningTree(element);
+            if (owner != null &&
+                ReferenceEquals(element, owner._hoveredImageRow) &&
+                !ReferenceEquals(node, owner._hoveredImageNode))
+            {
+                var pointerPosition = owner._hoveredPanelPosition;
+                owner.HideImageTooltip();
+                element.schedule.Execute(() =>
+                {
+                    if (owner.panel != null &&
+                        element.panel != null &&
+                        element.worldBound.Contains(pointerPosition) &&
+                        ReferenceEquals(ResolveBoundNode(element), node))
+                    {
+                        owner.BeginImagePreview(
+                            element,
+                            node,
+                            pointerPosition);
+                    }
+                });
+            }
+
+            element.tooltip = owner != null &&
+                              !owner._showsTargetToggles &&
+                              ResolveImageSource(node) != null
+                ? string.Empty
+                : node?.Title ?? string.Empty;
             element.EnableInClassList(
                 RowOverviewClassName,
                 node?.IsOverview == true);
@@ -640,6 +688,242 @@ namespace Ee4v.AssetManager.UI
                         ResolveTreeIcon(node),
                         UiSizeTokens.Size14)));
             }
+        }
+
+        private static SearchableFileTree FindOwningTree(
+            VisualElement element)
+        {
+            for (var parent = element?.parent;
+                 parent != null;
+                 parent = parent.parent)
+            {
+                if (parent is SearchableFileTree tree)
+                {
+                    return tree;
+                }
+            }
+
+            return null;
+        }
+
+        private static FileTreeNode ResolveBoundNode(
+            VisualElement row)
+        {
+            return (row?.userData as SearchableTreeItemData<FileTreeNode>)
+                ?.Data;
+        }
+
+        private static FileTreeImageSource ResolveImageSource(
+            FileTreeNode node)
+        {
+            if (node?.File == null)
+            {
+                return null;
+            }
+
+            if (node.Entry == null)
+            {
+                return FileTreeImageSource.FromFile(
+                    node.File.FileName,
+                    node.File.SourcePath);
+            }
+
+            return node.Entry.Kind == AssetFileContentEntryKind.File
+                ? FileTreeImageSource.FromArchive(
+                    Path.GetFileName(node.Entry.Path),
+                    node.File.SourcePath,
+                    node.Entry.Path,
+                    node.Entry.AssetGuid)
+                : null;
+        }
+
+        private void OnImageRowPointerEnter(
+            VisualElement row,
+            PointerEnterEvent evt)
+        {
+            BeginImagePreview(
+                row,
+                ResolveBoundNode(row),
+                row.LocalToWorld(evt.localPosition));
+        }
+
+        private void BeginImagePreview(
+            VisualElement row,
+            FileTreeNode node,
+            Vector2 panelPosition)
+        {
+            if (_showsTargetToggles)
+            {
+                return;
+            }
+
+            var source = ResolveImageSource(node);
+            if (source == null)
+            {
+                return;
+            }
+
+            HideImageTooltip();
+            _hoveredImageRow = row;
+            _hoveredImageNode = node;
+            _hoveredPanelPosition = panelPosition;
+            if (_imagePreviewCache.TryGetValue(
+                    source.CacheKey,
+                    out var cachedTexture) && cachedTexture != null)
+            {
+                ShowImageTooltip(row, node, cachedTexture);
+                return;
+            }
+
+            var cancellation = new CancellationTokenSource();
+            _imagePreviewCancellation = cancellation;
+            _ = LoadImagePreviewAsync(
+                row,
+                node,
+                source,
+                ++_imagePreviewVersion,
+                cancellation);
+        }
+
+        private async Task LoadImagePreviewAsync(
+            VisualElement row,
+            FileTreeNode node,
+            FileTreeImageSource source,
+            int version,
+            CancellationTokenSource cancellation)
+        {
+            try
+            {
+                var preview = await Task.Run(
+                    () => FileTreeImagePreviewLoader.Load(
+                        source,
+                        cancellation.Token),
+                    cancellation.Token);
+                if (version != _imagePreviewVersion ||
+                    cancellation.IsCancellationRequested ||
+                    !ReferenceEquals(row, _hoveredImageRow) ||
+                    !ReferenceEquals(node, _hoveredImageNode) ||
+                    row.panel == null)
+                {
+                    return;
+                }
+
+                if (preview == null)
+                {
+                    row.tooltip = node.Title;
+                    return;
+                }
+
+                var texture = preview.CreateTexture();
+                if (texture == null)
+                {
+                    row.tooltip = node.Title;
+                    return;
+                }
+
+                CacheImagePreview(source.CacheKey, texture);
+                ShowImageTooltip(row, node, texture);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception)
+            {
+                if (ReferenceEquals(row, _hoveredImageRow))
+                {
+                    row.tooltip = node.Title;
+                }
+            }
+            finally
+            {
+                if (ReferenceEquals(_imagePreviewCancellation, cancellation))
+                {
+                    _imagePreviewCancellation = null;
+                }
+
+                cancellation.Dispose();
+            }
+        }
+
+        private void OnImageRowPointerMove(
+            VisualElement row,
+            PointerMoveEvent evt)
+        {
+            if (!ReferenceEquals(row, _hoveredImageRow))
+            {
+                return;
+            }
+
+            _hoveredPanelPosition = row.LocalToWorld(evt.localPosition);
+            _imageTooltipWindow?.SetPointerPosition(
+                row,
+                _hoveredPanelPosition);
+        }
+
+        private void OnImageRowPointerLeave(VisualElement row)
+        {
+            if (ReferenceEquals(row, _hoveredImageRow))
+            {
+                HideImageTooltip();
+            }
+        }
+
+        private void ShowImageTooltip(
+            VisualElement row,
+            FileTreeNode node,
+            Texture2D texture)
+        {
+            var window = FileTreeImageTooltipWindow.Show(
+                row,
+                _hoveredPanelPosition,
+                texture,
+                node.Title);
+            if (!ReferenceEquals(row, _hoveredImageRow))
+            {
+                window?.Close();
+                return;
+            }
+
+            _imageTooltipWindow = window;
+        }
+
+        private void HideImageTooltip()
+        {
+            _imagePreviewVersion++;
+            var cancellation = _imagePreviewCancellation;
+            _imagePreviewCancellation = null;
+            cancellation?.Cancel();
+            if (_imageTooltipWindow != null)
+            {
+                _imageTooltipWindow.Close();
+                _imageTooltipWindow = null;
+            }
+
+            _hoveredImageRow = null;
+            _hoveredImageNode = null;
+        }
+
+        private void CacheImagePreview(string key, Texture2D texture)
+        {
+            if (_imagePreviewCache.Count >= MaximumCachedImagePreviews)
+            {
+                ClearImagePreviewCache();
+            }
+
+            _imagePreviewCache[key] = texture;
+        }
+
+        private void ClearImagePreviewCache()
+        {
+            foreach (var texture in _imagePreviewCache.Values)
+            {
+                if (texture != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(texture);
+                }
+            }
+
+            _imagePreviewCache.Clear();
         }
 
         private static Texture2D ResolveTreeIcon(FileTreeNode node)

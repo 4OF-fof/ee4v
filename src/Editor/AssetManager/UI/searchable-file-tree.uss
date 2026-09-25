@@ -41,6 +41,12 @@
     border-top-color: var(--ee4v-color-border-subtle);
 }
 
+.ee4v-asset-manager-file-tree .unity-tree-view__item-content {
+    min-width: 0;
+    flex-shrink: 1;
+    flex-basis: 0;
+}
+
 .ee4v-asset-manager-file-tree__feedback {
     flex-shrink: 0;
     margin-top: var(--ee4v-space-sm);
@@ -49,8 +55,10 @@
 .ee4v-asset-manager-file-tree__row {
     flex-direction: row;
     align-items: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
     min-width: 0;
-    width: 100%;
     min-height: 30px;
     padding-left: var(--ee4v-space-xs);
     padding-right: var(--ee4v-space-sm);
@@ -99,9 +107,52 @@
 
 .ee4v-asset-manager-file-tree__meta {
     flex-shrink: 0;
+    min-width: 0;
     max-width: 88px;
     margin-left: var(--ee4v-space-md);
     overflow: hidden;
     text-overflow: ellipsis;
     -unity-text-overflow-position: end;
+}
+
+.ee4v-asset-manager-file-tree__meta Label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -unity-text-overflow-position: end;
+}
+
+.ee4v-asset-manager-file-tree__image-tooltip {
+    align-items: center;
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
+    padding-top: var(--ee4v-space-md);
+    padding-bottom: var(--ee4v-space-md);
+    border-top-left-radius: var(--ee4v-radius-xl);
+    border-top-right-radius: var(--ee4v-radius-xl);
+    border-bottom-left-radius: var(--ee4v-radius-xl);
+    border-bottom-right-radius: var(--ee4v-radius-xl);
+    background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-asset-manager-file-tree__image-tooltip-image {
+    flex-shrink: 0;
+}
+
+.ee4v-asset-manager-file-tree__image-tooltip-name {
+    width: 100%;
+    height: var(--ee4v-size-22);
+    margin-top: var(--ee4v-space-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -unity-text-overflow-position: end;
+    -unity-text-align: middle-center;
+}
+
+.ee4v-asset-manager-file-tree__image-tooltip-name Label {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -unity-text-overflow-position: end;
+    -unity-text-align: middle-center;
 }
