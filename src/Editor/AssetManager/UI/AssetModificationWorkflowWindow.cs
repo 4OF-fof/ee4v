@@ -1432,10 +1432,10 @@ namespace Ee4v.AssetManager.UI
                 variant: UiButtonVariant.Ghost);
             button.AddToClassList(className);
             button.tooltip = tooltip;
-            button.SetIcon(IconState.FromBuiltinIcon(
+            button.SetIcon(FluentUiIcons.CreateState(
                 isVisible
-                    ? UiBuiltinIcon.VisibilityVisible
-                    : UiBuiltinIcon.VisibilityHidden,
+                    ? "eye.png"
+                    : "eye_off.png",
                 UiSizeTokens.Size18,
                 tooltip));
             return button;
@@ -1719,10 +1719,10 @@ namespace Ee4v.AssetManager.UI
                 ? "workflow.assets.clickToShow"
                 : "workflow.assets.clickToHide");
             button.tooltip = tooltip;
-            button.SetIcon(IconState.FromBuiltinIcon(
+            button.SetIcon(FluentUiIcons.CreateState(
                 hidden
-                    ? UiBuiltinIcon.VisibilityHidden
-                    : UiBuiltinIcon.VisibilityVisible,
+                    ? "eye_off.png"
+                    : "eye.png",
                 UiSizeTokens.Size18,
                 tooltip));
             _scenePreview?.SetHiddenPrefabs(
@@ -5180,10 +5180,10 @@ namespace Ee4v.AssetManager.UI
                     : "workflow.appearance.showMaterial";
                 var tooltip = I18N.Get(tooltipKey);
                 button.tooltip = tooltip;
-                button.SetIcon(IconState.FromBuiltinIcon(
+                button.SetIcon(FluentUiIcons.CreateState(
                     isVisible
-                        ? UiBuiltinIcon.VisibilityVisible
-                        : UiBuiltinIcon.VisibilityHidden,
+                        ? "eye.png"
+                        : "eye_off.png",
                     UiSizeTokens.Size18,
                     tooltip));
             }
@@ -5194,10 +5194,10 @@ namespace Ee4v.AssetManager.UI
                 ? "workflow.appearance.hideAll"
                 : "workflow.appearance.showAll");
             _allMaterialsVisibilityButton?.SetIcon(
-                IconState.FromBuiltinIcon(
+                FluentUiIcons.CreateState(
                     allVisible
-                        ? UiBuiltinIcon.VisibilityVisible
-                        : UiBuiltinIcon.VisibilityHidden,
+                        ? "eye.png"
+                        : "eye_off.png",
                     UiSizeTokens.Size18,
                     allTooltip));
             if (_allMaterialsVisibilityButton != null)

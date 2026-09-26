@@ -7,7 +7,7 @@ namespace Ee4v.UI
 {
     public static class FluentUiIcons
     {
-        private const string IconDirectory =
+        internal const string IconDirectory =
             "/Editor/ThirdParty/FluentUiSystemIcons/Png512/";
 
         public static Texture2D LoadTexture(string iconFileName)
@@ -26,6 +26,19 @@ namespace Ee4v.UI
             string tooltip = null,
             Color? tintColor = null)
         {
+            if (size <= UiSizeTokens.Size12)
+            {
+                switch (iconFileName)
+                {
+                    case "add.png":
+                        iconFileName = "add_12.png";
+                        break;
+                    case "subtract.png":
+                        iconFileName = "subtract_12.png";
+                        break;
+                }
+            }
+
             var texture = LoadTexture(iconFileName);
             return texture == null
                 ? null
@@ -48,10 +61,7 @@ namespace Ee4v.UI
         Folder,
         Scene,
         GameObject,
-        DisclosureClosed,
-        DisclosureOpen,
         ModelFile,
-        VisibilityVisible,
         VisibilityHidden
     }
 
@@ -113,33 +123,8 @@ namespace Ee4v.UI
                         "GameObject Icon",
                         "d_GameObject Icon"
                     };
-                case UiBuiltinIcon.DisclosureClosed:
-                    return new[]
-                    {
-                        "IN foldout",
-                        "d_IN_foldout",
-                        "Foldout",
-                        "d_Foldout"
-                    };
-                case UiBuiltinIcon.DisclosureOpen:
-                    return new[]
-                    {
-                        "IN foldout on",
-                        "d_IN_foldout on",
-                        "Foldout On",
-                        "d_Foldout On"
-                    };
                 case UiBuiltinIcon.ModelFile:
                     return new[] { "Prefab Icon", "d_Prefab Icon", "Mesh Icon", "d_Mesh Icon", "DefaultAsset Icon" };
-                case UiBuiltinIcon.VisibilityVisible:
-                    return new[]
-                    {
-                        "scenevis_visible_hover",
-                        "scenevis_visible",
-                        "d_scenevis_visible_hover",
-                        "d_scenevis_visible",
-                        "animationvisibilitytoggleon"
-                    };
                 case UiBuiltinIcon.VisibilityHidden:
                     return new[]
                     {
@@ -239,6 +224,13 @@ namespace Ee4v.UI
         public void SetState(IconState state)
         {
             state = state ?? CreateDefaultState();
+            if (state == null)
+            {
+                _image.image = null;
+                tooltip = string.Empty;
+                style.display = DisplayStyle.None;
+                return;
+            }
 
             var size = state.Size;
 
@@ -286,8 +278,7 @@ namespace Ee4v.UI
 
         private static IconState CreateDefaultState()
         {
-            return FluentUiIcons.CreateState("search.png") ??
-                   IconState.FromBuiltinIcon(UiBuiltinIcon.Folder);
+            return FluentUiIcons.CreateState("search.png");
         }
     }
 }

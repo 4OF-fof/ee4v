@@ -99,10 +99,10 @@ namespace Ee4v.UI
             }
 
             _expanded = expanded;
-            _header.SetIcon(IconState.FromBuiltinIcon(
+            _header.SetIcon(FluentUiIcons.CreateState(
                 expanded
-                    ? UiBuiltinIcon.DisclosureOpen
-                    : UiBuiltinIcon.DisclosureClosed,
+                    ? "chevron_down.png"
+                    : "chevron_right.png",
                 UiSizeTokens.Size12));
             Content.style.display = expanded
                 ? DisplayStyle.Flex

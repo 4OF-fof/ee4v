@@ -85,7 +85,7 @@ namespace Ee4v.UI
                 item.SetState(new NavigationItemState(
                     title,
                     description,
-                    IconState.FromBuiltinIcon(UiBuiltinIcon.Folder),
+                    FluentUiIcons.CreateState("folder.png"),
                     selected));
             };
 

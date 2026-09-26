@@ -673,7 +673,7 @@ namespace Ee4v.AssetManager.UI
             primary.Add(CreateNavigationButton(
                 I18N.Get("navigation.unassignedFiles"),
                 AssetManagerPage.UnassignedFiles,
-                "folder.png"));
+                "mail_inbox.png"));
             primary.Add(CreateNavigationButton(
                 I18N.Get("navigation.archived"),
                 AssetManagerPage.Archived,

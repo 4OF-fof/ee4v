@@ -1,4 +1,5 @@
 add
+add_12
 archive
 arrow_clockwise
 arrow_left
@@ -10,14 +11,17 @@ chevron_right
 cube
 dismiss
 document
+eye
 eye_off
 folder
 folder_zip
 image
 info
 library
+mail_inbox
 pin
 search
 star
 subtract
+subtract_12
 tag

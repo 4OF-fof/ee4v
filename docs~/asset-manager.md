@@ -92,11 +92,15 @@ AssetManager画面にはデータソースと取り込みの専用ページを�
 
 ### 未所属File
 
+ナビゲーションの未所属はFluent UI System Iconsの16px用`Mail Inbox`を14pxで表示します。細かな記号のない受け皿の形で、コレクションの既定Folderと区別します。
+
 未所属File一覧ではソートボタンを維持します。File画面のメニューは名前、作成日、更新日と逆順を表示し、File数は表示しません。Item一覧からFile数指定のまま移動した場合はFile名順として扱います。Item詳細ではソート、検索、Grid列数の操作を表示しません。
 
 ### Iconとi18n
 
 AssetManagerが描画するアイコンはMicrosoft Fluent UI System Iconsの固定版へ統一し、Unity組み込みアイコンを混在させません。ツールバー、検索と解除、列数の増減、ナビゲーション、Tagの追加と削除、折りたたみ、通知、パンくず区切りで使う分だけをvendor資産として保持します。Tag選択画面には共有`SearchField`を使用し、その検索と解除にも同じFluentアイコンを指定します。アイコンの組み立ては`AssetManagerControls`へ集約し、文字記号は使用しません。
+
+「新規」とGrid列数スライダーの12px Add・Subtractは、小サイズ用SVGから生成した画像を共通UIで自動選択します。PNGはGUI用の非圧縮・ミップマップなしの設定で取り込みます。改変ワークフローのPrefabとMaterialのプレビュー表示切り替えはFluentの`Eye`・`Eye Off`を使用します。
 
 AssetManagerの固定表示文字はAssetManagerスコープのi18nカタログから取得します。英語と日本語を収録し、言語設定または翻訳アセットの再読込時には開いているAssetManager画面とウィンドウタイトルを再構築します。Item名、File名、コレクション名などの保存データは翻訳しません。
 
