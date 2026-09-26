@@ -9,6 +9,7 @@ chevron_down
 chevron_right
 cube
 dismiss
+document
 eye_off
 folder
 folder_zip

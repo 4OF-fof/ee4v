@@ -272,12 +272,14 @@ namespace Ee4v.Mcp
                 McpSchemas.Object(new JObject
                 {
                     ["name"] = McpSchemas.String(),
+                    ["icon"] = McpSchemas.Enum(Enum.GetNames(typeof(AssetCollectionIcon))),
                     ["filter"] = new JObject { ["type"] = "object" }
                 }, "name", "filter"),
                 arguments => AssetResult(() => Success(Manager().CreateCollection(
                     new CreateAssetCollectionRequest
                     {
                         Name = Required(arguments, "name"),
+                        Icon = CollectionIcon(arguments) ?? AssetCollectionIcon.Folder,
                         Root = McpJson.To<AssetFilterNode>(arguments["filter"])
                     }))),
                 readOnly: false,
@@ -290,6 +292,7 @@ namespace Ee4v.Mcp
                 {
                     ["collectionId"] = McpSchemas.String(),
                     ["name"] = McpSchemas.String(),
+                    ["icon"] = McpSchemas.Enum(Enum.GetNames(typeof(AssetCollectionIcon))),
                     ["filter"] = new JObject { ["type"] = "object" }
                 }, "collectionId", "name", "filter"),
                 arguments => AssetResult(() =>
@@ -303,6 +306,7 @@ namespace Ee4v.Mcp
                         new UpdateAssetCollectionRequest
                         {
                             Name = name,
+                            Icon = CollectionIcon(arguments),
                             Root = filter
                         }));
                 }),
@@ -326,6 +330,24 @@ namespace Ee4v.Mcp
                 readOnly: false,
                 destructive: true,
                 idempotent: false));
+        }
+
+        private static AssetCollectionIcon? CollectionIcon(JObject arguments)
+        {
+            var value = arguments["icon"];
+            if (value == null)
+            {
+                return null;
+            }
+            if (value.Type == JTokenType.String &&
+                Enum.TryParse<AssetCollectionIcon>((string)value, true, out var icon) &&
+                Enum.IsDefined(typeof(AssetCollectionIcon), icon))
+            {
+                return icon;
+            }
+            throw new AssetManagerException(
+                AssetManagerErrorCode.InvalidRequest,
+                "Collection icon is invalid.");
         }
 
         private static IAssetManager Manager()

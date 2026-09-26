@@ -18,6 +18,19 @@ namespace Ee4v.AssetManager.Contracts
         Directory
     }
 
+    public enum AssetCollectionIcon
+    {
+        File = 0,
+        Folder = 1,
+        Star = 2,
+        Tag = 3,
+        Library = 4,
+        Image = 5,
+        Cube = 6,
+        Archive = 7,
+        Pin = 8
+    }
+
     public enum AssetFilterNodeType
     {
         And,

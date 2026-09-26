@@ -935,6 +935,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         id,
                         request.Name.Trim(),
                         now);
+                    Execute(
+                        connection,
+                        transaction,
+                        @"INSERT INTO collection_icon(collection_id, icon)
+                          VALUES(@p0, @p1)",
+                        id,
+                        (int)request.Icon);
                     InsertNode(
                         connection,
                         transaction,
@@ -986,6 +993,16 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         request.Name.Trim(),
                         Now(),
                         collectionId);
+                    if (request.Icon.HasValue)
+                    {
+                        Execute(
+                            connection,
+                            transaction,
+                            @"INSERT OR REPLACE INTO collection_icon(collection_id, icon)
+                              VALUES(@p0, @p1)",
+                            collectionId,
+                            (int)request.Icon.Value);
+                    }
                     Execute(
                         connection,
                         transaction,
@@ -1558,6 +1575,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     FOREIGN KEY(collection_id)
                       REFERENCES collection(id) ON DELETE CASCADE
                   )",
+                @"CREATE TABLE IF NOT EXISTS collection_icon(
+                    collection_id TEXT PRIMARY KEY,
+                    icon INTEGER NOT NULL DEFAULT 1
+                      CHECK(icon IN (0, 1, 2, 3, 4, 5, 6, 7, 8)),
+                    FOREIGN KEY(collection_id)
+                      REFERENCES collection(id) ON DELETE CASCADE
+                  )",
                 @"CREATE TABLE IF NOT EXISTS collection_node(
                     id TEXT PRIMARY KEY,
                     collection_id TEXT NOT NULL,
@@ -2024,9 +2048,14 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             string collectionId)
         {
             var collection = connection.Query<CollectionRow>(
-                    @"SELECT name AS Name, created_at AS CreatedAt,
-                             updated_at AS UpdatedAt
-                      FROM collection WHERE id = ?",
+                    @"SELECT collection.name AS Name,
+                             COALESCE(collection_icon.icon, 1) AS Icon,
+                             collection.created_at AS CreatedAt,
+                             collection.updated_at AS UpdatedAt
+                      FROM collection
+                      LEFT JOIN collection_icon
+                        ON collection_icon.collection_id = collection.id
+                      WHERE collection.id = ?",
                     collectionId)
                 .SingleOrDefault();
             if (collection == null)
@@ -2056,6 +2085,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             {
                 Id = collectionId,
                 Name = collection.Name,
+                Icon = (AssetCollectionIcon)collection.Icon,
                 Root = BuildNode(root, rows),
                 CreatedAt = ParseDate(collection.CreatedAt),
                 UpdatedAt = ParseDate(collection.UpdatedAt)
@@ -3023,6 +3053,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         private sealed class CollectionRow
         {
             public string Name { get; set; }
+            public int Icon { get; set; }
             public string CreatedAt { get; set; }
             public string UpdatedAt { get; set; }
         }

@@ -134,6 +134,7 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string Id { get; set; }
         public string Name { get; set; }
+        public AssetCollectionIcon Icon { get; set; } = AssetCollectionIcon.Folder;
         public AssetFilterNode Root { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

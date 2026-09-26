@@ -106,6 +106,13 @@ namespace Ee4v.AssetManager.UI
             return button;
         }
 
+        public static string GetCollectionIconFileName(AssetCollectionIcon icon)
+        {
+            return icon == AssetCollectionIcon.File
+                ? "document.png"
+                : icon.ToString().ToLowerInvariant() + ".png";
+        }
+
         public static NavigationItem CreateNavigationButton(
             string text,
             string iconFileName,
@@ -117,7 +124,7 @@ namespace Ee4v.AssetManager.UI
                     text,
                     icon: LoadFluentIconState(
                         iconFileName,
-                        UiSizeTokens.Size12)),
+                        UiSizeTokens.Size14)),
                 onClick);
             AddClasses(button, classNames);
             return button;
@@ -136,6 +143,8 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__nav-button--selected",
                 selected);
             button.SetSelected(selected);
+            button.Row.TitleText.SetColor(selected
+                ? UiColorTokens.TextPrimary : UiColorTokens.TextSecondary);
         }
 
         public static Icon CreateIcon(

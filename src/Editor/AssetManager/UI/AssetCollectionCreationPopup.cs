@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -13,7 +14,10 @@ namespace Ee4v.AssetManager.UI
         private static readonly Vector2 PopupSize =
             new Vector2(620f, 520f);
 
-        private Func<string, AssetFilterNode, bool> _save;
+        private Func<string, AssetCollectionIcon, AssetFilterNode, bool> _save;
+        private AssetCollectionIcon _icon;
+        private readonly Dictionary<AssetCollectionIcon, UiButton> _iconButtons =
+            new Dictionary<AssetCollectionIcon, UiButton>();
         private AssetCollection _initialCollection;
         private AssetManagerTextField _name;
         private AssetFilterEditor _filterEditor;
@@ -22,7 +26,7 @@ namespace Ee4v.AssetManager.UI
         public static void Show(
             VisualElement anchor,
             AssetCollection initialCollection,
-            Func<string, AssetFilterNode, bool> save)
+            Func<string, AssetCollectionIcon, AssetFilterNode, bool> save)
         {
             if (anchor == null || save == null)
             {
@@ -58,6 +62,27 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("field.name"));
             _name.value = _initialCollection?.Name ?? string.Empty;
             form.Add(_name);
+
+            form.Add(UiTextFactory.Create(
+                I18N.Get("field.icon"), UiClassNames.FormLabel));
+            _iconButtons.Clear();
+            var icons = new VisualElement();
+            icons.AddToClassList("ee4v-asset-manager__collection-icon-choices");
+            foreach (AssetCollectionIcon icon in Enum.GetValues(typeof(AssetCollectionIcon)))
+            {
+                var choice = icon;
+                var button = AssetManagerControls.CreateIconButton(
+                    I18N.Get("collectionIcon." + choice.ToString().ToLowerInvariant()),
+                    AssetManagerControls.GetCollectionIconFileName(choice),
+                    UiSizeTokens.Size14,
+                    UiButtonVariant.Ghost,
+                    () => SelectIcon(choice),
+                    "ee4v-asset-manager__collection-icon-choice");
+                _iconButtons.Add(choice, button);
+                icons.Add(button);
+            }
+            SelectIcon(_initialCollection?.Icon ?? AssetCollectionIcon.Folder);
+            form.Add(icons);
 
             form.Add(UiTextFactory.Create(
                 I18N.Get("filterEditor.conditions"),
@@ -106,13 +131,24 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            if (_save(name, root))
+            if (_save(name, _icon, root))
             {
                 Close();
                 return;
             }
 
             SetError(I18N.Get("notice.collectionSaveFailed"));
+        }
+
+        private void SelectIcon(AssetCollectionIcon icon)
+        {
+            _icon = icon;
+            foreach (var choice in _iconButtons)
+            {
+                choice.Value.EnableInClassList(
+                    "ee4v-asset-manager__collection-icon-choice--selected",
+                    choice.Key == icon);
+            }
         }
 
         private void SetError(string message)

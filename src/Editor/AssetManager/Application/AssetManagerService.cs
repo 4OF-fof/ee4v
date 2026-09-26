@@ -1158,6 +1158,7 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.Require(
                 request.Name,
                 "collection name");
+            AssetManagerRequestValidator.ValidateCollectionIcon(request.Icon);
             AssetManagerRequestValidator.ValidateFilter(request.Root);
             var collection = _store.CreateCollection(request);
             Publish(
@@ -1179,6 +1180,10 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.Require(
                 request.Name,
                 "collection name");
+            if (request.Icon.HasValue)
+            {
+                AssetManagerRequestValidator.ValidateCollectionIcon(request.Icon.Value);
+            }
             AssetManagerRequestValidator.ValidateFilter(request.Root);
             var collection = _store.UpdateCollection(
                 collectionId,

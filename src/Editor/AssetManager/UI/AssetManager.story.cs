@@ -117,8 +117,8 @@ namespace Ee4v.AssetManager.UI
                     "asset-manager-collection-popup",
                     "Domain/AssetManager",
                     "AssetCollectionCreationPopup",
-                    "コレクションの作成と条件編集を確認するStoryです。",
-                    "ボタンから実際のポップアップを開き、入れ子のAND、OR、条件とグループの反転、条件とグループの追加と削除を確認できます。Story内の保存操作はデータを変更しません。",
+                    "コレクションの作成、アイコン選択と条件編集を確認するStoryです。",
+                    "ボタンから実際のポップアップを開き、アイコン選択、入れ子のAND、OR、条件とグループの反転、条件とグループの追加と削除を確認できます。保存時はStory内のサンプルだけを更新します。",
                     BuildCollectionPopup,
                     dependencies: new[]
                     {
@@ -785,7 +785,7 @@ namespace Ee4v.AssetManager.UI
                 AssetCollectionCreationPopup.Show(
                     createButton,
                     null,
-                    (_, __) => true);
+                    (_, __, ___) => true);
             surface.Add(createButton);
 
             var sample = new AssetCollection
@@ -815,7 +815,13 @@ namespace Ee4v.AssetManager.UI
                 AssetCollectionCreationPopup.Show(
                     editButton,
                     sample,
-                    (_, __) => true);
+                    (name, icon, root) =>
+                    {
+                        sample.Name = name;
+                        sample.Icon = icon;
+                        sample.Root = root;
+                        return true;
+                    });
             surface.Add(editButton);
             parent.Add(surface);
         }

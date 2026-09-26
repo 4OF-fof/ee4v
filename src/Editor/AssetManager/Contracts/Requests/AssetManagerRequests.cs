@@ -30,12 +30,14 @@ namespace Ee4v.AssetManager.Contracts
     public sealed class CreateAssetCollectionRequest
     {
         public string Name { get; set; }
+        public AssetCollectionIcon Icon { get; set; } = AssetCollectionIcon.Folder;
         public AssetFilterNode Root { get; set; }
     }
 
     public sealed class UpdateAssetCollectionRequest
     {
         public string Name { get; set; }
+        public AssetCollectionIcon? Icon { get; set; }
         public AssetFilterNode Root { get; set; }
     }
 }

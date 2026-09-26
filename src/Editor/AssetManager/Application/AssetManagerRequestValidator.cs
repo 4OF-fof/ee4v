@@ -23,6 +23,16 @@ namespace Ee4v.AssetManager.Application
             }
         }
 
+        internal static void ValidateCollectionIcon(AssetCollectionIcon icon)
+        {
+            if (!Enum.IsDefined(typeof(AssetCollectionIcon), icon))
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Collection icon is invalid.");
+            }
+        }
+
         internal static IReadOnlyList<string> NormalizeTags(
             IReadOnlyList<string> paths)
         {

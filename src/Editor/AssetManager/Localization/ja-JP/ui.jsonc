@@ -196,6 +196,17 @@
     "itemCountTooltip": "{0}\n下位タグを含むItem数: {1}",
     "noMatches": "検索に一致するタグはありません。"
   },
+  "collectionIcon": {
+    "file": "ファイル",
+    "folder": "フォルダー",
+    "star": "スター",
+    "tag": "タグ",
+    "library": "ライブラリ",
+    "image": "画像",
+    "cube": "キューブ",
+    "archive": "アーカイブ",
+    "pin": "ピン"
+  },
   "notice": {
     "noItems": "この表示に一致するItemはありません。",
     "noTags": "タグはありません。",
@@ -273,6 +284,7 @@
   },
   "field": {
     "name": "名前",
+    "icon": "アイコン",
     "description": "説明",
     "prefab": "Prefab",
     "tags": "タグ",

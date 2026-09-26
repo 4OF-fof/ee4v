@@ -448,6 +448,13 @@
     opacity: 1;
 }
 
+.ee4v-asset-manager__collection-count {
+    flex-shrink: 0;
+    min-width: var(--ee4v-size-20);
+    margin-left: var(--ee4v-space-md);
+    -unity-text-align: middle-right;
+}
+
 .ee4v-asset-manager__navigation .ee4v-asset-manager__nav-button.ee4v-asset-manager__collection-drop-before {
     border-top-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
@@ -887,6 +894,34 @@
 
 .ee4v-asset-manager__collection-popup-conditions-title {
     margin-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-asset-manager__collection-icon-choices {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-asset-manager__collection-icon-choice.ee4v-ui-button {
+    width: var(--ee4v-size-28);
+    height: var(--ee4v-size-28);
+    min-height: var(--ee4v-size-28);
+    margin-right: var(--ee4v-space-sm);
+    margin-bottom: var(--ee4v-space-xs);
+    padding: 0;
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-lg);
+}
+
+.ee4v-asset-manager__collection-icon-choice.ee4v-ui-button:focus {
+    border-color: var(--ee4v-color-focus);
+}
+
+.ee4v-asset-manager__collection-icon-choice.ee4v-ui-button.ee4v-asset-manager__collection-icon-choice--selected,
+.ee4v-asset-manager__collection-icon-choice.ee4v-ui-button.ee4v-asset-manager__collection-icon-choice--selected:hover {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
 }
 
 .ee4v-asset-manager__collection-popup-group {

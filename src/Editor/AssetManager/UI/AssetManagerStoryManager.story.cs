@@ -409,14 +409,35 @@ namespace Ee4v.AssetManager.UI
         public AssetCollection CreateCollection(
             CreateAssetCollectionRequest request)
         {
-            return _collections[0];
+            var now = DateTime.UtcNow;
+            var collection = new AssetCollection
+            {
+                Id = "collection-" + Guid.NewGuid().ToString("N"),
+                Name = request.Name,
+                Icon = request.Icon,
+                Root = request.Root,
+                CreatedAt = now,
+                UpdatedAt = now
+            };
+            _collections = _collections.Concat(new[] { collection }).ToArray();
+            Changed?.Invoke(new AssetManagerChange(
+                AssetManagerChangeKind.CollectionCreated,
+                new[] { collection.Id }));
+            return collection;
         }
 
         public AssetCollection UpdateCollection(
             string collectionId,
             UpdateAssetCollectionRequest request)
         {
-            return GetCollection(collectionId);
+            var collection = GetCollection(collectionId);
+            collection.Name = request.Name;
+            collection.Root = request.Root;
+            collection.Icon = request.Icon ?? collection.Icon;
+            Changed?.Invoke(new AssetManagerChange(
+                AssetManagerChangeKind.CollectionUpdated,
+                new[] { collectionId }));
+            return collection;
         }
 
         public void DeleteCollection(string collectionId)

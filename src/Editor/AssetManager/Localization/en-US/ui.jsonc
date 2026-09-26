@@ -196,6 +196,17 @@
     "itemCountTooltip": "{0}\nItems including descendant tags: {1}",
     "noMatches": "No tags match your search."
   },
+  "collectionIcon": {
+    "file": "File",
+    "folder": "Folder",
+    "star": "Star",
+    "tag": "Tag",
+    "library": "Library",
+    "image": "Image",
+    "cube": "Cube",
+    "archive": "Archive",
+    "pin": "Pin"
+  },
   "notice": {
     "noItems": "No items match this view.",
     "noTags": "There are no tags.",
@@ -273,6 +284,7 @@
   },
   "field": {
     "name": "Name",
+    "icon": "Icon",
     "description": "Description",
     "prefab": "Prefab",
     "tags": "Tags",

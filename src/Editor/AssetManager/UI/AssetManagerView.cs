@@ -718,9 +718,12 @@ namespace Ee4v.AssetManager.UI
             for (var i = 0; i < collections.Count; i++)
             {
                 var collection = collections[i];
-                var button = new NavigationItem(
-                    new NavigationItemState(collection.Name),
-                    () => SelectCollection(collection.Id));
+                var button = AssetManagerControls.CreateNavigationButton(
+                    collection.Name,
+                    AssetManagerControls.GetCollectionIconFileName(collection.Icon),
+                    () => SelectCollection(collection.Id),
+                    "ee4v-asset-manager__nav-button",
+                    "ee4v-asset-manager__collection-row");
                 AssetManagerControls.SetNavigationSelected(
                     button,
                     _viewState.Page == AssetManagerPage.Collection &&
@@ -728,19 +731,24 @@ namespace Ee4v.AssetManager.UI
                         _viewState.CollectionId,
                         collection.Id,
                         StringComparison.Ordinal));
-                button.AddToClassList("ee4v-asset-manager__nav-button");
-                button.AddToClassList("ee4v-asset-manager__collection-row");
-                button.Row.SetState(new ItemRowState(
-                    collection.Name, layout: ItemRowLayout.Inline));
-                button.Row.TitleText.SetFontSize(UiTypographyTokens.BodyFontSize);
-                button.Row.TitleText.SetColor(button.Selected
-                    ? UiColorTokens.TextPrimary : UiColorTokens.TextSecondary);
                 RegisterCollectionReordering(button, collection);
                 button.RegisterCallback<ContextClickEvent>(evt =>
                 {
                     ShowCollectionContextMenu(button, collection);
                     evt.StopPropagation();
                 });
+                var count = UiTextFactory.Create(
+                    _manager.SearchCollection(collection.Id, limit: 1)
+                        .TotalCount.ToString(),
+                    UiClassNames.SecondaryText,
+                    "ee4v-asset-manager__collection-count");
+                count.pickingMode = PickingMode.Ignore;
+                count.SetFontSize(UiTypographyTokens.CaptionFontSize);
+                count.SetColor(button.Selected
+                    ? UiColorTokens.TextSecondary : UiColorTokens.TextMuted);
+                count.SetWhiteSpace(WhiteSpace.NoWrap);
+                count.SetTextAlign(TextAnchor.MiddleRight);
+                button.Trailing.Add(count);
                 collectionSection.Add(button);
             }
             _navigation.Add(collectionSection);
@@ -759,9 +767,6 @@ namespace Ee4v.AssetManager.UI
             AssetManagerControls.SetNavigationSelected(
                 button,
                 _viewState.Page == page);
-            button.Row.TitleText.SetColor(button.Selected
-                ? UiColorTokens.TextPrimary : UiColorTokens.TextSecondary);
-            button.Row.IconElement.SetSize(UiSizeTokens.Size14);
             return button;
         }
 
@@ -2929,9 +2934,10 @@ namespace Ee4v.AssetManager.UI
             AssetCollectionCreationPopup.Show(
                 anchor,
                 collection,
-                (name, root) => UpdateCollection(
+                (name, icon, root) => UpdateCollection(
                     collection.Id,
                     name,
+                    icon,
                     root));
         }
 
@@ -3462,6 +3468,7 @@ namespace Ee4v.AssetManager.UI
         private bool UpdateCollection(
             string id,
             string name,
+            AssetCollectionIcon icon,
             AssetFilterNode root)
         {
             return Run(() => _manager.UpdateCollection(
@@ -3469,12 +3476,14 @@ namespace Ee4v.AssetManager.UI
                 new UpdateAssetCollectionRequest
                 {
                     Name = name,
+                    Icon = icon,
                     Root = root
                 }));
         }
 
         private bool CreateCollection(
             string name,
+            AssetCollectionIcon icon,
             AssetFilterNode root)
         {
             return Run(() =>
@@ -3483,6 +3492,7 @@ namespace Ee4v.AssetManager.UI
                     new CreateAssetCollectionRequest
                     {
                         Name = name,
+                        Icon = icon,
                         Root = root
                     });
                 _viewState.SelectCollection(created.Id);
