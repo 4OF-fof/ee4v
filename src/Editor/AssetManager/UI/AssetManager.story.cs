@@ -138,7 +138,7 @@ namespace Ee4v.AssetManager.UI
                     "Domain/AssetManager/Inputs",
                     "AssetTagField",
                     "ItemのTagをチップと検索ポップアップで編集するコンポーネントです。",
-                    "選択済みTagの削除、既存Tagの検索と選択、新しいTagの作成を確認できます。",
+                    "Tagチップのクリック、選択済みTagの削除、Eagle由来Tagの削除不可、既存Tagの検索と選択、新しいTagの作成を確認できます。",
                     BuildTagField,
                     dependencies: new[]
                     {
@@ -599,7 +599,8 @@ namespace Ee4v.AssetManager.UI
         {
             var surface = new VisualElement();
             surface.style.width = 300f;
-            var field = new AssetTagField();
+            var selected = UiTextFactory.Create("Select a tag.");
+            var field = new AssetTagField(path => selected.SetText(path));
             field.SetValues(
                 new[]
                 {
@@ -609,8 +610,10 @@ namespace Ee4v.AssetManager.UI
                     new AssetTagOption("gimmick", 3),
                     new AssetTagOption("world", 2)
                 },
-                new[] { "avatar", "costume" });
+                new[] { "avatar", "costume" },
+                new[] { "avatar" });
             surface.Add(field);
+            surface.Add(selected);
             parent.Add(surface);
         }
 

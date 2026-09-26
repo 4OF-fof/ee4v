@@ -1151,7 +1151,9 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("field.tags"),
                 UiClassNames.FormLabel,
                 "ee4v-asset-manager-control-field__label"));
-            var tags = new AssetTagField();
+            var tags = new AssetTagField(
+                _viewState.SelectTag,
+                item.IsArchived);
             tags.SetValues(
                 GetAvailableTagOptions(),
                 GetTagPaths(item),
@@ -1171,7 +1173,6 @@ namespace Ee4v.AssetManager.UI
                 name.RegisterCallback<FocusOutEvent>(_ => save());
                 description.RegisterCallback<FocusOutEvent>(_ => save());
             }
-            tags.SetEnabled(!item.IsArchived);
             if (!item.IsArchived)
             {
                 tags.ValuesCommitted += () =>

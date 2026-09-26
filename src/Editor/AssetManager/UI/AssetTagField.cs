@@ -153,6 +153,8 @@ namespace Ee4v.AssetManager.UI
 
     internal sealed class AssetTagField : VisualElement
     {
+        private readonly Action<string> _selectTag;
+        private readonly bool _isReadOnly;
         private readonly VisualElement _tags;
         private readonly UiButton _addButton;
         private IReadOnlyList<AssetTagOption> _available =
@@ -162,8 +164,12 @@ namespace Ee4v.AssetManager.UI
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private Vector2? _pickerPanelPosition;
 
-        public AssetTagField()
+        public AssetTagField(
+            Action<string> selectTag = null,
+            bool isReadOnly = false)
         {
+            _selectTag = selectTag;
+            _isReadOnly = isReadOnly;
             AddToClassList("ee4v-asset-manager-tag-field");
             _tags = new VisualElement();
             _tags.AddToClassList("ee4v-asset-manager-tag-field__tags");
@@ -174,6 +180,7 @@ namespace Ee4v.AssetManager.UI
                 "add.png",
                 OpenPicker,
                 "ee4v-asset-manager-tag-field__add");
+            _addButton.SetEnabled(!isReadOnly);
             Add(_addButton);
             RegisterCallback<ClickEvent>(
                 OnClick,
@@ -218,12 +225,17 @@ namespace Ee4v.AssetManager.UI
                 var chip = new TagPill(
                     new TagPillState(
                         tag,
-                        readOnly
+                        readOnly || _isReadOnly
                             ? null
                             : string.Format(
                                 I18N.Get("detail.item.tagsRemove"),
                                 tag)),
-                    readOnly ? (Action)null : () => Remove(tag));
+                    readOnly || _isReadOnly
+                        ? (Action)null
+                        : () => Remove(tag),
+                    onClick: _selectTag == null
+                        ? (Action)null
+                        : () => _selectTag(tag));
                 if (readOnly)
                 {
                     chip.tooltip = I18N.Get(
