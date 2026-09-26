@@ -34,12 +34,14 @@ namespace Ee4v.AssetManager.UI
         }
 
         public static AssetManagerView CreateView(
-            AssetManagerViewMode mode)
+            AssetManagerViewMode mode,
+            Action<string> createDerivedAsset = null)
         {
             return new AssetManagerView(
                 GetManager(),
                 _viewState,
-                mode);
+                mode,
+                createDerivedAsset: createDerivedAsset);
         }
 
         public static void PrepareRoot(VisualElement root)

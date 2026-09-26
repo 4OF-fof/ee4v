@@ -27,3 +27,9 @@ AssetManagerは例外として、他の機能モジュールへ依存できま�
 AssetManager内はContracts、Domain、Application、Infrastructure、UI、AssetProtectionに分割します。この層分割は一つの機能モジュール内の依存として扱います。
 
 `Ee4v.Mcp.Editor`は外部クライアントから複数機能を呼び分けるintegration／composition rootです。MCP protocolとtransport、tool registry、JSON変換だけを所有し、Face Expression、PhysBone Collider、AssetManagerの公開境界へ依存できます。この例外から機能module同士への依存は追加せず、domain処理は所有moduleの公開APIへ置きます。詳細は[`docs~/mcp.md`](../../docs~/mcp.md)を参照します。
+
+## 単独機能と改変ワークフロー
+
+各機能は単独で操作できる入口を持ち、改変ワークフローでも同じview／controllerを組み合わせます。改変ワークフロー専用だった体型・パーツ、Material、Prefab構成には単独Windowを用意します。
+
+AssetManager内部の`AssetModificationWorkflowView`が改変の共通実装を所有し、各Windowは表示モードとlayout復元を扱います。AssetManagerの検索・一覧・情報は`AssetManagerWorkspaceView`で既存の3つの`AssetManagerView`を共有sessionへ接続します。この3ペインを改変ワークフローの素材選択と単独Libraryへ組み込みます。ワークフローは専用のAssetManagerViewStateを保持し、通常と同じ派生アセット追加カードから選択Item IDを作成開始callbackへ渡します。AssetManagerの画面構成と追加カードの描画は通常版と共有します。作成元をそのItemに固定してVariantを生成し、作成結果を編集画面へ渡します。改変中のheader、カテゴリ、Preview、編集ペインは既存の構成を維持します。機能module間の新しい依存とCoreの機能登録APIは追加しません。

@@ -7,35 +7,15 @@ using UnityEngine;
 
 namespace Ee4v.AssetManager.UI
 {
-    internal sealed class AssetModificationWorkflowWindow : EditorWindow
+    internal abstract class AssetModificationEditorWindow : EditorWindow
     {
         [SerializeField] private string _derivedAssetGuid;
         private AssetModificationWorkflowView _view;
 
-        [MenuItem("ee4v/Window/Asset Manager/Modification Workflow")]
-        private static void ShowWindow()
-        {
-            var window = GetWindow<AssetModificationWorkflowWindow>();
-            window.ConfigureWindow();
-            window.Show();
-        }
+        protected abstract ModificationEditorMode EditorMode { get; }
+        protected abstract string TitleKey { get; }
 
-        internal static void ShowFor(DerivedAssetInfo asset)
-        {
-            if (asset?.Prefab == null)
-            {
-                return;
-            }
-            var window = GetWindow<AssetModificationWorkflowWindow>();
-            if (window._view == null)
-            {
-                window.CreateGUI();
-            }
-            window._view.SelectDerivedAsset(asset);
-            window.Show();
-        }
-
-        private void OnEnable()
+        protected void OnEnable()
         {
             I18N.Reloaded += ConfigureWindow;
             ConfigureWindow();
@@ -43,17 +23,17 @@ namespace Ee4v.AssetManager.UI
 
         private void ConfigureWindow()
         {
-            titleContent = UiTextFactory.CreateGuiContent(I18N.Get("workflow.windowTitle"));
-            minSize = new Vector2(1180f, 720f);
+            titleContent = UiTextFactory.CreateGuiContent(I18N.Get(TitleKey));
+            minSize = new Vector2(960f, 640f);
         }
 
-        private void CreateGUI()
+        protected void CreateGUI()
         {
             _view?.Dispose();
             rootVisualElement.Clear();
             AssetManagerWindowSession.PrepareWorkflowRoot(rootVisualElement);
             _view = new AssetModificationWorkflowView(
-                ModificationEditorMode.All, Repaint, AssetManagerLibraryWindow.ShowWindow);
+                EditorMode, Repaint, AssetManagerLibraryWindow.ShowWindow);
             _view.DerivedAssetChanged += RememberDerivedAsset;
             rootVisualElement.Add(_view);
             var asset = DerivedAssetCreator.FindAll().FirstOrDefault(candidate =>
@@ -71,7 +51,7 @@ namespace Ee4v.AssetManager.UI
                 AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset.Prefab));
         }
 
-        private void OnDisable()
+        protected void OnDisable()
         {
             I18N.Reloaded -= ConfigureWindow;
             _view?.Dispose();

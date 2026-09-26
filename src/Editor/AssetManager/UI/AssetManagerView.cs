@@ -321,9 +321,12 @@ namespace Ee4v.AssetManager.UI
             internal IReadOnlyList<AssetFileTarget> Targets { get; set; }
         }
 
+        internal event Action<DerivedAssetInfo> DerivedAssetOpenRequested;
+
         private readonly IAssetManager _manager;
         private readonly AssetManagerViewState _viewState;
         private readonly AssetManagerViewMode _mode;
+        private readonly Action<string> _createDerivedAsset;
         private readonly CachedImageCache _imageCache;
         private readonly bool _ownsImageCache;
         private readonly VisualElement _navigation;
@@ -357,11 +360,13 @@ namespace Ee4v.AssetManager.UI
             IAssetManager manager,
             AssetManagerViewState viewState = null,
             AssetManagerViewMode mode = AssetManagerViewMode.Main,
-            CachedImageCache imageCache = null)
+            CachedImageCache imageCache = null,
+            Action<string> createDerivedAsset = null)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
             _viewState = viewState ?? new AssetManagerViewState();
             _mode = mode;
+            _createDerivedAsset = createDerivedAsset;
             _ownsImageCache = imageCache == null;
             _imageCache = imageCache ?? new CachedImageCache();
             AddToClassList("ee4v-asset-manager");
@@ -408,11 +413,19 @@ namespace Ee4v.AssetManager.UI
             _viewState.Changed += OnViewStateChanged;
             EditorApplication.projectChanged += OnProjectChanged;
 
-            if (ShowsNavigation)
+            try
             {
-                RebuildNavigation();
+                if (ShowsNavigation)
+                {
+                    RebuildNavigation();
+                }
+                Refresh();
             }
-            Refresh();
+            catch
+            {
+                Dispose();
+                throw;
+            }
         }
 
         public void Dispose()
@@ -2018,7 +2031,16 @@ namespace Ee4v.AssetManager.UI
                     EditorGUIUtility.PingObject(derivedAsset.Prefab);
                 };
                 assetCard.DoubleClicked += _ =>
-                    AssetModificationWorkflowWindow.ShowFor(derivedAsset);
+                {
+                    if (DerivedAssetOpenRequested != null)
+                    {
+                        DerivedAssetOpenRequested(derivedAsset);
+                    }
+                    else
+                    {
+                        AssetModificationWorkflowWindow.ShowFor(derivedAsset);
+                    }
+                };
                 assetCard.RegisterCallback<DetachFromPanelEvent>(_ =>
                     assetCard.Dispose());
                 grid.Add(assetCard);
@@ -2039,7 +2061,16 @@ namespace Ee4v.AssetManager.UI
                     I18N.Get("detail.derivedAssetsAdd")),
                 selected: false);
             addCard.Clicked += (_, __, ___) =>
-                _viewState.OpenDerivedAssetsPage(itemId);
+            {
+                if (_createDerivedAsset != null)
+                {
+                    _createDerivedAsset(itemId);
+                }
+                else
+                {
+                    _viewState.OpenDerivedAssetsPage(itemId);
+                }
+            };
             addCard.RegisterCallback<DetachFromPanelEvent>(_ =>
                 addCard.Dispose());
             grid.Add(addCard);

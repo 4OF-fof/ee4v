@@ -6,6 +6,11 @@
     "informationTitle": "Asset Manager · Information"
   },
   "workflow": {
+    "standalone": {
+      "shapePartsTitle": "Shape and Parts",
+      "materialsTitle": "Materials",
+      "compositionTitle": "Prefab Composition"
+    },
     "windowTitle": "Modification Workflow",
     "category": {
       "shapeParts": "Shape & parts",
@@ -38,6 +43,10 @@
       "parts": "Parts"
     },
     "selection": {
+      "createAndStart": "Create Variant and start customizing",
+      "backToAssets": "Back to asset selection",
+      "assetNoSourceTitle": "The selected asset has no imported Prefabs",
+      "managerLoadFailed": "AssetManager could not be loaded. Check the Console.",
       "title": "Choose a derived asset",
       "description": "Choose the character to edit from the derived assets prepared with AssetManager's Variant creation feature.",
       "createNew": "New derived asset",

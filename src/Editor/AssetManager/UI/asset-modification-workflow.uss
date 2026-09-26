@@ -1,8 +1,16 @@
 @import url("../../UI/Foundation/ui-design-tokens.uss");
 
+.ee4v-workspace__library,
+.ee4v-workspace__library > .unity-two-pane-split-view {
+    min-width: 0;
+    min-height: 0;
+    flex-grow: 1;
+}
+
 .ee4v-modification-workflow {
     min-width: 0;
     min-height: 0;
+    flex-grow: 1;
     overflow: hidden;
     background-color: var(--ee4v-color-panel);
 }

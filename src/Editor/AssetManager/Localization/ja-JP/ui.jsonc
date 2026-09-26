@@ -6,6 +6,11 @@
     "informationTitle": "Asset Manager · 情報"
   },
   "workflow": {
+    "standalone": {
+      "shapePartsTitle": "体型・パーツ",
+      "materialsTitle": "マテリアル",
+      "compositionTitle": "Prefab構成"
+    },
     "windowTitle": "改変ワークフロー",
     "category": {
       "shapeParts": "体型・パーツ",
@@ -38,6 +43,10 @@
       "parts": "パーツ"
     },
     "selection": {
+      "createAndStart": "Variantを作成して改変開始",
+      "backToAssets": "アセット選択へ戻る",
+      "assetNoSourceTitle": "選んだアセットに取り込み済みPrefabがありません",
+      "managerLoadFailed": "AssetManagerを読み込めませんでした。Consoleを確認してください。",
       "title": "派生アセットを選ぶ",
       "description": "AssetManagerのVariant作成機能で用意した派生アセットから、今回編集するキャラクターを選びます。",
       "createNew": "新しい派生アセット",

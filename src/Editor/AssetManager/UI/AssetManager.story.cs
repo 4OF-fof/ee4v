@@ -16,6 +16,25 @@ namespace Ee4v.AssetManager.UI
             return new[]
             {
                 new UiStory(
+                    "asset-manager-workspace",
+                    "Domain/AssetManager",
+                    "AssetManagerWorkspaceView",
+                    "改変ワークフローのアセット選択を担うAssetManagerの3ペインです。",
+                    "Navigation、Main、Informationをサンプルデータで操作し、選択アセットからVariant作成へ進みます。",
+                    BuildWorkspace,
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetModificationWorkflowView.cs",
+                        "Editor/AssetManager/UI/AssetManagerLibraryWindow.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss",
+                        "Editor/AssetManager/UI/searchable-file-tree.uss",
+                        "Editor/AssetManager/UI/asset-detail.uss",
+                        "Editor/AssetManager/UI/asset-modification-workflow.uss"
+                    }),
+                new UiStory(
                     "asset-manager-view",
                     "Domain/AssetManager",
                     "AssetManagerView · Main",
@@ -32,7 +51,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerStandaloneWindows.cs"
+                        "Editor/AssetManager/UI/AssetManagerStandaloneWindows.cs",
+                        "Editor/AssetManager/UI/AssetManagerWorkspaceView.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -625,6 +645,27 @@ namespace Ee4v.AssetManager.UI
             var view = new AssetManagerView(new AssetManagerStoryManager());
             view.RegisterCallback<DetachFromPanelEvent>(_ => view.Dispose());
             surface.Add(view);
+            parent.Add(surface);
+        }
+
+        private static void BuildWorkspace(VisualElement parent)
+        {
+            var surface = new VisualElement();
+            surface.style.height = 620f;
+            surface.style.minWidth = 1040f;
+            var manager = new AssetManagerStoryManager();
+            var state = new AssetManagerViewState();
+            var workspace = new AssetManagerWorkspaceView(
+                _ => { },
+                itemId =>
+                {
+                    state.OpenItemDetail(itemId);
+                    state.OpenDerivedAssetsPage(itemId);
+                },
+                (mode, createDerivedAsset) => new AssetManagerView(
+                    manager, state, mode, createDerivedAsset: createDerivedAsset));
+            workspace.RegisterCallback<DetachFromPanelEvent>(_ => workspace.Dispose());
+            surface.Add(workspace);
             parent.Add(surface);
         }
 
