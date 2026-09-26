@@ -18,8 +18,92 @@ namespace Ee4v.AssetManager.UI
     {
         private const string TargetDragDataKey =
             "ee4v.asset-manager.target-drag";
+        private const string CollectionDragDataKey =
+            "ee4v.asset-manager.collection-drag";
         private const int MaximumConcurrentGridThumbnails = 4;
         private const float DerivedAssetCardWidth = 144f;
+
+        private sealed class CollectionDragPayload
+        {
+            internal IAssetManager Manager { get; set; }
+            internal string CollectionId { get; set; }
+            internal string Name { get; set; }
+        }
+
+        private sealed class CollectionDragManipulator : PointerManipulator
+        {
+            private readonly Func<CollectionDragPayload> _createPayload;
+            private Vector2 _start;
+            private bool _ready;
+            private bool _dragging;
+
+            internal CollectionDragManipulator(
+                Func<CollectionDragPayload> createPayload)
+            {
+                _createPayload = createPayload;
+            }
+
+            protected override void RegisterCallbacksOnTarget()
+            {
+                target.RegisterCallback<PointerDownEvent>(
+                    OnPointerDown, TrickleDown.TrickleDown);
+                target.RegisterCallback<PointerMoveEvent>(
+                    OnPointerMove, TrickleDown.TrickleDown);
+                target.RegisterCallback<PointerUpEvent>(
+                    OnPointerUp, TrickleDown.TrickleDown);
+                target.RegisterCallback<PointerCaptureOutEvent>(OnCaptureOut);
+            }
+
+            protected override void UnregisterCallbacksFromTarget()
+            {
+                target.UnregisterCallback<PointerDownEvent>(
+                    OnPointerDown, TrickleDown.TrickleDown);
+                target.UnregisterCallback<PointerMoveEvent>(
+                    OnPointerMove, TrickleDown.TrickleDown);
+                target.UnregisterCallback<PointerUpEvent>(
+                    OnPointerUp, TrickleDown.TrickleDown);
+                target.UnregisterCallback<PointerCaptureOutEvent>(OnCaptureOut);
+            }
+
+            private void OnPointerDown(PointerDownEvent evt)
+            {
+                _ready = evt.button == (int)MouseButton.LeftMouse;
+                _dragging = false;
+                _start = evt.position;
+            }
+
+            private void OnPointerMove(PointerMoveEvent evt)
+            {
+                if (!_ready || (evt.pressedButtons & 1) == 0 ||
+                    Vector2.Distance(_start, evt.position) < 4f)
+                {
+                    return;
+                }
+                _ready = false;
+                var payload = _createPayload();
+                _dragging = true;
+                target.ReleasePointer(evt.pointerId);
+                DragAndDrop.PrepareStartDrag();
+                DragAndDrop.SetGenericData(CollectionDragDataKey, payload);
+                DragAndDrop.StartDrag(payload.Name);
+                evt.StopImmediatePropagation();
+            }
+
+            private void OnPointerUp(PointerUpEvent evt)
+            {
+                _ready = false;
+                if (_dragging)
+                {
+                    _dragging = false;
+                    evt.StopImmediatePropagation();
+                }
+            }
+
+            private void OnCaptureOut(PointerCaptureOutEvent evt)
+            {
+                _ready = false;
+            }
+        }
 
         private sealed class ItemTargetEntry
         {
@@ -250,6 +334,7 @@ namespace Ee4v.AssetManager.UI
         private AssetManagerGridSizeSlider _gridSizeSlider;
         private VisualElement _gridControls;
         private SearchField _search;
+        private AssetTagListView _tagList;
         private UiButton _sortButton;
         private UiButton _backButton;
         private UiButton _forwardButton;
@@ -600,31 +685,41 @@ namespace Ee4v.AssetManager.UI
             _navigation.Add(primary);
 
             var collections = _manager.GetCollections();
-            var section = new SectionHeader(string.Format(
-                I18N.Get("navigation.collectionsWithCount"),
-                collections.Count));
+            var collectionSection = new VisualElement();
+            collectionSection.AddToClassList(
+                "ee4v-asset-manager__collection-section");
+            var section = new SectionHeader(I18N.Get("navigation.collections"));
             section.AddToClassList(
-                "ee4v-asset-manager__nav-section-header");
-            section.TitleText.AddToClassList(
-                "ee4v-asset-manager__nav-section");
+                "ee4v-asset-manager__collection-header");
+            section.TitleText.SetFontSize(UiTypographyTokens.SmallFontSize);
+            section.TitleText.SetColor(UiColorTokens.TextMuted);
             UiButton createCollectionButton = null;
-            createCollectionButton = AssetManagerControls.CreateIconButton(
-                I18N.Get("navigation.newCollection"),
+            createCollectionButton = AssetManagerControls.CreateIconTextButton(
+                I18N.Get("navigation.createCollection"),
                 "add.png",
                 () => ShowNewCollection(createCollectionButton),
-                "ee4v-asset-manager__nav-section-action");
+                "ee4v-asset-manager__collection-create");
+            createCollectionButton.tooltip = I18N.Get("navigation.newCollection");
+            createCollectionButton.SetLabelFontSize(UiTypographyTokens.SmallFontSize);
+            createCollectionButton.SetLabelColor(UiColorTokens.TextSecondary);
             section.Actions.Add(createCollectionButton);
-            _navigation.Add(section);
+            collectionSection.Add(section);
+
+            if (collections.Count == 0)
+            {
+                var empty = UiTextFactory.Create(
+                    I18N.Get("navigation.noCollections"),
+                    UiClassNames.SecondaryText,
+                    "ee4v-asset-manager__collection-empty");
+                empty.SetWhiteSpace(WhiteSpace.Normal);
+                collectionSection.Add(empty);
+            }
 
             for (var i = 0; i < collections.Count; i++)
             {
                 var collection = collections[i];
                 var button = new NavigationItem(
-                    new NavigationItemState(
-                        collection.Name,
-                        icon: AssetManagerControls.LoadFluentIconState(
-                            "folder.png",
-                            UiSizeTokens.Size12)),
+                    new NavigationItemState(collection.Name),
                     () => SelectCollection(collection.Id));
                 AssetManagerControls.SetNavigationSelected(
                     button,
@@ -634,19 +729,21 @@ namespace Ee4v.AssetManager.UI
                         collection.Id,
                         StringComparison.Ordinal));
                 button.AddToClassList("ee4v-asset-manager__nav-button");
+                button.AddToClassList("ee4v-asset-manager__collection-row");
+                button.Row.SetState(new ItemRowState(
+                    collection.Name, layout: ItemRowLayout.Inline));
+                button.Row.TitleText.SetFontSize(UiTypographyTokens.BodyFontSize);
+                button.Row.TitleText.SetColor(button.Selected
+                    ? UiColorTokens.TextPrimary : UiColorTokens.TextSecondary);
+                RegisterCollectionReordering(button, collection);
                 button.RegisterCallback<ContextClickEvent>(evt =>
                 {
                     ShowCollectionContextMenu(button, collection);
                     evt.StopPropagation();
                 });
-                var count = new Badge(
-                    _manager.SearchCollection(collection.Id, limit: 1)
-                        .TotalCount.ToString());
-                count.AddToClassList("ee4v-asset-manager__nav-count");
-                button.Trailing.Add(count);
-                _navigation.Add(button);
+                collectionSection.Add(button);
             }
-
+            _navigation.Add(collectionSection);
         }
 
         private NavigationItem CreateNavigationButton(
@@ -662,6 +759,9 @@ namespace Ee4v.AssetManager.UI
             AssetManagerControls.SetNavigationSelected(
                 button,
                 _viewState.Page == page);
+            button.Row.TitleText.SetColor(button.Selected
+                ? UiColorTokens.TextPrimary : UiColorTokens.TextSecondary);
+            button.Row.IconElement.SetSize(UiSizeTokens.Size14);
             return button;
         }
 
@@ -816,41 +916,14 @@ namespace Ee4v.AssetManager.UI
             _sortButton.style.display = DisplayStyle.None;
             _gridControls.style.display = DisplayStyle.None;
 
-            var items = _manager.SearchItems(new AssetItemQuery()).Items;
-            var tags = (_manager.GetTags() ?? Array.Empty<AssetTag>())
-                .Where(tag => !string.IsNullOrWhiteSpace(tag.Path))
-                .GroupBy(tag => tag.Path, StringComparer.Ordinal)
-                .Select(group => group.First())
-                .OrderBy(tag => tag.Path, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-            if (tags.Length == 0)
+            if (_tagList == null)
             {
-                _content.Add(AssetManagerControls.CreateNotice(
-                    I18N.Get("notice.noTags")));
-                return;
+                _tagList = new AssetTagListView(_viewState.SelectTag);
             }
-
-            var list = new ScrollView();
-            list.AddToClassList("ee4v-asset-manager__tag-list");
-            for (var i = 0; i < tags.Length; i++)
-            {
-                var tag = tags[i];
-                var button = new NavigationItem(
-                    new NavigationItemState(
-                        tag.Path,
-                        icon: AssetManagerControls.LoadFluentIconState(
-                            "tag.png",
-                            UiSizeTokens.Size12)),
-                    () => _viewState.SelectTag(tag.Path));
-                button.AddToClassList("ee4v-asset-manager__tag-row");
-                var count = new Badge(
-                    items.Count(item => MatchesTag(item, tag.Path))
-                        .ToString());
-                count.AddToClassList("ee4v-asset-manager__nav-count");
-                button.Trailing.Add(count);
-                list.Add(button);
-            }
-            _content.Add(list);
+            _tagList.SetData(
+                _manager.GetTags(),
+                _manager.SearchItems(new AssetItemQuery()).Items);
+            _content.Add(_tagList);
         }
 
         private void SelectItems(
@@ -2731,11 +2804,109 @@ namespace Ee4v.AssetManager.UI
                 UiTextFactory.CreateGuiContent(I18N.Get("action.edit")),
                 false,
                 () => ShowCollectionEditor(anchor, collection));
+            var ids = _manager.GetCollections()
+                .Select(entry => entry.Id).ToList();
+            var index = ids.IndexOf(collection.Id);
+            AddCollectionMoveMenuItem(
+                menu, collection.Id, "navigation.moveCollectionUp",
+                -1, index > 0);
+            AddCollectionMoveMenuItem(
+                menu, collection.Id, "navigation.moveCollectionDown",
+                1, index >= 0 && index < ids.Count - 1);
+            menu.AddSeparator(string.Empty);
             menu.AddItem(
                 UiTextFactory.CreateGuiContent(I18N.Get("action.delete")),
                 false,
                 () => DeleteCollection(collection?.Id));
             menu.ShowAsContext();
+        }
+
+        private void RegisterCollectionReordering(
+            NavigationItem row,
+            AssetCollection collection)
+        {
+            row.tooltip = collection.Name + "\n" +
+                I18N.Get("navigation.reorderCollection");
+            row.AddManipulator(new CollectionDragManipulator(
+                () => new CollectionDragPayload
+                {
+                    Manager = _manager,
+                    CollectionId = collection.Id,
+                    Name = collection.Name
+                }));
+
+            var insertAfter = false;
+            row.RegisterCallback<DragUpdatedEvent>(evt =>
+                insertAfter = evt.mousePosition.y >= row.worldBound.center.y);
+            UiDragAndDrop.RegisterMoveTarget<CollectionDragPayload>(
+                row,
+                CollectionDragDataKey,
+                payload => ReferenceEquals(payload.Manager, _manager) &&
+                    !string.Equals(payload.CollectionId, collection.Id,
+                        StringComparison.Ordinal),
+                payload => MoveCollection(
+                    payload.CollectionId, collection.Id, insertAfter),
+                active =>
+                {
+                    row.EnableInClassList(
+                        "ee4v-asset-manager__collection-drop-before",
+                        active && !insertAfter);
+                    row.EnableInClassList(
+                        "ee4v-asset-manager__collection-drop-after",
+                        active && insertAfter);
+                });
+        }
+
+        private void AddCollectionMoveMenuItem(
+            GenericMenu menu,
+            string collectionId,
+            string labelKey,
+            int offset,
+            bool enabled)
+        {
+            var label = UiTextFactory.CreateGuiContent(I18N.Get(labelKey));
+            if (!enabled)
+            {
+                menu.AddDisabledItem(label);
+                return;
+            }
+            menu.AddItem(label, false, () =>
+            {
+                var ids = _manager.GetCollections()
+                    .Select(collection => collection.Id).ToList();
+                var index = ids.IndexOf(collectionId);
+                var destination = index + offset;
+                if (index < 0 || destination < 0 || destination >= ids.Count)
+                {
+                    return;
+                }
+                MoveCollection(collectionId, ids[destination], offset > 0);
+            });
+        }
+
+        private void MoveCollection(
+            string collectionId,
+            string targetId,
+            bool insertAfter)
+        {
+            Run(() =>
+            {
+                var ids = _manager.GetCollections()
+                    .Select(collection => collection.Id).ToList();
+                var originalIndex = ids.IndexOf(collectionId);
+                if (originalIndex < 0 || !ids.Contains(targetId) ||
+                    string.Equals(collectionId, targetId, StringComparison.Ordinal))
+                {
+                    return;
+                }
+                ids.RemoveAt(originalIndex);
+                var destination = ids.IndexOf(targetId) + (insertAfter ? 1 : 0);
+                ids.Insert(destination, collectionId);
+                if (destination != originalIndex)
+                {
+                    _manager.ReorderCollections(ids);
+                }
+            });
         }
 
         private void ShowNewCollection(VisualElement anchor)

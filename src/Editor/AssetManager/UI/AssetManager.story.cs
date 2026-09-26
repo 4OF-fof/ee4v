@@ -41,6 +41,25 @@ namespace Ee4v.AssetManager.UI
                         "Editor/AssetManager/UI/asset-detail.uss"
                     }),
                 new UiStory(
+                    "asset-manager-tag-list",
+                    "Domain/AssetManager/Collections",
+                    "AssetTagListView",
+                    "タグPillの折り返し配置、検索、Item数と並び順を確認するStoryです。",
+                    "階層prefixと件数を補助文字にした軽いTagPillを横へ並べます。全幅の検索欄、下線付き文字タブ、名前順での頭文字の見出しと漢字の「その他」グループ、表示幅に合わせた折り返しとタグ選択を確認できます。",
+                    BuildTagList,
+                    dependencies: new[]
+                    {
+                        "TagPill", "SearchField", "UiButton"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-manager.uss"
+                    }),
+                new UiStory(
                     "asset-manager-grid",
                     "Domain/AssetManager/Collections",
                     "AssetItemGridView",
@@ -603,6 +622,39 @@ namespace Ee4v.AssetManager.UI
             var view = new AssetManagerView(new AssetManagerStoryManager());
             view.RegisterCallback<DetachFromPanelEvent>(_ => view.Dispose());
             surface.Add(view);
+            parent.Add(surface);
+        }
+
+        private static void BuildTagList(VisualElement parent)
+        {
+            var surface = new VisualElement();
+            surface.style.height = 480f;
+            surface.style.minWidth = 360f;
+            var selected = UiTextFactory.Create("Select a tag.");
+            var list = new AssetTagListView(path => selected.SetText(path));
+            var tags = new[]
+            {
+                new AssetTag { Path = "avatar" },
+                new AssetTag { Path = "avatar/costume" },
+                new AssetTag { Path = "avatar/accessory/hair" },
+                new AssetTag { Path = "world/lighting" },
+                new AssetTag { Path = "shader" },
+                new AssetTag { Path = "archived-only" },
+                new AssetTag { Path = "衣装" },
+                new AssetTag { Path = "髪型" },
+                new AssetTag { Path = "あくせさり" },
+                new AssetTag { Path = "アバター" }
+            };
+            list.SetData(tags, new[]
+            {
+                new AssetItem { Tags = new[] { tags[0], tags[1], tags[2] } },
+                new AssetItem { Tags = new[] { tags[1] } },
+                new AssetItem { Tags = new[] { tags[3], tags[4] } },
+                new AssetItem { Tags = new[] { tags[5] }, IsArchived = true },
+                new AssetItem { Tags = new[] { tags[6], tags[7], tags[8], tags[9] } }
+            });
+            surface.Add(list);
+            surface.Add(selected);
             parent.Add(surface);
         }
 

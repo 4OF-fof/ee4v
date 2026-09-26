@@ -78,7 +78,7 @@
         <p class="section-label">Layout</p>
         <h2>Windowごとの役割</h2>
         <div class="key-points">
-          <article><h3>Navigation</h3><p>最上部のImport済みに続き、全件、未所属、Archive、Tag、Collectionの表示先を切り替えます。</p></article>
+          <article><h3>Navigation</h3><p>最上部のImport済みに続き、全件、未所属、Archive、Tag、Collectionの表示先を切り替えます。メニューとCollectionを同じ高さの行に揃え、現在の表示先を青い背景と左端の細いアクセントで示します。</p></article>
           <article><h3>Main</h3><p>Item一覧、File一覧、検索、並び替え、Item詳細を表示する作業領域です。</p></article>
           <article><h3>Information</h3><p>最後に選択したItemのサムネイル、名前、説明、Tag、BOOTH情報などを表示します。</p></article>
           <article><h3>状態の共有</h3><p>Navigationで表示先を変えたりMainでItemを選んだりすると、ほかのWindowにも反映されます。</p></article>
@@ -137,7 +137,12 @@
         <h3>名前・説明・Tag</h3>
         <p>名前と説明は入力欄からfocusが外れた時点、Tagは選択Popupを閉じた時点で保存されます。保存buttonはありません。Eagle由来Itemの名前と説明、Eagle由来TagはEagle側で編集します。ee4vで追加したTagは編集できます。Eagleのカスタムサムネイルも同期し、再読み込み後に表示へ反映します。</p>
         <h3>Collection</h3>
-        <p>NavigationのCollection見出しから作成します。条件はGroupごとにANDまたはORを選び、条件またはGroupをNOTで反転できます。編集と削除はCollectionの右click menuから行います。</p>
+        <p>NavigationのCollection見出し右側にある、追加アイコン付きの「新規」から作成します。条件はGroupごとにANDまたはORを選び、条件またはGroupをNOTで反転できます。編集と削除はCollectionの右click menuから行います。</p>
+        <p>Collection一覧は枠線を省いたすっきりした行で、名前だけを表示します。見出しと各行に件数は表示しません。選択中の行は上部メニューと共通の青い背景と左端のアクセントで示します。行自体をドラッグして順序を変更できます。移動先の行の上半分へ落とすとその前、下半分へ落とすとその後へ移動します。右click menuの「上へ移動」「下へ移動」でも操作できます。順序は保存され、新規Collectionは末尾へ追加されます。</p>
+        <h3>Tag一覧</h3>
+        <p>NavigationのTagを選ぶと、Tag名とItem数をまとめた軽いPillが横に並び、画面幅に合わせて折り返します。階層部分と件数は小さな補助文字で表示します。検索欄でTagの完全pathを部分一致検索でき、その下にある「使用数順」「名前順」の文字タブで並び順を切り替えられます。選択中の並び順は下線で示します。件数は下位Tagを含む未ArchiveのItem数で、同じItemは重複して数えません。</p>
+        <p>Tag一覧は名前順で開きます。A、B、Cなどの頭文字の見出しを付け、その下にPillをまとめます。数字は「0–9」、記号は「#」、ひらがな・カタカナなどはその頭文字で区切ります。漢字で始まるTagは一覧の末尾にある「その他」へまとめます。検索中は一致したTagがある見出しだけを表示します。</p>
+        <p>Pillを選ぶと、そのTagまたは下位Tagを持つItemへ絞り込みます。長いTag名はPill内で省略され、マウスを重ねると完全pathと件数を確認できます。検索に一致しない場合は検索語を消去して一覧へ戻せます。Item一覧からTag一覧へ戻ると、検索語と並び順を維持します。</p>
         <h3>Archive</h3>
         <p>Itemカードの右click menuからArchive、復元、削除を実行します。Archive済みItemでは復元と削除だけを表示し、削除は選択対象がすべてArchive済みの場合に確認dialogを経て実行します。</p>
       </section>

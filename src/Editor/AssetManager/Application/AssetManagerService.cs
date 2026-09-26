@@ -1200,6 +1200,27 @@ namespace Ee4v.AssetManager.Application
                 new[] { collectionId });
         }
 
+        public void ReorderCollections(IReadOnlyList<string> collectionIds)
+        {
+            AssetManagerRequestValidator.RequireRequest(
+                collectionIds,
+                "collection order");
+            var ids = collectionIds.Count == 0
+                ? Array.Empty<string>()
+                : AssetManagerRequestValidator.NormalizeIds(
+                    collectionIds,
+                    "collection id").ToArray();
+            if (ids.Length != collectionIds.Count)
+            {
+                throw new AssetManagerException(
+                    AssetManagerErrorCode.InvalidRequest,
+                    "Collection order must not contain duplicate ids.");
+            }
+
+            _store.ReorderCollections(ids);
+            Publish(AssetManagerChangeKind.CollectionsReordered, ids);
+        }
+
         public AssetSyncResult SyncEagle(EagleSyncRequest request)
         {
             AssetManagerRequestValidator.RequireRequest(

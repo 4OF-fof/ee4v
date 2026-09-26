@@ -78,6 +78,7 @@ namespace Ee4v.AssetManager.Application.Ports
             string collectionId,
             UpdateAssetCollectionRequest request);
         void DeleteCollection(string collectionId);
+        void ReorderCollections(IReadOnlyList<string> collectionIds);
 
         AssetSyncResult ApplySourceSnapshot(
             AssetSourceType sourceType,

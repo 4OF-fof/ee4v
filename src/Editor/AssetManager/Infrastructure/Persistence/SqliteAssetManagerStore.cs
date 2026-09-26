@@ -888,7 +888,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     var ids = QueryStrings(
                         connection,
                         null,
-                        "SELECT id FROM collection ORDER BY name, id");
+                        @"SELECT collection.id FROM collection
+                          LEFT JOIN collection_order ordering
+                            ON ordering.collection_id = collection.id
+                          ORDER BY ordering.sort_order IS NULL,
+                            ordering.sort_order, collection.name, collection.id");
                     return ids.Select(id =>
                             ReadCollection(connection, id))
                         .ToArray();
@@ -938,6 +942,17 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         null,
                         0,
                         request.Root);
+                    var orderedIds = QueryStrings(
+                        connection,
+                        transaction,
+                        @"SELECT collection.id FROM collection
+                          LEFT JOIN collection_order ordering
+                            ON ordering.collection_id = collection.id
+                          WHERE collection.id <> @p0
+                          ORDER BY ordering.sort_order IS NULL,
+                            ordering.sort_order, collection.name, collection.id",
+                        id).Concat(new[] { id }).ToArray();
+                    ReplaceCollectionOrder(connection, transaction, orderedIds);
                     transaction.Commit();
                     return ReadCollection(connection, id);
                 }
@@ -988,6 +1003,51 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     return ReadCollection(connection, collectionId);
                 }
             });
+        }
+
+        public void ReorderCollections(IReadOnlyList<string> collectionIds)
+        {
+            Run(() =>
+            {
+                using (var connection = OpenConnection())
+                using (var transaction = new DatabaseTransaction(connection))
+                {
+                    var existing = QueryStrings(
+                        connection,
+                        transaction,
+                        "SELECT id FROM collection");
+                    if (existing.Count != collectionIds.Count ||
+                        !new HashSet<string>(existing, StringComparer.Ordinal)
+                            .SetEquals(collectionIds))
+                    {
+                        throw new AssetManagerException(
+                            AssetManagerErrorCode.InvalidRequest,
+                            "Collection order must contain every existing collection exactly once.");
+                    }
+
+                    ReplaceCollectionOrder(connection, transaction, collectionIds);
+                    transaction.Commit();
+                    return true;
+                }
+            });
+        }
+
+        private static void ReplaceCollectionOrder(
+            SQLiteConnection connection,
+            DatabaseTransaction transaction,
+            IReadOnlyList<string> collectionIds)
+        {
+            Execute(connection, transaction, "DELETE FROM collection_order");
+            for (var index = 0; index < collectionIds.Count; index++)
+            {
+                Execute(
+                    connection,
+                    transaction,
+                    @"INSERT INTO collection_order(collection_id, sort_order)
+                      VALUES(@p0, @p1)",
+                    collectionIds[index],
+                    index);
+            }
         }
 
         public void DeleteCollection(string collectionId)
@@ -1491,6 +1551,12 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     name TEXT NOT NULL UNIQUE CHECK(trim(name) <> ''),
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
+                  )",
+                @"CREATE TABLE IF NOT EXISTS collection_order(
+                    collection_id TEXT PRIMARY KEY,
+                    sort_order INTEGER NOT NULL UNIQUE CHECK(sort_order >= 0),
+                    FOREIGN KEY(collection_id)
+                      REFERENCES collection(id) ON DELETE CASCADE
                   )",
                 @"CREATE TABLE IF NOT EXISTS collection_node(
                     id TEXT PRIMARY KEY,

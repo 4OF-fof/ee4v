@@ -40,7 +40,7 @@ Information Windowはマウスホイールなどによるスクロール操作�
 
 Navigation上部ではImport済み、全件、未所属、アーカイブ、タグの順に表示先を切り替えます。`Import済み`は、保存された取り込み済みGUIDのうち現在のUnity Project内でフォルダーではない実在Assetとして読み込めるものを1件以上持つItemだけを表示します。Project内のAsset変更時にも表示を更新し、取り込み先フォルダーまたは削除済みAssetのGUIDだけが残るItemは表示しません。
 
-`ee4v/Window/Asset Manager/Open All`からNavigation、Main、Informationの3つの独立Windowをまとめて開きます。通常のAssetManager利用向け統合Windowは提供せず、単一Windowが必要な改変作業だけModification Workflowへ統合します。Navigation Windowは240px、Information Windowは300pxを最小幅とし、Main Windowは作業領域へ追従します。ナビゲーション上部では全件、未所属、アーカイブ、タグを切り替えます。コレクションは件数付きのフォルダ行として並び、見出し右端の追加ボタンから作成します。タグ画面では既存タグと該当Item数を表示し、タグを選ぶとそのタグまたは下位タグを持つItemへ絞り込みます。Main Windowのツールバーは戻る・進む履歴とパンくずリストを左端に置き、列数スライダーを中央に配置します。パンくずは現在位置の末尾だけを表示し、2階層以上ではホバー中にフルパスを表示します。ホバー表示の親階層を選ぶとその位置へ移動できます。画面名はパンくずだけに表示し、重複する見出しと件数は置きません。右端の再読み込みボタンはEagleとee4vを順番に再同期した後に一覧を更新します。片方の同期に失敗しても残りを実行し、同期エラーはConsoleへ表示します。その左の検索欄と合わせて操作領域としてまとめ、Main Window下部に状態フッターは置きません。検索欄のFluent UI System Icons `Search`を選ぶとUnity標準メニューを開き、名前、説明、タグを検索対象へ含めるか個別に切り替えられます。未所属File一覧では名前の指定をFile名へ適用します。ItemをダブルクリックするとMain WindowをItem詳細へ切り替えます。Item詳細は左の検索付きFile Treeと右の詳細表示からなる2ペイン構成です。左ペインの先頭には概要を置き、その下へ所属Fileをルート、ZIPとUnityPackageの内容を子階層として表示します。右ペインは概要選択時にItemの名前、Tag、Item Target、File数、形式とSourceを表示します。情報セクションにはリンク付きBoothストア名、Booth商品リンク、Fileの合計サイズ、作成日時、更新日時を左寄せで表示します。Boothメタデータまたは有効なURLがない項目は表示しません。File選択時は実体単位のDependency Targetを含む設定を表示し、GUID一覧は表示しません。内容選択時はPath、種別、Size、取り込み済みかを表示します。UnityPackage内のAssetは解析結果のGUIDと取り込み済みGUIDを照合します。ZIP内のUnityPackage実体は、そのFileに取り込み済みGUIDがある場合に取り込み済みとして扱います。ZIPなど解析結果にGUIDがないその他の形式は、保存済みGUIDのProject pathから選択実体への対応を解決します。File TreeのFileまたは内容を右クリックすると選択状態を変えずにコンテキストメニューだけを開き、Item Targetの追加・解除と1実体のImportを実行できます。ZIP自身、ZIP内のZIP、DirectoryではImportを無効にします。Item詳細を開いている間、Information WindowはMain WindowのFile選択に影響されず、そのItemを表示し続けます。パンくずまたは履歴から元の一覧へ移動できます。再読み込みにはmasterと同じMicrosoft Fluent UI System Iconsの`Arrow Clockwise`を使用し、必要なアイコンだけをruntime assetとして保持します。Item一覧は表示範囲の行だけをプールする可変列Gridです。masterと同じ1〜12列を設定範囲とし、表示領域から算出した推奨最小列数をスライダーの下限へ反映します。スライダーと±ボタンは、入力処理内で表示中の行を新しい列数へ組み替えます。全行の再生成や次のUI更新を待ちません。表示幅と高さが変わると列間隔、カード幅、固定行高もまとめて再計算します。カード名は横方向と縦方向の中央へ揃え、表示幅を超える場合は末尾を`…`で省略します。カード選択とサムネイル表示にも対応し、選択中のカードへホバーした場合は青系の選択表現を維持した専用スタイルを使用します。Itemの編集とTag設定、Fileの登録と所属変更、Item TargetとDependency Targetの設定、Archive解析とUnity projectへの取り込みを同じ画面から実行できます。Eagleとee4vのパス設定はAssetManager画面には置かず、`Preferences/4OF/ee4v`のUser Settingsで管理します。
+`ee4v/Window/Asset Manager/Open All`からNavigation、Main、Informationの3つの独立Windowをまとめて開きます。通常のAssetManager利用向け統合Windowは提供せず、単一Windowが必要な改変作業だけModification Workflowへ統合します。Navigation Windowは240px、Information Windowは300pxを最小幅とし、Main Windowは作業領域へ追従します。ナビゲーション上部では全件、未所属、アーカイブ、タグを切り替えます。コレクションは名前だけの行として並び、見出し右端の追加アイコン付き「新規」ボタンから作成します。タグ画面では既存タグと該当Item数を表示し、タグを選ぶとそのタグまたは下位タグを持つItemへ絞り込みます。Main Windowのツールバーは戻る・進む履歴とパンくずリストを左端に置き、列数スライダーを中央に配置します。パンくずは現在位置の末尾だけを表示し、2階層以上ではホバー中にフルパスを表示します。ホバー表示の親階層を選ぶとその位置へ移動できます。画面名はパンくずだけに表示し、重複する見出しと件数は置きません。右端の再読み込みボタンはEagleとee4vを順番に再同期した後に一覧を更新します。片方の同期に失敗しても残りを実行し、同期エラーはConsoleへ表示します。その左の検索欄と合わせて操作領域としてまとめ、Main Window下部に状態フッターは置きません。検索欄のFluent UI System Icons `Search`を選ぶとUnity標準メニューを開き、名前、説明、タグを検索対象へ含めるか個別に切り替えられます。未所属File一覧では名前の指定をFile名へ適用します。ItemをダブルクリックするとMain WindowをItem詳細へ切り替えます。Item詳細は左の検索付きFile Treeと右の詳細表示からなる2ペイン構成です。左ペインの先頭には概要を置き、その下へ所属Fileをルート、ZIPとUnityPackageの内容を子階層として表示します。右ペインは概要選択時にItemの名前、Tag、Item Target、File数、形式とSourceを表示します。情報セクションにはリンク付きBoothストア名、Booth商品リンク、Fileの合計サイズ、作成日時、更新日時を左寄せで表示します。Boothメタデータまたは有効なURLがない項目は表示しません。File選択時は実体単位のDependency Targetを含む設定を表示し、GUID一覧は表示しません。内容選択時はPath、種別、Size、取り込み済みかを表示します。UnityPackage内のAssetは解析結果のGUIDと取り込み済みGUIDを照合します。ZIP内のUnityPackage実体は、そのFileに取り込み済みGUIDがある場合に取り込み済みとして扱います。ZIPなど解析結果にGUIDがないその他の形式は、保存済みGUIDのProject pathから選択実体への対応を解決します。File TreeのFileまたは内容を右クリックすると選択状態を変えずにコンテキストメニューだけを開き、Item Targetの追加・解除と1実体のImportを実行できます。ZIP自身、ZIP内のZIP、DirectoryではImportを無効にします。Item詳細を開いている間、Information WindowはMain WindowのFile選択に影響されず、そのItemを表示し続けます。パンくずまたは履歴から元の一覧へ移動できます。再読み込みにはmasterと同じMicrosoft Fluent UI System Iconsの`Arrow Clockwise`を使用し、必要なアイコンだけをruntime assetとして保持します。Item一覧は表示範囲の行だけをプールする可変列Gridです。masterと同じ1〜12列を設定範囲とし、表示領域から算出した推奨最小列数をスライダーの下限へ反映します。スライダーと±ボタンは、入力処理内で表示中の行を新しい列数へ組み替えます。全行の再生成や次のUI更新を待ちません。表示幅と高さが変わると列間隔、カード幅、固定行高もまとめて再計算します。カード名は横方向と縦方向の中央へ揃え、表示幅を超える場合は末尾を`…`で省略します。カード選択とサムネイル表示にも対応し、選択中のカードへホバーした場合は青系の選択表現を維持した専用スタイルを使用します。Itemの編集とTag設定、Fileの登録と所属変更、Item TargetとDependency Targetの設定、Archive解析とUnity projectへの取り込みを同じ画面から実行できます。Eagleとee4vのパス設定はAssetManager画面には置かず、`Preferences/4OF/ee4v`のUser Settingsで管理します。
 
 ### Item詳細と派生Asset
 
@@ -66,11 +66,23 @@ Item Gridでは検索欄の左にソートボタンを表示します。Unity標
 
 ### Collection
 
-コレクション見出しの追加ボタンはmasterと同様にボタン直下へ入力ポップアップを開きます。コレクション名と条件グループを入力し、グループごとにANDまたはORを選択できます。条件グループは任意の深さへ入れ子にでき、各条件またはグループをNOTで反転できます。既存コレクションの編集と削除はナビゲーション上のコレクションを右クリックして行います。コレクション画面には条件要約と操作ボタンを表示しません。編集には作成時と同じポップアップを使用し、Informationペインはコレクションの作成と編集に使用しません。条件の選択肢はAssetManagerの表示言語に合わせて翻訳します。
+コレクション見出し右側の追加アイコン付き「新規」ボタンはmasterと同様にボタン直下へ入力ポップアップを開きます。コレクション名と条件グループを入力し、グループごとにANDまたはORを選択できます。条件グループは任意の深さへ入れ子にでき、各条件またはグループをNOTで反転できます。既存コレクションの編集と削除はナビゲーション上のコレクションを右クリックして行います。コレクション画面には条件要約と操作ボタンを表示しません。編集には作成時と同じポップアップを使用し、Informationペインはコレクションの作成と編集に使用しません。条件の選択肢はAssetManagerの表示言語に合わせて翻訳します。
+
+コレクションは独立したセクションにまとめ、見出しと追加アイコン付き「新規」ボタンを同じ高さへ揃えます。見出しと各行に件数は表示せず、ナビゲーション構築時に件数取得の検索も行いません。コレクションがない場合は見出しの下に空状態の案内を表示します。各コレクションは上部メニューと共通の32px高の行として表示し、行間を4px空けます。名前はInline layoutで行の中央へ揃え、12pxで表示します。左右の内側余白を10pxに統一します。通常時は面と境界線を透過にし、hover時は薄い面、選択中は青い面と左辺の細いアクセントで示します。キーボードfocusは下辺で示します。件数バッジや並び替えハンドルは置きません。行自体をドラッグし、別の行の上半分へ落とすとその前、下半分へ落とすとその後へ移動します。挿入位置は行の上辺または下辺の強調で示します。通常クリックはコレクションを開き、ドラッグ開始後はクリックによる表示先変更を抑止します。右クリックの「上へ移動」「下へ移動」でも並び替えられ、先頭・末尾では範囲外の操作を無効にします。順序はDBへ保存してWindowとEditorを開き直しても維持します。新規コレクションは末尾に追加し、名前・条件の編集では位置を変えません。並び替え中も現在の表示先と選択を維持します。
+
+### タグ一覧
+
+`AssetTagListView`は共通`TagPill`を横に並べ、表示幅に合わせて折り返す一覧です。Pillは26px高の薄い面で表示し、通常時の枠線を置きません。各PillにはTag pathと件数をまとめ、階層のprefixと件数を小さな補助文字にして末尾のTag名を主役にします。長いprefixや名前はPill内で省略し、tooltipで完全pathと件数の意味を確認できます。Pill全体から該当Item一覧を開きます。未登録の親pathも表示用Pillとして補い、親Tagから下位Tagをまとめて検索できます。件数はそのTagまたは下位Tagを持つ未アーカイブItem数で、同じItemが親・子Tagや複数の下位Tagを持つ場合も1件として数えます。アーカイブ済みItemだけに使われているTagは0件で表示します。
+
+一覧上部には全幅の検索欄を置き、その下に件数と「名前順」「使用数順」の文字タブを揃えます。現在の並び順は下線で示します。検索欄は完全pathを部分一致で検索し、該当Pillだけを表示します。検索中は表示数と総数、それ以外はTag数を表示します。該当Tagがない場合とTag自体がない場合はそれぞれ専用メッセージを表示します。全Pillを名前順（既定、完全pathの昇順）または使用数順（多い順）へ切り替えられます。同数の場合は完全path順で安定させます。Tagを選ぶと従来と同じTagと下位TagのItem一覧へ移動します。
+
+名前順では完全pathの頭文字ごとに見出しを置き、各見出しの下でPillを横に並べて折り返します。英字は大文字のA〜Z、数字は「0–9」、漢字で始まるTagは末尾の「その他」（英語表示では「Other」）、それ以外の文字はその頭文字、記号は「#」へまとめます。漢字の判定はUnicodeのCJK統合漢字・互換漢字の範囲を対象とし、補助平面の漢字と「々」「〇」「〻」も含めます。判定範囲の正本は[UnicodeのBlock一覧](https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt)を参照します。検索中も一致したTagだけで見出しを構成し、空の見出しは表示しません。使用数順では見出しを置かず、件数による全体の順序を維持します。
+
+検索と並び順変更は読み込み済みのTagで処理し、Itemを再取得しません。Item数は各ItemのTagと祖先pathを一度ずつ集計します。タグ一覧へ戻る際は検索語と並び順を維持します。
 
 ### Navigationと同期
 
-ナビゲーションには独立した上部ツールバーを置かず、全件を左ペインの先頭に表示します。
+ナビゲーションには独立した上部ツールバーを置かず、Import済み、全件、未所属、アーカイブ、タグの順に上部メニューを並べ、その下へコレクションを表示します。構造と操作は維持し、ナビゲーション内だけに専用のサイドバースタイルを適用します。背景は共通の標準パネル色`panel`とし、左右8px、上下12pxの余白を設けます。上部メニューとコレクションは32px高、角丸6px、行間4pxへ統一します。上部メニューの既存Fluentアイコンは14px、文字との間隔は10pxとし、通常時はアイコンと文字を控えめに、選択中は明るく表示します。hoverは薄い面、選択は青い面と2pxの左辺、キーボードfocusは下辺の強調で区別します。上部メニューの下は12pxの余白と細い区切り線、コレクション見出しの前は16pxの余白で区分します。見出しは11pxとし、「新規」はFluentのAddアイコンを添えた囲いのない小さな文字ボタンにします。スクロールバーは共通の細い表示を使用し、DarkとLightの配色トークンへ追従します。
 
 AssetManager画面にはデータソースと取り込みの専用ページを置きません。Eagleとee4vの同期は再読み込み操作とセッション開始時に行い、取り込みや関連付け検索のAPIはUIと独立して提供します。
 
@@ -97,6 +109,8 @@ Item GridはEscapeまたはカード外の空白を左クリックすると全�
 3つのWindowは同じ`IAssetManager`と表示状態を共有するため、Navigationでのページ切替とMainでのItem選択がほかのWindowへ反映されます。各Window型は同名のスクリプト資産として保持し、Unityのレイアウト保存から再起動後も復元します。個別に開く場合は`ee4v/Window/Asset Manager/Navigation`、`Main`、`Information`を使用します。
 
 ### Storyとcomponent境界
+
+タグ一覧の実使用コンポーネントは`Domain/AssetManager/Collections/AssetTagListView` Storyで、Pillの折り返し、親Tagの補完、重複を除いたItem数、検索、文字ボタンでの並び順変更を確認できます。`AssetManagerView · Separated modes` Storyは複数Collectionを持つサンプルを使い、並び替え後のNavigationをその場で更新します。
 
 実画面と同じ`AssetManagerView`は`ee4v/Debug/Catalog`の`Domain/AssetManager/AssetManagerView` Storyでサンプルデータを使って確認できます。同じGroupには分離表示とコレクション編集Popupを配置します。`AssetItemGridView`と`SearchableFileTree`は複数項目を管理するため`Domain/AssetManager/Collections`に配置します。
 
@@ -132,7 +146,7 @@ SQLite接続はmasterと同じ`Ee4v.SQLite.Editor`境界とvendor済みの`sqlit
 - ZIPとUnityPackageの同期・非同期内容解析
 - File・Item単位の取り込み済みUnity Asset GUID取得とGUIDからの関連逆引き
 - 複数ItemへのTag一括設定とTag一覧取得
-- Collectionの作成、取得、更新、削除
+- Collectionの作成、取得、更新、削除、表示順の完全置換
 - Eagle libraryからの同期
 - Eagle由来folder階層の取得
 - ee4v libraryへのFile取り込みと同期
@@ -141,6 +155,8 @@ SQLite接続はmasterと同じ`Ee4v.SQLite.Editor`境界とvendor済みの`sqlit
 検索の`Limit = 0`は件数制限なしです。通常検索はアーカイブ済みItemを除外します。条件評価、件数取得、ページングはSQLiteで行い、該当ページのItemだけTagとFileを含む完全なモデルへ復元します。Itemは名前、IDの順で安定して返します。保存処理が成功した後だけ`Changed`を通知し、購読側の例外はAPI操作を失敗させません。
 
 `MatchesCollection(collectionId, itemId)`は指定したCollectionとItemだけを読み、現在の条件への一致を返します。UIは変更通知の`SubjectIds`または`RelatedIds`に含まれるItemを再取得し、このAPIで表示中Collectionへの追加・更新・除外を判断できます。初期表示の`SearchCollection`以外でCatalog全体を再取得する必要はありません。
+
+`GetCollections()`は保存した表示順で返します。`ReorderCollections(collectionIds)`は既存Collectionの全IDを表示順で指定して、1 transactionで順序を完全置換します。null、空白ID、重複ID、不明ID、一部IDの欠落は`InvalidRequest`として拒否し、既存の順序を保持します。Collectionがない場合だけ空配列を受け付けます。順序未保存のCollectionは名前・ID順で扱います。並び替えはCollection名、条件、更新日時を変更しません。
 
 ## 変更通知
 
@@ -163,6 +179,7 @@ SQLite接続はmasterと同じ`Ee4v.SQLite.Editor`境界とvendor済みの`sqlit
 | `CollectionCreated` | `CreateCollection` | 作成Collection | なし |
 | `CollectionUpdated` | `UpdateCollection` | 更新Collection | なし |
 | `CollectionDeleted` | `DeleteCollection` | 削除Collection | なし |
+| `CollectionsReordered` | `ReorderCollections` | 表示順の全Collection | なし |
 | `SourceSynchronized` | 成功した`SyncEagle`、`SyncEe4v` | 影響を受けたItem | 影響を受けたFile |
 
 `SourceSynchronized`は`SourceType`で`Eagle`または`Ee4v`を示し、作成・更新・削除されたItemとFileに加えて、依存関係の連鎖削除や未所属化で影響を受けたIDを1回の通知にまとめます。IDが空なら同期による変更はありません。同期の読み取りに失敗してDBを変更しなかった場合と、Target未設定または取り込み失敗でGUIDを変更しなかった場合は通知しません。読み取りAPIと`AnalyzeFile`も通知しません。
@@ -347,9 +364,11 @@ EagleのBooth metadataがあるItemだけに保存します。再同期でBooth�
 
 `tag`はTag IDと小文字の完全pathを保持し、pathを一意にします。`item_tag`はAssetManager側で編集するItemのTag、`item_source_tag`はEagle由来TagをSourceとともに保持します。表示と検索は両方を統合し、Eagle由来Tagは編集UIで削除できません。未使用Tagは両方の関連更新と同じtransactionで削除します。親Tagの行は必須ではありません。
 
-### `collection`と`collection_node`
+### `collection`、`collection_order`と`collection_node`
 
 `collection`はID、一意な名前、作成時刻、更新時刻を保持します。Itemとの所属関係や親子関係は保存しません。
+
+`collection_order`はCollection IDをPK・Collection FKとして参照し、0以上で一意の`sort_order`を保持します。Collection削除時は連鎖削除します。新規作成時は現在の一覧の末尾へ追加し、並び替え時は同じtransactionで全行を置換します。schema versionはv1のままです。
 
 `collection_node`は次の値を保持します。
 

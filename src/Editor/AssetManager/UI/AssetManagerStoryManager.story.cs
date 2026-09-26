@@ -15,7 +15,7 @@ namespace Ee4v.AssetManager.UI
 
         private readonly IReadOnlyList<AssetFile> _files;
         private readonly IReadOnlyList<AssetItem> _items;
-        private readonly IReadOnlyList<AssetCollection> _collections;
+        private IReadOnlyList<AssetCollection> _collections;
         private readonly Dictionary<string, IReadOnlyList<AssetFileTarget>>
             _itemTargets;
 
@@ -47,15 +47,27 @@ namespace Ee4v.AssetManager.UI
                     Root = AssetFilterNode.Condition(
                         AssetFilterConditionType.HasTag,
                         "Avatar")
+                },
+                new AssetCollection
+                {
+                    Id = "collection-world",
+                    Name = "Worlds",
+                    Root = AssetFilterNode.Condition(
+                        AssetFilterConditionType.HasTag,
+                        "World")
+                },
+                new AssetCollection
+                {
+                    Id = "collection-packages",
+                    Name = "Unity Packages",
+                    Root = AssetFilterNode.Condition(
+                        AssetFilterConditionType.HasFileExtension,
+                        ".unitypackage")
                 }
             };
         }
 
-        public event Action<AssetManagerChange> Changed
-        {
-            add { }
-            remove { }
-        }
+        public event Action<AssetManagerChange> Changed;
 
         public AssetSearchResult SearchItems(AssetItemQuery query = null)
         {
@@ -75,9 +87,17 @@ namespace Ee4v.AssetManager.UI
             int offset = 0,
             int limit = 0)
         {
+            var condition = GetCollection(collectionId).Root;
             var matches = _items
                 .Where(item => !item.IsArchived)
-                .Where(item => item.Tags.Any(tag => tag.Path == "Avatar"))
+                .Where(item => condition.ConditionType ==
+                    AssetFilterConditionType.HasFileExtension
+                    ? item.Files.Any(file => string.Equals(
+                        file.Extension, condition.Value,
+                        StringComparison.OrdinalIgnoreCase))
+                    : item.Tags.Any(tag => string.Equals(
+                        tag.Path, condition.Value,
+                        StringComparison.OrdinalIgnoreCase)))
                 .ToArray();
             return Page(matches, offset, limit);
         }
@@ -401,6 +421,14 @@ namespace Ee4v.AssetManager.UI
 
         public void DeleteCollection(string collectionId)
         {
+        }
+
+        public void ReorderCollections(IReadOnlyList<string> collectionIds)
+        {
+            _collections = collectionIds.Select(GetCollection).ToArray();
+            Changed?.Invoke(new AssetManagerChange(
+                AssetManagerChangeKind.CollectionsReordered,
+                collectionIds));
         }
 
         public AssetSyncResult SyncEagle(EagleSyncRequest request)

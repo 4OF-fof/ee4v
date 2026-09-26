@@ -96,6 +96,7 @@ namespace Ee4v.AssetManager.Contracts
             string collectionId,
             UpdateAssetCollectionRequest request);
         void DeleteCollection(string collectionId);
+        void ReorderCollections(IReadOnlyList<string> collectionIds);
 
         AssetSyncResult SyncEagle(EagleSyncRequest request);
         AssetSyncResult SyncEe4v(Ee4vSyncRequest request);
@@ -119,7 +120,8 @@ namespace Ee4v.AssetManager.Contracts
         CollectionCreated,
         CollectionUpdated,
         CollectionDeleted,
-        SourceSynchronized
+        SourceSynchronized,
+        CollectionsReordered
     }
 
     public sealed class AssetManagerChange

@@ -175,8 +175,26 @@
     "archived": "Archived",
     "unassignedFiles": "Unassigned",
     "tags": "Tags",
-    "collectionsWithCount": "COLLECTIONS ({0})",
-    "newCollection": "New collection"
+    "collections": "Collections",
+    "createCollection": "New",
+    "noCollections": "No collections yet.",
+    "newCollection": "New collection",
+    "reorderCollection": "Drag to reorder collections",
+    "moveCollectionUp": "Move up",
+    "moveCollectionDown": "Move down"
+  },
+  "tagList": {
+    "searchPlaceholder": "Search tags",
+    "countDescription": "Counts include items with descendant tags.",
+    "sortName": "Name (A–Z)",
+    "sortUsage": "Usage (most first)",
+    "orderName": "Name",
+    "orderUsage": "Usage",
+    "otherHeading": "Other",
+    "count": "{0} tags",
+    "filteredCount": "{0} / {1} tags",
+    "itemCountTooltip": "{0}\nItems including descendant tags: {1}",
+    "noMatches": "No tags match your search."
   },
   "notice": {
     "noItems": "No items match this view.",

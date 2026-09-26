@@ -101,7 +101,7 @@ Catalog上の分類とコード上の分割は別に扱います。コードで�
 | AssetManagerの操作、選択、値入力、編集行 | `Domain/AssetManager/Inputs/*` |
 | AssetManagerの通知、画像、詳細値 | `Domain/AssetManager/Displays/*` |
 | AssetManagerの詳細領域と設定一覧 | `Domain/AssetManager/Containers/*` |
-| AssetManagerのGridとFile Tree | `Domain/AssetManager/Collections/*` |
+| AssetManagerのGrid、File TreeとTag一覧 | `Domain/AssetManager/Collections/*` |
 | ItemStyleのProject・Hierarchy編集 | `Domain/ProjectStyle/Project Style Window`、`Domain/HierarchyStyle/Hierarchy Style Window` |
 | Hidden Objects | `Domain/HierarchyStyle/Hidden Objects`、`Domain/HierarchyStyle/Inputs/*`、`Domain/HierarchyStyle/Containers/*` |
 | Scene Switcher | `Domain/SceneSwitcher/SceneSwitcherView`、`Domain/SceneSwitcher/Inputs/SceneSwitcherRow` |
