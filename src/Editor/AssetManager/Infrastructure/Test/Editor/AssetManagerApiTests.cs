@@ -233,7 +233,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         public void FileChanges_IdentifyFilesAndAffectedItems()
         {
             var library = Path.Combine(_root, "ee4v-library");
-            var sourcePath = Path.Combine(_root, "avatar.zip");
+            var sourcePath = Path.Combine(_root, "avatar.unitypackage");
             File.WriteAllText(sourcePath, "payload");
             var first = _manager.CreateItem(
                 new CreateAssetItemRequest { Name = "First" });

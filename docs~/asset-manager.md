@@ -274,7 +274,7 @@ Source同期は既存のアーカイブ状態を変更しません。完全同�
 
 `AssetItem.ThumbnailUrl`はItemに対応するサムネイルの取得元です。Eagle同期ではBoothMeta itemにカスタムサムネイルがある場合、同じ`.info` directoryの`<name>_thumbnail.png`をfile URIとして優先保存し、なければBooth metadataの`thumbnailUrl`を使用します。Eagle由来のfile URIだけをローカル画像として読み、ファイルのopenと読取はバックグラウンドで行います。サムネイル取得時のDB照会はID・取得元・Sourceだけに限定し、画面内では取得済みの画像を再利用します。AssetManagerの再読み込み時にcacheを破棄してEagleの現在のカスタムサムネイルを反映します。`GetThumbnail`と`GetThumbnails`は`Task`を返し、HTTP通信とcacheの読み書きを呼び出し元を止めずに行います。`CancellationToken`で待機中の通信と一括取得を中止できます。HTTP画像はDBと同じdirectoryの`cache/asset-manager/thumbnails/`へItem IDとURLのhash単位で保存し、Item IDをfile pathへ直接使用しません。HTTP応答、cacheおよびローカル画像の読み込みはいずれも1画像16 MiBまでとし、`Content-Length`がない応答もstream読取時に上限を適用します。上限超過、取得元の欠落、通信失敗は例外ではなく`AssetThumbnail.Found = false`と理由を返します。一括取得は重複Item IDを除外し、最大4並列で未cache画像を取得します。Item一覧は表示中の行と次の1行にある未取得Itemだけを最大4並列で`GetThumbnail`へ要求し、1件の取得が完了するたびに該当カードを描画します。スクロール先が変わると不要になった要求を中止し、新しい表示範囲を優先します。取得結果は画像の欠落も含めて`AssetManagerView`単位のCore `CachedImageCache`が保持するため、画面遷移や再検索では再取得しません。Item一覧とItem詳細は同じcacheを使用します。Source同期または再読み込み操作では保持内容を破棄し、最新のURLと取得結果を反映します。画面遷移または再検索時には進行中の要求を中止します。デコード済みTextureも同じcacheで共有し、スクロールでカードが再利用されても再デコードしません。
 
-Importに成功すると、取り込み済みAsset GUIDからItemに属する全Fileをまとめて実Assetの共通親folderを求め、対応するItemのサムネイルをProject Styleの初期アイコンとして設定します。複数Fileが同じItem folder以下へ取り込まれた場合はFileごとの子folderではなく、その共通のItem folderへ適用します。`<shop名>/<item名>/中身`と`<item名>/中身`のどちらでもitem名folderへ適用します。UnityPackageに含まれるshop名folderのmetaは適用先にしません。実Assetを含まない場合はGUIDが指すfolderを使用します。対象folderが親子関係にある場合は最上位だけへ適用します。複数Itemが同じGUIDを持つ場合は最後に取り込んだ関連付けを使用します。既にProject Styleのアイコンがあるfolderは上書きせず、自動設定後も利用者がProject Styleから変更または解除できます。サムネイルは`Assets/ee4v/Generated/AssetManager/Thumbnails/`へTexture assetとして保存し、共有元の同期後に既存の生成Textureを更新します。以前の保存先にある生成Textureは更新時に新しい保存先へ移動し、GUIDを維持します。`Preferences/4OF/ee4v`の「Import時にサムネイルをProject Styleへ設定」から、以後のImportに対する自動設定を無効化できます。Project描画中にAssetManagerのDB、filesystem、サムネイルは読み込みません。
+Importに成功すると、取り込み済みAsset GUIDからItemに属する全Fileをまとめて実Assetの共通親folderを求め、対応するItemのサムネイルをProject Styleの初期アイコンとして設定します。複数Fileが同じItem folder以下へ取り込まれた場合はFileごとの子folderではなく、その共通のItem folderへ適用します。`<shop名>/<item名>/中身`と`<item名>/中身`のどちらでもitem名folderへ適用します。UnityPackageに含まれるshop名folderのmetaは適用先にしません。実Assetを含まない場合はGUIDが指すfolderを使用します。対象folderが親子関係にある場合は最上位だけへ適用します。複数Itemが同じGUIDを持つ場合は最後に取り込んだ関連付けを使用します。既にProject Styleのアイコンがあるfolderは上書きせず、自動設定後も利用者がProject Styleから変更または解除できます。サムネイルは`Assets/ee4v/Generated/AssetManager/Thumbnails/`へTexture assetとして保存し、共有元の同期後に既存の生成Textureを更新します。生成Textureの探索と更新は現在の保存先だけを対象とし、以前の保存先からは移行しません。`Preferences/4OF/ee4v`の「Import時にサムネイルをProject Styleへ設定」から、以後のImportに対する自動設定を無効化できます。Project描画中にAssetManagerのDB、filesystem、サムネイルは読み込みません。
 
 Gridは表示範囲の行だけを保持します。スクロール位置が同じ行内にある間はカードを再バインドしません。先頭行が変わっても表示範囲に残る行は維持し、新しく見える行だけをプールから再利用します。
 
@@ -352,7 +352,7 @@ item       ── 0..* tag       （item_source_tag経由）
 collection ── 1..* collection_node
 ```
 
-内部IDは文字列、時刻はUTCのISO 8601文字列、真偽値は`0`または`1`で保持します。`source_id`はSourceが定める不透明な安定IDです。スキーマバージョンは1に固定し、`PRAGMA user_version`が異なるDBは削除して再作成します。接続ごとに`PRAGMA foreign_keys = ON`を設定します。
+内部IDは文字列、時刻はUTCのISO 8601文字列、真偽値は`0`または`1`で保持します。`source_id`はSourceが定める不透明な安定IDです。スキーマバージョンは1に固定し、現在のschemaだけを扱います。旧schemaの検出、移行、欠落データの補完、自動削除は行いません。schema変更後は利用者がDBを削除して再生成します。接続ごとに`PRAGMA foreign_keys = ON`を設定します。
 
 ### `item`
 
@@ -418,7 +418,7 @@ EagleのBooth metadataがあるItemだけに保存します。再同期でBooth�
 | `dependency_file_id` | 依存先File | File FK |
 | `target_path` | 依存先File内の実体path | NULL不可。大文字小文字を区別しない |
 
-4列を複合PKにします。同一実体への自己依存はCHECK制約、間接的な循環は挿入triggerで拒否します。同じFileの異なる実体間にも依存を設定できます。path制約とZIP拒否はItem Targetと同じです。File削除時は依存元と依存先の関係を連鎖削除し、アーカイブでは関係を維持します。旧`file_dependency`のFile単位の関係は参照せず、新しい実体単位の関係を使用します。
+4列を複合PKにします。同一実体への自己依存はCHECK制約、間接的な循環は挿入triggerで拒否します。同じFileの異なる実体間にも依存を設定できます。path制約とZIP拒否はItem Targetと同じです。File削除時は依存元と依存先の関係を連鎖削除し、アーカイブでは関係を維持します。依存はFile内の実体単位で保持します。
 
 ### `file_imported_asset_guid`
 
@@ -434,13 +434,13 @@ EagleのBooth metadataがあるItemだけに保存します。再同期でBooth�
 
 `tag`はTag IDと小文字の完全pathを保持し、pathを一意にします。`item_tag`はAssetManager側で編集するItemのTag、`item_source_tag`はEagle由来TagをSourceとともに保持します。表示と検索は両方を統合し、Eagle由来Tagは編集UIで削除できません。未使用Tagは両方の関連更新と同じtransactionで削除します。親Tagの行は必須ではありません。
 
-### `collection`、`collection_order`、`collection_icon`と`collection_node`
+### `collection`、`collection_order`と`collection_node`
 
-`collection`はID、一意な名前、作成時刻、更新時刻を保持します。Itemとの所属関係や親子関係は保存しません。
+`collection`はID、一意な名前、アイコン、作成時刻、更新時刻を保持します。Itemとの所属関係や親子関係は保存しません。
 
-`collection_order`はCollection IDをPK・Collection FKとして参照し、0以上で一意の`sort_order`を保持します。Collection削除時は連鎖削除します。新規作成時は現在の一覧の末尾へ追加し、並び替え時は同じtransactionで全行を置換します。schema versionはv1のままです。
+`collection_order`はCollection IDをPK・Collection FKとして参照し、0以上で一意の`sort_order`を保持します。Collection削除時は連鎖削除します。すべてのCollectionに順序行を必須とし、新規作成時は現在の一覧の末尾へ追加します。並び替え時は同じtransactionで全行を置換します。schema versionはv1のままです。
 
-`collection_icon`はCollection IDをPK・Collection FKとして参照し、`AssetCollectionIcon`の値（File=0、Folder=1、Star=2、Tag=3、Library=4、Image=5、Cube=6、Archive=7、Pin=8）を保持します。行がない場合はFolderとして読みます。Collection作成・更新と同じtransactionで保存し、Collection削除時は連鎖削除します。schema versionはv1のままです。`AssetCollection.Icon`と`CreateAssetCollectionRequest.Icon`の既定はFolder、`UpdateAssetCollectionRequest.Icon`は任意で、未指定の場合は現在の値を維持します。未定義の列挙値はInvalidRequestとして拒否します。MCPのCollection作成・更新でも任意の`icon`引数に同じ列挙名を指定できます。
+`collection.icon`は`AssetCollectionIcon`の値（File=0、Folder=1、Star=2、Tag=3、Library=4、Image=5、Cube=6、Archive=7、Pin=8）を必須列として保持します。Collection作成・更新と同じtransactionで保存します。アイコンを別tableへ保存する形式のDBは読み替えません。schema versionはv1のままです。`AssetCollection.Icon`と`CreateAssetCollectionRequest.Icon`の既定はFolder、`UpdateAssetCollectionRequest.Icon`は任意で、未指定の場合は現在の値を維持します。未定義の列挙値はInvalidRequestとして拒否します。MCPのCollection作成・更新でも任意の`icon`引数に同じ列挙名を指定できます。
 
 `collection_node`は次の値を保持します。
 

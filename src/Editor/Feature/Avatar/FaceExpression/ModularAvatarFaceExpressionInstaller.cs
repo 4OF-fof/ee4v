@@ -16,8 +16,6 @@ namespace Ee4v.FaceExpression
             "Ee4v.FaceExpression.FaceExpressionBlinkOverride";
         private const string MenuInstallerTypeName =
             "nadena.dev.modular_avatar.core.ModularAvatarMenuInstaller";
-        private const string MenuItemTypeName =
-            "nadena.dev.modular_avatar.core.ModularAvatarMenuItem";
         private const string ParametersTypeName =
             "nadena.dev.modular_avatar.core.ModularAvatarParameters";
 
@@ -137,9 +135,6 @@ namespace Ee4v.FaceExpression
             root.transform.localRotation = Quaternion.identity;
             root.transform.localScale = Vector3.one;
 
-            RemoveLegacyMenuObjects(root);
-            RemoveComponents(root, FindType(MenuItemTypeName));
-
             var mergeType = FindType(MergeAnimatorTypeName);
             RemoveComponents(root, mergeType);
             var merge = AddRequiredComponent(root, mergeType);
@@ -184,28 +179,7 @@ namespace Ee4v.FaceExpression
                     "ModularAvatarParameters.parameters was not found.");
             }
 
-            var parameters = field.GetValue(component) as IList;
-            if (parameters == null)
-            {
-                parameters = (IList)Activator.CreateInstance(field.FieldType);
-            }
-
-            for (var index = parameters.Count - 1; index >= 0; index--)
-            {
-                var name = GetField(parameters[index], "nameOrPrefix") as string;
-                if (string.Equals(
-                        name,
-                        GestureMatrixControllerWriter.MenuParameter,
-                        StringComparison.Ordinal) ||
-                    string.Equals(
-                        name,
-                        GestureMatrixControllerWriter.MouthCancelParameter,
-                        StringComparison.Ordinal))
-                {
-                    parameters.RemoveAt(index);
-                }
-            }
-
+            var parameters = (IList)Activator.CreateInstance(field.FieldType);
             var configType = field.FieldType.GetGenericArguments()[0];
             var config = Activator.CreateInstance(configType);
             SetRequiredField(
@@ -223,18 +197,6 @@ namespace Ee4v.FaceExpression
 
             field.SetValue(component, parameters);
             EditorUtility.SetDirty(component);
-        }
-
-        private static void RemoveLegacyMenuObjects(GameObject root)
-        {
-            for (var index = root.transform.childCount - 1; index >= 0; index--)
-            {
-                var child = root.transform.GetChild(index);
-                if (child.name.StartsWith("ee4v Menu ", StringComparison.Ordinal))
-                {
-                    UnityEngine.Object.DestroyImmediate(child.gameObject);
-                }
-            }
         }
 
         private static Component AddRequiredComponent(GameObject target, Type type)

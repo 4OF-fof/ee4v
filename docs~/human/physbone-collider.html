@@ -48,6 +48,7 @@
         <p class="section-label">Apply</p><h2>MA Bone Proxy付きPrefabへまとめる</h2>
         <p>適用するとAvatar直下へ<code>&lt;Avatar名&gt;_PhysBoneColliders</code>という1つのPrefabを作り、生成Colliderをまとめます。各ColliderにはModular AvatarのBone Proxyを設定し、build時に選択した追従bone直下へ移動します。Modification Workflowから適用した場合は、この参照を選択中の派生Prefabへ保存します。</p>
         <p>生成Prefabは共通Asset rootの<code>Avatar/PhysBoneCollider/&lt;Avatar名&gt;</code>へ保存します。再適用では同じ生成Prefabの中身を置き換え、画面で選択したPhysBoneだけへ現在のCollider参照を追加します。利用者が作成したColliderは対象にしません。</p>
+        <p>旧方式でbone直下に生成したColliderとその参照は自動移行・除去しません。残っている場合は手動で整理してから適用してください。</p>
         <p class="callout"><strong>Undo対応:</strong> Scene上の適用操作はUnityのUndoで取り消せます。</p>
       </section>
       <section id="requirements">

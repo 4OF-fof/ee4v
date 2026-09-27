@@ -17,7 +17,7 @@
 | `CollectionName_MustBeUnique` | 重複Collection名を`Duplicate`として拒否する | DBの一意制約を利用側のエラーへ変換する境界である |
 | `ChangeSubscriberFailure_DoesNotStopOtherSubscribers` | 一購読者の例外が更新と他購読者を止めない | 購読者間の障害分離は通常操作では原因を特定しにくい |
 | `ItemAndCollectionChanges_IdentifyMutationAndSubjects` | ItemとCollectionの通知が種別と対象IDを含む | UIの差分更新が依存する公開イベント契約である |
-| `FileChanges_IdentifyFilesAndAffectedItems` | File通知が対象Fileと影響Itemを含み、Item Target通知が対象Itemと参照Fileを含む | 関連Itemだけを更新する公開イベント契約である |
+| `FileChanges_IdentifyFilesAndAffectedItems` | unitypackageのFile通知が対象Fileと影響Itemを含み、Item Target通知が対象Itemと参照Fileを含む | 関連Itemだけを更新する公開イベント契約である。直接Import対象にできないZIPを通知検証のfixtureには使用しない |
 | `EagleSync_ReusesIdsAndDeletesMissingFile` | Eagleの再同期でItem IDを維持し、消えたFileを除く | 外部SourceとDBの同一性を保つ接続契約である |
 | `EagleSync_PreservesManagedTagsAndTargets` | Booth商品・ストア情報とEagle由来Tagを取り込み、AssetManagerで設定したTagとTargetを再同期後も保持する | 外部Sourceのメタデータ変換とAssetManager管理状態の所有境界である |
 | `EagleSync_MissingTargetPreservesData` | 対象rootがない同期で既存データを保持する | 設定誤りによる全削除を防ぐデータ保全である |
@@ -123,7 +123,6 @@
 | `WindowGroupTests.RegisteringWindowAsRegularInMultipleGroups_IsRejected` | 同じWindowを複数Groupの通常メンバーとして登録できない | 複数Groupが意図せず同時に起動する構成を防ぐ |
 | `WindowGroupTests.ReplacingSameGroupRegistration_IgnoresOldDisposal` | 同じGroupへの再登録後に古い登録を破棄しても新しい所属を維持する | lifecycle順序の前後で有効な登録が消える問題を防ぐ |
 | `WindowGroupTests.AdditionalMembership_BecomesFollowerAndPersists` | 通常所属があるWindow種類を別Groupへ追加するとFollowerになり、通常所属への変更を拒否して保存する | 通常所属の重複と設定再読込後の制約消失を防ぐ |
-| `WindowGroupTests.LoadingMultipleRegularMemberships_ConvertsExtrasToFollowers` | 通常所属が重複した保存設定を読み込むと2つ目以降をFollowerへ補正する | 旧設定による起動時の制約違反と複数Groupの同時起動を防ぐ |
 
 ## 実行と判定
 

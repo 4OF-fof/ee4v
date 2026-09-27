@@ -124,10 +124,7 @@ namespace Ee4v.FaceExpression
     internal static class GestureMatrixControllerWriter
     {
         internal const string LayerName = "ee4v Face Expressions";
-        internal const string MenuLayerName = "ee4v Face Expression Menu";
-        internal const string MouthCancelLayerName = "ee4v Mouth Morph Canceller";
         internal const string MenuParameter = "ee4v/FaceExpression";
-        internal const string MouthCancelParameter = "ee4v/MouthMorphCancel";
         private const string VoiceParameter = "Voice";
         private const string GestureLeft = "GestureLeft";
         private const string GestureRight = "GestureRight";
@@ -167,33 +164,17 @@ namespace Ee4v.FaceExpression
 
             var layer = controller.layers.FirstOrDefault(
                 candidate => candidate.name == LayerName);
-            if (layer?.stateMachine == null)
-            {
-                layer = controller.layers.FirstOrDefault(
-                    candidate => candidate.name == MenuLayerName);
-            }
-
-            var foundMenuState = ReadMenuEntries(
-                layer?.stateMachine,
-                result);
-            if (!foundMenuState && layer?.name != MenuLayerName)
-            {
-                var legacyLayer = controller.layers.FirstOrDefault(
-                    candidate => candidate.name == MenuLayerName);
-                ReadMenuEntries(legacyLayer?.stateMachine, result);
-            }
-
+            ReadMenuEntries(layer?.stateMachine, result);
             return result;
         }
 
-        private static bool ReadMenuEntries(
+        private static void ReadMenuEntries(
             AnimatorStateMachine stateMachine,
             ICollection<FaceExpressionMenuEntry> result)
         {
-            var foundMenuState = false;
             if (stateMachine == null)
             {
-                return false;
+                return;
             }
 
             foreach (var child in stateMachine.states.OrderBy(
@@ -207,14 +188,11 @@ namespace Ee4v.FaceExpression
                     continue;
                 }
 
-                foundMenuState = true;
                 if (isExplicit)
                 {
                     result.Add(entry);
                 }
             }
-
-            return foundMenuState;
         }
 
         public static IReadOnlyList<EffectiveMenuEntry> GetEffectiveMenuEntries(
@@ -258,9 +236,6 @@ namespace Ee4v.FaceExpression
                     AnimatorControllerParameterType.Float);
             }
             RemoveOwnedLayer(controller);
-            RemoveLayer(controller, MenuLayerName);
-            RemoveLayer(controller, MouthCancelLayerName);
-            RemoveParameter(controller, MouthCancelParameter);
             RemoveOwnedMouthBlendTrees(controller);
 
             var configured = new Dictionary<GestureCombination, FaceExpressionAssignment>();
@@ -534,31 +509,13 @@ namespace Ee4v.FaceExpression
             controller.AddParameter(name, type);
         }
 
-        private static void RemoveParameter(
-            AnimatorController controller,
-            string name)
-        {
-            for (var index = controller.parameters.Length - 1; index >= 0; index--)
-            {
-                if (controller.parameters[index].name == name)
-                {
-                    controller.RemoveParameter(index);
-                }
-            }
-        }
-
         private static void RemoveOwnedLayer(AnimatorController controller)
-        {
-            RemoveLayer(controller, LayerName);
-        }
-
-        private static void RemoveLayer(AnimatorController controller, string layerName)
         {
             Undo.RegisterCompleteObjectUndo(controller, "Update Face Expression Layer");
             for (var index = controller.layers.Length - 1; index >= 0; index--)
             {
                 var layer = controller.layers[index];
-                if (layer.name != layerName)
+                if (layer.name != LayerName)
                 {
                     continue;
                 }
@@ -1069,10 +1026,7 @@ namespace Ee4v.FaceExpression
                 }
 
                 var name = Path.GetFileNameWithoutExtension(path);
-                if (name.StartsWith(prefix + "Motion ", StringComparison.Ordinal) ||
-                    name.Equals(prefix + "Mouth Cancel", StringComparison.Ordinal) ||
-                    name.StartsWith(prefix + "L", StringComparison.Ordinal) ||
-                    name.StartsWith(prefix + "M", StringComparison.Ordinal))
+                if (name.StartsWith(prefix + "Motion ", StringComparison.Ordinal))
                 {
                     AssetDatabase.DeleteAsset(path);
                 }

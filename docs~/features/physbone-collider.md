@@ -1,5 +1,7 @@
 # PhysBone Collider
 
+保存済みCollider設定の読み戻しは、現在のLayout IDから生成するObject名だけで対応付けます。旧形式のボーン一致による設定の読み替えは行いません。
+
 ## 公開API
 
 `PhysBoneColliderApi`は、UIと同じ検出・配置・適用処理を外部integrationから呼ぶ公開境界です。Avatar、対象root、配置preset、最小bone長から候補とPhysBone一覧を返し、調整後の位置、回転、半径、長さ、追従boneと割り当て選択を既存gatewayへ渡します。
@@ -34,6 +36,6 @@ Armature内ではSkinnedMeshRendererが参照する変形ボーンを調査し�
 
 適用時はアバター直下へ`<Avatar名>_PhysBoneColliders`という1つのPrefabを作り、名前が`[ee4v] PhysBone Collider`で始まる生成物をその中へまとめます。各ColliderにはModular AvatarのBone Proxyを設定し、ビルド時に選択した追従ボーン直下へ移動させます。VRC PhysBone ColliderのRoot TransformはCollider自身、Shape TypeはCapsuleです。生成Prefabは共通生成アセットルートの`Avatar/PhysBoneCollider/<Avatar名>`へ保存します。
 
-再適用では同じ生成Prefabの中身を置き換えます。旧方式でボーン直下へ作成した、名前とVRC PhysBone Collider型の両方が一致する生成物も移行時に除去し、利用者が作成したColliderには触れません。置き換える生成物への古い参照を先に除去し、画面で選択したPhysBoneだけへ現在のCollider参照を追加します。Modification Workflowでは派生Prefabを`LoadPrefabContents`で一時編集し、適用成功後に同じPrefab Assetへ保存してから一時編集コンテキストを破棄します。
+再適用では同じ生成Prefabの中身を置き換えます。現在の生成Prefab内のColliderだけを置き換え、その参照を先に除去します。旧方式でボーン直下へ作成した生成物の移行・除去は行いません。利用者が作成したColliderには触れず、画面で選択したPhysBoneだけへ現在のCollider参照を追加します。Modification Workflowでは派生Prefabを`LoadPrefabContents`で一時編集し、適用成功後に同じPrefab Assetへ保存してから一時編集コンテキストを破棄します。
 
 VRChat SDKとModular Avatarへコンパイル時依存は持ちません。どちらかがない環境でも提案とプレビューを利用でき、適用だけを無効にします。シーンまたはPrefab Mode上の操作はUnityのUndoで取り消せます。Modification Workflowから派生Prefab Assetへ保存した変更は通常のScene Undo対象にはなりません。

@@ -259,18 +259,6 @@ namespace Ee4v.FaceExpression.Tests
                 var victoryClip = (AnimationClip)victory.motion;
                 Assert.That(ReadValue(victoryClip, "blendShape.Blink"), Is.EqualTo(75f));
                 Assert.That(ReadValue(victoryClip, "blendShape.vrc.v_aa"), Is.EqualTo(55f));
-                Assert.That(
-                    controller.layers.Any(candidate =>
-                        candidate.name == GestureMatrixControllerWriter.MouthCancelLayerName),
-                    Is.False);
-                Assert.That(
-                    controller.parameters.Any(parameter =>
-                        parameter.name == GestureMatrixControllerWriter.MouthCancelParameter),
-                    Is.False);
-                Assert.That(
-                    controller.layers.Any(candidate =>
-                        candidate.name == GestureMatrixControllerWriter.MenuLayerName),
-                    Is.False);
                 var menuAngry = layer.stateMachine.states
                     .Select(child => child.state)
                     .Single(state => state.name.EndsWith(" Menu Angry"));
@@ -298,11 +286,6 @@ namespace Ee4v.FaceExpression.Tests
                         (GestureMatrixControllerWriter.MenuParameter, 0f)
                     }));
 
-                const string legacyGeneratedPath =
-                    TestFolder + "/Avatar L07 R07.anim";
-                AssetDatabase.CreateAsset(
-                    new AnimationClip(),
-                    legacyGeneratedPath);
                 GestureMatrixControllerWriter.Apply(
                     controller,
                     avatar,
@@ -318,9 +301,6 @@ namespace Ee4v.FaceExpression.Tests
                         candidate.name == GestureMatrixControllerWriter.LayerName),
                     Is.EqualTo(1));
                 Assert.That(GetGeneratedExpressionClipPaths().Count, Is.EqualTo(4));
-                Assert.That(
-                    AssetDatabase.LoadMainAssetAtPath(legacyGeneratedPath),
-                    Is.Null);
             }
             finally
             {

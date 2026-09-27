@@ -111,14 +111,6 @@ namespace Ee4v.FaceExpression
         {
             var folder = paths.AssetsFolder.TrimEnd('/');
             var currentPrefix = paths.RootName + " Icon ";
-            var safeAvatarName = paths.RootName.EndsWith(
-                "_FacialSet",
-                StringComparison.Ordinal)
-                ? paths.RootName.Substring(
-                    0,
-                    paths.RootName.Length - "_FacialSet".Length)
-                : paths.RootName;
-            var legacyPrefix = safeAvatarName + " FacialSet Icon ";
             foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { folder }))
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
@@ -128,8 +120,7 @@ namespace Ee4v.FaceExpression
                         folder,
                         StringComparison.Ordinal) ||
                     usedPaths.Contains(path) ||
-                    (!name.StartsWith(currentPrefix, StringComparison.Ordinal) &&
-                     !name.StartsWith(legacyPrefix, StringComparison.Ordinal)))
+                    !name.StartsWith(currentPrefix, StringComparison.Ordinal))
                 {
                     continue;
                 }

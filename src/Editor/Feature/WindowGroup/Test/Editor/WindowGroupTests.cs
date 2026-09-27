@@ -153,35 +153,6 @@ namespace Ee4v.WindowGroup.Tests
                 Is.True);
         }
 
-        [Test]
-        public void LoadingMultipleRegularMemberships_ConvertsExtrasToFollowers()
-        {
-            const string windowTypeId =
-                "UnityEditor.ConsoleWindow, UnityEditor.CoreModule";
-            var document = new WindowGroupDocument();
-            var firstGroup = new WindowGroupDefinition(
-                "first",
-                "First");
-            var secondGroup = new WindowGroupDefinition(
-                "second",
-                "Second");
-            firstGroup.WindowTypeIds.Add(windowTypeId);
-            secondGroup.WindowTypeIds.Add(windowTypeId);
-            document.Groups.Add(firstGroup);
-            document.Groups.Add(secondGroup);
-            var store = new MemoryWindowGroupStore();
-            store.Save(document);
-
-            var configuration = new WindowGroupConfiguration(store);
-
-            Assert.That(
-                configuration.IsFollower(windowTypeId, firstGroup.Id),
-                Is.False);
-            Assert.That(
-                configuration.IsFollower(windowTypeId, secondGroup.Id),
-                Is.True);
-        }
-
         private sealed class MemoryWindowGroupStore
             : IWindowGroupStore
         {

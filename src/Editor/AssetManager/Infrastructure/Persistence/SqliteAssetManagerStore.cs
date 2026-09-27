@@ -13,7 +13,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
     internal sealed partial class SqliteAssetManagerStore
         : IAssetManagerStore
     {
-        private const int SchemaVersion = 1;
         private const string FileSelect =
             @"SELECT id AS Id, item_id AS ItemId,
                      file_name AS FileName, extension AS Extension,
@@ -889,10 +888,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         connection,
                         null,
                         @"SELECT collection.id FROM collection
-                          LEFT JOIN collection_order ordering
+                          JOIN collection_order ordering
                             ON ordering.collection_id = collection.id
-                          ORDER BY ordering.sort_order IS NULL,
-                            ordering.sort_order, collection.name, collection.id");
+                          ORDER BY ordering.sort_order");
                     return ids.Select(id =>
                             ReadCollection(connection, id))
                         .ToArray();
@@ -930,18 +928,12 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         connection,
                         transaction,
                         @"INSERT INTO collection(
-                            id, name, created_at, updated_at)
-                          VALUES(@p0, @p1, @p2, @p2)",
+                            id, name, icon, created_at, updated_at)
+                          VALUES(@p0, @p1, @p2, @p3, @p3)",
                         id,
                         request.Name.Trim(),
+                        (int)request.Icon,
                         now);
-                    Execute(
-                        connection,
-                        transaction,
-                        @"INSERT INTO collection_icon(collection_id, icon)
-                          VALUES(@p0, @p1)",
-                        id,
-                        (int)request.Icon);
                     InsertNode(
                         connection,
                         transaction,
@@ -953,11 +945,10 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         connection,
                         transaction,
                         @"SELECT collection.id FROM collection
-                          LEFT JOIN collection_order ordering
+                          JOIN collection_order ordering
                             ON ordering.collection_id = collection.id
                           WHERE collection.id <> @p0
-                          ORDER BY ordering.sort_order IS NULL,
-                            ordering.sort_order, collection.name, collection.id",
+                          ORDER BY ordering.sort_order",
                         id).Concat(new[] { id }).ToArray();
                     ReplaceCollectionOrder(connection, transaction, orderedIds);
                     transaction.Commit();
@@ -998,10 +989,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         Execute(
                             connection,
                             transaction,
-                            @"INSERT OR REPLACE INTO collection_icon(collection_id, icon)
-                              VALUES(@p0, @p1)",
-                            collectionId,
-                            (int)request.Icon.Value);
+                            "UPDATE collection SET icon = @p0 WHERE id = @p1",
+                            (int)request.Icon.Value,
+                            collectionId);
                     }
                     Execute(
                         connection,
@@ -1326,20 +1316,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     Directory.CreateDirectory(directory);
                 }
 
-                if (File.Exists(_databasePath))
-                {
-                    using (var existing = OpenConnection())
-                    {
-                        var version = existing.ExecuteScalar<int>(
-                            "PRAGMA user_version");
-                        if (version != SchemaVersion)
-                        {
-                            existing.Close();
-                            File.Delete(_databasePath);
-                        }
-                    }
-                }
-
                 using (var connection = OpenConnection())
                 {
                     ExecuteSchema(connection);
@@ -1566,19 +1542,14 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 @"CREATE TABLE IF NOT EXISTS collection(
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL UNIQUE CHECK(trim(name) <> ''),
+                    icon INTEGER NOT NULL DEFAULT 1
+                      CHECK(icon IN (0, 1, 2, 3, 4, 5, 6, 7, 8)),
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                   )",
                 @"CREATE TABLE IF NOT EXISTS collection_order(
                     collection_id TEXT PRIMARY KEY,
                     sort_order INTEGER NOT NULL UNIQUE CHECK(sort_order >= 0),
-                    FOREIGN KEY(collection_id)
-                      REFERENCES collection(id) ON DELETE CASCADE
-                  )",
-                @"CREATE TABLE IF NOT EXISTS collection_icon(
-                    collection_id TEXT PRIMARY KEY,
-                    icon INTEGER NOT NULL DEFAULT 1
-                      CHECK(icon IN (0, 1, 2, 3, 4, 5, 6, 7, 8)),
                     FOREIGN KEY(collection_id)
                       REFERENCES collection(id) ON DELETE CASCADE
                   )",
@@ -2049,14 +2020,10 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             string collectionId)
         {
             var collection = connection.Query<CollectionRow>(
-                    @"SELECT collection.name AS Name,
-                             COALESCE(collection_icon.icon, 1) AS Icon,
-                             collection.created_at AS CreatedAt,
-                             collection.updated_at AS UpdatedAt
+                    @"SELECT name AS Name, icon AS Icon,
+                             created_at AS CreatedAt, updated_at AS UpdatedAt
                       FROM collection
-                      LEFT JOIN collection_icon
-                        ON collection_icon.collection_id = collection.id
-                      WHERE collection.id = ?",
+                      WHERE id = ?",
                     collectionId)
                 .SingleOrDefault();
             if (collection == null)

@@ -153,21 +153,13 @@ namespace Ee4v.PhysBoneCollider
             }
 
             var byName = drafts.ToDictionary(GetOwnedObjectName);
-            var byBone = drafts
-                .GroupBy(draft => draft.SuggestedBone)
-                .ToDictionary(group => group.Key, group => group.ToArray());
             var loaded = new HashSet<PhysBoneColliderDraft>();
             var owned = new Dictionary<UnityEngine.Object, PhysBoneColliderDraft>();
             foreach (var component in root.GetComponentsInChildren(colliderType, true))
             {
                 var proxy = component.GetComponent(boneProxyType);
                 var target = ResolveProxyTarget(avatar.transform, proxy);
-                if (!TryResolveDraft(
-                        component.gameObject.name,
-                        target,
-                        byName,
-                        byBone,
-                        out var draft))
+                if (!byName.TryGetValue(component.gameObject.name, out var draft))
                 {
                     continue;
                 }
@@ -231,30 +223,6 @@ namespace Ee4v.PhysBoneCollider
             LoadAssignments(avatar, owned);
         }
 
-        private static bool TryResolveDraft(
-            string objectName,
-            Transform target,
-            IReadOnlyDictionary<string, PhysBoneColliderDraft> byName,
-            IReadOnlyDictionary<Transform, PhysBoneColliderDraft[]> byBone,
-            out PhysBoneColliderDraft draft)
-        {
-            if (byName.TryGetValue(objectName, out draft))
-            {
-                return true;
-            }
-
-            if (target != null &&
-                byBone.TryGetValue(target, out var matches) &&
-                matches.Length == 1)
-            {
-                draft = matches[0];
-                return true;
-            }
-
-            draft = null;
-            return false;
-        }
-
         internal bool TryApply(
             GameObject avatar,
             IReadOnlyList<PhysBoneColliderDraft> drafts,
@@ -295,22 +263,10 @@ namespace Ee4v.PhysBoneCollider
                     root = null;
                 }
 
-                var legacy = avatar
-                    .GetComponentsInChildren(colliderType, true)
-                    .Where(component =>
-                        IsLegacyOwned(component) &&
-                        (root == null || !component.transform.IsChildOf(root.transform)))
-                    .ToArray();
                 var previous = root == null
-                    ? legacy
-                    : root.GetComponentsInChildren(colliderType, true)
-                        .Concat(legacy)
-                        .ToArray();
+                    ? Array.Empty<Component>()
+                    : root.GetComponentsInChildren(colliderType, true);
                 RemoveReferences(avatar, previous);
-                foreach (var component in legacy)
-                {
-                    Undo.DestroyObjectImmediate(component.gameObject);
-                }
 
                 if (root == null)
                 {
@@ -669,14 +625,6 @@ namespace Ee4v.PhysBoneCollider
                     type.FullName,
                     fullName,
                     StringComparison.Ordinal));
-        }
-
-        private static bool IsLegacyOwned(Component component)
-        {
-            return component != null && string.Equals(
-                component.gameObject.name,
-                OwnedObjectName,
-                StringComparison.Ordinal);
         }
 
         private static string GetOwnedObjectName(PhysBoneColliderDraft draft)

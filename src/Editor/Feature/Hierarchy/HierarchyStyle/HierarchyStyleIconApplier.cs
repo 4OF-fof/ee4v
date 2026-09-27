@@ -12,8 +12,6 @@ namespace Ee4v.HierarchyStyle
         private readonly ItemStyleIconCache _iconCache;
         private readonly HashSet<int> _hierarchyStyled =
             new HashSet<int>();
-        private readonly HashSet<int> _legacySceneIconCleared =
-            new HashSet<int>();
 
         public HierarchyStyleIconApplier(
             ItemStyleIconCache iconCache)
@@ -33,10 +31,6 @@ namespace Ee4v.HierarchyStyle
             }
 
             var instanceId = gameObject.GetInstanceID();
-            ClearLegacySceneIcon(
-                gameObject,
-                instanceId);
-
             iconGuid = iconGuid ?? string.Empty;
             var icon = string.IsNullOrEmpty(iconGuid)
                 ? ResolveDefaultIcon(gameObject)
@@ -95,29 +89,12 @@ namespace Ee4v.HierarchyStyle
                     continue;
                 }
 
-                ClearLegacySceneIcon(
-                    gameObject,
-                    instanceIds[i]);
                 HierarchyItemApi.TrySetIcon(
                     instanceIds[i],
                     ResolveDefaultIcon(gameObject));
             }
 
             _hierarchyStyled.Clear();
-        }
-
-        private void ClearLegacySceneIcon(
-            GameObject gameObject,
-            int instanceId)
-        {
-            if (!_legacySceneIconCleared.Add(instanceId))
-            {
-                return;
-            }
-
-            EditorGUIUtility.SetIconForObject(
-                gameObject,
-                null);
         }
 
         private static Texture2D ResolveDefaultIcon(

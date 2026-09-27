@@ -382,21 +382,6 @@ namespace Ee4v.WindowGroup
                     !group.WindowTypeIds.Contains(typeId) ||
                     !followerWindowTypeIds.Add(typeId));
             }
-
-            var regularWindowTypeIds = new HashSet<string>(
-                StringComparer.Ordinal);
-            foreach (var group in _document.Groups)
-            {
-                foreach (var windowTypeId in group.WindowTypeIds)
-                {
-                    if (!group.FollowerWindowTypeIds.Contains(
-                            windowTypeId) &&
-                        !regularWindowTypeIds.Add(windowTypeId))
-                    {
-                        group.FollowerWindowTypeIds.Add(windowTypeId);
-                    }
-                }
-            }
         }
 
         private string CreateUniqueName(

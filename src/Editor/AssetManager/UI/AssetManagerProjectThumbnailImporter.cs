@@ -14,8 +14,6 @@ namespace Ee4v.AssetManager.UI
     {
         private const string GeneratedAssetRoot =
             "Assets/ee4v/Generated/AssetManager/Thumbnails";
-        private const string LegacyGeneratedAssetRoot =
-            "Assets/ee4v/AssetManager/Thumbnails";
 
         private readonly IAssetManager _manager;
         private readonly HashSet<string> _pendingImportedItemIds =
@@ -233,25 +231,9 @@ namespace Ee4v.AssetManager.UI
             byte[] data)
         {
             EnsureGeneratedAssetRoot();
-            var assetPath = GetThumbnailAssetPath(
-                GeneratedAssetRoot,
-                itemId);
+            var assetPath = GetThumbnailAssetPath(itemId);
             var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
                 assetPath);
-            if (texture == null)
-            {
-                var legacyPath = GetThumbnailAssetPath(
-                    LegacyGeneratedAssetRoot,
-                    itemId);
-                if (AssetDatabase.LoadAssetAtPath<Texture2D>(legacyPath) !=
-                    null &&
-                    string.IsNullOrEmpty(
-                        AssetDatabase.MoveAsset(legacyPath, assetPath)))
-                {
-                    texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-                        assetPath);
-                }
-            }
 
             if (texture == null)
             {
@@ -293,27 +275,18 @@ namespace Ee4v.AssetManager.UI
             }
 
             var path = AssetDatabase.GUIDToAssetPath(style.IconGuid);
-            return IsUnder(path, GeneratedAssetRoot) ||
-                   IsUnder(path, LegacyGeneratedAssetRoot);
+            return IsUnder(path, GeneratedAssetRoot);
         }
 
         private static bool HasGeneratedThumbnailAsset(string itemId)
         {
             return AssetDatabase.LoadAssetAtPath<Texture2D>(
-                       GetThumbnailAssetPath(
-                           GeneratedAssetRoot,
-                           itemId)) != null ||
-                   AssetDatabase.LoadAssetAtPath<Texture2D>(
-                       GetThumbnailAssetPath(
-                           LegacyGeneratedAssetRoot,
-                           itemId)) != null;
+                GetThumbnailAssetPath(itemId)) != null;
         }
 
-        private static string GetThumbnailAssetPath(
-            string root,
-            string itemId)
+        private static string GetThumbnailAssetPath(string itemId)
         {
-            return root + "/" + Hash128.Compute(itemId) + ".asset";
+            return GeneratedAssetRoot + "/" + Hash128.Compute(itemId) + ".asset";
         }
 
         private static bool IsUnder(string path, string root)
