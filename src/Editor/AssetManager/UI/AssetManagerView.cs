@@ -1438,6 +1438,14 @@ namespace Ee4v.AssetManager.UI
                 .OrderByDescending(revision => revision.Number).FirstOrDefault();
             var thumbnail = CreateVariantRevisionPreview(variant.VariantId, latest?.Id);
             thumbnail.AddToClassList("ee4v-asset-manager__variant-information-thumbnail");
+            thumbnail.RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                var size = evt.newRect.width;
+                if (float.IsNaN(size) || size <= 0f) { return; }
+                thumbnail.style.height = size;
+                thumbnail.style.minHeight = size;
+                thumbnail.style.maxHeight = size;
+            });
             detail.Add(thumbnail);
             var name = AssetManagerControls.CreateTextField(I18N.Get("field.name"),
                 "ee4v-asset-manager__item-metadata-field", "ee4v-asset-manager__variant-name-field");

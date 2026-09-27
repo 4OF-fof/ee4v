@@ -1206,12 +1206,16 @@
     color: var(--ee4v-color-text-primary);
 }
 
-.ee4v-asset-manager__thumbnail-stack {
-    position: relative;
+.ee4v-asset-manager__thumbnail-stack,
+.ee4v-asset-manager__variant-information-thumbnail {
     width: 80%;
     min-width: 48px;
     max-width: 288px;
     align-self: center;
+}
+
+.ee4v-asset-manager__thumbnail-stack {
+    position: relative;
     overflow: visible;
     background-color: var(--ee4v-color-transparent);
 }
