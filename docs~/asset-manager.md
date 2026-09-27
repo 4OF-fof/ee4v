@@ -34,6 +34,12 @@ AssetManagerはItem、File、Target、Dependency、Tag、Collection、取り込�
 
 Shader別の視覚的なpreset、表情presetと左右連動、Avatarへの一括適用と検証、workflow session永続化は未実装です。
 
+#### Materialの差し替えと読み取り専用編集
+
+「マテリアル」の一覧は各行のMaterial名をMaterial入力スロットに置き換え、Project内のMaterialを指定した時点で、選択中のPrefab範囲で元Materialを参照するすべてのRenderer slotを差し替えます。独立した差し替え欄、差し替えボタン、読み取り専用の警告は表示しません。行には使用箇所、読み取り専用Badge、表示切り替えを維持し、行の入力スロット以外をクリックして編集対象を選択できます。Variant名による全体表示は全Prefabが対象です。ベースPrefab選択時は別タブの直下nested Prefabを除外し、個別Prefab選択時はそのPrefab内だけを対象にします。部位の絞り込みは一覧表示にだけ適用し、差し替え範囲には適用しません。空値、同じMaterial、一時Materialの指定は現在のMaterial表示へ戻します。元Prefab・nested PrefabのAssetやMaterialの内容は変更せず、Rendererの参照overrideを派生Prefabへ保存します。
+
+派生アセットのFolder外にあるMaterial、選択範囲外のPrefabと共有するMaterial、Asset Protectionによる保護対象、`HideFlags.NotEditable`またはUnityの編集可否判定で編集できないMaterialは読み取り専用とします。「Material Variantを作成して編集」は元Materialを`parent`に持つVariantを派生アセット内の`Assets/Materials`へ一意なpathで作成し、同じ差し替え処理で割り当ててMaterial Inspectorを開きます。生成Variantの`hideFlags`は`None`とし、元Materialの編集不可状態を引き継ぎません。差し替え保存に失敗した場合、未割り当ての生成Variantを削除します。差し替え成功後はMaterial一覧と選択、保存状態を更新し、Previewの視点と一時的な非表示状態を保って再読み込みします。任意の差し替え先が読み取り専用の場合もVariant作成から編集できます。これらの操作は統合Windowと単独Materials Windowで共通です。
+
 #### タブ切り替えの性能
 
 `AssetModificationWorkflowView`はパーツ、体型、Materialの編集UIを初回表示時に生成し、同じ部位・選択Material・メッセージで再表示する場合は表示状態だけを切り替えます。非表示の編集UIも同じScrollViewに保持し、タブの往復では要素の付け外しとMaterialEditorの破棄・再生成を行いません。部位または選択Materialが変わった場合は該当する編集UIを置き換えます。保持するUIは各編集種別の直近1件に限ります。
@@ -44,7 +50,7 @@ Materialの使用箇所、選択Prefabの外側でも共有されるMaterial、B
 
 Unity 2022.3のRenderer 16個・BlendShape 666個のアバターで、初回を除く4回のタブ再表示における`ShowCategory`の同期処理は、体型が平均約23.2msから約0.5ms、Materialが約3.1msから約0.4msへ短縮しました。この値は後続のlayout・Shader GUI・Preview描画時間を含みません。
 
-「バージョンを保存」ボタンの750ms間隔の表示更新では差分確認の結果を再利用します。初回表示、Project／対象Objectの変更、Material・体型・パーツの編集、Undo／Redo、AssetManagerの変更通知、Variantの保存・復元・metadata更新時だけ再確認を予約し、最後の変更から0.5秒待って連続入力をまとめます。保留中の体型・パーツ変更は差分確認なしで保存可能として表示します。保存実行時は従来どおり最新の差分を確認します。同じアバターで、未変更時のボタン更新は毎回約260msかかっていた差分確認を省き、約0.01msになりました。変更後の再確認自体の費用は残ります。
+「保存」ボタンは有効時に「このアバターを改変」と同じ青の背景と白い文字、無効時に通常のグレー表示にします。750ms間隔の表示更新では差分確認の結果を再利用します。初回表示、Project／対象Objectの変更、Material・体型・パーツの編集、Undo／Redo、AssetManagerの変更通知、Variantの保存・復元・metadata更新時だけ再確認を予約し、最後の変更から0.5秒待って連続入力をまとめます。保留中の体型・パーツ変更は差分確認なしで保存可能として表示します。保存実行時は従来どおり最新の差分を確認します。同じアバターで、未変更時のボタン更新は毎回約260msかかっていた差分確認を省き、約0.01msになりました。変更後の再確認自体の費用は残ります。
 
 ### Variantの保存と履歴
 

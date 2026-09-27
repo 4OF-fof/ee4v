@@ -10,4 +10,6 @@ Editor起動時に`GetImportedAssetAssociations`からGUIDを読み、取り込�
 
 編集するときはUnity標準機能を使用し、PrefabやMaterialはVariantを作成します。VariantがないAssetは複製してから編集します。Asset Protection自身は編集用Assetを作成しません。
 
+AssetManagerの改変画面では、「マテリアル」の「Material Variantを作成して編集」から、保護されたMaterialのVariantを派生アセット内へ作成してRendererの参照を差し替えられます。生成と差し替えは改変画面が担当し、Asset Protectionの元Materialの保護は継続します。
+
 保護対象GUIDが0件の間はEditorの毎フレーム監視を登録しません。取り込みGUIDの追加で対象が生じると監視を開始し、対象がなくなった時に解除します。

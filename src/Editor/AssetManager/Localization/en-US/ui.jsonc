@@ -134,8 +134,8 @@
       "showAll": "Show all Materials",
       "readOnly": "Read only",
       "editorUnavailable": "The Material Inspector could not be created.",
-      "protected": "This Material comes from a source asset or is shared with another Prefab. Create an editable Material Variant to change only the selected scope.",
-      "makeEditable": "Create editable Material Variant",
+      "makeEditable": "Create Material Variant and edit",
+      "materialReplacementFailed": "The Material could not be replaced. Check the Console.",
       "materialVariantFailed": "The editable Material Variant could not be created. Check the Console.",
       "emptyTitle": "No Materials found",
       "emptyPartDescription": "No Materials were classified under this part. Check Whole body.",
@@ -249,7 +249,7 @@
     "analysisUnavailable": "The file tree could not be loaded. Check the Console."
   },
   "variant": {
-    "save": "Save version",
+    "save": "Save",
     "saveMessage": "Message (optional)",
     "confirmSave": "Save",
     "noChanges": "There are no changes from the latest saved version.",

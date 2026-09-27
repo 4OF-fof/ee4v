@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.AssetProtection;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
@@ -1607,6 +1608,7 @@ namespace Ee4v.AssetManager.UI
             UiButton save = null;
             save = AssetManagerControls.CreateButton(I18N.Get("variant.save"),
                 () => AssetVariantSaveOverlay.Show(this, SaveVariantRevision));
+            save.AddToClassList("ee4v-modification-workflow__variant-save");
             save.SetEnabled(false);
             save.schedule.Execute(() => RefreshVariantSaveButton(save)).Every(750);
             cards.Add(save);
@@ -1659,7 +1661,7 @@ namespace Ee4v.AssetManager.UI
         {
             if (_disposed || _savingVariant || _workingObject == null)
             {
-                save.SetEnabled(false);
+                SetVariantSaveButtonEnabled(save, false);
                 return;
             }
             var pending = _pendingPartVisibility.Count > 0 || _bodyScaleDirty ||
@@ -1698,7 +1700,15 @@ namespace Ee4v.AssetManager.UI
             var hasChanges = pending || _variantHasChanges;
             save.tooltip = pending ? string.Empty : _variantSaveStatusError ??
                 (hasChanges ? string.Empty : I18N.Get("variant.noChanges"));
-            save.SetEnabled(hasChanges);
+            SetVariantSaveButtonEnabled(save, hasChanges);
+        }
+
+        private static void SetVariantSaveButtonEnabled(UiButton save, bool enabled)
+        {
+            save.SetEnabled(enabled);
+            save.EnableInClassList(
+                "ee4v-asset-manager__primary-action", enabled);
+            save.SetLabelColor(enabled ? UiColorTokens.TextOnState : UiColorTokens.TextPrimary);
         }
 
         private void InvalidateVariantSaveStatus()
@@ -2987,6 +2997,31 @@ namespace Ee4v.AssetManager.UI
                 choice.AddToClassList(
                     "ee4v-modification-workflow__material-item");
                 choice.tooltip = FormatMaterialUsageTooltip(entry);
+                var materialField = UiTextFactory.CreateObjectField(
+                    string.Empty,
+                    "ee4v-modification-workflow__material-slot");
+                materialField.objectType = typeof(Material);
+                materialField.allowSceneObjects = false;
+                materialField.SetValueWithoutNotify(material);
+                materialField.SetEnabled(IsEditableWorkflowPrefab());
+                materialField.RegisterCallback<PointerDownEvent>(
+                    evt => evt.StopPropagation());
+                materialField.RegisterCallback<ClickEvent>(
+                    evt => evt.StopPropagation());
+                materialField.RegisterValueChangedCallback(evt =>
+                {
+                    var replacement = evt.newValue as Material;
+                    if (replacement == null || replacement == material ||
+                        !EditorUtility.IsPersistent(replacement))
+                    {
+                        materialField.SetValueWithoutNotify(material);
+                        return;
+                    }
+                    ReplaceWorkflowMaterial(material, replacement);
+                });
+                var titleContainer = choice.Row.TitleText.parent;
+                titleContainer.Insert(0, materialField);
+                choice.Row.TitleText.RemoveFromHierarchy();
                 if (!IsEditableWorkflowMaterial(material))
                 {
                     choice.Trailing.Add(new Badge(
@@ -3019,9 +3054,6 @@ namespace Ee4v.AssetManager.UI
                         "ee4v-modification-workflow__make-material-editable");
                     panel.Add(makeEditable);
                 }
-                panel.Add(UiTextFactory.CreateHelpBox(
-                    I18N.Get("workflow.appearance.protected"),
-                    HelpBoxMessageType.Warning));
                 return panel;
             }
 
@@ -6228,12 +6260,123 @@ namespace Ee4v.AssetManager.UI
                 (usage?.SlotIndex ?? 0) + 1);
         }
 
+        private void ReplaceWorkflowMaterial(Material sourceMaterial, Material replacement)
+        {
+            if (sourceMaterial == null || replacement == null ||
+                sourceMaterial == replacement)
+            {
+                return;
+            }
+            try
+            {
+                ReplaceMaterialAssignments(sourceMaterial, replacement);
+                RefreshAfterMaterialReplacement(sourceMaterial, replacement);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                _feedback = I18N.Get("workflow.appearance.materialReplacementFailed");
+                _feedbackType = HelpBoxMessageType.Error;
+                ShowCategory(WorkflowCategory.Material, false);
+            }
+        }
+
+        private void ReplaceMaterialAssignments(Material sourceMaterial, Material replacement)
+        {
+            if (!IsEditableWorkflowPrefab() || sourceMaterial == null ||
+                replacement == null || !EditorUtility.IsPersistent(replacement))
+            {
+                throw new InvalidOperationException(
+                    "A derived Prefab and a Material asset are required.");
+            }
+            if (!FlushPendingPartVisibility())
+            {
+                throw new InvalidOperationException(
+                    "Pending part visibility could not be saved.");
+            }
+            var path = AssetDatabase.GetAssetPath(_workingObject);
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                var replaced = false;
+                foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (renderer == null || !IsInSelectedPrefabScope(
+                            renderer.transform, root.transform))
+                    {
+                        continue;
+                    }
+                    var materials = renderer.sharedMaterials;
+                    var changed = false;
+                    for (var index = 0; index < materials.Length; index++)
+                    {
+                        if (materials[index] != sourceMaterial)
+                        {
+                            continue;
+                        }
+                        materials[index] = replacement;
+                        changed = true;
+                    }
+                    if (!changed)
+                    {
+                        continue;
+                    }
+                    renderer.sharedMaterials = materials;
+                    if (PrefabUtility.IsPartOfPrefabInstance(renderer))
+                    {
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(renderer);
+                    }
+                    EditorUtility.SetDirty(renderer);
+                    replaced = true;
+                }
+                if (!replaced)
+                {
+                    throw new InvalidOperationException(
+                        "The selected Material is no longer assigned.");
+                }
+                var saved = PrefabUtility.SaveAsPrefabAsset(root, path, out var success);
+                if (!success || saved == null)
+                {
+                    throw new InvalidOperationException(
+                        "The derived Prefab could not be saved.");
+                }
+                _workingObject = saved;
+                if (_workingAsset != null)
+                {
+                    _workingAsset.Prefab = saved;
+                }
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        private void RefreshAfterMaterialReplacement(Material sourceMaterial, Material replacement)
+        {
+            if (_hiddenMaterials.Contains(sourceMaterial))
+            {
+                _hiddenMaterials.Add(replacement);
+            }
+            _selectedMaterial = replacement;
+            _feedback = string.Empty;
+            _avatarDescriptor = null;
+            ClearAppearanceCaches();
+            InvalidateVariantSaveStatus();
+            _scenePreview?.SetHiddenMaterials(_hiddenMaterials);
+            _scenePreview?.ReloadPrefabPreservingView(_workingObject);
+            ShowCategory(WorkflowCategory.Material, false);
+        }
+
         private void CreateEditableMaterialVariant(Material sourceMaterial)
         {
             if (!IsEditableWorkflowPrefab() || sourceMaterial == null)
             {
                 return;
             }
+            Material variant = null;
+            string materialPath = null;
+            var assigned = false;
             try
             {
                 var prefabPath = AssetDatabase.GetAssetPath(_workingObject);
@@ -6268,63 +6411,33 @@ namespace Ee4v.AssetManager.UI
                 {
                     safeName = "Material";
                 }
-                var materialPath = AssetDatabase.GenerateUniqueAssetPath(
+                materialPath = AssetDatabase.GenerateUniqueAssetPath(
                     materialsFolder + "/" + safeName + ".mat");
-                var variant = new Material(sourceMaterial)
+                variant = new Material(sourceMaterial)
                 {
                     name = sourceMaterial.name,
-                    parent = sourceMaterial
+                    parent = sourceMaterial,
+                    hideFlags = HideFlags.None
                 };
                 AssetDatabase.CreateAsset(variant, materialPath);
                 AssetDatabase.SaveAssets();
-                EditAssetChildren(root =>
-                {
-                    var replaced = false;
-                    foreach (var renderer in root
-                                 .GetComponentsInChildren<Renderer>(true))
-                    {
-                        if (renderer == null ||
-                            !IsInSelectedPrefabScope(
-                                renderer.transform,
-                                root.transform))
-                        {
-                            continue;
-                        }
-                        var materials = renderer.sharedMaterials;
-                        var changed = false;
-                        for (var index = 0; index < materials.Length; index++)
-                        {
-                            if (materials[index] != sourceMaterial)
-                            {
-                                continue;
-                            }
-                            materials[index] = variant;
-                            changed = true;
-                        }
-                        if (!changed)
-                        {
-                            continue;
-                        }
-                        renderer.sharedMaterials = materials;
-                        if (PrefabUtility.IsPartOfPrefabInstance(renderer))
-                        {
-                            PrefabUtility.RecordPrefabInstancePropertyModifications(
-                                renderer);
-                        }
-                        EditorUtility.SetDirty(renderer);
-                        replaced = true;
-                    }
-                    if (!replaced)
-                    {
-                        throw new InvalidOperationException(
-                            "The selected Material is no longer assigned.");
-                    }
-                });
-                _selectedMaterial = variant;
-                ShowCategory(WorkflowCategory.Material, false);
+                ReplaceMaterialAssignments(sourceMaterial, variant);
+                assigned = true;
+                RefreshAfterMaterialReplacement(sourceMaterial, variant);
             }
             catch (Exception exception)
             {
+                if (!assigned && variant != null)
+                {
+                    if (AssetDatabase.Contains(variant))
+                    {
+                        AssetDatabase.DeleteAsset(materialPath);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.DestroyImmediate(variant);
+                    }
+                }
                 Debug.LogException(exception);
                 _feedback = I18N.Get(
                     "workflow.appearance.materialVariantFailed");
@@ -6347,6 +6460,9 @@ namespace Ee4v.AssetManager.UI
                    !string.IsNullOrEmpty(variantFolder) &&
                    path.StartsWith(variantFolder + "/",
                        StringComparison.OrdinalIgnoreCase) &&
+                   (material.hideFlags & HideFlags.NotEditable) == 0 &&
+                   !AssetProtectionModule.IsProtected(path) &&
+                   AssetDatabase.IsOpenForEdit(material, StatusQueryOptions.UseCachedIfPossible) &&
                    !IsMaterialSharedOutsideSelectedPrefab(material);
         }
 
