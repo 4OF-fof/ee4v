@@ -10,6 +10,8 @@ namespace Ee4v.AssetManager.Contracts
         event Action Changed;
         IReadOnlyList<AssetVariant> GetVariants();
         IReadOnlyList<AssetVariantRevision> GetRevisions(string variantId);
+        /// <summary>The saved version currently used as the project's editing base, or null if unknown.</summary>
+        string GetCurrentRevisionId(string variantId);
         AssetVariantRevisionDetails GetRevisionDetails(string variantId, string revisionId);
         bool HasChanges(string rootAssetPath);
         Task<AssetThumbnail> GetRevisionThumbnail(string variantId, string revisionId,

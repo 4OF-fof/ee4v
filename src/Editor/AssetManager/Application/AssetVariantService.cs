@@ -48,6 +48,12 @@ namespace Ee4v.AssetManager.Application
             NotifyChanged();
         }
 
+        public string GetCurrentRevisionId(string variantId)
+        {
+            AssetManagerRequestValidator.Require(variantId, "variant id");
+            return _workspace.GetBaseRevision(variantId);
+        }
+
         public bool HasChanges(string rootAssetPath)
         {
             AssetManagerRequestValidator.Require(rootAssetPath, "root asset path");

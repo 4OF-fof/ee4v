@@ -147,7 +147,7 @@ namespace Ee4v.AssetManager.Infrastructure
                     },
                     Revision = new AssetVariantRevision
                     {
-                        VariantId = id, ParentRevisionId = ReadBaseRevision(id),
+                        VariantId = id, ParentRevisionId = GetBaseRevision(id),
                         Memo = request.Memo ?? string.Empty
                     },
                     Assets = assets, Dependencies = dependencyRecords,
@@ -350,7 +350,7 @@ namespace Ee4v.AssetManager.Infrastructure
             File.WriteAllText(path, revisionId, new UTF8Encoding(false));
         }
 
-        private string ReadBaseRevision(string variantId)
+        public string GetBaseRevision(string variantId)
         {
             var path = BaseRevisionPath(variantId);
             return File.Exists(path) ? File.ReadAllText(path).Trim() : null;

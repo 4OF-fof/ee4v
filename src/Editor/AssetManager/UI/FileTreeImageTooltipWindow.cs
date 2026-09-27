@@ -17,12 +17,14 @@ namespace Ee4v.AssetManager.UI
         private Texture2D _texture;
         private string _fileName;
         private Vector2 _size;
+        private Vector2 _imageSize;
 
         internal static FileTreeImageTooltipWindow Show(
             VisualElement row,
             Vector2 panelPosition,
             Texture2D texture,
-            string fileName)
+            string fileName,
+            float maximumImageSize = float.PositiveInfinity)
         {
             if (row?.panel == null || texture == null)
             {
@@ -32,9 +34,12 @@ namespace Ee4v.AssetManager.UI
             var window = CreateInstance<FileTreeImageTooltipWindow>();
             window._texture = texture;
             window._fileName = fileName ?? string.Empty;
+            var scale = Mathf.Min(1f, maximumImageSize / Mathf.Max(texture.width, texture.height));
+            window._imageSize = new Vector2(texture.width, texture.height) * scale;
             window._size = new Vector2(
-                Mathf.Max(140f, texture.width + Padding * 2f),
-                texture.height + Padding * 2f + NameGap + NameHeight);
+                Mathf.Max(140f, window._imageSize.x + Padding * 2f),
+                window._imageSize.y + Padding * 2f +
+                (string.IsNullOrEmpty(window._fileName) ? 0f : NameGap + NameHeight));
             window.minSize = window._size;
             window.maxSize = window._size;
             window.SetPointerPosition(row, panelPosition);
@@ -105,10 +110,11 @@ namespace Ee4v.AssetManager.UI
             };
             image.AddToClassList(
                 "ee4v-asset-manager-file-tree__image-tooltip-image");
-            image.style.width = _texture.width;
-            image.style.height = _texture.height;
+            image.style.width = _imageSize.x;
+            image.style.height = _imageSize.y;
             root.Add(image);
 
+            if (string.IsNullOrEmpty(_fileName)) { return; }
             var name = UiTextFactory.Create(
                 _fileName,
                 UiClassNames.SecondaryText,
