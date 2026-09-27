@@ -8,6 +8,9 @@ namespace Ee4v.HiddenObjects
     {
         private const string RootClassName =
             "ee4v-hidden-objects-footer";
+        private const string CompactClassName =
+            "ee4v-hidden-objects-footer--compact";
+        private const float CompactWidth = 440f;
         private const string SummaryClassName =
             "ee4v-hidden-objects-footer__summary";
         private const string ActionsClassName =
@@ -32,11 +35,14 @@ namespace Ee4v.HiddenObjects
                 string.Empty,
                 SummaryClassName,
                 UiClassNames.SecondaryText);
+            _summary.SetWhiteSpace(WhiteSpace.NoWrap);
 
             Actions.AddToClassList(ActionsClassName);
             _selectAllButton = new UiButton(
                 text.SelectAllText,
                 () => SelectAllRequested?.Invoke());
+            _selectAllButton.AddToClassList(
+                "ee4v-hidden-objects-footer__select-all");
             _clearSelectionButton = new UiButton(
                 text.ClearSelectionText,
                 () => ClearSelectionRequested?.Invoke());
@@ -45,10 +51,17 @@ namespace Ee4v.HiddenObjects
                 () => RevealRequested?.Invoke());
             _revealButton.AddToClassList(RevealClassName);
 
-            Actions.Add(_selectAllButton);
-            Actions.Add(_clearSelectionButton);
+            var selectionActions = new VisualElement();
+            selectionActions.AddToClassList(
+                "ee4v-hidden-objects-footer__selection-actions");
+            selectionActions.Add(_selectAllButton);
+            selectionActions.Add(_clearSelectionButton);
+            Actions.Add(selectionActions);
             Actions.Add(_revealButton);
             Leading.Add(_summary);
+            RegisterCallback<GeometryChangedEvent>(evt =>
+                EnableInClassList(CompactClassName,
+                    evt.newRect.width < CompactWidth));
         }
 
         public event Action SelectAllRequested;

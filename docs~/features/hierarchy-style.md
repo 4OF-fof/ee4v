@@ -55,7 +55,7 @@ Hidden Objects も HierarchyStyle に含まれます。非表示にした GameOb
 
 `Reveal` の完了後は復元記録を削除し、保存先には現在非表示の対象だけを保持します。Undo と Redo に必要な復元記録は、そのエディターセッション中だけメモリに保持します。
 
-Hidden Objects ウィンドウでは `HideInHierarchy` が設定された GameObject をシーン単位で表示します。設定で除外したシーンと GameObject は一覧に含めず、除外対象の GameObject の子孫も除きます。
+Hidden Objects ウィンドウでは `HideInHierarchy` が設定された GameObject をシーン単位で表示します。設定で除外したシーンと GameObject は一覧に含めず、除外対象の GameObject の子孫も除きます。Windowの最小幅は220pxとし、440px未満では検索欄を上段、Scene選択と更新を下段へ配置します。Footerは件数、選択操作、再表示を縦に並べ、各操作を画面内に収めます。Compact表示ではFooterの左右余白を同じ値にし、選択ボタンは同じ幅で配置します。440px以上では通常の横並びへ戻します。空状態のタイトルと説明はUiTextFactoryのAPIで中央揃えと折り返しを設定し、外枠内の余白を維持します。
 
 GameObjectとSceneを表す既定アイコンにはUnity組み込みアイコンを使用します。検索、消去、空状態などの汎用操作・状態にはFluent UI System Iconsを使用します。Hierarchyのシーン見出しからHidden Objectsを開くアイコンも、Unityの非表示状態と揃えるためUnity組み込みアイコンを使用します。
 

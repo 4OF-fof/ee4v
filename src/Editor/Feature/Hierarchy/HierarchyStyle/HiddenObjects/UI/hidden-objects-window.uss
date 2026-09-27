@@ -46,6 +46,31 @@
     margin-bottom: var(--ee4v-space-none);
 }
 
+.ee4v-hidden-objects-toolbar--compact {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.ee4v-hidden-objects-toolbar--compact > .ee4v-ui-action-bar__leading {
+    flex-grow: 0;
+    margin-bottom: var(--ee4v-space-xs);
+}
+
+.ee4v-hidden-objects-toolbar--compact .ee4v-hidden-objects-toolbar__search {
+    min-width: 0;
+    margin-right: var(--ee4v-space-none);
+}
+
+.ee4v-hidden-objects-toolbar--compact > .ee4v-ui-action-bar__actions {
+    min-width: 0;
+}
+
+.ee4v-hidden-objects-toolbar--compact .ee4v-hidden-objects-toolbar__scene {
+    flex-grow: 1;
+    width: auto;
+    min-width: 0;
+}
+
 .ee4v-hidden-object-tree {
     flex-grow: 1;
     min-width: 0;
@@ -139,10 +164,9 @@
     flex-grow: 1;
     align-items: center;
     justify-content: center;
-    padding-left: var(--ee4v-space-3xl);
-    padding-right: var(--ee4v-space-3xl);
-    padding-top: var(--ee4v-space-3xl);
-    padding-bottom: var(--ee4v-space-3xl);
+    padding: var(--ee4v-space-xl);
+    border-width: 0;
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-hidden-object-tree__empty-icon {
@@ -151,11 +175,15 @@
 }
 
 .ee4v-hidden-object-tree__empty-title {
+    align-self: stretch;
+    min-width: 0;
     margin-bottom: var(--ee4v-space-xs);
     -unity-text-align: middle-center;
 }
 
 .ee4v-hidden-object-tree__empty-message {
+    width: 100%;
+    min-width: 0;
     max-width: 360px;
     white-space: normal;
     -unity-text-align: upper-center;
@@ -189,8 +217,17 @@
     flex-shrink: 0;
 }
 
-.ee4v-hidden-objects-footer__actions Button {
+.ee4v-hidden-objects-footer__selection-actions {
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+}
+
+.ee4v-hidden-objects-footer__actions .ee4v-ui-button {
+    height: var(--ee4v-control-height-default);
     min-height: var(--ee4v-control-height-small);
+    padding-top: var(--ee4v-space-none);
+    padding-bottom: var(--ee4v-space-none);
     margin-left: var(--ee4v-space-xs);
     margin-right: var(--ee4v-space-none);
     margin-top: var(--ee4v-space-none);
@@ -199,4 +236,36 @@
 
 .ee4v-hidden-objects-footer__reveal {
     min-width: 112px;
+}
+
+.ee4v-hidden-objects-footer--compact {
+    flex-direction: column;
+    align-items: stretch;
+    padding-left: var(--ee4v-space-xs);
+}
+
+.ee4v-hidden-objects-footer--compact > .ee4v-ui-action-bar__leading {
+    flex-grow: 0;
+    margin-bottom: var(--ee4v-space-xs);
+}
+
+.ee4v-hidden-objects-footer--compact > .ee4v-hidden-objects-footer__actions {
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+}
+
+.ee4v-hidden-objects-footer--compact .ee4v-hidden-objects-footer__selection-actions > .ee4v-ui-button {
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.ee4v-hidden-objects-footer--compact .ee4v-hidden-objects-footer__selection-actions > .ee4v-hidden-objects-footer__select-all {
+    margin-left: var(--ee4v-space-none);
+}
+
+.ee4v-hidden-objects-footer--compact .ee4v-hidden-objects-footer__actions > .ee4v-hidden-objects-footer__reveal {
+    min-width: 0;
+    margin-left: var(--ee4v-space-none);
+    margin-top: var(--ee4v-space-xs);
 }

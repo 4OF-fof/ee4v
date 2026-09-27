@@ -10,6 +10,9 @@ namespace Ee4v.HiddenObjects
     {
         private const string RootClassName =
             "ee4v-hidden-objects-toolbar";
+        private const string CompactClassName =
+            "ee4v-hidden-objects-toolbar--compact";
+        private const float CompactWidth = 440f;
         private const string SearchClassName =
             "ee4v-hidden-objects-toolbar__search";
         private const string SceneClassName =
@@ -62,8 +65,11 @@ namespace Ee4v.HiddenObjects
             refreshButton.AddToClassList(RefreshClassName);
 
             Leading.Add(_searchField);
-            Leading.Add(_scenePopup);
+            Actions.Add(_scenePopup);
             Actions.Add(refreshButton);
+            RegisterCallback<GeometryChangedEvent>(evt =>
+                EnableInClassList(CompactClassName,
+                    evt.newRect.width < CompactWidth));
         }
 
         public event Action<string> QueryChanged;

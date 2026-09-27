@@ -26,7 +26,7 @@
 
       <section id="hidden-objects">
         <p class="section-label">Hidden Objects</p><h2>作業中に不要なObjectをHierarchyから隠す</h2>
-        <p>Hidden ObjectsはGameObjectをHierarchyから非表示にし、Scene単位のtreeから確認・再表示する機能です。HierarchyのScene見出しにある非表示iconから対象Sceneの一覧を開けます。</p>
+        <p>Hidden ObjectsはGameObjectをHierarchyから非表示にし、Scene単位のtreeから確認・再表示する機能です。HierarchyのScene見出しにある非表示iconから対象Sceneの一覧を開けます。幅の狭いドックでは検索欄とScene選択を上下に分け、下部の選択操作と再表示ボタンも画面内に収まる配置へ切り替えます。ボタン部分の左右余白を揃え、選択ボタンを均等幅にします。空状態の説明も幅に合わせて折り返します。</p>
         <p>非表示にすると、元のactive stateとtagを記録したうえでObjectを非active化し、<code>EditorOnly</code>tagと<code>HideInHierarchy</code>を設定します。非表示操作と再表示操作はUnityのUndoに対応します。</p>
         <p>一覧ではSceneとGameObjectをtree表示し、検索や対象の再表示を行えます。設定で除外したSceneとGameObject、その子孫は一覧へ含めません。</p>
       </section>

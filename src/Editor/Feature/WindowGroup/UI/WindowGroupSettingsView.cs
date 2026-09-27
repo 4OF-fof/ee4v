@@ -29,7 +29,8 @@ namespace Ee4v.WindowGroup
                 UnityWindowCatalog.GetOpenWindowTypes;
             _configuration.Changed += OnConfigurationChanged;
             AddToClassList("ee4v-window-group-settings");
-            RegisterCallback<DetachFromPanelEvent>(_ => Dispose());
+            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
             BuildContent();
         }
 
@@ -43,6 +44,8 @@ namespace Ee4v.WindowGroup
             _disposed = true;
             _configuration.Changed -= OnConfigurationChanged;
             _rebuildScheduled = false;
+            UnregisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
+            UnregisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
         }
 
         internal void Refresh()
@@ -52,6 +55,7 @@ namespace Ee4v.WindowGroup
 
         private void BuildContent()
         {
+            _rebuildScheduled = false;
             EnsureSelectedGroup();
             Clear();
             Add(CreateBody());
@@ -421,6 +425,7 @@ namespace Ee4v.WindowGroup
             }
 
             _configuration.DeleteGroup(groupId);
+            BuildContent();
         }
 
         private void RenameGroup(string groupId, string name)
@@ -465,8 +470,31 @@ namespace Ee4v.WindowGroup
             schedule.Execute(RebuildIfAttached);
         }
 
+        private void OnAttachedToPanel(AttachToPanelEvent evt)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _configuration.Changed -= OnConfigurationChanged;
+            _configuration.Changed += OnConfigurationChanged;
+            BuildContent();
+        }
+
+        private void OnDetachedFromPanel(DetachFromPanelEvent evt)
+        {
+            _configuration.Changed -= OnConfigurationChanged;
+            _rebuildScheduled = false;
+        }
+
         private void RebuildIfAttached()
         {
+            if (!_rebuildScheduled)
+            {
+                return;
+            }
+
             _rebuildScheduled = false;
             if (_disposed || panel == null)
             {

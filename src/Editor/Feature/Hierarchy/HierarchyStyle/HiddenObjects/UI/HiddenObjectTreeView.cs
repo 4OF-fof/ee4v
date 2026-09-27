@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ee4v.UI;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.HiddenObjects
@@ -85,6 +86,15 @@ namespace Ee4v.HiddenObjects
                     "eye_off.png",
                     UiSizeTokens.Size24)));
             _empty.AddToClassList(EmptyClassName);
+            _empty.IconElement.AddToClassList(
+                "ee4v-hidden-object-tree__empty-icon");
+            _empty.TitleText.AddToClassList(
+                "ee4v-hidden-object-tree__empty-title");
+            _empty.TitleText.SetWhiteSpace(WhiteSpace.Normal);
+            _empty.TitleText.SetTextAlign(TextAnchor.MiddleCenter);
+            _empty.DescriptionText.AddToClassList(
+                "ee4v-hidden-object-tree__empty-message");
+            _empty.DescriptionText.SetTextAlign(TextAnchor.MiddleCenter);
 
             Add(_treeView);
             Add(_empty);

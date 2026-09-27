@@ -13,7 +13,7 @@ namespace Ee4v.HiddenObjects
         private const string RootClassName = "ee4v-ui";
         private const string WindowClassName =
             "ee4v-hidden-objects-window";
-        private const float MinimumWidth = 420f;
+        private const float MinimumWidth = 220f;
         private const float MinimumHeight = 280f;
 
         private HiddenObjectsController _controller;

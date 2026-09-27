@@ -9,7 +9,7 @@
 `ee4v/Window/Window Groups` から管理ウィンドウを開きます。
 
 - 左側の一覧下部にある `新規グループ` でグループを作成します。同名のグループがある場合は連番を付けます。
-- 左側の一覧で編集するグループを選びます。グループ名は入力欄からフォーカスが外れた時点で保存し、右クリックメニューからグループを削除できます。
+- 左側の一覧で編集するグループを選びます。グループ名は入力欄からフォーカスが外れた時点で保存し、右クリックメニューからグループを削除できます。削除後は一覧と詳細をその場で更新します。選択中のグループを削除した場合は残る先頭のグループへ移り、最後のグループを削除した場合は名前入力とWindow一覧を空状態へ置き換えます。
 - 右側には開いているウィンドウの種類が表示されます。先頭のトグルで選択中グループへの所属を追加・解除し、`表示` で対象ウィンドウを前面へ移します。同じウィンドウを複数のグループへ所属させられますが、通常メンバーにできるのは1グループだけです。
 - 各候補は一定の行高とし、Window名、ほかの通常所属先、`Follower`、`表示`を同じ中央線上の1行に配置します。所属先が長い場合は行高を変えず末尾を省略します。
 - ウィンドウは1つの一覧に表示します。選択中以外のグループに通常所属がある場合だけ所属先を行内に表示し、Followerとしての所属先は表示しません。通常所属がある行では、未選択でもFollowerを有効かつ操作不可で表示します。そのウィンドウを追加するとFollowerとして所属します。
@@ -22,7 +22,7 @@
 
 実画面は`ee4v/Debug/Catalog`の`Domain/WindowGroup/Window Groups` Storyで確認できます。Storyの操作は`EditorPrefs`を変更しません。
 
-UIは`WindowGroupSettingsView`へ分離し、`WindowGroupSettingsWindow`はWindowの生成、共通styleの適用、実設定との接続だけを行います。Group一件分にはCoreの`NavigationItem`、空表示には`EmptyState`、見出しには`SectionHeader`を使用します。Groupの選択状態とWindow候補Cardの境界線、面、角丸、hover、割り当て状態もCore UIへ揃えます。Storyは同じViewへメモリ上の設定とWindow候補を渡します。
+UIは`WindowGroupSettingsView`へ分離し、`WindowGroupSettingsWindow`はWindowの生成、共通styleの適用、実設定との接続だけを行います。Viewがドック移動などでPanelから切り離されたときは変更通知の購読だけを解除し、再接続時に購読と表示を復元します。終端のDisposeはWindowの終了時に行います。即時再構築で反映済みの変更は予約中の再構築で重複させません。Group一件分にはCoreの`NavigationItem`、空表示には`EmptyState`、見出しには`SectionHeader`を使用します。Groupの選択状態とWindow候補Cardの境界線、面、角丸、hover、割り当て状態もCore UIへ揃えます。Storyは同じViewへメモリ上の設定とWindow候補を渡します。
 
 ## API
 
