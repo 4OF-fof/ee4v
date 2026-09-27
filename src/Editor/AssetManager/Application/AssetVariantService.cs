@@ -103,7 +103,7 @@ namespace Ee4v.AssetManager.Application
             {
                 if (variant == null)
                 {
-                    if (!_workspace.UpdateMetadata(variantId, name, description))
+                    if (_workspace.UpdateMetadata(variantId, name, description) == null)
                     {
                         throw new InvalidOperationException("The Variant was not found.");
                     }
@@ -114,16 +114,33 @@ namespace Ee4v.AssetManager.Application
                     {
                         return;
                     }
-                    variant.Name = name;
-                    variant.Description = description;
-                    variant.UpdatedAt = DateTime.UtcNow;
-                    await Task.Run(() => _repository.UpdateMetadata(variant));
-                    try { _workspace.UpdateMetadata(variantId, name, description); }
-                    finally
+                    var undoLocalUpdate = _workspace.UpdateMetadata(variantId, name, description);
+                    try
                     {
-                        ReplaceIndex();
-                        NotifyChanged();
+                        var updated = new AssetVariant
+                        {
+                            Id = variant.Id, SourcePrefabGuid = variant.SourcePrefabGuid,
+                            Name = name, Description = description, ParentItemId = variant.ParentItemId,
+                            RootAssetPath = _workspace.GetRootAssetPath(variantId, name),
+                            HeadRevisionId = variant.HeadRevisionId, UpdatedAt = DateTime.UtcNow
+                        };
+                        await Task.Run(() => _repository.UpdateMetadata(updated));
                     }
+                    catch (Exception exception)
+                    {
+                        if (undoLocalUpdate != null)
+                        {
+                            try { undoLocalUpdate(); }
+                            catch (Exception rollbackException)
+                            {
+                                throw new AggregateException("The Variant metadata update could not be rolled back.",
+                                    exception, rollbackException);
+                            }
+                        }
+                        throw;
+                    }
+                    ReplaceIndex();
+                    NotifyChanged();
                     return;
                 }
                 NotifyChanged();
@@ -192,7 +209,9 @@ namespace Ee4v.AssetManager.Application
             try
             {
                 var snapshot = _repository.Read(variantId, revisionId);
-                _workspace.ValidateRestore(snapshot);
+                var current = GetVariants().FirstOrDefault(variant => variant.Id == variantId) ?? snapshot.Variant;
+                var rootAssetPath = _workspace.GetRootAssetPath(variantId, current.Name);
+                _workspace.ValidateRestore(snapshot, rootAssetPath);
                 var imports = snapshot.Dependencies.Select(dependency => new
                 {
                     Dependency = dependency,
@@ -242,16 +261,12 @@ namespace Ee4v.AssetManager.Application
                             import.Dependency.SourceId);
                     }
                 }
-                _workspace.ValidateRestore(snapshot);
-                var path = _workspace.Restore(snapshot, staging);
-                var current = GetVariants().FirstOrDefault(variant => variant.Id == variantId);
-                if (current != null)
-                {
-                    _workspace.UpdateMetadata(variantId, current.Name, current.Description);
-                }
+                _workspace.ValidateRestore(snapshot, rootAssetPath);
+                _workspace.Restore(snapshot, staging, rootAssetPath);
+                _workspace.UpdateMetadata(variantId, current.Name, current.Description);
                 _workspace.SetBaseRevision(variantId, revisionId);
                 NotifyChanged();
-                return path;
+                return _workspace.GetRootAssetPath(variantId, current.Name);
             }
             finally
             {
@@ -261,6 +276,55 @@ namespace Ee4v.AssetManager.Application
                 }
                 _busy = false;
             }
+        }
+
+        public IReadOnlyList<AssetVariantGalleryImage> GetGalleryImages(string variantId)
+        {
+            AssetManagerRequestValidator.Require(variantId, "variant id");
+            return _repository.ReadGallery(variantId);
+        }
+
+        public Task<AssetThumbnail> GetGalleryImage(string variantId, string imageId,
+            CancellationToken cancellationToken = default) => Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var bytes = _repository.ReadGalleryImage(variantId, imageId);
+            cancellationToken.ThrowIfCancellationRequested();
+            return new AssetThumbnail { Found = true, Data = bytes };
+        }, cancellationToken);
+
+        public async Task AddGalleryImages(string variantId, string parentItemId,
+            IReadOnlyList<AssetVariantGalleryUpload> images)
+        {
+            AssetManagerRequestValidator.Require(variantId, "variant id");
+            AssetManagerRequestValidator.Require(parentItemId, "parent item id");
+            if (images == null || images.Count == 0) { return; }
+            if (_busy) { throw new InvalidOperationException("A Variant operation is in progress."); }
+            _manager.GetItem(parentItemId);
+            var saved = GetVariants().FirstOrDefault(candidate => candidate.Id == variantId);
+            if (saved != null && saved.ParentItemId != parentItemId)
+            {
+                throw new InvalidOperationException("A Variant cannot change its owning AssetManager asset.");
+            }
+            _busy = true;
+            try
+            {
+                await Task.Run(() => _repository.AddGalleryImages(variantId, parentItemId, images));
+                NotifyChanged();
+            }
+            finally { _busy = false; }
+        }
+
+        public async Task RemoveGalleryImage(string variantId, string imageId)
+        {
+            if (_busy) { throw new InvalidOperationException("A Variant operation is in progress."); }
+            _busy = true;
+            try
+            {
+                await Task.Run(() => _repository.RemoveGalleryImage(variantId, imageId));
+                NotifyChanged();
+            }
+            finally { _busy = false; }
         }
 
         private AssetFile ResolveDependency(AssetVariantDependency dependency)

@@ -37,23 +37,119 @@ namespace Ee4v.AssetManager.Infrastructure
             return Capture(new AssetVariantSaveRequest { RootAssetPath = rootAssetPath }, false).Snapshot;
         }
 
-        public bool UpdateMetadata(string variantId, string name, string description)
+        public Action UpdateMetadata(string variantId, string name, string description)
         {
+            ValidateName(name);
             var path = AssetDatabase.GUIDToAssetPath(variantId);
-            if (string.IsNullOrEmpty(path)) { return false; }
+            if (!AssetExists(path)) { return null; }
             var record = DerivedAssetCatalog.Read(path);
             if (record == null || !path.StartsWith(DerivedAssetCatalog.VariantRoot + "/", StringComparison.Ordinal))
             {
                 throw new InvalidOperationException("An ee4v Variant Prefab is required.");
             }
-            var importer = AssetImporter.GetAtPath(path);
-            var data = DerivedAssetCatalog.Serialize(record.ParentItemId, name, description, record.SourceGuid);
-            if (importer.userData != data)
+            var folder = Path.GetDirectoryName(path).Replace('\\', '/');
+            if (Path.GetDirectoryName(folder).Replace('\\', '/') != DerivedAssetCatalog.VariantRoot)
             {
-                importer.userData = data;
-                AssetDatabase.WriteImportSettingsIfDirty(path);
+                throw new InvalidOperationException("A dedicated ee4v Variant folder is required.");
             }
-            return true;
+            var renamedFolder = DerivedAssetCatalog.VariantRoot + "/" + name;
+            ValidateMove(folder, renamedFolder);
+            ValidateMove(path, folder + "/" + name + ".prefab");
+            var originalData = AssetImporter.GetAtPath(path).userData;
+            Action rollback = () =>
+            {
+                var currentPath = AssetDatabase.GUIDToAssetPath(variantId);
+                var currentFolder = Path.GetDirectoryName(currentPath).Replace('\\', '/');
+                MoveAsset(currentPath, currentFolder + "/" + Path.GetFileName(path));
+                MoveAsset(currentFolder, folder);
+                var importer = AssetImporter.GetAtPath(path);
+                importer.userData = originalData;
+                AssetDatabase.WriteImportSettingsIfDirty(path);
+            };
+            try
+            {
+                MoveAsset(folder, renamedFolder);
+                var currentPath = AssetDatabase.GUIDToAssetPath(variantId);
+                MoveAsset(currentPath, renamedFolder + "/" + name + ".prefab");
+                currentPath = AssetDatabase.GUIDToAssetPath(variantId);
+                var importer = AssetImporter.GetAtPath(currentPath);
+                var data = DerivedAssetCatalog.Serialize(record.ParentItemId, name, description, record.SourceGuid);
+                if (importer.userData != data)
+                {
+                    importer.userData = data;
+                    AssetDatabase.WriteImportSettingsIfDirty(currentPath);
+                }
+            }
+            catch (Exception exception)
+            {
+                try
+                {
+                    rollback();
+                }
+                catch (Exception rollbackException)
+                {
+                    throw new AggregateException("The Variant rename could not be rolled back.",
+                        exception, rollbackException);
+                }
+                throw;
+            }
+            return rollback;
+        }
+
+        public string GetRootAssetPath(string variantId, string name)
+        {
+            ValidateName(name);
+            var path = AssetDatabase.GUIDToAssetPath(variantId);
+            if (!AssetExists(path)) { return DerivedAssetCatalog.VariantRoot + "/" + name + "/" + name + ".prefab"; }
+            if (DerivedAssetCatalog.Read(path) == null ||
+                !path.StartsWith(DerivedAssetCatalog.VariantRoot + "/", StringComparison.Ordinal) ||
+                Path.GetDirectoryName(Path.GetDirectoryName(path)).Replace('\\', '/') != DerivedAssetCatalog.VariantRoot)
+            {
+                throw new InvalidOperationException("An ee4v Variant Prefab is required.");
+            }
+            return path;
+        }
+
+        private static void ValidateName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name) || name == "." || name == ".." ||
+                name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || name.IndexOf('/') >= 0 ||
+                name.IndexOf('\\') >= 0 || name.EndsWith(".", StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The Variant name is invalid.", nameof(name));
+            }
+        }
+
+        private void ValidateMove(string source, string destination)
+        {
+            if (string.Equals(source, destination, StringComparison.OrdinalIgnoreCase)) { return; }
+            var full = ProjectAssetPath(destination);
+            if (File.Exists(full) || Directory.Exists(full) || File.Exists(full + ".meta"))
+            {
+                throw new InvalidOperationException("Another asset occupies the renamed path: " + destination);
+            }
+            var error = AssetDatabase.ValidateMoveAsset(source, destination);
+            if (!string.IsNullOrEmpty(error)) { throw new InvalidOperationException(error); }
+        }
+
+        private static void MoveAsset(string source, string destination)
+        {
+            if (source == destination) { return; }
+            if (string.Equals(source, destination, StringComparison.OrdinalIgnoreCase))
+            {
+                var temporary = Path.GetDirectoryName(source).Replace('\\', '/') + "/ee4v-rename-" +
+                    Guid.NewGuid().ToString("N") + (AssetDatabase.IsValidFolder(source) ? string.Empty : Path.GetExtension(source));
+                MoveAsset(source, temporary);
+                try { MoveAsset(temporary, destination); }
+                catch
+                {
+                    MoveAsset(temporary, source);
+                    throw;
+                }
+                return;
+            }
+            var error = AssetDatabase.MoveAsset(source, destination);
+            if (!string.IsNullOrEmpty(error)) { throw new InvalidOperationException(error); }
         }
 
         private AssetVariantCapture Capture(AssetVariantSaveRequest request, bool saveVersion)
@@ -222,7 +318,7 @@ namespace Ee4v.AssetManager.Infrastructure
         private bool AssetExists(string path) => !string.IsNullOrEmpty(path) &&
             (File.Exists(Path.Combine(_projectRoot, path)) || Directory.Exists(Path.Combine(_projectRoot, path)));
 
-        public void ValidateRestore(AssetVariantSnapshot snapshot)
+        public void ValidateRestore(AssetVariantSnapshot snapshot, string rootAssetPath)
         {
             if (snapshot.UnityVersion != UnityEngine.Application.unityVersion ||
                 snapshot.PackagesManifest != ReadProjectFile("Packages/manifest.json") ||
@@ -233,20 +329,22 @@ namespace Ee4v.AssetManager.Infrastructure
             }
             var imported = new HashSet<string>(_manager.GetImportedAssetAssociations()
                 .Select(association => association.AssetGuid), StringComparer.Ordinal);
+            var restorePath = RestorePaths(snapshot, rootAssetPath);
             foreach (var asset in snapshot.Assets)
             {
-                var destination = ProjectAssetPath(asset.Path);
+                var path = restorePath(asset.Path);
+                var destination = ProjectAssetPath(path);
                 var currentPath = AssetDatabase.GUIDToAssetPath(asset.Guid);
                 if (!AssetExists(currentPath)) { currentPath = string.Empty; }
-                if (!string.IsNullOrEmpty(currentPath) && currentPath != asset.Path)
+                if (!string.IsNullOrEmpty(currentPath) && currentPath != path)
                 {
                     throw new InvalidOperationException("The saved GUID already exists at another path: " + currentPath);
                 }
-                var existingGuid = AssetExists(asset.Path)
-                    ? AssetDatabase.AssetPathToGUID(asset.Path) : string.Empty;
+                var existingGuid = AssetExists(path)
+                    ? AssetDatabase.AssetPathToGUID(path) : string.Empty;
                 if (!string.IsNullOrEmpty(existingGuid) && existingGuid != asset.Guid)
                 {
-                    throw new InvalidOperationException("Another asset occupies the saved path: " + asset.Path);
+                    throw new InvalidOperationException("Another asset occupies the restore path: " + path);
                 }
                 if (imported.Contains(asset.Guid))
                 {
@@ -254,12 +352,21 @@ namespace Ee4v.AssetManager.Infrastructure
                 }
                 if (File.Exists(destination) && string.IsNullOrEmpty(existingGuid))
                 {
-                    throw new InvalidOperationException("An unimported file occupies the saved path: " + asset.Path);
+                    throw new InvalidOperationException("An unimported file occupies the restore path: " + path);
                 }
             }
         }
 
-        public string Restore(AssetVariantSnapshot snapshot, string stagingPath)
+        private static Func<string, string> RestorePaths(AssetVariantSnapshot snapshot, string rootAssetPath)
+        {
+            var savedFolder = Path.GetDirectoryName(snapshot.Variant.RootAssetPath).Replace('\\', '/');
+            var folder = Path.GetDirectoryName(rootAssetPath).Replace('\\', '/');
+            return path => path == snapshot.Variant.RootAssetPath ? rootAssetPath :
+                path == savedFolder ? folder : path.StartsWith(savedFolder + "/", StringComparison.Ordinal)
+                    ? folder + path.Substring(savedFolder.Length) : path;
+        }
+
+        public string Restore(AssetVariantSnapshot snapshot, string stagingPath, string rootAssetPath)
         {
             foreach (var asset in snapshot.Assets)
             {
@@ -270,11 +377,12 @@ namespace Ee4v.AssetManager.Infrastructure
                     throw new InvalidDataException("The saved Asset does not match its manifest: " + asset.Path);
                 }
             }
+            var restorePath = RestorePaths(snapshot, rootAssetPath);
             var writes = snapshot.Assets.SelectMany(asset => asset.IsFolder
-                    ? new[] { asset.Path + ".meta" }
-                    : new[] { asset.Path, asset.Path + ".meta" })
+                    ? new[] { restorePath(asset.Path) + ".meta" }
+                    : new[] { restorePath(asset.Path), restorePath(asset.Path) + ".meta" })
                 .ToArray();
-            var rootFolder = Path.GetDirectoryName(snapshot.Variant.RootAssetPath).Replace('\\', '/');
+            var rootFolder = Path.GetDirectoryName(rootAssetPath).Replace('\\', '/');
             var existing = Directory.Exists(ProjectAssetPath(rootFolder))
                 ? Directory.GetFiles(ProjectAssetPath(rootFolder), "*", SearchOption.AllDirectories)
                     .Select(path => path.Substring(_projectRoot.Length + 1).Replace('\\', '/')).ToArray()
@@ -306,7 +414,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 }
                 foreach (var asset in snapshot.Assets)
                 {
-                    var destination = ProjectAssetPath(asset.Path);
+                    var destination = ProjectAssetPath(restorePath(asset.Path));
                     Directory.CreateDirectory(asset.IsFolder ? destination : Path.GetDirectoryName(destination));
                     if (!asset.IsFolder) { File.Copy(Path.Combine(stagingPath, asset.Path), destination, true); }
                     File.Copy(Path.Combine(stagingPath, asset.Path + ".meta"), destination + ".meta", true);
@@ -340,7 +448,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 AssetDatabase.StopAssetEditing();
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             }
-            return snapshot.Variant.RootAssetPath;
+            return rootAssetPath;
         }
 
         public void SetBaseRevision(string variantId, string revisionId)

@@ -16,6 +16,12 @@ namespace Ee4v.AssetManager.Contracts
         bool HasChanges(string rootAssetPath);
         Task<AssetThumbnail> GetRevisionThumbnail(string variantId, string revisionId,
             CancellationToken cancellationToken = default);
+        IReadOnlyList<AssetVariantGalleryImage> GetGalleryImages(string variantId);
+        Task<AssetThumbnail> GetGalleryImage(string variantId, string imageId,
+            CancellationToken cancellationToken = default);
+        Task AddGalleryImages(string variantId, string parentItemId,
+            IReadOnlyList<AssetVariantGalleryUpload> images);
+        Task RemoveGalleryImage(string variantId, string imageId);
         Task<AssetVariantRevision> Save(AssetVariantSaveRequest request);
         Task UpdateMetadata(string variantId, UpdateAssetVariantRequest request);
         Task<string> Restore(string variantId, string revisionId);
@@ -57,6 +63,18 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string Name { get; set; }
         public string Description { get; set; }
+    }
+
+    public sealed class AssetVariantGalleryImage
+    {
+        public string Id { get; set; }
+        public string FileName { get; set; }
+    }
+
+    public sealed class AssetVariantGalleryUpload
+    {
+        public string FileName { get; set; }
+        public byte[] Data { get; set; }
     }
 
     public sealed class AssetVariantRevisionDetails

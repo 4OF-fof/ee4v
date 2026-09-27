@@ -11,6 +11,11 @@ namespace Ee4v.AssetManager.Application.Ports
         AssetVariantSnapshot Save(AssetVariantSnapshot snapshot, string stagingPath);
         void UpdateMetadata(AssetVariant variant);
         byte[] ReadPreview(AssetVariantSnapshot snapshot);
+        IReadOnlyList<AssetVariantGalleryImage> ReadGallery(string variantId);
+        byte[] ReadGalleryImage(string variantId, string imageId);
+        void AddGalleryImages(string variantId, string parentItemId,
+            IReadOnlyList<AssetVariantGalleryUpload> images);
+        void RemoveGalleryImage(string variantId, string imageId);
         string Extract(AssetVariantSnapshot snapshot);
         void DeleteStaging(string path);
     }
@@ -26,12 +31,14 @@ namespace Ee4v.AssetManager.Application.Ports
     {
         AssetVariantCapture Capture(AssetVariantSaveRequest request);
         AssetVariantSnapshot Inspect(string rootAssetPath);
-        string Restore(AssetVariantSnapshot snapshot, string stagingPath);
+        string Restore(AssetVariantSnapshot snapshot, string stagingPath, string rootAssetPath);
+        string GetRootAssetPath(string variantId, string name);
         string GetBaseRevision(string variantId);
         void SetBaseRevision(string variantId, string revisionId);
-        bool UpdateMetadata(string variantId, string name, string description);
+        // Returns an undo action, or null when the Prefab is absent from this Project.
+        Action UpdateMetadata(string variantId, string name, string description);
         bool HasAssets(AssetVariantDependency dependency);
-        void ValidateRestore(AssetVariantSnapshot snapshot);
+        void ValidateRestore(AssetVariantSnapshot snapshot, string rootAssetPath);
     }
 
     internal sealed class AssetVariantCapture

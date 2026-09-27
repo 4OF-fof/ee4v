@@ -18,6 +18,7 @@ namespace Ee4v.AssetManager.Infrastructure
         private const string BranchPrefix = "refs/heads/variant/";
         private const string TagPrefix = "refs/tags/variant/";
         private const string VariantFolder = "variants/";
+        private const string GalleryFolder = "galleries/";
         private readonly string _root;
         private readonly string _previewCacheRoot;
         private readonly string _stagingRoot;
@@ -26,6 +27,7 @@ namespace Ee4v.AssetManager.Infrastructure
         {
             public string Name { get; set; }
             public string Description { get; set; }
+            public string RootAssetPath { get; set; }
             public DateTime UpdatedAt { get; set; }
         }
 
@@ -70,6 +72,11 @@ namespace Ee4v.AssetManager.Infrastructure
                         }
                         latest.Variant.Name = metadata.Name;
                         latest.Variant.Description = metadata.Description ?? string.Empty;
+                        if (!string.IsNullOrEmpty(metadata.RootAssetPath))
+                        {
+                            ValidateAssetPath(metadata.RootAssetPath);
+                            latest.Variant.RootAssetPath = metadata.RootAssetPath;
+                        }
                         latest.Variant.UpdatedAt = metadata.UpdatedAt;
                     }
                     foreach (var snapshot in group)
@@ -114,7 +121,7 @@ namespace Ee4v.AssetManager.Infrastructure
             using (new FileStream(Path.Combine(_root, snapshot.Variant.ParentItemId + ".save.lock"),
                        FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
-                var otherRepository = FindRepository(snapshot.Variant.Id);
+                var otherRepository = FindRepository(snapshot.Variant.Id) ?? FindGalleryRepository(snapshot.Variant.Id);
                 if (otherRepository != null && otherRepository != repository)
                 {
                     throw new InvalidOperationException("A saved Variant cannot change its owning AssetManager asset.");
@@ -241,6 +248,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 JsonConvert.SerializeObject(new VariantMetadata
                 {
                     Name = variant.Name, Description = variant.Description ?? string.Empty,
+                    RootAssetPath = variant.RootAssetPath,
                     UpdatedAt = variant.UpdatedAt
                 }, Formatting.Indented), new UTF8Encoding(false));
 
@@ -272,10 +280,21 @@ namespace Ee4v.AssetManager.Infrastructure
             var cachePath = PreviewCachePath(snapshot.PreviewHash);
             var cached = TryReadPreview(cachePath, snapshot.PreviewHash);
             if (cached != null) { return cached; }
+            var bytes = ReadBlob(RepositoryPath(snapshot.Variant.ParentItemId),
+                snapshot.Revision.CommitId + ":" + VariantFolder + snapshot.Variant.Id + "/preview.png");
+            if (!HasPreviewHash(bytes, snapshot.PreviewHash))
+            {
+                throw new InvalidDataException("The Variant preview does not match its saved hash.");
+            }
+            TryWritePreview(cachePath, bytes);
+            return bytes;
+        }
+
+        private static byte[] ReadBlob(string repository, string objectPath)
+        {
             var start = new ProcessStartInfo("git", string.Join(" ", new[]
             {
-                "--no-pager", "--git-dir=" + RepositoryPath(snapshot.Variant.ParentItemId), "show",
-                snapshot.Revision.CommitId + ":" + VariantFolder + snapshot.Variant.Id + "/preview.png"
+                "--no-pager", "--git-dir=" + repository, "show", objectPath
             }.Select(Quote)))
             {
                 UseShellExecute = false, CreateNoWindow = true,
@@ -299,18 +318,160 @@ namespace Ee4v.AssetManager.Infrastructure
                 copy.GetAwaiter().GetResult();
                 if (process.ExitCode != 0)
                 {
-                    throw new InvalidOperationException("Variant preview could not be read: " +
+                    throw new InvalidOperationException("Variant image could not be read: " +
                         error.GetAwaiter().GetResult().Trim());
                 }
-                var bytes = output.ToArray();
-                if (!HasPreviewHash(bytes, snapshot.PreviewHash))
-                {
-                    throw new InvalidDataException("The Variant preview does not match its saved hash.");
-                }
-                TryWritePreview(cachePath, bytes);
-                return bytes;
+                return output.ToArray();
             }
         }
+
+        public IReadOnlyList<AssetVariantGalleryImage> ReadGallery(string variantId)
+        {
+            ValidateId(variantId);
+            var repository = FindGalleryRepository(variantId);
+            return repository == null ? Array.Empty<AssetVariantGalleryImage>() : ReadGallery(repository, variantId);
+        }
+
+        private AssetVariantGalleryImage[] ReadGallery(string repository, string variantId)
+        {
+            var path = GalleryFolder + variantId + "/gallery.json";
+            if (string.IsNullOrWhiteSpace(Git(repository, null, null,
+                    "ls-tree", "--name-only", MasterRef, "--", path)))
+            {
+                return Array.Empty<AssetVariantGalleryImage>();
+            }
+            var images = JsonConvert.DeserializeObject<AssetVariantGalleryImage[]>(
+                Git(repository, null, null, "show", MasterRef + ":" + path));
+            if (images == null || images.Any(image => image == null ||
+                    !Regex.IsMatch(image.Id ?? string.Empty, "\\A[0-9a-f]{64}\\z")) ||
+                images.Select(image => image.Id).Distinct(StringComparer.Ordinal).Count() != images.Length)
+            {
+                throw new InvalidDataException("Invalid Variant gallery.");
+            }
+            return images;
+        }
+
+        public byte[] ReadGalleryImage(string variantId, string imageId)
+        {
+            ValidateId(variantId);
+            var cachePath = PreviewCachePath(imageId);
+            var repository = FindGalleryRepository(variantId);
+            if (repository == null || !ReadGallery(repository, variantId).Any(image => image.Id == imageId))
+            {
+                throw new InvalidOperationException("The Variant gallery image was not found.");
+            }
+            var cached = TryReadPreview(cachePath, imageId);
+            if (cached != null) { return cached; }
+            var bytes = ReadBlob(repository, MasterRef + ":" + GalleryFolder + variantId + "/" + imageId + ".image");
+            if (!HasPreviewHash(bytes, imageId)) { throw new InvalidDataException("Invalid Variant gallery image hash."); }
+            TryWritePreview(cachePath, bytes);
+            return bytes;
+        }
+
+        public void AddGalleryImages(string variantId, string parentItemId,
+            IReadOnlyList<AssetVariantGalleryUpload> uploads)
+        {
+            ValidateId(variantId);
+            ValidateId(parentItemId);
+            var additions = new List<AssetVariantGalleryImage>();
+            foreach (var upload in uploads)
+            {
+                var bytes = upload?.Data;
+                var png = bytes != null && bytes.Length >= 8 &&
+                    bytes.Take(8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 });
+                var jpeg = bytes != null && bytes.Length >= 3 && bytes[0] == 255 && bytes[1] == 216 && bytes[2] == 255;
+                if ((!png && !jpeg) || bytes.Length > 16 * 1024 * 1024)
+                {
+                    throw new InvalidDataException("Gallery images must be PNG or JPEG files up to 16 MB.");
+                }
+                using (var hash = SHA256.Create())
+                {
+                    additions.Add(new AssetVariantGalleryImage
+                    {
+                        Id = BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", string.Empty).ToLowerInvariant(),
+                        FileName = Path.GetFileName(upload.FileName ?? string.Empty)
+                    });
+                }
+            }
+            Directory.CreateDirectory(_root);
+            var repository = RepositoryPath(parentItemId);
+            using (new FileStream(Path.Combine(_root, parentItemId + ".save.lock"),
+                       FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            {
+                var existing = FindRepository(variantId) ?? FindGalleryRepository(variantId);
+                if (existing != null && existing != repository)
+                {
+                    throw new InvalidOperationException("A Variant cannot change its owning AssetManager asset.");
+                }
+                var master = InitializeRepository(repository, parentItemId);
+                var images = ReadGallery(repository, variantId).ToList();
+                var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+                for (var index = 0; index < additions.Count; index++)
+                {
+                    var image = additions[index];
+                    if (images.Any(candidate => candidate.Id == image.Id)) { continue; }
+                    images.Add(image);
+                    files.Add(image.Id, uploads[index].Data);
+                }
+                if (files.Count > 0) { WriteGallery(repository, variantId, master, images, files, null); }
+            }
+        }
+
+        public void RemoveGalleryImage(string variantId, string imageId)
+        {
+            ValidateId(variantId);
+            PreviewCachePath(imageId);
+            var repository = FindGalleryRepository(variantId);
+            if (repository == null) { return; }
+            var parentItemId = Path.GetFileNameWithoutExtension(repository);
+            using (new FileStream(Path.Combine(_root, parentItemId + ".save.lock"),
+                       FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            {
+                var images = ReadGallery(repository, variantId).ToList();
+                if (images.RemoveAll(image => image.Id == imageId) == 0) { return; }
+                WriteGallery(repository, variantId, ReadRefs(repository, MasterRef)[MasterRef], images,
+                    new Dictionary<string, byte[]>(), imageId);
+            }
+        }
+
+        private void WriteGallery(string repository, string variantId, string master,
+            IReadOnlyList<AssetVariantGalleryImage> images, IReadOnlyDictionary<string, byte[]> files, string removedId)
+        {
+            var stage = NewStagingPath();
+            var index = stage + ".index";
+            var path = GalleryFolder + variantId;
+            try
+            {
+                var folder = Path.Combine(stage, path);
+                Directory.CreateDirectory(folder);
+                File.WriteAllText(Path.Combine(folder, "gallery.json"), JsonConvert.SerializeObject(images,
+                    Formatting.Indented), new UTF8Encoding(false));
+                Git(repository, stage, index, "read-tree", master);
+                Git(repository, stage, index, "add", "--force", "--", path + "/gallery.json");
+                foreach (var file in files)
+                {
+                    File.WriteAllBytes(Path.Combine(folder, file.Key + ".image"), file.Value);
+                    Git(repository, stage, index, "add", "--force", "--", path + "/" + file.Key + ".image");
+                }
+                if (removedId != null)
+                {
+                    Git(repository, stage, index, "update-index", "--force-remove", "--", path + "/" + removedId + ".image");
+                }
+                var tree = Git(repository, stage, index, "write-tree").Trim();
+                var commit = Git(repository, null, null, "commit-tree", tree, "-p", master,
+                    "-m", "Update Variant gallery " + variantId).Trim();
+                Git(repository, null, null, "update-ref", MasterRef, commit, master);
+            }
+            finally
+            {
+                if (File.Exists(index)) { File.Delete(index); }
+                DeleteStaging(stage);
+            }
+        }
+
+        private string FindGalleryRepository(string variantId) => Repositories().FirstOrDefault(repository =>
+            !string.IsNullOrWhiteSpace(Git(repository, null, null, "ls-tree", "--name-only", MasterRef,
+                "--", GalleryFolder + variantId + "/gallery.json")));
 
         private string PreviewCachePath(string previewHash)
         {
