@@ -10,7 +10,7 @@ using SQLite;
 
 namespace Ee4v.AssetManager.Infrastructure.Persistence
 {
-    internal sealed class SqliteAssetManagerStore
+    internal sealed partial class SqliteAssetManagerStore
         : IAssetManagerStore
     {
         private const int SchemaVersion = 1;
@@ -1642,6 +1642,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             {
                 Execute(connection, null, statements[i]);
             }
+            ExecuteVariantSchema(connection);
         }
 
         private static string BuildFilterSql(

@@ -26,5 +26,17 @@ namespace Ee4v.AssetManager.Infrastructure
                 new AssetFileAnalyzer(databasePath),
                 new AssetThumbnailProvider(databasePath));
         }
+
+        public static IAssetVariantManager OpenVariants(string databasePath, IAssetManager manager)
+        {
+            if (manager == null) { throw new ArgumentNullException(nameof(manager)); }
+            var libraryPath = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(databasePath));
+            var repository = new GitAssetVariantRepository(libraryPath);
+            var service = new AssetVariantService(manager, repository,
+                new SqliteAssetManagerStore(databasePath),
+                new UnityAssetVariantWorkspace(manager, repository));
+            service.RebuildIndex();
+            return service;
+        }
     }
 }

@@ -41,7 +41,7 @@ namespace Ee4v.AssetManager.UI
             new Stack<NavigationLocation>();
         private IReadOnlyList<string> _selectedItemIds =
             Array.Empty<string>();
-        private IReadOnlyList<string> _selectedVariantPaths =
+        private IReadOnlyList<string> _selectedVariantIds =
             Array.Empty<string>();
         private NavigationLocation _location =
             new NavigationLocation(AssetManagerPage.Library, null, null);
@@ -50,12 +50,13 @@ namespace Ee4v.AssetManager.UI
         public string CollectionId { get; private set; }
         public string TagPath { get; private set; }
         public string DetailItemId { get; private set; }
+        public string DetailVariantId { get; private set; }
         public bool IsDerivedAssetsPage { get; private set; }
         public IReadOnlyList<string> SelectedItemIds => _selectedItemIds;
         public string SelectedItemId { get; private set; }
         public string SelectedFileId { get; private set; }
-        public IReadOnlyList<string> SelectedVariantPaths => _selectedVariantPaths;
-        public string SelectedVariantPath { get; private set; }
+        public IReadOnlyList<string> SelectedVariantIds => _selectedVariantIds;
+        public string SelectedVariantId { get; private set; }
         public bool CanGoBack => _backHistory.Count > 0;
         public bool CanGoForward => _forwardHistory.Count > 0;
         public AssetManagerItemSortField ItemSortField { get; private set; } =
@@ -102,10 +103,25 @@ namespace Ee4v.AssetManager.UI
             }
 
             Navigate(new NavigationLocation(
-                Page,
+                Page == AssetManagerPage.Variants ? AssetManagerPage.Library : Page,
                 CollectionId,
                 itemId,
                 TagPath));
+        }
+
+        public void OpenVariantDetail(string variantId)
+        {
+            if (string.IsNullOrWhiteSpace(variantId))
+            {
+                return;
+            }
+
+            Navigate(new NavigationLocation(
+                Page,
+                CollectionId,
+                null,
+                TagPath,
+                variantId));
         }
 
         public void OpenDerivedAssetsPage(string itemId)
@@ -220,20 +236,20 @@ namespace Ee4v.AssetManager.UI
             Changed?.Invoke(AssetManagerViewStateChange.FileSelection);
         }
 
-        public void SelectVariants(IEnumerable<string> paths, string primaryPath)
+        public void SelectVariants(IEnumerable<string> ids, string primaryId)
         {
-            var selected = (paths ?? Array.Empty<string>())
-                .Where(path => !string.IsNullOrEmpty(path))
+            var selected = (ids ?? Array.Empty<string>())
+                .Where(id => !string.IsNullOrEmpty(id))
                 .Distinct(StringComparer.Ordinal)
                 .ToArray();
-            var primary = selected.Contains(primaryPath, StringComparer.Ordinal)
-                ? primaryPath : selected.LastOrDefault();
-            if (SelectedVariantPath == primary && _selectedVariantPaths.SequenceEqual(selected))
+            var primary = selected.Contains(primaryId, StringComparer.Ordinal)
+                ? primaryId : selected.LastOrDefault();
+            if (SelectedVariantId == primary && _selectedVariantIds.SequenceEqual(selected))
             {
                 return;
             }
-            _selectedVariantPaths = selected;
-            SelectedVariantPath = primary;
+            _selectedVariantIds = selected;
+            SelectedVariantId = primary;
             Changed?.Invoke(AssetManagerViewStateChange.VariantSelection);
         }
 
@@ -296,6 +312,7 @@ namespace Ee4v.AssetManager.UI
             CollectionId = location.CollectionId;
             TagPath = location.TagPath;
             DetailItemId = location.ItemId;
+            DetailVariantId = location.VariantId;
             IsDerivedAssetsPage = false;
             ResetSelectionAndInformation();
             Changed?.Invoke(AssetManagerViewStateChange.Navigation);
@@ -306,8 +323,8 @@ namespace Ee4v.AssetManager.UI
             _selectedItemIds = Array.Empty<string>();
             SelectedItemId = null;
             SelectedFileId = null;
-            _selectedVariantPaths = Array.Empty<string>();
-            SelectedVariantPath = null;
+            _selectedVariantIds = Array.Empty<string>();
+            SelectedVariantId = null;
         }
 
         private bool HasSameItemSelection(
@@ -342,18 +359,21 @@ namespace Ee4v.AssetManager.UI
                 AssetManagerPage page,
                 string collectionId,
                 string itemId,
-                string tagPath = null)
+                string tagPath = null,
+                string variantId = null)
             {
                 Page = page;
                 CollectionId = collectionId;
                 ItemId = itemId;
                 TagPath = tagPath;
+                VariantId = variantId;
             }
 
             public AssetManagerPage Page { get; }
             public string CollectionId { get; }
             public string ItemId { get; }
             public string TagPath { get; }
+            public string VariantId { get; }
 
             public bool IsSame(NavigationLocation other)
             {
@@ -370,6 +390,10 @@ namespace Ee4v.AssetManager.UI
                     string.Equals(
                         TagPath,
                         other.TagPath,
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        VariantId,
+                        other.VariantId,
                         StringComparison.Ordinal);
             }
         }

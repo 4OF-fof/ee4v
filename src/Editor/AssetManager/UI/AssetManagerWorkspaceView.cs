@@ -63,10 +63,7 @@ namespace Ee4v.AssetManager.UI
         private AssetManagerView AddPane(AssetManagerViewMode mode)
         {
             var pane = _createView(mode);
-            if (_openDerivedAsset != null)
-            {
-                pane.DerivedAssetOpenRequested += _openDerivedAsset;
-            }
+            pane.SetVariantModificationHandler(_openDerivedAsset);
             _panes.Add(pane);
             return pane;
         }

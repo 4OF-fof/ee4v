@@ -790,6 +790,7 @@ namespace Ee4v.AssetManager.UI
                 new Dictionary<SkinnedMeshRenderer,
                     MaterialGeometryCacheEntry>();
         private IAssetManager _manager;
+        private bool _savingVariant;
         private DerivedAssetInfo _workingAsset;
         private GameObject _workingObject;
         private Material _selectedMaterial;
@@ -1480,6 +1481,9 @@ namespace Ee4v.AssetManager.UI
                 strip.schedule.Execute(() => strip.ScrollTo(cardToReveal));
             }
             cards.Add(strip);
+            var save = AssetManagerControls.CreateButton(I18N.Get("variant.save"), SaveVariantRevision);
+            save.SetEnabled(!_savingVariant);
+            cards.Add(save);
             header.Add(cards);
             if (!string.IsNullOrEmpty(_assetFeedback))
             {
@@ -1488,6 +1492,36 @@ namespace Ee4v.AssetManager.UI
                     HelpBoxMessageType.Error));
             }
             return header;
+        }
+
+        private async void SaveVariantRevision()
+        {
+            if (_savingVariant || _workingObject == null) { return; }
+            EndBodyScaleDrag();
+            if (!FlushPendingPartVisibility()) { return; }
+            _savingVariant = true;
+            var assetPath = AssetDatabase.GetAssetPath(_workingObject);
+            BuildWindow();
+            try
+            {
+                _manager = _manager ?? AssetManagerWindowSession.GetManager();
+                var variants = AssetManagerWindowSession.TryGetVariantManager(_manager);
+                await variants.Save(new AssetVariantSaveRequest { RootAssetPath = assetPath });
+                if (!_disposed)
+                {
+                    _assetFeedback = string.Empty;
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                if (!_disposed) { _assetFeedback = exception.Message; }
+            }
+            finally
+            {
+                _savingVariant = false;
+                if (!_disposed) { BuildWindow(); }
+            }
         }
 
         private static VisualElement CreateHeaderPrefabCard(

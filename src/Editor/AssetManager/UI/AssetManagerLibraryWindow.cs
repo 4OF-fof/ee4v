@@ -32,7 +32,7 @@ namespace Ee4v.AssetManager.UI
             _view?.Dispose();
             rootVisualElement.Clear();
             AssetManagerWindowSession.PrepareWorkflowRoot(rootVisualElement);
-            _view = new AssetManagerWorkspaceView(AssetModificationWorkflowWindow.ShowFor);
+            _view = new AssetManagerWorkspaceView(null);
             rootVisualElement.Add(_view);
         }
 

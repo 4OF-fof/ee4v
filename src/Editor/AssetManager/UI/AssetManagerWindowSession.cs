@@ -19,6 +19,7 @@ namespace Ee4v.AssetManager.UI
         private static AssetManagerViewState _viewState =
             new AssetManagerViewState();
         private static IAssetManager _manager;
+        private static IAssetVariantManager _variantManager;
 
         internal static event Action ManagerInvalidated;
 
@@ -82,6 +83,7 @@ namespace Ee4v.AssetManager.UI
         {
             AssetProtectionModule.Configure(null);
             _manager = null;
+            _variantManager = null;
             _viewState = new AssetManagerViewState();
             EditorApplication.delayCall -= InitializeProtection;
             EditorApplication.delayCall += InitializeProtection;
@@ -102,6 +104,18 @@ namespace Ee4v.AssetManager.UI
                     Debug.LogException(exception);
                 }
             }
+        }
+
+        internal static IAssetVariantManager TryGetVariantManager(IAssetManager manager)
+        {
+            if (manager == null || !ReferenceEquals(manager, _manager)) { return null; }
+            if (_variantManager == null)
+            {
+                _variantManager = AssetManagerFactory.OpenVariants(Path.Combine(
+                    Environment.ExpandEnvironmentVariables(AssetManagerSettings.Ee4vLibraryPath),
+                    "asset-manager-v1.db"), manager);
+            }
+            return _variantManager;
         }
 
         private static void InitializeProtection()

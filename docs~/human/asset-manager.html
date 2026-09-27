@@ -35,6 +35,7 @@
       <ol>
         <li><a href="#open">開く</a></li>
         <li><a href="#workflow">改変ワークフロー</a></li>
+        <li><a href="#variants">Variantの保存と復元</a></li>
         <li><a href="#windows">3つのWindow</a></li>
         <li><a href="#browse">探す・選ぶ</a></li>
         <li><a href="#details">詳細を見る</a></li>
@@ -60,7 +61,7 @@
       <section id="workflow">
         <p class="section-label">Modification workflow</p>
         <h2>派生アセットをキャラクリのように編集する</h2>
-        <p><code>ee4v / Window / Asset Manager / Modification Workflow</code>を開くと、通常のAssetManagerと同じ検索・一覧・情報が表示されます。素材をダブルクリックして詳細を開き、派生アセット一覧の「派生アセットを追加」カードから名前とPrefabを確認して「Variantを作成して改変開始」を押すと、同じWindowの編集画面へ進みます。取り込み前の素材はアセット詳細からImportできます。作成元は選んだ素材に固定され、ほかの素材へ変える場合は「アセット選択へ戻る」を使います。既存Variantを続けて編集するときは、その素材の派生アセットカードをダブルクリックします。編集開始後のPrefabヘッダ、左のカテゴリ、中央プレビュー、右の編集ペインは従来の構成です。編集するキャラクターを決めた後は画面上部でPrefabの組み合わせを操作します。左側には「体型・パーツ」「マテリアル」「表情・アニメーション」「PhysBone」が並びます。Variant名のタブでは全Prefabの候補を、個別PrefabタブではそのPrefabの候補を「体型・パーツ」と「マテリアル」で編集できます。「体型・パーツ」の中で「パーツ」と「体型」を切り替えます。</p>
+        <p><code>ee4v / Window / Asset Manager / Modification Workflow</code>を開くと、通常のAssetManagerと同じ検索・一覧・情報が表示されます。素材をダブルクリックして詳細を開き、派生アセット一覧の「派生アセットを追加」カードから名前とPrefabを確認して「Variantを作成して改変開始」を押すと、同じWindowの編集画面へ進みます。取り込み前の素材はアセット詳細からImportできます。作成元は選んだ素材に固定され、ほかの素材へ変える場合は「アセット選択へ戻る」を使います。既存Variantを続けて編集するときは、その素材の派生アセットカードをダブルクリックして詳細を開き、「このアバターを改変」を押します。編集開始後のPrefabヘッダ、左のカテゴリ、中央プレビュー、右の編集ペインは従来の構成です。編集するキャラクターを決めた後は画面上部でPrefabの組み合わせを操作します。左側には「体型・パーツ」「マテリアル」「表情・アニメーション」「PhysBone」が並びます。Variant名のタブでは全Prefabの候補を、個別PrefabタブではそのPrefabの候補を「体型・パーツ」と「マテリアル」で編集できます。「体型・パーツ」の中で「パーツ」と「体型」を切り替えます。</p>
         <p>改変機能の単独版は<code>ee4v / Window / Avatar / Shape and Parts</code>（体型・パーツ）、<code>Materials</code>（マテリアル）、<code>Prefab Composition</code>（Prefab構成）です。それぞれ単独で派生アセットを選ぶ・作るところから操作できます。表情・アニメーションとPhysBoneには既存の単独版を使えます。単独版と改変ワークフローは同じ編集・保存機能を使います。</p>
         <ol class="steps">
           <li><strong>AssetManagerで素材を選ぶ。</strong> 検索やTag、Collectionから改変する素材を選び、ダブルクリックして詳細を開きます。未取り込みの場合はPrefabをImportします。</li>
@@ -74,6 +75,21 @@
           <li><strong>表情とアニメーション付き表情を作る。</strong> 「表情・アニメーション」では既存のFace Expression画面をそのまま使用します。Avatar Preview、表情Clip library、BlendShape、複数pose、遷移時間、Loop、再生、timelineを1画面で操作できます。</li>
           <li><strong>PhysBone Colliderを設定する。</strong> 「PhysBone」では既存のPhysBone Collider Setupを使用します。派生Prefab rootが最初の検出対象になり、候補の配置、Colliderごとの調整、PhysBoneへの割り当てを確認してから「アバターへ適用」で派生Prefabへ保存できます。</li>
         </ol>
+      </section>
+
+      <section id="variants">
+        <p class="section-label">Variant history</p>
+        <h2>Variantを保存して編集を続ける</h2>
+        <ol class="steps">
+          <li><strong>Variantを作成する。</strong> 素材の詳細からVariantを作り、改変ワークフローで編集します。</li>
+          <li><strong>版を保存する。</strong> 編集画面上部の保存ボタンで、現在のPrefabと独自Asset、正面から頭から足先まで収まる全身プレビュー画像を履歴へ保存します。画像は保存した版に固定され、後で改変しても過去の画像は変わりません。Prefabへの編集反映とは別に、この操作が必要です。</li>
+          <li><strong>詳細と履歴を確認する。</strong> NavigationのVariantタブまたは素材の派生アセットカードをダブルクリックすると、Variantの詳細を開きます。アセット概要と同じ形式で、上部に最新版の全身画像、名前、作成元と操作ボタンを表示します。その下にバージョン履歴、依存素材の順で画像付きカードを表示します。履歴カードで保存時の全身画像・保存日時・版番号・メモ、依存カードで使用した素材Fileを確認でき、メモを付けて保存できます。依存数などの集計欄は表示しません。依存素材は、保存済みなら最新版を保存した時点の内容、未保存なら現在のProjectの内容です。依存欄の矢印から素材の詳細を開けます。保存完了のメッセージは表示しません。最新版と同じ内容を再保存しても版は増えません。</li>
+          <li><strong>過去版を復元する。</strong> 詳細の「この版を復元」を押して確認すると、保存した状態へ戻り、詳細画面に留まります。Projectにない保存済みVariantも、詳細の履歴から復元できます。復元後の変更を保存すると新しい版になり、以前の履歴も残ります。</li>
+          <li><strong>改変を開始する。</strong> Modification Workflow内のVariant詳細にある「このアバターを改変」を押すと、同じWindowの編集画面へ進みます。ProjectにないVariantは先に履歴から復元してください。AssetManager単独版にはこのボタンがなく、ダブルクリックや復元で改変Windowを開くこともありません。</li>
+        </ol>
+        <p>Variant一覧や素材詳細のVariantカードにも最新版の保存画像を使います。</p>
+        <p class="callout"><strong>復元前に保存:</strong> 復元は現在の独自Assetを上書きし、Variantフォルダー内に追加した独自Assetも、その版に存在しなければ削除します。残したい変更は先に版として保存してください。取り込み済みの素材は削除しません。</p>
+        <p>履歴の保存にはPATHから実行できるGitが必要です。AssetManagerのAssetごとに1つのGit repoを持ちます。同じAssetに含まれる複数のPrefabから作ったVariantも、そのAssetのrepoを共有します。別AssetのVariantは別repoになります。repo内をVariantごとのフォルダーに分け、各Variantのブランチで個別の履歴を管理します。<code>master</code>にはそのAssetの全Variantの最新フォルダーが揃います。保存するとVariantの履歴と<code>master</code>の対象フォルダーを同時に更新します。過去版の復元後に保存する場合も新しい版を追加し、他のVariantの最新状態を維持します。保存した版はタグで確認できます。履歴は共通データ保存先の<code>VariantStore</code>にAssetごとのrepoとして保存されるため、バックアップにはこのフォルダーも含めてください。復元には、保存時と同じUnity versionとPackage設定、および使用した素材Fileの登録が必要です。複数の取り込み候補を含むZIPは、使用するItem Targetを1件に設定してから保存してください。</p>
       </section>
 
       <section id="windows">

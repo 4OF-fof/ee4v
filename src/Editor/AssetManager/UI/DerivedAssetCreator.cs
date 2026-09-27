@@ -20,6 +20,7 @@ namespace Ee4v.AssetManager.UI
 
     internal sealed class DerivedAssetInfo
     {
+        public string VariantId { get; set; }
         public string ParentItemId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
@@ -191,6 +192,7 @@ namespace Ee4v.AssetManager.UI
 
                 return new DerivedAssetInfo
                 {
+                    VariantId = AssetDatabase.AssetPathToGUID(rootPath),
                     ParentItemId = request.ParentItemId ?? string.Empty,
                     Name = name,
                     Description = request.Description ?? string.Empty,
@@ -237,6 +239,7 @@ namespace Ee4v.AssetManager.UI
 
             return new DerivedAssetInfo
             {
+                VariantId = AssetDatabase.AssetPathToGUID(record.AssetPath),
                 ParentItemId = record.ParentItemId,
                 Name = record.Name,
                 Description = record.Description,
