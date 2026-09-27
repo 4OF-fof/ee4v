@@ -71,7 +71,7 @@ namespace Ee4v.SceneSwitcher
                 },
                 UiBuiltinIconResolver.LoadTexture(
                     UiBuiltinIcon.Scene),
-                FluentUiIcons.LoadTexture("star.png"));
+                FluentUiIcons.LoadTexture("star.png", UiSizeTokens.Size14));
             view.SetState(new SceneSwitcherViewState(
                 string.Empty,
                 new[]
@@ -99,7 +99,7 @@ namespace Ee4v.SceneSwitcher
             var row = new SceneSwitcherRow(
                 CreateText(),
                 UiBuiltinIconResolver.LoadTexture(UiBuiltinIcon.Scene),
-                FluentUiIcons.LoadTexture("star.png"));
+                FluentUiIcons.LoadTexture("star.png", UiSizeTokens.Size14));
             row.SetState(new SceneSwitcherItem(
                 "Assets/Scenes/Main.unity",
                 true,

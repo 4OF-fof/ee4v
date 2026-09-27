@@ -198,9 +198,10 @@ namespace Ee4v.AssetManager.UI
         }
 
         internal static Texture2D LoadFluentIconTexture(
-            string iconFileName)
+            string iconFileName,
+            float size = UiSizeTokens.Size16)
         {
-            return FluentUiIcons.LoadTexture(iconFileName);
+            return FluentUiIcons.LoadTexture(iconFileName, size);
         }
 
         internal static IconState LoadFluentIconState(

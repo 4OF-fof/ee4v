@@ -103,7 +103,7 @@ namespace Ee4v.SceneSwitcher
                 CreateText(),
                 UiBuiltinIconResolver.LoadTexture(
                     UiBuiltinIcon.Scene),
-                FluentUiIcons.LoadTexture("star.png"));
+                FluentUiIcons.LoadTexture("star.png", UiSizeTokens.Size14));
             _view.QueryChanged += _controller.SetQuery;
             _view.ActivateRequested += Activate;
             _view.AddRequested += Add;

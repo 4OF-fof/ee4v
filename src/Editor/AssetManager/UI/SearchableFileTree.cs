@@ -1026,9 +1026,9 @@ namespace Ee4v.AssetManager.UI
                 : node?.IsGroup == true
                 ? "folder.png"
                 : node == null || node.IsOverview
-                    ? "info_16.png"
+                    ? "info.png"
                     : node.Entry == null
-                        ? "folder_zip_16.png"
+                        ? "folder_zip.png"
                         : node.Entry.Kind ==
                           AssetFileContentEntryKind.Directory
                             ? "folder.png"

@@ -123,6 +123,48 @@ namespace Ee4v.AssetManager.UI
                 .ToArray();
         }
 
+        public static IReadOnlyList<DerivedAssetInfo> Apply(
+            IEnumerable<DerivedAssetInfo> variants,
+            AssetManagerItemSortField field,
+            bool reverse)
+        {
+            var source = variants ?? Enumerable.Empty<DerivedAssetInfo>();
+            IOrderedEnumerable<DerivedAssetInfo> ordered;
+            if (GetVariantSortField(field) == AssetManagerItemSortField.UpdatedAt)
+            {
+                ordered = reverse
+                    ? source.OrderByDescending(variant => variant.UpdatedAt)
+                    : source.OrderBy(variant => variant.UpdatedAt);
+                ordered = reverse
+                    ? ordered.ThenByDescending(variant => variant.Name ?? string.Empty,
+                        StringComparer.OrdinalIgnoreCase)
+                    : ordered.ThenBy(variant => variant.Name ?? string.Empty,
+                        StringComparer.OrdinalIgnoreCase);
+            }
+            else
+            {
+                ordered = reverse
+                    ? source.OrderByDescending(variant => variant.Name ?? string.Empty,
+                        StringComparer.OrdinalIgnoreCase)
+                    : source.OrderBy(variant => variant.Name ?? string.Empty,
+                        StringComparer.OrdinalIgnoreCase);
+            }
+
+            return (reverse
+                    ? ordered.ThenByDescending(variant => variant.AssetPath ?? string.Empty,
+                        StringComparer.Ordinal)
+                    : ordered.ThenBy(variant => variant.AssetPath ?? string.Empty,
+                        StringComparer.Ordinal))
+                .ToArray();
+        }
+
+        public static AssetManagerItemSortField GetVariantSortField(
+            AssetManagerItemSortField field)
+        {
+            return field == AssetManagerItemSortField.UpdatedAt
+                ? field : AssetManagerItemSortField.Name;
+        }
+
         public static AssetManagerItemSortField GetFileSortField(
             AssetManagerItemSortField field)
         {

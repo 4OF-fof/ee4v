@@ -60,8 +60,8 @@ namespace Ee4v.AssetManager.UI
         public bool CanGoBack => _backHistory.Count > 0;
         public bool CanGoForward => _forwardHistory.Count > 0;
         public AssetManagerItemSortField ItemSortField { get; private set; } =
-            AssetManagerItemSortField.Name;
-        public bool IsItemSortReversed { get; private set; }
+            AssetManagerItemSortField.UpdatedAt;
+        public bool IsItemSortReversed { get; private set; } = true;
         public AssetManagerSearchTarget SearchTargets { get; private set; } =
             AssetManagerSearchTarget.All;
 

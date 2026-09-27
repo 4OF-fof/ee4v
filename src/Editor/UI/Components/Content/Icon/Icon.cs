@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEngine;
@@ -10,6 +12,28 @@ namespace Ee4v.UI
         internal const string IconDirectory =
             "/Editor/ThirdParty/FluentUiSystemIcons/Png512/";
 
+        private static readonly HashSet<string> CompactIconFileNames =
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "add.png", "subtract.png", "arrow_clockwise.png",
+                "arrow_left.png", "arrow_right.png", "checkmark.png",
+                "chevron_down.png", "chevron_right.png", "dismiss.png",
+                "pin.png"
+            };
+
+        private static readonly HashSet<string> SmallIconFileNames =
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "add.png", "archive.png", "arrow_clockwise.png",
+                "arrow_left.png", "arrow_right.png", "arrow_sort.png",
+                "checkmark.png", "chevron_down.png", "chevron_right.png",
+                "cube.png", "dismiss.png", "document.png", "eye.png",
+                "eye_off.png", "folder.png", "folder_zip.png", "image.png",
+                "info.png", "library.png", "mail_inbox.png", "pin.png", "search.png",
+                "star.png", "subtract.png", "tag.png", "weather_moon.png",
+                "weather_sunny.png"
+            };
+
         public static Texture2D LoadTexture(string iconFileName)
         {
             var packageRoot = PackageAssetApi.GetPackageRootAssetPath();
@@ -20,26 +44,31 @@ namespace Ee4v.UI
                     packageRoot + IconDirectory + iconFileName);
         }
 
+        public static Texture2D LoadTexture(string iconFileName, float size)
+        {
+            if (size <= UiSizeTokens.Size12 &&
+                CompactIconFileNames.Contains(iconFileName))
+            {
+                iconFileName = iconFileName.Substring(
+                    0, iconFileName.Length - 4) + "_12.png";
+            }
+            else if (size <= UiSizeTokens.Size18 &&
+                     SmallIconFileNames.Contains(iconFileName))
+            {
+                iconFileName = iconFileName.Substring(
+                    0, iconFileName.Length - 4) + "_16.png";
+            }
+
+            return LoadTexture(iconFileName);
+        }
+
         public static IconState CreateState(
             string iconFileName,
             float size = UiSizeTokens.Size16,
             string tooltip = null,
             Color? tintColor = null)
         {
-            if (size <= UiSizeTokens.Size12)
-            {
-                switch (iconFileName)
-                {
-                    case "add.png":
-                        iconFileName = "add_12.png";
-                        break;
-                    case "subtract.png":
-                        iconFileName = "subtract_12.png";
-                        break;
-                }
-            }
-
-            var texture = LoadTexture(iconFileName);
+            var texture = LoadTexture(iconFileName, size);
             return texture == null
                 ? null
                 : IconState.FromTexture(

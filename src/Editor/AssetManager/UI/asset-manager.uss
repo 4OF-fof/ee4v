@@ -455,14 +455,27 @@
     -unity-text-align: middle-right;
 }
 
-.ee4v-asset-manager__navigation .ee4v-asset-manager__nav-button.ee4v-asset-manager__collection-drop-before {
-    border-top-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-selection-soft);
+.ee4v-asset-manager__navigation .ee4v-asset-manager__nav-button.ee4v-asset-manager__collection-drop-target {
+    border-color: var(--ee4v-color-transparent);
+    border-radius: 0;
+    background-color: var(--ee4v-color-transparent);
 }
 
-.ee4v-asset-manager__navigation .ee4v-asset-manager__nav-button.ee4v-asset-manager__collection-drop-after {
-    border-bottom-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-selection-soft);
+.ee4v-asset-manager__nav-button.ee4v-asset-manager__collection-drop-target .ee4v-ui-item-row__icon {
+    opacity: 0.65;
+}
+
+.ee4v-asset-manager__nav-button.ee4v-asset-manager__collection-drop-target.ee4v-asset-manager__nav-button--selected .ee4v-ui-item-row__icon {
+    opacity: 1;
+}
+
+.ee4v-asset-manager__collection-insertion-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: var(--ee4v-border-hairline);
+    background-color: var(--ee4v-color-focus);
+    display: none;
 }
 
 .ee4v-asset-manager__file-button .ee4v-ui-button__label {

@@ -33,7 +33,8 @@ namespace Ee4v.UI
             {
                 checkmark.style.backgroundImage = StyleKeyword.None;
                 var checkmarkTexture =
-                    FluentUiIcons.LoadTexture("checkmark.png");
+                    FluentUiIcons.LoadTexture(
+                        "checkmark.png", UiSizeTokens.Size12);
                 if (checkmarkTexture != null)
                 {
                     checkmark.style.backgroundImage =

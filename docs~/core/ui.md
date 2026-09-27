@@ -60,7 +60,9 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 
 これらは機能間で重複していた小さな表示パターンをCoreへ昇格したものです。Domain固有の文言、操作、一覧構造は利用側に残します。
 
-Fluent UIのPNGは`FluentUiIconPostprocessor`でGUI用Textureとして取り込み、非圧縮、ミップマップなし、透過エッジ補正あり、Bilinear、Clamp、最大512pxに固定します。小さな操作アイコンの輪郭を圧縮やミップマップでぼかさないための設定です。`FluentUiIcons.CreateState`は12px以下のAdd・Subtractに12px用SVGから生成した画像を選び、それより大きい表示には24px用の画像を使用します。
+Fluent UIのPNGは`FluentUiIconPostprocessor`でGUI用Textureとして取り込み、非圧縮、ミップマップなし、透過エッジ補正あり、Bilinear、Clamp、最大512pxに固定します。小さな操作アイコンの輪郭を圧縮やミップマップでぼかさないための設定です。`FluentUiIcons.CreateState`とサイズ付き`LoadTexture`は18px以下に16px用SVGから生成した画像を選びます。12px以下のAdd、Subtract、Arrow Clockwise、Arrow Left、Arrow Right、Checkmark、Chevron Down、Chevron Right、Dismiss、Pinには12px用を選びます。Mail Inboxも16px用の画像を使用します。サイズを付けない`LoadTexture`とサイズ接尾辞を明示したファイル名は、そのファイルを読み込みます。アイコンの表示寸法、tooltip、tintは呼び出し側の指定を維持します。File TreeとTarget一覧、Toggleのチェックマーク、Scene Switcherのお気に入りなど、Textureを直接表示する箇所にもサイズ付き読み込みを使用します。
+
+小サイズ用の`*_12.png`と`*_16.png`は12px・16pxで生成し、512px画像を極小表示するときの間引きで細い線や穴が消えることを防ぎます。SVGを512pxで描画してから画素の被覆率を保持するBoxフィルターで縮小します。取り込み後のTextureも元の12px・16pxを維持します。
 
 ## `CustomPopup`
 

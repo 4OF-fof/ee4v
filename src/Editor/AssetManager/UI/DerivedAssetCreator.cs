@@ -25,6 +25,7 @@ namespace Ee4v.AssetManager.UI
         public string Name { get; set; }
         public string Description { get; set; }
         public string AssetPath { get; set; }
+        public DateTime UpdatedAt { get; set; }
         public GameObject Prefab { get; set; }
     }
 
@@ -197,6 +198,7 @@ namespace Ee4v.AssetManager.UI
                     Name = name,
                     Description = request.Description ?? string.Empty,
                     AssetPath = rootPath,
+                    UpdatedAt = File.GetLastWriteTimeUtc(rootPath),
                     Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                         rootPath)
                 };
@@ -244,6 +246,7 @@ namespace Ee4v.AssetManager.UI
                 Name = record.Name,
                 Description = record.Description,
                 AssetPath = record.AssetPath,
+                UpdatedAt = File.GetLastWriteTimeUtc(record.AssetPath),
                 Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                     record.AssetPath)
             };
