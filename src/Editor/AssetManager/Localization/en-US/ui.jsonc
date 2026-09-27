@@ -179,6 +179,7 @@
     "no": "No"
   },
   "navigation": {
+    "variants": "Variants",
     "library": "All",
     "imported": "Imported",
     "archived": "Archived",
@@ -217,6 +218,8 @@
     "pin": "Pin"
   },
   "notice": {
+    "noVariants": "No Variants match this view in the current project. Check the search filters if you are searching by name or description.",
+    "selectVariant": "Select a Variant to view its details.",
     "noItems": "No items match this view.",
     "noTags": "There are no tags.",
     "selectedItemMissing": "The selected item no longer exists.",
@@ -244,6 +247,14 @@
     "loading": "Analyzing…",
     "analysisFailed": "Some files could not be analyzed: {0}",
     "analysisUnavailable": "The file tree could not be loaded. Check the Console."
+  },
+  "variant": {
+    "searchPlaceholder": "Search Variants",
+    "reload": "Reload Variants from the project",
+    "assetPath": "Prefab location",
+    "sourceItem": "Source asset",
+    "sourceMissing": "Source asset not found",
+    "selectedCount": "{0} Variants selected"
   },
   "detail": {
     "information": "INFORMATION",

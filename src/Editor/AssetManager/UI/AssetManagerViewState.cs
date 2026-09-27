@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Ee4v.AssetManager.UI
 {
@@ -17,7 +18,8 @@ namespace Ee4v.AssetManager.UI
         Archived,
         Tags,
         Collection,
-        UnassignedFiles
+        UnassignedFiles,
+        Variants
     }
 
     internal enum AssetManagerViewStateChange
@@ -27,7 +29,8 @@ namespace Ee4v.AssetManager.UI
         FileSelection,
         ItemDetailPage,
         ItemSort,
-        SearchTargets
+        SearchTargets,
+        VariantSelection
     }
 
     internal sealed class AssetManagerViewState
@@ -37,6 +40,8 @@ namespace Ee4v.AssetManager.UI
         private readonly Stack<NavigationLocation> _forwardHistory =
             new Stack<NavigationLocation>();
         private IReadOnlyList<string> _selectedItemIds =
+            Array.Empty<string>();
+        private IReadOnlyList<string> _selectedVariantPaths =
             Array.Empty<string>();
         private NavigationLocation _location =
             new NavigationLocation(AssetManagerPage.Library, null, null);
@@ -49,6 +54,8 @@ namespace Ee4v.AssetManager.UI
         public IReadOnlyList<string> SelectedItemIds => _selectedItemIds;
         public string SelectedItemId { get; private set; }
         public string SelectedFileId { get; private set; }
+        public IReadOnlyList<string> SelectedVariantPaths => _selectedVariantPaths;
+        public string SelectedVariantPath { get; private set; }
         public bool CanGoBack => _backHistory.Count > 0;
         public bool CanGoForward => _forwardHistory.Count > 0;
         public AssetManagerItemSortField ItemSortField { get; private set; } =
@@ -213,6 +220,23 @@ namespace Ee4v.AssetManager.UI
             Changed?.Invoke(AssetManagerViewStateChange.FileSelection);
         }
 
+        public void SelectVariants(IEnumerable<string> paths, string primaryPath)
+        {
+            var selected = (paths ?? Array.Empty<string>())
+                .Where(path => !string.IsNullOrEmpty(path))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            var primary = selected.Contains(primaryPath, StringComparer.Ordinal)
+                ? primaryPath : selected.LastOrDefault();
+            if (SelectedVariantPath == primary && _selectedVariantPaths.SequenceEqual(selected))
+            {
+                return;
+            }
+            _selectedVariantPaths = selected;
+            SelectedVariantPath = primary;
+            Changed?.Invoke(AssetManagerViewStateChange.VariantSelection);
+        }
+
         public void SetItemSortField(AssetManagerItemSortField field)
         {
             if (ItemSortField == field)
@@ -282,6 +306,8 @@ namespace Ee4v.AssetManager.UI
             _selectedItemIds = Array.Empty<string>();
             SelectedItemId = null;
             SelectedFileId = null;
+            _selectedVariantPaths = Array.Empty<string>();
+            SelectedVariantPath = null;
         }
 
         private bool HasSameItemSelection(

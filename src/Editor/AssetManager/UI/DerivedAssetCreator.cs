@@ -222,6 +222,12 @@ namespace Ee4v.AssetManager.UI
                 .ToArray();
         }
 
+        internal static DerivedAssetInfo Read(string assetPath)
+        {
+            var info = ToInfo(DerivedAssetCatalog.Read(assetPath));
+            return info?.Prefab != null ? info : null;
+        }
+
         private static DerivedAssetInfo ToInfo(DerivedAssetRecord record)
         {
             if (record == null)

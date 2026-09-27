@@ -54,6 +54,22 @@ namespace Ee4v.AssetManager.UI
                 Contains(file.FileName, search.Trim());
         }
 
+        public static bool MatchesVariant(
+            DerivedAssetInfo variant,
+            string search,
+            AssetManagerSearchTarget targets)
+        {
+            if (string.IsNullOrWhiteSpace(search))
+            {
+                return true;
+            }
+            return variant != null &&
+                ((HasTarget(targets, AssetManagerSearchTarget.Name) &&
+                  Contains(variant.Name, search.Trim())) ||
+                 (HasTarget(targets, AssetManagerSearchTarget.Description) &&
+                  Contains(variant.Description, search.Trim())));
+        }
+
         public static AssetFilterNode BuildBackendFilter(
             string search,
             AssetManagerSearchTarget targets)

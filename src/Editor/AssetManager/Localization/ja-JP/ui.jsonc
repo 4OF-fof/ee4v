@@ -179,6 +179,7 @@
     "no": "いいえ"
   },
   "navigation": {
+    "variants": "Variant",
     "library": "全件",
     "imported": "Import済み",
     "archived": "アーカイブ",
@@ -217,6 +218,8 @@
     "pin": "ピン"
   },
   "notice": {
+    "noVariants": "このProjectに表示できるVariantはありません。名前や説明で検索を絞り込んでいる場合は、検索条件を確認してください。",
+    "selectVariant": "詳細を確認するVariantを選択してください。",
     "noItems": "この表示に一致するItemはありません。",
     "noTags": "タグはありません。",
     "selectedItemMissing": "選択したItemは存在しません。",
@@ -244,6 +247,14 @@
     "loading": "解析中…",
     "analysisFailed": "内容を解析できないFileがあります: {0}",
     "analysisUnavailable": "File Treeを読み込めませんでした。Consoleを確認してください。"
+  },
+  "variant": {
+    "searchPlaceholder": "Variantを検索",
+    "reload": "ProjectのVariant一覧を再読み込み",
+    "assetPath": "Prefabの場所",
+    "sourceItem": "作成元の素材",
+    "sourceMissing": "作成元の素材が見つかりません",
+    "selectedCount": "{0} 個のVariantを選択"
   },
   "detail": {
     "information": "情報",

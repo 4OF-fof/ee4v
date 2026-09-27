@@ -110,7 +110,7 @@ namespace Ee4v.AssetManager.UI
 
         public AssetItem GetItem(string itemId)
         {
-            return _items.First(item => item.Id == itemId);
+            return _items.FirstOrDefault(item => item.Id == itemId);
         }
 
         public Task<AssetThumbnail> GetThumbnail(

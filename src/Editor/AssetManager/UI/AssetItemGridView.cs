@@ -23,6 +23,7 @@ namespace Ee4v.AssetManager.UI
         public string Id { get; }
         public string Name { get; }
         public byte[] ThumbnailData { get; }
+        public IconState PlaceholderIcon { get; set; }
     }
 
     internal sealed class AssetItemGridView : VisualElement, IDisposable
@@ -316,6 +317,7 @@ namespace Ee4v.AssetManager.UI
                 }
 
                 card.SetWidth(_cardWidth);
+                card.SetPlaceholderIcon(item.PlaceholderIcon);
                 card.SetState(
                     item,
                     _selectedItemIds.Contains(item.Id));

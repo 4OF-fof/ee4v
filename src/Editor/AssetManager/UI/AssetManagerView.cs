@@ -339,6 +339,7 @@ namespace Ee4v.AssetManager.UI
         private SearchField _search;
         private AssetTagListView _tagList;
         private UiButton _sortButton;
+        private UiButton _reloadButton;
         private UiButton _backButton;
         private UiButton _forwardButton;
         private AssetManagerBreadcrumb _breadcrumbs;
@@ -478,6 +479,9 @@ namespace Ee4v.AssetManager.UI
         private bool ShowsFileList =>
             _viewState.Page == AssetManagerPage.UnassignedFiles;
 
+        private bool ShowsVariants =>
+            _viewState.Page == AssetManagerPage.Variants;
+
         private VisualElement BuildToolbar()
         {
             var toolbar = new ActionBar();
@@ -531,9 +535,10 @@ namespace Ee4v.AssetManager.UI
             RefreshSortButton();
             toolbar.Actions.Add(_sortButton);
             toolbar.Actions.Add(_search);
-            toolbar.Actions.Add(AssetManagerControls.CreateReloadButton(
+            _reloadButton = AssetManagerControls.CreateReloadButton(
                 Reload,
-                "ee4v-asset-manager__reload"));
+                "ee4v-asset-manager__reload");
+            toolbar.Actions.Add(_reloadButton);
             return toolbar;
         }
 
@@ -544,15 +549,18 @@ namespace Ee4v.AssetManager.UI
                 menu,
                 GetSortLabel(AssetManagerItemSortField.Name),
                 AssetManagerItemSortField.Name);
-            AddSortMenuItem(
-                menu,
-                GetSortLabel(AssetManagerItemSortField.CreatedAt),
-                AssetManagerItemSortField.CreatedAt);
-            AddSortMenuItem(
-                menu,
-                GetSortLabel(AssetManagerItemSortField.UpdatedAt),
-                AssetManagerItemSortField.UpdatedAt);
-            if (!ShowsFileList)
+            if (!ShowsVariants)
+            {
+                AddSortMenuItem(
+                    menu,
+                    GetSortLabel(AssetManagerItemSortField.CreatedAt),
+                    AssetManagerItemSortField.CreatedAt);
+                AddSortMenuItem(
+                    menu,
+                    GetSortLabel(AssetManagerItemSortField.UpdatedAt),
+                    AssetManagerItemSortField.UpdatedAt);
+            }
+            if (!ShowsFileList && !ShowsVariants)
             {
                 AddSortMenuItem(
                     menu,
@@ -579,10 +587,13 @@ namespace Ee4v.AssetManager.UI
                 menu,
                 "toolbar.search.description",
                 AssetManagerSearchTarget.Description);
-            AddSearchTargetMenuItem(
-                menu,
-                "toolbar.search.tags",
-                AssetManagerSearchTarget.Tags);
+            if (!ShowsVariants)
+            {
+                AddSearchTargetMenuItem(
+                    menu,
+                    "toolbar.search.tags",
+                    AssetManagerSearchTarget.Tags);
+            }
             menu.DropDown(_search.SearchActionAnchor.worldBound);
         }
 
@@ -622,6 +633,10 @@ namespace Ee4v.AssetManager.UI
 
         private AssetManagerItemSortField GetActiveSortField()
         {
+            if (ShowsVariants)
+            {
+                return AssetManagerItemSortField.Name;
+            }
             return ShowsFileList
                 ? AssetManagerItemSort.GetFileSortField(
                     _viewState.ItemSortField)
@@ -683,6 +698,10 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("navigation.library"),
                 AssetManagerPage.Library,
                 "library.png"));
+            primary.Add(CreateNavigationButton(
+                I18N.Get("navigation.variants"),
+                AssetManagerPage.Variants,
+                "cube.png"));
             primary.Add(CreateNavigationButton(
                 I18N.Get("navigation.unassignedFiles"),
                 AssetManagerPage.UnassignedFiles,
@@ -815,6 +834,12 @@ namespace Ee4v.AssetManager.UI
 
         private void RefreshMain()
         {
+            _search.SetPlaceholder(I18N.Get(ShowsVariants
+                ? "variant.searchPlaceholder" : "toolbar.search.placeholder"));
+            _search.tooltip = I18N.Get(ShowsVariants
+                ? "variant.searchPlaceholder" : "toolbar.search.tooltip");
+            _reloadButton.tooltip = I18N.Get(ShowsVariants
+                ? "variant.reload" : "toolbar.reload");
             _toolbar.style.display = _viewState.IsDerivedAssetsPage
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
@@ -835,6 +860,9 @@ namespace Ee4v.AssetManager.UI
             ClearItemOverviewThumbnail();
             switch (_viewState.Page)
             {
+                case AssetManagerPage.Variants:
+                    BuildVariants();
+                    break;
                 case AssetManagerPage.Tags:
                     if (string.IsNullOrEmpty(_viewState.TagPath))
                     {
@@ -858,6 +886,11 @@ namespace Ee4v.AssetManager.UI
         {
             CancelGridThumbnails();
             _itemGrid.ClearThumbnails();
+            if (ShowsVariants)
+            {
+                Refresh();
+                return;
+            }
             _defersManagerRefresh = true;
             try
             {
@@ -944,15 +977,60 @@ namespace Ee4v.AssetManager.UI
             _content.Add(_tagList);
         }
 
+        private void BuildVariants()
+        {
+            CancelGridThumbnails();
+            _content.Clear();
+            _search.style.display = DisplayStyle.Flex;
+            _sortButton.style.display = DisplayStyle.Flex;
+            _gridControls.style.display = DisplayStyle.Flex;
+            var variants = DerivedAssetCreator.FindAll()
+                .Where(variant => AssetManagerSearch.MatchesVariant(
+                    variant, _search.Value, _viewState.SearchTargets))
+                .OrderBy(variant => variant.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(variant => variant.AssetPath, StringComparer.Ordinal)
+                .ToArray();
+            if (_viewState.IsItemSortReversed)
+            {
+                Array.Reverse(variants);
+            }
+            if (variants.Length == 0)
+            {
+                _content.Add(AssetManagerControls.CreateNotice(
+                    I18N.Get("notice.noVariants")));
+            }
+            var icon = AssetManagerControls.LoadFluentIconState(
+                "cube.png", UiSizeTokens.Size24,
+                I18N.Get("navigation.variants"), UiColorTokens.TextMuted);
+            _itemGrid.SetItems(variants.Select(variant => new AssetItemGridEntry(
+                variant.AssetPath, variant.Name)
+            {
+                PlaceholderIcon = icon
+            }).ToArray());
+            _itemGrid.SetSelectedItemIds(
+                _viewState.SelectedVariantPaths, _viewState.SelectedVariantPath);
+            _content.Add(_itemGrid);
+        }
+
         private void SelectItems(
             IReadOnlyList<string> itemIds,
             string primaryItemId)
         {
+            if (ShowsVariants)
+            {
+                _viewState.SelectVariants(itemIds, primaryItemId);
+                return;
+            }
             _viewState.SelectItems(itemIds, primaryItemId);
         }
 
         private void OpenItemDetail(string itemId)
         {
+            if (ShowsVariants)
+            {
+                OpenVariant(itemId);
+                return;
+            }
             var item = _manager.GetItem(itemId);
             if (item == null || item.IsArchived)
             {
@@ -966,6 +1044,10 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyList<string> itemIds,
             VisualElement anchor)
         {
+            if (ShowsVariants)
+            {
+                return;
+            }
             var items = (itemIds ?? Array.Empty<string>())
                 .Select(_manager.GetItem)
                 .Where(item => item != null)
@@ -1045,7 +1127,7 @@ namespace Ee4v.AssetManager.UI
         private void OnGridVisibleItemsChanged(
             IReadOnlyList<string> itemIds)
         {
-            if (_itemGrid.parent != _content)
+            if (_itemGrid.parent != _content || ShowsVariants)
             {
                 return;
             }
@@ -1214,6 +1296,11 @@ namespace Ee4v.AssetManager.UI
         {
             CancelThumbnail();
             ClearDetailThumbnail();
+            if (ShowsVariants)
+            {
+                ShowVariantDetail();
+                return;
+            }
             if (!string.IsNullOrEmpty(_viewState.DetailItemId))
             {
                 ShowItemDetail(_manager.GetItem(
@@ -1250,6 +1337,61 @@ namespace Ee4v.AssetManager.UI
                 _viewState.Page == AssetManagerPage.UnassignedFiles
                     ? I18N.Get("notice.selectFile")
                     : I18N.Get("notice.selectItem"));
+        }
+
+        private void ShowVariantDetail()
+        {
+            _detail.Clear();
+            var variant = DerivedAssetCreator.Read(_viewState.SelectedVariantPath);
+            if (variant == null)
+            {
+                ShowEmptyDetail(I18N.Get("notice.selectVariant"));
+                return;
+            }
+            if (_viewState.SelectedVariantPaths.Count > 1)
+            {
+                _detail.Add(UiTextFactory.Create(
+                    I18N.Get("variant.selectedCount", _viewState.SelectedVariantPaths.Count),
+                    UiClassNames.SelectionCount));
+            }
+            _detail.Add(new InfoCard(new InfoCardState(variant.Name, variant.Description)));
+            _detail.Add(new AssetDetailKeyValueRow(
+                I18N.Get("variant.assetPath"), variant.AssetPath));
+            var sourceName = I18N.Get("variant.sourceMissing");
+            if (!string.IsNullOrEmpty(variant.ParentItemId))
+            {
+                try
+                {
+                    sourceName = _manager.GetItem(variant.ParentItemId)?.Name ?? sourceName;
+                }
+                catch (AssetManagerException exception) when (
+                    exception.Code == AssetManagerErrorCode.NotFound)
+                {
+                }
+            }
+            _detail.Add(new AssetDetailKeyValueRow(
+                I18N.Get("variant.sourceItem"), sourceName));
+            _detail.Add(AssetManagerControls.CreateButton(
+                I18N.Get("workflow.selection.choose"),
+                () => OpenVariant(variant.AssetPath),
+                "ee4v-asset-manager__primary-action"));
+        }
+
+        private void OpenVariant(string assetPath)
+        {
+            var variant = DerivedAssetCreator.Read(assetPath);
+            if (variant == null)
+            {
+                return;
+            }
+            if (DerivedAssetOpenRequested != null)
+            {
+                DerivedAssetOpenRequested(variant);
+            }
+            else
+            {
+                AssetModificationWorkflowWindow.ShowFor(variant);
+            }
         }
 
         private void ShowItemSelectionDetail(
@@ -3739,6 +3881,8 @@ namespace Ee4v.AssetManager.UI
         {
             switch (_viewState.Page)
             {
+                case AssetManagerPage.Variants:
+                    return I18N.Get("navigation.variants");
                 case AssetManagerPage.Imported:
                     return I18N.Get("navigation.imported");
                 case AssetManagerPage.Archived:
@@ -3819,6 +3963,11 @@ namespace Ee4v.AssetManager.UI
         private void OnProjectChanged()
         {
             _importedItemIdsInProject = null;
+            if (ShowsVariants)
+            {
+                Refresh();
+                return;
+            }
             if (ShowsMain &&
                 _viewState.Page == AssetManagerPage.Imported)
             {
@@ -3840,6 +3989,17 @@ namespace Ee4v.AssetManager.UI
         {
             switch (change)
             {
+                case AssetManagerViewStateChange.VariantSelection:
+                    if (ShowsMain)
+                    {
+                        _itemGrid.SetSelectedItemIds(
+                            _viewState.SelectedVariantPaths, _viewState.SelectedVariantPath);
+                    }
+                    if (ShowsInformation)
+                    {
+                        RefreshDetail();
+                    }
+                    break;
                 case AssetManagerViewStateChange.Navigation:
                     if (ShowsNavigation)
                     {
