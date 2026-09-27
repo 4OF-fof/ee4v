@@ -28,7 +28,7 @@ url = "http://127.0.0.1:48884/mcp"</code></pre>
         <div class="table-wrap"><table><thead><tr><th>領域</th><th>主な操作</th></tr></thead><tbody>
           <tr><td>Avatar</td><td>SceneとPrefab ModeからAvatarを探します。調査は構成と数量、監査は対処が必要なfindingだけを返します。</td></tr>
           <tr><td>表情</td><td>保存済みFBX別BlendShapeプリセットの確認・部分更新、BlendShapeとClipの統合調査、静止表情Clipの作成・更新、表情animationのポーズ追加・編集・並び替え・削除、検証・時刻指定preview・remap、Gesture 1組への割り当て、FacialSetのplan、dry-run、適用を行います。</td></tr>
-          <tr><td>Asset Manager</td><td>Item検索、File解析、名前・説明・Tag・Archive、Target、Dependency、既存Collectionに加え、取り込み済み実Prefabの比較と構造調査を行います。Eagle由来Itemの名前と説明、Eagle由来TagはEagle側で管理します。</td></tr>
+          <tr><td>Asset Manager</td><td>Item検索、File解析、Unity ProjectへのImport、Item編集（名前・説明・Tag・Archive・Target）、Dependency設定、Collectionの作成・編集・削除、取り込み済み実Prefabの比較と構造調査を行います。Eagle由来Itemの名前と説明、Eagle由来TagはEagle側で管理します。</td></tr>
         </tbody></table></div>
       </section>
       <section id="prefab-preview">
@@ -44,7 +44,17 @@ url = "http://127.0.0.1:48884/mcp"</code></pre>
       </section>
       <section id="writes">
         <p class="section-label">Writes</p><h2>再適用できる単位で変更する</h2>
-        <ul><li>自動生成されたFBX別BlendShapeプリセットは<code>ee4v_list_blendshape_presets</code>で探し、<code>ee4v_get_blendshape_preset</code>で分類とrevisionを確認します。<code>ee4v_update_blendshape_preset</code>に編集するShapeだけを指定し、先に<code>dryRun</code>で確認します。保存済みプリセットが対象で、他のShapeは維持されます。</li><li>静止表情Clipは<code>create</code>、<code>patch</code>、<code>replace</code>を明示します。複数ポーズClipはanimation専用toolで編集し、静止表情toolでは上書きしません。</li><li>表情animationは<code>ee4v_inspect_expression_animation</code>でポーズindexとrevisionを取得し、追加・更新・並び替え・削除・Loop設定を行います。書き込み前に<code>dryRun</code>を使用し、共同編集時はrevisionも渡します。参照Clipを設定したポーズと直接編集するchannel値は同時指定できません。</li><li><code>ee4v_render_expression_preview</code>へ<code>time</code>を渡すと、各ポーズまたは遷移途中をPNGで確認できます。</li><li>表情remapはRenderer pathとBlendShape名の完全一致を優先し、一致しないchannelだけpresetの役割と左右で対応付けます。FacialSet適用は<code>dryRun</code>で設定と前提条件を検証できます。</li><li>AssetManagerでは変更前の値を先に取得します。Eagle由来Itemの名前と説明はEagleで変更します。Collectionは<code>ee4v_asset_list_collections</code>で確認し、<code>ee4v_asset_create_collection</code>、<code>ee4v_asset_update_collection</code>、<code>ee4v_asset_delete_collection</code>で管理できます。同期、Item／File削除、File登録、Import、新規Item作成はAssetManager画面から実行します。</li></ul>
+        <ul>
+          <li>FBX別BlendShapeプリセットは一覧と詳細からrevisionを取得し、変更するMappingだけを更新します。</li>
+          <li>静止表情Clipはcreate・patch・replaceを指定します。Clipの調査と検証は<code>ee4v_inspect_expression_clip</code>で行い、検証だけなら<code>includeAnimation: false</code>を指定します。</li>
+          <li>ポーズ追加・更新・移動・Loop変更は<code>ee4v_edit_expression_animation</code>の<code>action</code>を選びます。ポーズ削除は<code>ee4v_remove_expression_pose</code>です。dryRunとexpectedRevisionを利用できます。</li>
+          <li>Gestureを1組だけ変更する場合も<code>ee4v_apply_facial_set</code>へ1件のassignmentを渡します。既定の<code>mode: patch</code>は他の割り当てを保持し、<code>mode: replace</code>は全設定を置き換えます。dryRunで前提条件を確認できます。</li>
+          <li>Itemの名前・説明・Tag・Archive・Import Targetは<code>ee4v_asset_edit_items</code>へ変更する項目だけを渡します。名前・説明・Tag・Archiveは複数Itemへ同時指定できます。Eagle由来の名前・説明はEagleで編集します。途中失敗時には完了済みの変更も結果に表示します。</li>
+          <li>Collectionは<code>ee4v_asset_upsert_collection</code>で作成・部分更新し、削除は<code>ee4v_asset_delete_collection</code>で行います。</li>
+          <li><code>ee4v_asset_import</code>は登録済みAssetをUnity Projectへ取り込みます。Itemを指定すると登録済みTargetと依存を取り込み、名前付きGroupごとに1つ選択します。Fileを指定すると解析で得たエントリーだけを取り込みます。両方式は同時指定できません。既存Project Assetが上書きされる場合があります。</li>
+          <li>Source同期、Item／File削除、File登録、新規Item作成はAssetManager画面から実行します。</li>
+        </ul>
+        <p>ツール構成は28件です。統合前の名前はaliasとして残していないため、クライアントでツール一覧を再取得してください。</p>
       </section>
       <section id="security">
         <p class="section-label">Security</p><h2>localhost専用として扱う</h2>

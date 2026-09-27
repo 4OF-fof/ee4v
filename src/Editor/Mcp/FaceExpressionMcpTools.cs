@@ -18,17 +18,12 @@ namespace Ee4v.Mcp
             RegisterUpdateBlendShapePreset();
             RegisterInspectFace();
             RegisterWriteClip();
-            RegisterInspectAnimation();
-            RegisterAddAnimationPose();
-            RegisterUpdateAnimationPose();
-            RegisterMoveAnimationPose();
+            RegisterInspectClip();
+            RegisterEditAnimation();
             RegisterRemoveAnimationPose();
-            RegisterSetAnimationLooping();
-            RegisterValidateClip();
             RegisterRenderPreview();
             RegisterRemapClip();
             RegisterGetConfiguration();
-            RegisterSetGestureExpression();
             RegisterPlanApply();
             RegisterApply();
         }
@@ -182,124 +177,127 @@ namespace Ee4v.Mcp
                 idempotent: true));
         }
 
-        private static void RegisterInspectAnimation()
+        private static void RegisterInspectClip()
         {
             McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_inspect_expression_animation",
-                "Inspects an expression clip as an ordered pose sequence, including pose times, transition durations, custom names, source clips, loop state, revision, and optional per-pose BlendShape values.",
+                "ee4v_inspect_expression_clip",
+                "Inspects and validates a static or animated expression clip. Returns revision, validation findings and counts, and ordered poses with times, transitions, names, source clips, and loop state. Set includeAnimation=false for validation only; includeChannels=true includes pose BlendShape values.",
                 McpSchemas.Object(new JObject
                 {
                     ["avatarRef"] = McpSchemas.String(),
                     ["clipPath"] = McpSchemas.String(),
-                    ["includeChannels"] = McpSchemas.Boolean(
-                        "Include every animated BlendShape value at every pose. Defaults to false to keep the response compact.")
+                    ["includeAnimation"] = McpSchemas.Boolean(),
+                    ["includeChannels"] = McpSchemas.Boolean()
                 }, "avatarRef", "clipPath"),
                 arguments =>
                 {
                     var clip = RequiredClip(arguments);
+                    var findings = FaceExpressionApi.ValidateClip(Avatar(arguments), clip);
                     return Task.FromResult(McpToolResult.Success(McpJson.From(new
                     {
                         ok = true,
-                        animation = FaceExpressionApi.InspectAnimation(
-                            clip,
-                            (bool?)arguments["includeChannels"] ?? false),
-                        findings = FaceExpressionApi.ValidateClip(
-                            Avatar(arguments),
-                            clip)
+                        revision = FaceExpressionApi.Revision(clip),
+                        animation = (bool?)arguments["includeAnimation"] == false ? null :
+                            FaceExpressionApi.InspectAnimation(clip, (bool?)arguments["includeChannels"] ?? false),
+                        errorCount = findings.Count(finding => finding.Severity == "error"),
+                        warningCount = findings.Count(finding => finding.Severity == "warning"),
+                        findings
                     })));
-                },
-                readOnly: true));
+                }, readOnly: true));
         }
 
-        private static void RegisterAddAnimationPose()
+        private static void RegisterEditAnimation()
         {
+            var properties = new JObject
+            {
+                ["action"] = McpSchemas.Enum("add", "update", "move", "setLoop"),
+                ["avatarRef"] = McpSchemas.String(),
+                ["clipPath"] = McpSchemas.String(),
+                ["afterPoseIndex"] = McpSchemas.Integer(),
+                ["poseIndex"] = McpSchemas.Integer(),
+                ["targetIndex"] = McpSchemas.Integer("Adjacent destination index."),
+                ["transitionDuration"] = McpSchemas.Number("Seconds to the following or inserted pose; must be positive."),
+                ["name"] = McpSchemas.String("Empty clears the custom pose name."),
+                ["sourceClipPath"] = McpSchemas.String("Read-only pose source. Empty clears the source."),
+                ["channels"] = McpSchemas.Array(PoseChannelSchema()),
+                ["looping"] = McpSchemas.Boolean(),
+                ["dryRun"] = McpSchemas.Boolean(),
+                ["expectedRevision"] = RevisionSchema()
+            };
+            var schema = McpSchemas.Object(properties, "action", "clipPath");
+            schema["oneOf"] = new JArray(
+                AnimationEditSchema(properties, "add", new[] { "avatarRef", "afterPoseIndex", "transitionDuration", "name", "sourceClipPath", "channels" }, new[] { "avatarRef", "afterPoseIndex", "transitionDuration" }),
+                AnimationEditSchema(properties, "update", new[] { "avatarRef", "poseIndex", "name", "sourceClipPath", "channels", "transitionDuration" }, new[] { "avatarRef", "poseIndex" }),
+                AnimationEditSchema(properties, "move", new[] { "poseIndex", "targetIndex" }, new[] { "poseIndex", "targetIndex" }),
+                AnimationEditSchema(properties, "setLoop", new[] { "looping" }, new[] { "looping" }));
             McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_add_expression_pose",
-                "Duplicates one pose after its current position, then optionally assigns a custom name, a read-only source clip, or explicit BlendShape values. Source clips and explicit channels are mutually exclusive.",
-                McpSchemas.Object(new JObject
-                {
-                    ["avatarRef"] = McpSchemas.String(),
-                    ["clipPath"] = McpSchemas.String(),
-                    ["afterPoseIndex"] = McpSchemas.Integer(),
-                    ["transitionDuration"] = McpSchemas.Number(
-                        "Seconds from the selected pose to the inserted pose. Must be greater than zero."),
-                    ["name"] = McpSchemas.String(),
-                    ["sourceClipPath"] = McpSchemas.String(
-                        "Optional existing expression clip used as a read-only pose source."),
-                    ["channels"] = McpSchemas.Array(PoseChannelSchema()),
-                    ["dryRun"] = McpSchemas.Boolean(),
-                    ["expectedRevision"] = RevisionSchema()
-                },
-                    "avatarRef",
-                    "clipPath",
-                    "afterPoseIndex",
-                    "transitionDuration"),
-                arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
-                    FaceExpressionApi.AddAnimationPose(
-                        Avatar(arguments),
-                        RequiredClip(arguments),
-                        (int)arguments["afterPoseIndex"],
-                        (float)arguments["transitionDuration"],
-                        (string)arguments["name"],
-                        (string)arguments["sourceClipPath"],
-                        PoseChannels(arguments),
-                        (bool?)arguments["dryRun"] ?? false,
-                        (string)arguments["expectedRevision"])))),
-                readOnly: false,
-                destructive: false,
-                idempotent: false));
+                "ee4v_edit_expression_animation",
+                "Edits one expression animation using action add, update, move, or setLoop. add duplicates a pose after afterPoseIndex; update patches supplied pose fields; move swaps adjacent poses; setLoop changes looping only. dryRun and expectedRevision apply to every action. Pose deletion is a separate destructive tool.",
+                schema,
+                arguments => Task.FromResult(EditAnimation(arguments)),
+                readOnly: false, destructive: false, idempotent: false));
         }
 
-        private static void RegisterUpdateAnimationPose()
+        private static JObject AnimationEditSchema(JObject properties, string action, string[] fields, string[] required)
         {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_update_expression_pose",
-                "Updates one existing pose. It can rename the pose, assign or clear its read-only source clip, set explicit BlendShape values, and change the duration to the following pose. Pass an empty sourceClipPath to make a sourced pose locally editable before setting channels.",
-                McpSchemas.Object(new JObject
-                {
-                    ["avatarRef"] = McpSchemas.String(),
-                    ["clipPath"] = McpSchemas.String(),
-                    ["poseIndex"] = McpSchemas.Integer(),
-                    ["name"] = McpSchemas.String(
-                        "Optional custom name. Pass an empty string to restore the default Pose N label."),
-                    ["sourceClipPath"] = McpSchemas.String(
-                        "Optional source update. Pass an empty string to clear the source."),
-                    ["channels"] = McpSchemas.Array(PoseChannelSchema()),
-                    ["transitionDuration"] = McpSchemas.Number(
-                        "Optional seconds to the following pose. Invalid for the last pose."),
-                    ["dryRun"] = McpSchemas.Boolean(),
-                    ["expectedRevision"] = RevisionSchema()
-                }, "avatarRef", "clipPath", "poseIndex"),
-                arguments => Task.FromResult(UpdateAnimationPose(arguments)),
-                readOnly: false,
-                destructive: false,
-                idempotent: true));
+            var selected = new JObject
+            {
+                ["action"] = McpSchemas.Enum(action)
+            };
+            foreach (var field in new[] { "clipPath", "dryRun", "expectedRevision" }.Concat(fields))
+            {
+                selected[field] = properties[field].DeepClone();
+            }
+            var schema = McpSchemas.Object(selected, new[] { "action", "clipPath" }.Concat(required).ToArray());
+            if (action == "update")
+            {
+                schema["anyOf"] = new JArray(new[] { "name", "sourceClipPath", "channels", "transitionDuration" }
+                    .Select(field => new JObject { ["required"] = new JArray(field) }));
+            }
+            return schema;
         }
 
-        private static void RegisterMoveAnimationPose()
+        private static McpToolResult EditAnimation(JObject arguments)
         {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_move_expression_pose",
-                "Swaps one expression pose with an adjacent pose while preserving the timeline positions and moving its custom name and source clip with its facial values.",
-                McpSchemas.Object(new JObject
-                {
-                    ["clipPath"] = McpSchemas.String(),
-                    ["poseIndex"] = McpSchemas.Integer(),
-                    ["targetIndex"] = McpSchemas.Integer(
-                        "Adjacent destination index."),
-                    ["dryRun"] = McpSchemas.Boolean(),
-                    ["expectedRevision"] = RevisionSchema()
-                }, "clipPath", "poseIndex", "targetIndex"),
-                arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
-                    FaceExpressionApi.MoveAnimationPose(
-                        RequiredClip(arguments),
-                        (int)arguments["poseIndex"],
-                        (int)arguments["targetIndex"],
-                        (bool?)arguments["dryRun"] ?? false,
-                        (string)arguments["expectedRevision"])))),
-                readOnly: false,
-                destructive: false,
-                idempotent: false));
+            var dryRun = (bool?)arguments["dryRun"] ?? false;
+            var revision = (string)arguments["expectedRevision"];
+            switch ((string)arguments["action"])
+            {
+                case "add":
+                    if (arguments["transitionDuration"] == null ||
+                        (arguments["transitionDuration"].Type != JTokenType.Integer && arguments["transitionDuration"].Type != JTokenType.Float))
+                    {
+                        throw new McpToolException("invalid_request", "transitionDuration must be a number.");
+                    }
+                    return McpToolResult.Success(McpJson.From(FaceExpressionApi.AddAnimationPose(
+                        Avatar(arguments), RequiredClip(arguments), RequiredIndex(arguments, "afterPoseIndex"),
+                        (float)arguments["transitionDuration"], (string)arguments["name"],
+                        (string)arguments["sourceClipPath"], PoseChannels(arguments), dryRun, revision)));
+                case "update":
+                    RequiredIndex(arguments, "poseIndex");
+                    return UpdateAnimationPose(arguments);
+                case "move":
+                    return McpToolResult.Success(McpJson.From(FaceExpressionApi.MoveAnimationPose(
+                        RequiredClip(arguments), RequiredIndex(arguments, "poseIndex"), RequiredIndex(arguments, "targetIndex"), dryRun, revision)));
+                case "setLoop":
+                    if (arguments["looping"]?.Type != JTokenType.Boolean)
+                    {
+                        throw new McpToolException("invalid_request", "looping must be a boolean.");
+                    }
+                    return McpToolResult.Success(McpJson.From(FaceExpressionApi.SetAnimationLooping(
+                        RequiredClip(arguments), (bool)arguments["looping"], dryRun, revision)));
+                default:
+                    throw new McpToolException("invalid_request", "action must be add, update, move, or setLoop.");
+            }
+        }
+
+        private static int RequiredIndex(JObject arguments, string field)
+        {
+            if (arguments[field]?.Type != JTokenType.Integer)
+            {
+                throw new McpToolException("invalid_request", field + " must be an integer.");
+            }
+            return (int)arguments[field];
         }
 
         private static void RegisterRemoveAnimationPose()
@@ -323,55 +321,6 @@ namespace Ee4v.Mcp
                 readOnly: false,
                 destructive: true,
                 idempotent: false));
-        }
-
-        private static void RegisterSetAnimationLooping()
-        {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_set_expression_animation_loop",
-                "Enables or disables looping on an expression animation clip without changing its poses.",
-                McpSchemas.Object(new JObject
-                {
-                    ["clipPath"] = McpSchemas.String(),
-                    ["looping"] = McpSchemas.Boolean(),
-                    ["dryRun"] = McpSchemas.Boolean(),
-                    ["expectedRevision"] = RevisionSchema()
-                }, "clipPath", "looping"),
-                arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
-                    FaceExpressionApi.SetAnimationLooping(
-                        RequiredClip(arguments),
-                        (bool)arguments["looping"],
-                        (bool?)arguments["dryRun"] ?? false,
-                        (string)arguments["expectedRevision"])))),
-                readOnly: false,
-                destructive: false,
-                idempotent: true));
-        }
-
-        private static void RegisterValidateClip()
-        {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_validate_expression_clip",
-                "Validates face-clip bindings, keyframes, values, object curves, and Animation Events against an avatar.",
-                McpSchemas.Object(new JObject
-                {
-                    ["avatarRef"] = McpSchemas.String(),
-                    ["clipPath"] = McpSchemas.String()
-                }, "avatarRef", "clipPath"),
-                arguments =>
-                {
-                    var findings = FaceExpressionApi.ValidateClip(
-                        Avatar(arguments),
-                        RequiredClip(arguments));
-                    return Task.FromResult(McpToolResult.Success(McpJson.From(new
-                    {
-                        ok = true,
-                        errorCount = findings.Count(finding => finding.Severity == "error"),
-                        warningCount = findings.Count(finding => finding.Severity == "warning"),
-                        findings
-                    })));
-                },
-                readOnly: true));
         }
 
         private static void RegisterRenderPreview()
@@ -464,28 +413,6 @@ namespace Ee4v.Mcp
                 readOnly: true));
         }
 
-        private static void RegisterSetGestureExpression()
-        {
-            McpToolRegistry.Register(new McpToolDefinition(
-                "ee4v_set_gesture_expression",
-                "Assigns one expression clip to one left/right hand gesture combination while preserving every other gesture and menu-only assignment.",
-                McpSchemas.Object(new JObject
-                {
-                    ["avatarRef"] = McpSchemas.String(),
-                    ["left"] = GestureSchema(),
-                    ["right"] = GestureSchema(),
-                    ["clipPath"] = McpSchemas.String(),
-                    ["enableBlink"] = McpSchemas.Boolean(),
-                    ["fixMouth"] = McpSchemas.Boolean(),
-                    ["menuName"] = McpSchemas.String(),
-                    ["dryRun"] = McpSchemas.Boolean()
-                }, "avatarRef", "left", "right", "clipPath"),
-                arguments => Task.FromResult(SetGestureExpression(arguments)),
-                readOnly: false,
-                destructive: false,
-                idempotent: true));
-        }
-
         private static void RegisterPlanApply()
         {
             McpToolRegistry.Register(new McpToolDefinition(
@@ -520,10 +447,11 @@ namespace Ee4v.Mcp
             }, "name", "clipPath");
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_apply_facial_set",
-                "Generates or updates the ee4v-owned FX controller, Expressions Menu, icons, and Modular Avatar FacialSet prefab from a complete configuration. Set dryRun to validate the configuration and prerequisites without writing assets. Run ee4v_plan_facial_set_apply first.",
+                "Generates or updates the ee4v-owned FX controller, Expressions Menu, icons, and Modular Avatar FacialSet prefab. mode=patch (default) merges supplied gesture combinations and menu names into current assignments; mode=replace uses the complete configuration. A one-entry patch edits one gesture without touching others. dryRun validates without writing assets. Run ee4v_plan_facial_set_apply first.",
                 McpSchemas.Object(new JObject
                 {
                     ["avatarRef"] = McpSchemas.String(),
+                    ["mode"] = McpSchemas.Enum("patch", "replace"),
                     ["configuration"] = McpSchemas.Object(new JObject
                     {
                         ["assignments"] = McpSchemas.Array(assignment),
@@ -531,12 +459,7 @@ namespace Ee4v.Mcp
                     }),
                     ["dryRun"] = McpSchemas.Boolean()
                 }, "avatarRef", "configuration"),
-                arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
-                    FaceExpressionApi.ApplyConfiguration(
-                        Avatar(arguments),
-                        McpJson.To<FaceExpressionConfigurationData>(
-                            arguments["configuration"]),
-                        (bool?)arguments["dryRun"] ?? false)))),
+                arguments => Task.FromResult(ApplyFacialSet(arguments)),
                 readOnly: false,
                 destructive: false,
                 idempotent: true));
@@ -609,7 +532,7 @@ namespace Ee4v.Mcp
         private static JObject RevisionSchema()
         {
             return McpSchemas.String(
-                "Optional revision returned by ee4v_inspect_expression_animation. The write is rejected if the clip changed.");
+                "Optional revision returned by ee4v_inspect_expression_clip. The write is rejected if the clip changed.");
         }
 
         private static GameObject Avatar(JObject arguments)
@@ -618,63 +541,52 @@ namespace Ee4v.Mcp
                 (string)arguments["avatarRef"]);
         }
 
-        private static McpToolResult SetGestureExpression(JObject arguments)
+        private static McpToolResult ApplyFacialSet(JObject arguments)
         {
+            if (!(arguments["configuration"] is JObject))
+            {
+                throw new McpToolException("invalid_request", "configuration must be an object.");
+            }
             var avatar = Avatar(arguments);
-            var left = (string)arguments["left"];
-            var right = (string)arguments["right"];
-            var clip = LoadClip((string)arguments["clipPath"], true);
-            var assignment = new FaceExpressionGestureAssignmentData
+            var configuration = McpJson.To<FaceExpressionConfigurationData>(arguments["configuration"]);
+            var mode = (string)arguments["mode"] ?? "patch";
+            if (mode == "patch")
             {
-                Left = left,
-                Right = right,
-                ClipPath = AssetDatabase.GetAssetPath(clip),
-                EnableBlink = (bool?)arguments["enableBlink"] ?? true,
-                FixMouth = (bool?)arguments["fixMouth"] ?? false,
-                MenuName = (string)arguments["menuName"] ?? string.Empty
-            };
-            var current = FaceExpressionApi.ReadConfiguration(avatar);
-            var assignments = (current.Assignments ??
-                               Array.Empty<FaceExpressionGestureAssignmentData>())
-                .ToList();
-            var index = assignments.FindIndex(value =>
-                string.Equals(value.Left, left, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(value.Right, right, StringComparison.OrdinalIgnoreCase));
-            if (index >= 0)
-            {
-                assignments[index] = assignment;
-            }
-            else
-            {
-                assignments.Add(assignment);
-            }
-
-            var configuration = new FaceExpressionConfigurationData
-            {
-                Assignments = assignments,
-                MenuEntries = current.MenuEntries ??
-                              Array.Empty<FaceExpressionMenuEntryData>()
-            };
-            var dryRun = (bool?)arguments["dryRun"] ?? false;
-            if (dryRun)
-            {
-                return McpToolResult.Success(McpJson.From(new
+                var current = FaceExpressionApi.ReadConfiguration(avatar);
+                var assignments = (current.Assignments ?? Array.Empty<FaceExpressionGestureAssignmentData>()).ToList();
+                var gestures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var assignment in configuration.Assignments ?? Array.Empty<FaceExpressionGestureAssignmentData>())
                 {
-                    ok = true,
-                    dryRun = true,
-                    assignment,
-                    plan = FaceExpressionApi.PlanApply(avatar)
-                }));
+                    if (assignment == null || !gestures.Add(assignment.Left + ":" + assignment.Right))
+                    {
+                        throw new McpToolException("invalid_request", "Gesture patches must be non-null and unique.");
+                    }
+                    var index = assignments.FindIndex(existing =>
+                        string.Equals(existing.Left, assignment.Left, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(existing.Right, assignment.Right, StringComparison.OrdinalIgnoreCase));
+                    if (index < 0) assignments.Add(assignment);
+                    else assignments[index] = assignment;
+                }
+                var menus = (current.MenuEntries ?? Array.Empty<FaceExpressionMenuEntryData>()).ToList();
+                var names = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var entry in configuration.MenuEntries ?? Array.Empty<FaceExpressionMenuEntryData>())
+                {
+                    if (entry == null || !names.Add(entry.Name))
+                    {
+                        throw new McpToolException("invalid_request", "Menu patches must be non-null and unique.");
+                    }
+                    var index = menus.FindIndex(existing => string.Equals(existing.Name, entry.Name, StringComparison.Ordinal));
+                    if (index < 0) menus.Add(entry);
+                    else menus[index] = entry;
+                }
+                configuration = new FaceExpressionConfigurationData { Assignments = assignments, MenuEntries = menus };
             }
-
-            var apply = FaceExpressionApi.ApplyConfiguration(avatar, configuration);
-            return McpToolResult.Success(McpJson.From(new
+            else if (mode != "replace")
             {
-                ok = apply.Succeeded,
-                dryRun = false,
-                assignment,
-                apply
-            }));
+                throw new McpToolException("invalid_request", "mode must be patch or replace.");
+            }
+            return McpToolResult.Success(McpJson.From(FaceExpressionApi.ApplyConfiguration(
+                avatar, configuration, (bool?)arguments["dryRun"] ?? false)));
         }
 
         private static AnimationClip OptionalClip(JObject arguments)

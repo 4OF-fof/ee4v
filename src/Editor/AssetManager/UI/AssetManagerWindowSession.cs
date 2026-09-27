@@ -71,7 +71,7 @@ namespace Ee4v.AssetManager.UI
                 return _manager;
             }
 
-            _manager = AssetManagerFactory.Open(Path.Combine(
+            _manager = AssetManagerFactory.OpenSession(Path.Combine(
                 Environment.ExpandEnvironmentVariables(
                     AssetManagerSettings.Ee4vLibraryPath),
                 "asset-manager-v1.db"));

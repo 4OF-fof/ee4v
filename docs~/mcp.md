@@ -30,16 +30,22 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 - dispatch待ちの操作がないEditor frameではqueueの配列を生成しない。
 - tool結果は機械処理用の`structuredContent`と、同じ内容のtext contentを返す。preview PNGはimage contentも返す。
 - tool annotationでread-only、破壊性、冪等性、open-world accessを宣言する。
-- AssetManagerでは同期、Item／Fileの削除、File登録、Unity ProjectへのImport、新規Item作成をMCPへ公開しない。Collectionの作成・削除は例外として公開し、削除toolは削除前の名前と条件を返す。その他の書き込みは、事前に読み取った値を再設定すれば元へ戻せるmetadata編集だけに限定する。
-- AssetManagerのPrefab調査は、既にUnity Projectへ取り込まれたPrefab assetとAssetManagerで作成済みの派生Prefabだけを対象にする。ZIP、unitypackage、未Import assetをtool呼び出しからImportしない。
+- AssetManagerではmetadata編集と、明示的な`ee4v_asset_import`によるUnity ProjectへのImportを公開する。同期、Item／Fileの削除、File登録、新規Item作成は公開しない。Collectionの作成・削除も公開し、削除toolは削除前の名前と条件を返す。Importは既存Project Assetを上書きする可能性があるため、破壊性あり・冪等性なしのannotationを付ける。
+- AssetManagerのPrefab調査は、既にUnity Projectへ取り込まれたPrefab assetとAssetManagerで作成済みの派生Prefabだけを対象にする。Prefab調査・previewからImportを暗黙には開始しない。必要な場合は登録済みFileを明示的なImport toolで取り込む。
 - Prefab previewはUnityの内部Preview sceneへだけinstanceを作成し、Play Mode、利用者のScene、Prefab assetを変更しない。外部APIへ画像を送信しない。
-- 表情Clipと表情アニメーションの更新は`expectedRevision`で競合を検出できる。静止Clipの作成、部分更新、完全置換と、ポーズ単位の追加・更新・並び替え・削除を分け、`dryRun`で書き込み前の結果を確認できる。
+- 表情Clipと表情アニメーションの更新は`expectedRevision`で競合を検出できる。静止Clipは作成・部分更新・完全置換を一つのtoolで扱う。アニメーションはポーズ単位の追加・更新・並び替え・Loop変更を一つの編集toolへまとめ、削除は破壊性ありの別toolとする。`dryRun`で書き込み前の結果を確認できる。
 
 ## Object参照
 
 `ee4v_find_avatars`は、loaded SceneとPrefab Modeから後続toolへ渡す`avatarRef`を返します。参照にはUnityの`GlobalObjectId`を優先します。Project内Prefabの検索は汎用Unity MCPへ任せます。
 
 書き込みtoolは取得済みの参照を再解決し、対象がAvatar配下にあること、永続Prefab assetを直接編集しようとしていないこと、必要なVRChat SDK型が存在することを再検証します。
+
+## Tool設計
+
+現行catalogは28 tools。対象と編集単位が同じ操作は、部分更新または明示的なactionへ統合する。読み取り、書き込み、破壊的な削除はannotationと承認単位が異なるため分離する。検索／一覧と詳細取得は返す情報量と用途が異なるため維持する。Avatar inventoryとauditも、事実の取得と問題の検出を分ける。
+
+Item編集へ名前・説明・Tag・Archive・Import Targetを統合し、一括編集を維持する。Collectionの作成と更新はupsertへ、ポーズ追加・更新・移動・Loop変更はanimation編集へ、Clipの調査とvalidationはClip調査へ統合する。左右Gestureの単独更新はFacialSetのpatch適用で扱う。旧tool名のaliasは登録しない。クライアントは`tools/list`を再取得する。
 
 ## Tool catalog
 
@@ -63,25 +69,20 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 | `ee4v_update_blendshape_preset` | Mappingの役割名、左右、口形状、見た目の部位・グループ名を部分更新する |
 | `ee4v_inspect_face` | Avatarの編集可能なBlendShape channelとpreset分類を列挙する。`clipPath`指定時はClip値、revision、validation結果も返す |
 | `ee4v_upsert_expression_clip` | 静止表情Clipを`create`、`patch`、`replace`のいずれかで作成・更新する。複数ポーズClipの更新は拒否する |
-| `ee4v_inspect_expression_animation` | ポーズ順、時刻、遷移時間、任意名、参照Clip、Loop、revisionを返す。必要な場合だけ各ポーズのchannel値も返す |
-| `ee4v_add_expression_pose` | 指定ポーズを複製して直後へ追加し、任意名、参照Clip、またはchannel値を設定する |
-| `ee4v_update_expression_pose` | 既存ポーズの名前、参照Clip、channel値、次ポーズまでの遷移時間を更新する |
-| `ee4v_move_expression_pose` | 隣接ポーズを、表情値、任意名、参照Clipをまとめて入れ替える |
+| `ee4v_inspect_expression_clip` | 静止・animation Clipのrevision、validationと件数、ポーズ順・時刻・遷移・名前・参照Clip・Loopを取得する。`includeAnimation: false`はvalidationだけ、`includeChannels: true`はポーズ値も返す |
+| `ee4v_edit_expression_animation` | `action`の`add`、`update`、`move`、`setLoop`でポーズ追加・部分更新・隣接移動・Loop変更を行う |
 | `ee4v_remove_expression_pose` | ポーズを削除して時間の空きを詰める。最後の1ポーズは削除しない |
-| `ee4v_set_expression_animation_loop` | ポーズを変えずにLoopを切り替える |
-| `ee4v_validate_expression_clip` | binding、keyframe、値、object curve、Animation Eventを検査する |
 | `ee4v_render_expression_preview` | AvatarへClipを指定時刻で適用したpreviewをPNGとして返す。描画可能なSkinnedMeshがなければ`expression_preview_unavailable`を返す |
 | `ee4v_remap_expression_clip` | Renderer pathとBlendShape名の完全一致を優先し、一致しないchannelはFBX別presetのroleとsideで別Avatarへ対応付ける |
 | `ee4v_get_facial_configuration` | Gesture matrix、menu専用表情、Blink、口固定の現在値を返す |
-| `ee4v_set_gesture_expression` | 他の割り当てを維持し、左右Gestureの1組へ表情Clip、Blink、口固定、menu名を設定する |
 | `ee4v_plan_facial_set_apply` | FacialSet適用の入力、生成物、前提条件を検証する |
-| `ee4v_apply_facial_set` | FX Controller、Expression Parameters、Expression Menu、Modular Avatar installerを生成・更新する。`dryRun`では設定と前提条件だけを検証する |
+| `ee4v_apply_facial_set` | FX Controller、Expression Parameters、Expression Menu、Modular Avatar installerを生成・更新する。`mode: patch`は指定Gesture／Menuだけ更新し、`mode: replace`は全設定を置き換える。`dryRun`では設定と前提条件だけを検証する |
 
 AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。同じ内容を再指定した場合は`changed: false`としてAssetを書き直しません。複数ポーズClipはこの静止表情toolで誤って単一frameへ戻さず、アニメーション専用toolだけで更新します。
 
 自動生成済みのFBX別プリセットをagentが整える場合は、一覧から`assetGuid`を選び、詳細の`revision`、`meshLocalId`（文字列）、`shapeName`を取得します。更新toolの`changes`には編集するMappingと項目だけを指定します。`role`と`appearanceGroup`は空文字で消去でき、`side`は空文字／`L`／`R`、`appearancePart`は空文字（自動）／`expression`／`head`／`chest`／`waist`／`shoulders`／`arms`／`hands`／`legs`／`feet`／`other`を指定できます。区切り見出しは編集できません。`expectedRevision`が一致しない場合は再取得が必要です。`dryRun: true`は変更件数と適用後のrevisionを返しますが、保存しません。書き込みは既存プリセットに限り、他のMappingと未指定項目を維持します。保存時はUIと同じ保存先・通知を使用します。
 
-アニメーション編集は`ee4v_inspect_expression_animation`でポーズindexとrevisionを取得し、書き込みtoolをまず`dryRun: true`で呼んでから同じ入力で適用します。ポーズ追加は指定ポーズの表情を複製し、`transitionDuration`後へ挿入します。ポーズ更新では参照Clipと明示的なchannel値を同時に指定できません。参照Clipをローカル編集へ戻して値も変更する場合は、空の`sourceClipPath`と`channels`を同じ呼び出しへ指定します。参照Clipとポーズ名はUIと同じ`.anim`内のsub-assetへ保存され、移動と削除にも追従します。更新用revisionはアニメーション調査の結果を使用します。
+アニメーション編集は`ee4v_inspect_expression_clip`でポーズindexとrevisionを取得し、`ee4v_edit_expression_animation`のactionを選び、書き込みtoolをまず`dryRun: true`で呼んでから同じ入力で適用します。ポーズ追加は指定ポーズの表情を複製し、`transitionDuration`後へ挿入します。ポーズ更新では参照Clipと明示的なchannel値を同時に指定できません。参照Clipをローカル編集へ戻して値も変更する場合は、空の`sourceClipPath`と`channels`を同じ呼び出しへ指定します。参照Clipとポーズ名はUIと同じ`.anim`内のsub-assetへ保存され、移動と削除にも追従します。更新用revisionはアニメーション調査の結果を使用します。
 
 `ee4v_remap_expression_clip`はRenderer pathとBlendShape名が完全一致するchannelを直接対応付け、それ以外だけpreset roleとsideを使用します。対応不能channelは結果へ残し、無言で別名へ割り当てません。表情previewにはMeshが割り当てられた描画可能な`SkinnedMeshRenderer`が1つ以上必要で、存在しない場合は空画像を成功扱いにしません。アニメーションClipでは`time`を指定して各ポーズや遷移途中を描画できます。
 
@@ -89,16 +90,44 @@ AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_exp
 
 | 分類 | tools |
 |---|---|
-| 検索・詳細 | `ee4v_asset_search`、`ee4v_asset_get_item`。詳細には取り込み済みGUIDと派生Prefabから解決した`prefabCandidates`を含む |
-| Prefab調査 | `ee4v_asset_inspect_prefab`、`ee4v_asset_render_prefab_preview` |
-| Item metadata | `ee4v_asset_update_item`、`ee4v_asset_set_tags`、`ee4v_asset_set_archived` |
+| 検索・詳細 | `ee4v_asset_search`、`ee4v_asset_get_item`。詳細は取り込み済みGUIDと派生Prefabから解決した`prefabCandidates`も返す |
+| Item編集 | `ee4v_asset_edit_items`。名前・説明・Tag・Archive・Import Targetを部分更新する |
 | File解析 | `ee4v_asset_analyze_file` |
-| Import設定 | `ee4v_asset_set_targets`、`ee4v_asset_set_dependencies` |
-| Collection | `ee4v_asset_list_collections`、`ee4v_asset_create_collection`、`ee4v_asset_update_collection`、`ee4v_asset_delete_collection` |
+| Import | `ee4v_asset_import`。Itemの登録済み対象と依存、またはFile内の指定エントリーを取り込む |
+| 依存設定 | `ee4v_asset_set_dependencies` |
+| Collection | `ee4v_asset_list_collections`、`ee4v_asset_upsert_collection`、`ee4v_asset_delete_collection` |
+| Prefab調査 | `ee4v_asset_inspect_prefab`、`ee4v_asset_render_prefab_preview` |
 
-`ee4v_asset_set_dependencies`は`dependentTargets`と`dependencyTargets`の両方に`fileId`と`targetPath`の組を渡します。ZIPは空pathで指定せず、解析で得た内部実体のpathを指定します。
+`ee4v_asset_edit_items`は`itemIds`に1件以上を渡し、`name`、`description`、`tags`、`archived`、`targets`のうち変更する項目だけを指定する。未指定項目は保持する。空のdescriptionは消去、空のtags／targets配列は全解除、`archived: false`はArchive解除を意味する。targets変更は1 Itemだけを対象とし、各要素はfileId、targetPath、任意のgroupNameを持つ。groupNameを省略すると既存Groupを保持し、空文字はGroup解除を意味する。Eagle由来Itemの名前・説明は変更できず、Eagle由来Tagは維持する。名前・説明・Tag・Archiveの一括指定も可能。複合編集は複数の公開APIを順に実行するため全体transactionではなく、途中失敗時はerrorの`details.appliedChanges`に完了した編集を返す。
 
-MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・編集します。DB fileはUser Settingsの共通data rootにある`asset-manager-v1.db`です。MCP独自のDB書き込みやschemaは持ちません。Eagle由来Itemの名前と説明はEagleが所有するため`ee4v_asset_update_item`では変更できませんが、AssetManagerで追加したTag、Archive、Import Target、Dependencyは対応するtoolで編集できます。Eagle由来TagはEagle側で編集します。Collectionの作成・削除はMCPからも実行でき、削除toolは復元の参考になる元のCollectionを返します。同期、Import、新規Item／File登録、Item／File削除はAssetManager UIで利用者が明示的に実行します。
+```json
+{"itemIds":["item-id"],"description":"更新する説明","tags":["avatar/example"],"archived":false}
+```
+
+`ee4v_asset_upsert_collection`はcollectionId未指定なら作成し、nameとfilterを必須とする。ID指定なら既存Collectionを部分更新し、未指定のname、icon、filterを保持する。削除は別toolに維持し、削除前のCollectionを返す。
+
+`ee4v_asset_set_dependencies`はdependentTargetsとdependencyTargetsの両方にfileIdとtargetPathを渡す。ZIPは空pathで指定せず、解析で得た内部実体を選ぶ。
+
+MCPはUIと同じ公開API、validation、change notificationを使用し、独自のDB接続・schema・Import処理は持たない。UIとMCPは`AssetManagerFactory.OpenSession`で同じDBのmanagerを共有するため、MCPからのImportや編集も画面、Project Thumbnail、AssetProtectionへ通知される。DBは共通data rootの`asset-manager-v1.db`。同期、新規Item／File登録、Item／File削除はUIから実行する。
+
+### 明示的なImport
+
+`ee4v_asset_import`は次のいずれか一方を指定する。両方を同時に渡すことはできない。
+
+| 入力 | 動作 |
+|---|---|
+| `itemId`、任意の`selectedTargets` | `ImportItemTargets`で登録済み対象を取り込む。groupNameが空の対象はすべて含め、名前付きGroupは各Groupから1件を選ぶ。実体ごとの依存を先に取り込む |
+| `fileId`、1件以上の`paths` | `ImportFileEntries`で指定したFile内のエントリーを一時的に取り込む。保存済みImport Targetは変更しない |
+
+```json
+{"itemId":"item-id","selectedTargets":[{"fileId":"file-id","targetPath":"variant-a.unitypackage"}]}
+```
+
+```json
+{"fileId":"file-id","paths":["materials/example.png"]}
+```
+
+File全体を取り込む場合はpathsへ空文字列を1件指定する。ただしZIP自体の直接Importは拒否する。未登録File、所属のないFile、Archive済みFile、無効な選択やpathは既存APIの検証で拒否する。出力はstate、fileIds、assetGuids、errorMessage。失敗・キャンセルはMCPのerrorとして返し、途中まで取り込んだ情報も保持する。Prefab調査からImportは自動開始しない。
 
 ### 実Prefabを比較する流れ
 
@@ -108,7 +137,7 @@ MCPは`AssetManager`の公開APIを通してDB内のmetadataを読み取り・�
 4. 選んだPrefabを`ee4v_asset_inspect_prefab`で調査し、Renderer path、Material slot、Material path、Shader、Texture、Mesh、BlendShape、参照切れを得る。
 5. `unityMcpHandoff`のRenderer pathとMaterial pathを既存Unity MCPへ渡し、Material編集は既存Unity MCPで行う。
 
-未ImportのZIPまたはunitypackageしか存在しない場合、`prefabCandidates`は空になり、`prefabCandidateResolution.emptyReason`または`unresolvedImportedAssets`に理由を返します。MCPはImportを開始しません。
+未ImportのZIPまたはunitypackageしか存在しない場合、`prefabCandidates`は空になり、`prefabCandidateResolution.emptyReason`または`unresolvedImportedAssets`に理由を返します。Prefab調査はImportを開始しません。必要な場合は`ee4v_asset_import`を明示的に呼び、完了後にItem詳細を再取得します。
 
 ### Prefab toolの契約
 

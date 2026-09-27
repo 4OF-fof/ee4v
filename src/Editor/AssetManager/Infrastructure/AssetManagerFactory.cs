@@ -9,6 +9,26 @@ namespace Ee4v.AssetManager.Infrastructure
 {
     public static class AssetManagerFactory
     {
+        private static string _sessionDatabasePath;
+        private static IAssetManager _sessionManager;
+
+        public static IAssetManager OpenSession(string databasePath)
+        {
+            if (string.IsNullOrWhiteSpace(databasePath))
+            {
+                throw new ArgumentException("Database path is required.", nameof(databasePath));
+            }
+
+            var path = System.IO.Path.GetFullPath(databasePath);
+            if (_sessionManager == null || !string.Equals(_sessionDatabasePath, path, StringComparison.Ordinal))
+            {
+                _sessionManager = Open(path);
+                _sessionDatabasePath = path;
+            }
+
+            return _sessionManager;
+        }
+
         public static IAssetManager Open(string databasePath)
         {
             if (string.IsNullOrWhiteSpace(databasePath))

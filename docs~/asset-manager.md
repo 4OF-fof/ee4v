@@ -2,11 +2,13 @@
 
 ## MCPからの利用
 
-`Ee4v.Mcp.Editor`はAssetManagerの公開APIを通して、検索と詳細取得、Item名・説明・Tag・Archive、File解析、Item Target、File Dependency、Collectionの一覧・作成・編集・削除を公開します。Item詳細では取り込み済みAsset GUIDとAssetManager派生PrefabをProject内のPrefabへ解決し、候補ごとのGUID、path、Prefab種別、Variant親、dependency hash、preview可否を返します。MCP独自のDB接続やschemaは持たず、UIと同じ`AssetManager`実装、validation、change notificationを使用します。tool一覧と入力境界は[`mcp.md`](./mcp.md)を参照します。
+`Ee4v.Mcp.Editor`はAssetManagerの公開APIを通して、検索と詳細取得、Item名・説明・Tag・Archive・Import Targetの統合編集、File解析、明示的なImport、File Dependency、Collectionの一覧・upsert・削除を公開します。Item詳細では取り込み済みAsset GUIDとAssetManager派生PrefabをProject内のPrefabへ解決し、候補ごとのGUID、path、Prefab種別、Variant親、dependency hash、preview可否を返します。MCP独自のDB接続やschemaは持たず、UIと同じ`AssetManager`実装、validation、change notificationを使用します。tool一覧と入力境界は[`mcp.md`](./mcp.md)を参照します。
 
-同期、Item／Fileの削除、File登録、Unity ProjectへのImport、新規Item作成は、外部実体または作成前の状態へMCPだけでは戻せないため公開しません。これらはAssetManager UIで利用者が明示的に実行します。Collectionの作成・削除はMCPから公開し、削除時は元の名前、アイコンと条件を返します。既存metadataの編集では、先に`ee4v_asset_get_item`または`ee4v_asset_list_collections`で元の値を取得します。
+Unity ProjectへのImportは`ee4v_asset_import`から、UIと同じ`ImportItemTargets`／`ImportFileEntries`を使用して明示的に実行できます。ItemのGroup選択・依存Importと、File内の一時的な選択Importを扱い、成功・失敗・キャンセルと取り込み済みGUIDを返します。同期、Item／File削除、File登録、新規Item作成はUIから実行します。Collectionの作成・削除はMCPから公開し、削除時は元の名前、アイコンと条件を返します。既存metadataの編集では、先に`ee4v_asset_get_item`または`ee4v_asset_list_collections`で元の値を取得します。
 
-MCPのPrefab調査は読み取り専用です。`ee4v_asset_inspect_prefab`はHierarchy、Renderer、Mesh、Material slot、Shader、Texture、BlendShape、Missing Scriptと参照切れを返し、`ee4v_asset_render_prefab_preview`は実PrefabをUnityの内部Preview sceneで撮影します。AssetPreviewのサムネイルは使用しません。未ImportのZIPまたはunitypackageからPrefabを自動Importせず、Project内にPrefabがなければ候補なしと理由を返します。撮影結果だけを共通data rootの`asset-preview`へ再生成可能なcacheとして置き、SQLiteや`Assets`へPNGを保存しません。Materialの変更は調査結果を既存Unity MCPへ渡して行います。
+UIとMCPは`AssetManagerFactory.OpenSession`から同じDBのmanagerを取得し、変更通知を共有します。MCPからの編集やImportも画面更新、Project Thumbnail、AssetProtectionへ伝わります。保存先が変わると新しいDBのsessionへ切り替わります。独立したmanagerが必要なAPI利用者は`AssetManagerFactory.Open`を使用します。
+
+MCPのPrefab調査は読み取り専用です。`ee4v_asset_inspect_prefab`はHierarchy、Renderer、Mesh、Material slot、Shader、Texture、BlendShape、Missing Scriptと参照切れを返し、`ee4v_asset_render_prefab_preview`は実PrefabをUnityの内部Preview sceneで撮影します。AssetPreviewのサムネイルは使用しません。Prefab調査から未ImportのZIPまたはunitypackageを暗黙にImportせず、Project内にPrefabがなければ候補なしと理由を返します。撮影結果だけを共通data rootの`asset-preview`へ再生成可能なcacheとして置き、SQLiteや`Assets`へPNGを保存しません。Materialの変更は調査結果を既存Unity MCPへ渡して行います。
 
 AssetManagerはItem、File、Target、Dependency、Tag、Collection、取り込み済みAsset GUIDをSQLiteへ保存し、Editor APIとUIを提供します。
 
