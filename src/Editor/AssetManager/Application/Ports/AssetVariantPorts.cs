@@ -16,6 +16,7 @@ namespace Ee4v.AssetManager.Application.Ports
         void AddGalleryImages(string variantId, string parentItemId,
             IReadOnlyList<AssetVariantGalleryUpload> images);
         void RemoveGalleryImage(string variantId, string imageId);
+        void MoveGalleryImageToFront(string variantId, string imageId);
         string Extract(AssetVariantSnapshot snapshot);
         void DeleteStaging(string path);
     }

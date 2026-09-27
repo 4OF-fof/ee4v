@@ -22,6 +22,7 @@ namespace Ee4v.AssetManager.Contracts
         Task AddGalleryImages(string variantId, string parentItemId,
             IReadOnlyList<AssetVariantGalleryUpload> images);
         Task RemoveGalleryImage(string variantId, string imageId);
+        Task MoveGalleryImageToFront(string variantId, string imageId);
         Task<AssetVariantRevision> Save(AssetVariantSaveRequest request);
         Task UpdateMetadata(string variantId, UpdateAssetVariantRequest request);
         Task<string> Restore(string variantId, string revisionId);

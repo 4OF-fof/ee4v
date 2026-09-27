@@ -426,7 +426,7 @@
 }
 
 .ee4v-asset-manager__navigation .ee4v-asset-manager__nav-button:focus {
-    border-bottom-color: var(--ee4v-color-focus);
+    border-left-color: var(--ee4v-color-focus);
 }
 
 .ee4v-asset-manager__nav-button .ee4v-ui-item-row__text {
@@ -665,28 +665,34 @@
     background-color: var(--ee4v-color-surface-pressed);
 }
 
-.ee4v-asset-manager__primary-action {
-    border-color: var(--ee4v-color-selection);
-    background-color: var(--ee4v-color-selection-soft);
-}
-
-.ee4v-asset-manager__primary-action:hover {
+.ee4v-asset-manager__primary-action.ee4v-ui-button {
     border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-surface-hover-strong);
+    background-color: var(--ee4v-color-focus);
 }
 
-.ee4v-asset-manager__primary-action:active {
-    background-color: var(--ee4v-color-surface-pressed);
+.ee4v-asset-manager__primary-action.ee4v-ui-button:enabled:focus,
+.ee4v-asset-manager__primary-action.ee4v-ui-button:enabled:hover {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection);
 }
 
-.ee4v-asset-manager__danger-action {
+.ee4v-asset-manager__primary-action.ee4v-ui-button:enabled:active {
+    background-color: var(--ee4v-color-selection-pressed);
+}
+
+.ee4v-asset-manager__primary-action.ee4v-ui-button:disabled {
+    border-color: var(--ee4v-color-border-active);
+    background-color: var(--ee4v-color-surface-soft);
+}
+
+.ee4v-asset-manager__danger-action.ee4v-ui-button {
     color: var(--ee4v-color-status-failed-text);
     border-color: var(--ee4v-color-error);
     background-color: var(--ee4v-color-error-surface-soft);
 }
 
-.ee4v-asset-manager__danger-action:hover,
-.ee4v-asset-manager__danger-action:active {
+.ee4v-asset-manager__danger-action.ee4v-ui-button:enabled:hover,
+.ee4v-asset-manager__danger-action.ee4v-ui-button:enabled:active {
     border-color: var(--ee4v-color-error);
     background-color: var(--ee4v-color-status-failed);
 }

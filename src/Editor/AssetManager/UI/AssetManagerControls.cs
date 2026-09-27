@@ -10,6 +10,8 @@ namespace Ee4v.AssetManager.UI
 {
     internal static class AssetManagerControls
     {
+        private const string PrimaryActionClassName =
+            "ee4v-asset-manager__primary-action";
         private const string DangerActionClassName =
             "ee4v-asset-manager__danger-action";
         private const string IconButtonClassName =
@@ -21,6 +23,10 @@ namespace Ee4v.AssetManager.UI
         {
             var button = new UiButton(text, onClick);
             AddClasses(button, classNames);
+            if (button.ClassListContains(PrimaryActionClassName))
+            {
+                button.SetLabelColor(UiColorTokens.TextOnState);
+            }
             return button;
         }
 

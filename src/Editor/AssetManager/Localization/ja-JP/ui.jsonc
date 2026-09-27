@@ -259,6 +259,7 @@
     "nextImage": "次の画像",
     "addImages": "画像を追加",
     "removeImage": "画像を削除",
+    "moveImageToFront": "先頭に配置",
     "imageFiles": "画像",
     "imageTooLarge": "画像は1枚につき16 MB以下にしてください。",
     "invalidImage": "画像を読み込めません: {0}",

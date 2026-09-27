@@ -15,8 +15,10 @@ eye
 eye_off
 folder
 folder_zip
+folder_zip_16
 image
 info
+info_16
 library
 mail_inbox
 pin

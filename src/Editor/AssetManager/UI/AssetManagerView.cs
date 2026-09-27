@@ -1548,14 +1548,6 @@ namespace Ee4v.AssetManager.UI
             _selectedVariantRevisionId = selectedRevision?.Id;
             var layout = new VisualElement();
             layout.AddToClassList("ee4v-asset-manager__variant-detail-layout");
-            layout.RegisterCallback<GeometryChangedEvent>(evt =>
-            {
-                var available = Mathf.Max(0f, evt.newRect.height - 120f);
-                var history = layout.Q<ScrollView>(className: "ee4v-asset-manager__variant-history-scroll");
-                var sources = layout.Q<ScrollView>(className: "ee4v-asset-manager__variant-dependency-scroll");
-                if (history != null) { history.style.height = Mathf.Min(240f, available * .42f); }
-                if (sources != null) { sources.style.height = Mathf.Min(320f, available * .58f); }
-            });
             var overview = new VisualElement();
             overview.AddToClassList("ee4v-asset-manager__variant-overview");
             var management = new VisualElement();
@@ -1563,13 +1555,39 @@ namespace Ee4v.AssetManager.UI
             layout.Add(overview);
             layout.Add(management);
             detail.Add(layout);
-            var selectRevision = AddVariantOverview(overview, variant, selectedRevision, currentRevisionId, out var action);
+            var selectRevision = AddVariantOverview(overview, variant, selectedRevision, latest, currentRevisionId, out var action);
             AddVariantHistory(management, variant, revisions, selectRevision, action);
             AddVariantDependencies(management, dependencies, dependencyError);
+            var history = management.Q<ScrollView>(className: "ee4v-asset-manager__variant-history-scroll");
+            var sources = management.Q<ScrollView>(className: "ee4v-asset-manager__variant-dependency-scroll");
+            var historyHeader = history.parent.Q<SectionHeader>();
+            var sourcesHeader = sources.parent.Q<SectionHeader>();
+            Func<ScrollView, SectionHeader, float> sectionSpacing = (scroll, header) =>
+            {
+                var style = scroll.parent.resolvedStyle;
+                return header.layout.height + header.resolvedStyle.marginTop + header.resolvedStyle.marginBottom +
+                    style.marginTop + style.marginBottom + style.paddingTop + style.paddingBottom +
+                    style.borderTopWidth + style.borderBottomWidth;
+            };
+            Action resizeSections = () =>
+            {
+                var available = layout.layout.height;
+                var contentHeight = history.contentContainer.layout.height;
+                if (available <= 0f || float.IsNaN(available) || float.IsNaN(contentHeight)) { return; }
+                var historySpacing = sectionSpacing(history, historyHeader);
+                var historyHeight = Mathf.Min(contentHeight, Mathf.Max(0f, available * .5f - historySpacing));
+                history.style.height = historyHeight;
+                sources.style.height = Mathf.Min(320f, Mathf.Max(0f,
+                    available - historySpacing - historyHeight - sectionSpacing(sources, sourcesHeader)));
+            };
+            layout.RegisterCallback<GeometryChangedEvent>(_ => resizeSections());
+            history.contentContainer.RegisterCallback<GeometryChangedEvent>(_ => resizeSections());
+            historyHeader.RegisterCallback<GeometryChangedEvent>(_ => resizeSections());
+            sourcesHeader.RegisterCallback<GeometryChangedEvent>(_ => resizeSections());
         }
 
         private Action<AssetVariantRevision> AddVariantOverview(VisualElement detail, DerivedAssetInfo variant,
-            AssetVariantRevision selectedRevision, string currentRevisionId, out UiButton action)
+            AssetVariantRevision selectedRevision, AssetVariantRevision latestRevision, string currentRevisionId, out UiButton action)
         {
             var title = UiTextFactory.Create(variant.Name, UiClassNames.InfoCardTitle,
                 "ee4v-asset-manager__variant-overview-title");
@@ -1586,7 +1604,7 @@ namespace Ee4v.AssetManager.UI
             description.tooltip = variant.Description;
             descriptionSlot.Add(description);
             detail.Add(descriptionSlot);
-            var selectImage = AddVariantGallery(detail, variant, selectedRevision);
+            AddVariantGallery(detail, variant, latestRevision);
             var isImported = variant.Prefab != null;
             Func<bool> canModify = () => isImported && _modifyVariant != null &&
                 (selectedRevision == null || selectedRevision.Id == currentRevisionId);
@@ -1619,7 +1637,6 @@ namespace Ee4v.AssetManager.UI
                 if (_variantBusy) { return; }
                 selectedRevision = revision;
                 _selectedVariantRevisionId = revision.Id;
-                selectImage(revision);
                 refreshAction();
             };
         }
@@ -1638,10 +1655,11 @@ namespace Ee4v.AssetManager.UI
             internal Action RefreshControls;
             internal Func<IReadOnlyList<AssetVariantGalleryUpload>, Action> AddImages;
             internal Func<string, Action> RemoveImage;
+            internal Func<string, Action> MoveToFront;
         }
 
-        private Action<AssetVariantRevision> AddVariantGallery(VisualElement detail, DerivedAssetInfo variant,
-            AssetVariantRevision selectedRevision)
+        private void AddVariantGallery(VisualElement detail, DerivedAssetInfo variant,
+            AssetVariantRevision latestRevision)
         {
             var gallery = new VisualElement();
             gallery.AddToClassList("ee4v-asset-manager__variant-gallery");
@@ -1662,7 +1680,6 @@ namespace Ee4v.AssetManager.UI
                 Label = I18N.Get("variant.automaticImage"),
                 Load = () => _variantManager.GetRevisionThumbnail(variant.VariantId, revision.Id)
             };
-            if (selectedRevision != null) { entries.Add(automatic(selectedRevision)); }
             try
             {
                 foreach (var image in _variantManager?.GetGalleryImages(variant.VariantId) ??
@@ -1676,15 +1693,17 @@ namespace Ee4v.AssetManager.UI
                 }
             }
             catch (Exception exception) { gallery.Add(UiTextFactory.CreateHelpBox(exception.Message, HelpBoxMessageType.Error)); }
+            if (latestRevision != null) { entries.Add(automatic(latestRevision)); }
             var controls = new VisualElement { pickingMode = PickingMode.Ignore };
             controls.AddToClassList("ee4v-asset-manager__variant-gallery-controls");
-            var index = Math.Max(0, entries.FindIndex(entry => entry.Id == _selectedVariantGalleryImageId));
+            Func<VariantGalleryEntry, string> entryId = entry => entry.Id ?? "automatic";
+            var index = Math.Max(0, entries.FindIndex(entry => entryId(entry) == _selectedVariantGalleryImageId));
             Action render = null;
             Action<int> select = next =>
             {
                 if (entries.Count == 0) { return; }
                 index = (next + entries.Count) % entries.Count;
-                _selectedVariantGalleryImageId = entries[index].Id;
+                _selectedVariantGalleryImageId = entryId(entries[index]);
                 render();
             };
             RegisterVariantGalleryImageContextMenu(preview, variant.VariantId,
@@ -1731,7 +1750,6 @@ namespace Ee4v.AssetManager.UI
             gallery.Add(thumbnails);
             var tiles = new List<UiButton>();
             var tileById = new Dictionary<string, UiButton>(StringComparer.Ordinal);
-            PreviewContainer automaticThumbnail = null;
             thumbnails.Add(add);
             Action rebuildTiles = () =>
             {
@@ -1759,9 +1777,12 @@ namespace Ee4v.AssetManager.UI
                         tile.Content.Add(thumbnail);
                         RegisterVariantGalleryImageContextMenu(tile, variant.VariantId,
                             () => entries.FirstOrDefault(candidate => (candidate.Id ?? "automatic") == id));
-                        if (entry.Id == null) { automaticThumbnail = thumbnail; }
                         tileById.Add(id, tile);
                         thumbnails.Insert(imageIndex, tile);
+                    }
+                    if (thumbnails.contentContainer.IndexOf(tile) != imageIndex)
+                    {
+                        tile.PlaceBehind(thumbnails.contentContainer[imageIndex]);
                     }
                     tiles.Add(tile);
                 }
@@ -1807,6 +1828,7 @@ namespace Ee4v.AssetManager.UI
                 AddImages = uploads =>
                 {
                     var rollback = checkpoint();
+                    var selectedId = entries.Count > 0 ? entryId(entries[index]) : null;
                     foreach (var upload in uploads)
                     {
                         string id;
@@ -1817,28 +1839,39 @@ namespace Ee4v.AssetManager.UI
                         if (entries.Any(entry => entry.Id == id)) { continue; }
                         var key = "variant-gallery:" + id;
                         _imageCache.SetSource(key, upload.Data);
-                        entries.Add(new VariantGalleryEntry
+                        entries.Insert(0, new VariantGalleryEntry
                         {
                             Id = id, Key = key, Label = upload.FileName,
                             Load = () => Task.FromResult(new AssetThumbnail { Found = true, Data = upload.Data })
                         });
                     }
+                    index = Math.Max(0, entries.FindIndex(entry => entryId(entry) == selectedId));
+                    _selectedVariantGalleryImageId = entries.Count > 0 ? entryId(entries[index]) : null;
                     rebuildTiles();
                     render();
-                    thumbnails.schedule.Execute(() =>
-                    {
-                        if (thumbnails.panel != null) { thumbnails.ScrollTo(add); }
-                    });
                     return rollback;
                 },
                 RemoveImage = id =>
                 {
                     var rollback = checkpoint();
-                    var selectedId = entries.Count > 0 ? entries[index].Id : null;
+                    var selectedId = entries.Count > 0 ? entryId(entries[index]) : null;
                     entries.RemoveAll(entry => entry.Id == id);
                     index = selectedId == id ? Math.Min(index, Math.Max(0, entries.Count - 1))
-                        : Math.Max(0, entries.FindIndex(entry => entry.Id == selectedId));
-                    _selectedVariantGalleryImageId = entries.Count > 0 ? entries[index].Id : null;
+                        : Math.Max(0, entries.FindIndex(entry => entryId(entry) == selectedId));
+                    _selectedVariantGalleryImageId = entries.Count > 0 ? entryId(entries[index]) : null;
+                    rebuildTiles();
+                    render();
+                    return rollback;
+                },
+                MoveToFront = id =>
+                {
+                    var rollback = checkpoint();
+                    var selectedId = entries.Count > 0 ? entryId(entries[index]) : null;
+                    var target = entries.FirstOrDefault(entry => entry.Id == id);
+                    if (target == null) { return rollback; }
+                    entries.Remove(target);
+                    entries.Insert(0, target);
+                    index = Math.Max(0, entries.FindIndex(entry => entryId(entry) == selectedId));
                     rebuildTiles();
                     render();
                     return rollback;
@@ -1867,13 +1900,6 @@ namespace Ee4v.AssetManager.UI
                 evt.StopPropagation();
                 AddVariantGalleryFiles(variant, paths);
             });
-            return revision =>
-            {
-                if (automaticThumbnail == null) { return; }
-                entries[0] = automatic(revision);
-                SetVariantRevisionPreview(automaticThumbnail, variant.VariantId, revision.Id);
-                select(0);
-            };
         }
 
         private void RegisterVariantGalleryImageContextMenu(VisualElement target, string variantId,
@@ -1884,12 +1910,18 @@ namespace Ee4v.AssetManager.UI
                 var entry = getEntry();
                 if (entry?.Id == null) { return; }
                 var menu = new GenericMenu();
-                var label = UiTextFactory.CreateGuiContent(I18N.Get("variant.removeImage"));
+                var moveLabel = UiTextFactory.CreateGuiContent(I18N.Get("variant.moveImageToFront"));
+                var removeLabel = UiTextFactory.CreateGuiContent(I18N.Get("variant.removeImage"));
                 if (!_variantBusy && _variantManager != null)
                 {
-                    menu.AddItem(label, false, () => RemoveVariantGalleryImage(variantId, entry.Id));
+                    menu.AddItem(moveLabel, false, () => MoveVariantGalleryImageToFront(variantId, entry.Id));
+                    menu.AddItem(removeLabel, false, () => RemoveVariantGalleryImage(variantId, entry.Id));
                 }
-                else { menu.AddDisabledItem(label); }
+                else
+                {
+                    menu.AddDisabledItem(moveLabel);
+                    menu.AddDisabledItem(removeLabel);
+                }
                 menu.ShowAsContext();
                 evt.StopPropagation();
             });
@@ -1981,6 +2013,37 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
+        private async void MoveVariantGalleryImageToFront(string variantId, string imageId)
+        {
+            await PendingVariantMetadataSave;
+            if (_disposed || _variantBusy || _variantManager == null) { return; }
+            _variantBusy = true;
+            _variantGalleryOperationId = variantId;
+            var gallery = _variantGalleryView?.VariantId == variantId ? _variantGalleryView : null;
+            Action rollback = null;
+            try
+            {
+                rollback = gallery?.MoveToFront(imageId);
+                RefreshVariantGalleryControls();
+                await _variantManager.MoveGalleryImageToFront(variantId, imageId);
+            }
+            catch (Exception exception)
+            {
+                if (!_disposed && ReferenceEquals(gallery, _variantGalleryView)) { rollback?.Invoke(); }
+                if (!_disposed) { EditorUtility.DisplayDialog(I18N.Get("variant.moveImageToFront"), exception.Message, "OK"); }
+            }
+            finally
+            {
+                _variantBusy = false;
+                _variantGalleryOperationId = null;
+                if (!_disposed)
+                {
+                    if (gallery == null || !ReferenceEquals(gallery, _variantGalleryView)) { Refresh(); }
+                    else { RefreshVariantGalleryControls(); }
+                }
+            }
+        }
+
         private void RefreshVariantGalleryControls()
         {
             _variantGalleryView?.RefreshControls();
@@ -2033,6 +2096,7 @@ namespace Ee4v.AssetManager.UI
                 var memo = UiTextFactory.Create(revision.Memo, UiClassNames.InfoCardDescription,
                     "ee4v-asset-manager__variant-revision-memo");
                 memo.SetWhiteSpace(WhiteSpace.NoWrap);
+                memo.SetTextAlign(TextAnchor.MiddleLeft);
                 memo.pickingMode = PickingMode.Ignore;
                 memoSlot.Add(memo);
                 row.Content.Add(memoSlot);
@@ -2611,11 +2675,13 @@ namespace Ee4v.AssetManager.UI
                         new FileTreeSelection(file, null)),
                     "ee4v-asset-manager__primary-action"));
             }
-            header.AddAction(AssetManagerControls.CreateButton(
-                I18N.Get(file.IsArchived
-                    ? "action.restore"
-                    : "action.archive"),
-                () => ArchiveFile(file.Id, !file.IsArchived)));
+            header.AddHeaderAction(file.IsArchived
+                ? AssetManagerControls.CreateButton(
+                    I18N.Get("action.restore"),
+                    () => ArchiveFile(file.Id, false))
+                : AssetManagerControls.CreateDangerButton(
+                    I18N.Get("action.archive"),
+                    () => ArchiveFile(file.Id, true)));
             if (file.IsArchived)
             {
                 header.AddAction(AssetManagerControls.CreateDangerButton(
@@ -2653,7 +2719,7 @@ namespace Ee4v.AssetManager.UI
                 string.Empty,
                 "ee4v-asset-manager__setting-input");
             itemId.value = assignedItemId ?? string.Empty;
-            settingList.Add(AssetDetailSettingRow.Editable(
+            settingList.AddRow(AssetDetailSettingRow.Editable(
                 I18N.Get("field.assignedItem"),
                 string.IsNullOrWhiteSpace(assignedItemId)
                     ? I18N.Get("common.none")
@@ -2667,7 +2733,7 @@ namespace Ee4v.AssetManager.UI
             AddDependencySetting(settingList, dependencySources);
             if (showFileId)
             {
-                settingList.Add(new AssetDetailSettingRow(
+                settingList.AddRow(new AssetDetailSettingRow(
                     I18N.Get("field.fileId"),
                     CreateMonoValue(fileIds[0])));
             }
@@ -2706,7 +2772,7 @@ namespace Ee4v.AssetManager.UI
                     ? I18N.Get("common.none")
                     : string.Join(" · ", dependencySummary));
             summary.SetWhiteSpace(WhiteSpace.Normal);
-            settingList.Add(new AssetDetailSettingRow(
+            settingList.AddRow(new AssetDetailSettingRow(
                 I18N.Get("field.dependencies"),
                 summary,
                 editDependencies));
@@ -3094,8 +3160,21 @@ namespace Ee4v.AssetManager.UI
             summary.TitleText.SetFontSize(UiTypographyTokens.TitleFontSize);
 
             var tagPaths = GetTagPaths(item);
+            var tagScroll = new ScrollView(ScrollViewMode.Vertical)
+            {
+                verticalScrollerVisibility = ScrollerVisibility.Hidden,
+                horizontalScrollerVisibility = ScrollerVisibility.Hidden
+            };
+            tagScroll.AddToClassList("ee4v-asset-manager__overview-tag-scroll");
             var tags = new VisualElement();
             tags.AddToClassList("ee4v-asset-manager__overview-tags");
+            tags.RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                tagScroll.style.height = Mathf.Min(evt.newRect.height, tagScroll.resolvedStyle.maxHeight.value);
+                tagScroll.nestedInteractionKind = evt.newRect.height > tagScroll.resolvedStyle.maxHeight.value
+                    ? ScrollView.NestedInteractionKind.StopScrolling
+                    : ScrollView.NestedInteractionKind.Default;
+            });
             if (tagPaths.Count == 0)
             {
                 tags.Add(UiTextFactory.Create(
@@ -3115,7 +3194,8 @@ namespace Ee4v.AssetManager.UI
                     tags.Add(tag);
                 }
             }
-            summary.Body.Add(tags);
+            tagScroll.Add(tags);
+            summary.Body.Add(tagScroll);
             var importButton = AssetManagerControls.CreateButton(
                 I18N.Get("action.import"),
                 null,
@@ -3171,7 +3251,7 @@ namespace Ee4v.AssetManager.UI
                     payload.Targets,
                     null));
             var targetList = new AssetDetailSettingList();
-            targetList.Add(targetSetting);
+            targetList.AddRow(targetSetting);
             importSettings.Add(targetList);
             detail.Add(importSettings);
 
@@ -3677,21 +3757,21 @@ namespace Ee4v.AssetManager.UI
             var information = new AssetDetailSection(
                 I18N.Get("detail.entryInformation"));
             var settingList = new AssetDetailSettingList();
-            settingList.Add(new AssetDetailSettingRow(
+            settingList.AddRow(new AssetDetailSettingRow(
                 I18N.Get("field.file"),
                 UiTextFactory.Create(
                     file?.FileName ?? I18N.Get("common.none"))));
-            settingList.Add(new AssetDetailSettingRow(
+            settingList.AddRow(new AssetDetailSettingRow(
                 I18N.Get("field.kind"),
                 UiTextFactory.Create(I18N.Get(
                     entry.Kind == AssetFileContentEntryKind.Directory
                         ? "detail.file.directory"
                         : "detail.file.file"))));
-            settingList.Add(new AssetDetailSettingRow(
+            settingList.AddRow(new AssetDetailSettingRow(
                 I18N.Get("field.size"),
                 UiTextFactory.Create(
                     entry.SizeBytes.ToString("N0") + " B")));
-            settingList.Add(new AssetDetailSettingRow(
+            settingList.AddRow(new AssetDetailSettingRow(
                 I18N.Get("field.imported"),
                 UiTextFactory.Create(I18N.Get(
                     IsEntryImported(file, entry)
@@ -3775,11 +3855,13 @@ namespace Ee4v.AssetManager.UI
                     () => _ = ImportFileTreeEntriesAsync(importable),
                     "ee4v-asset-manager__primary-action"));
             }
-            header.AddAction(AssetManagerControls.CreateButton(
-                I18N.Get(allArchived
-                    ? "action.restore"
-                    : "action.archive"),
-                () => ArchiveFiles(fileIds, !allArchived)));
+            header.AddHeaderAction(allArchived
+                ? AssetManagerControls.CreateButton(
+                    I18N.Get("action.restore"),
+                    () => ArchiveFiles(fileIds, false))
+                : AssetManagerControls.CreateDangerButton(
+                    I18N.Get("action.archive"),
+                    () => ArchiveFiles(fileIds, true)));
             if (allArchived)
             {
                 header.AddAction(AssetManagerControls.CreateDangerButton(

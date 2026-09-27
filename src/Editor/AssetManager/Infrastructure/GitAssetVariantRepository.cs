@@ -348,7 +348,7 @@ namespace Ee4v.AssetManager.Infrastructure
             {
                 throw new InvalidDataException("Invalid Variant gallery.");
             }
-            return images;
+            return images.Reverse().ToArray();
         }
 
         public byte[] ReadGalleryImage(string variantId, string imageId)
@@ -410,7 +410,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 {
                     var image = additions[index];
                     if (images.Any(candidate => candidate.Id == image.Id)) { continue; }
-                    images.Add(image);
+                    images.Insert(0, image);
                     files.Add(image.Id, uploads[index].Data);
                 }
                 if (files.Count > 0) { WriteGallery(repository, variantId, master, images, files, null); }
@@ -434,6 +434,28 @@ namespace Ee4v.AssetManager.Infrastructure
             }
         }
 
+        public void MoveGalleryImageToFront(string variantId, string imageId)
+        {
+            ValidateId(variantId);
+            PreviewCachePath(imageId);
+            var repository = FindGalleryRepository(variantId);
+            if (repository == null) { throw new InvalidOperationException("The Variant gallery image was not found."); }
+            var parentItemId = Path.GetFileNameWithoutExtension(repository);
+            using (new FileStream(Path.Combine(_root, parentItemId + ".save.lock"),
+                       FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            {
+                var images = ReadGallery(repository, variantId).ToList();
+                var index = images.FindIndex(image => image.Id == imageId);
+                if (index < 0) { throw new InvalidOperationException("The Variant gallery image was not found."); }
+                if (index == 0) { return; }
+                var image = images[index];
+                images.RemoveAt(index);
+                images.Insert(0, image);
+                WriteGallery(repository, variantId, ReadRefs(repository, MasterRef)[MasterRef], images,
+                    new Dictionary<string, byte[]>(), null);
+            }
+        }
+
         private void WriteGallery(string repository, string variantId, string master,
             IReadOnlyList<AssetVariantGalleryImage> images, IReadOnlyDictionary<string, byte[]> files, string removedId)
         {
@@ -444,7 +466,7 @@ namespace Ee4v.AssetManager.Infrastructure
             {
                 var folder = Path.Combine(stage, path);
                 Directory.CreateDirectory(folder);
-                File.WriteAllText(Path.Combine(folder, "gallery.json"), JsonConvert.SerializeObject(images,
+                File.WriteAllText(Path.Combine(folder, "gallery.json"), JsonConvert.SerializeObject(images.Reverse().ToArray(),
                     Formatting.Indented), new UTF8Encoding(false));
                 Git(repository, stage, index, "read-tree", master);
                 Git(repository, stage, index, "add", "--force", "--", path + "/gallery.json");

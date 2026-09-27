@@ -327,6 +327,18 @@ namespace Ee4v.AssetManager.Application
             finally { _busy = false; }
         }
 
+        public async Task MoveGalleryImageToFront(string variantId, string imageId)
+        {
+            if (_busy) { throw new InvalidOperationException("A Variant operation is in progress."); }
+            _busy = true;
+            try
+            {
+                await Task.Run(() => _repository.MoveGalleryImageToFront(variantId, imageId));
+                NotifyChanged();
+            }
+            finally { _busy = false; }
+        }
+
         private AssetFile ResolveDependency(AssetVariantDependency dependency)
         {
             var files = _manager.SearchItems(new AssetItemQuery { IncludeArchived = true })

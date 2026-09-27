@@ -259,6 +259,7 @@
     "nextImage": "Next image",
     "addImages": "Add images",
     "removeImage": "Remove image",
+    "moveImageToFront": "Move to front",
     "imageFiles": "Images",
     "imageTooLarge": "Each image must be 16 MB or smaller.",
     "invalidImage": "Cannot read image: {0}",

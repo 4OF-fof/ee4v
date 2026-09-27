@@ -34,6 +34,7 @@
     --ee4v-color-selection-soft-opaque: #334859;
     --ee4v-color-selection-pressed: #254F73;
     --ee4v-color-overlay-border: rgba(0, 0, 0, 0.45);
+    --ee4v-color-overlay-hover: rgba(64, 64, 64, 0.6);
     --ee4v-color-scroll-thumb: rgba(194, 194, 194, 0.44);
     --ee4v-color-slider-track: rgba(194, 194, 194, 0.26);
     --ee4v-color-slider-track-hover: rgba(194, 194, 194, 0.40);
@@ -113,6 +114,7 @@
     --ee4v-color-selection-soft-opaque: #8FAECE;
     --ee4v-color-selection-pressed: #31679F;
     --ee4v-color-overlay-border: rgba(0, 0, 0, 0.25);
+    --ee4v-color-overlay-hover: rgba(255, 255, 255, 0.35);
     --ee4v-color-scroll-thumb: rgba(56, 56, 56, 0.44);
     --ee4v-color-slider-track: rgba(56, 56, 56, 0.26);
     --ee4v-color-slider-track-hover: rgba(56, 56, 56, 0.40);

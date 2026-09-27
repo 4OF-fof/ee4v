@@ -779,7 +779,7 @@ namespace Ee4v.AssetManager.UI
                     node?.Meta ?? string.Empty,
                     IconState.FromTexture(
                         ResolveTreeIcon(node),
-                        UiSizeTokens.Size14)));
+                        UiSizeTokens.Size16)));
             }
         }
 
@@ -1026,9 +1026,9 @@ namespace Ee4v.AssetManager.UI
                 : node?.IsGroup == true
                 ? "folder.png"
                 : node == null || node.IsOverview
-                    ? "info.png"
+                    ? "info_16.png"
                     : node.Entry == null
-                        ? "folder_zip.png"
+                        ? "folder_zip_16.png"
                         : node.Entry.Kind ==
                           AssetFileContentEntryKind.Directory
                             ? "folder.png"

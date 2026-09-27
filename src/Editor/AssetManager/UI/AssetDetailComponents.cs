@@ -47,6 +47,19 @@ namespace Ee4v.AssetManager.UI
 
             Body.Add(action);
         }
+
+        internal void AddHeaderAction(VisualElement action)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            action.AddToClassList(
+                "ee4v-asset-manager__detail-header-action");
+            HeaderRight.Add(action);
+            HeaderRight.style.display = DisplayStyle.Flex;
+        }
     }
 
     internal sealed class AssetDetailSection : VisualElement
@@ -96,6 +109,14 @@ namespace Ee4v.AssetManager.UI
         internal AssetDetailSettingList()
         {
             AddToClassList("ee4v-asset-manager__setting-list");
+        }
+
+        internal void AddRow(AssetDetailSettingRow row)
+        {
+            row.EnableInClassList(
+                "ee4v-asset-manager__setting-row--separated",
+                childCount > 0);
+            Add(row);
         }
     }
 

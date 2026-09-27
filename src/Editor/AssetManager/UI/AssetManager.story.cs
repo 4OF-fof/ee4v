@@ -520,6 +520,9 @@ namespace Ee4v.AssetManager.UI
             header.AddAction(AssetManagerControls.CreateButton(
                 "Open",
                 () => { }));
+            header.AddHeaderAction(AssetManagerControls.CreateDangerButton(
+                "Archive",
+                () => { }));
             surface.Add(header);
             parent.Add(surface);
         }
@@ -550,12 +553,12 @@ namespace Ee4v.AssetManager.UI
         {
             var surface = CreateDetailStorySurface();
             var list = new AssetDetailSettingList();
-            list.Add(new AssetDetailSettingRow(
+            list.AddRow(new AssetDetailSettingRow(
                 "Target",
                 UiTextFactory.Create("Avatar")));
-            list.Add(new AssetDetailKeyValueRow(
+            list.AddRow(new AssetDetailSettingRow(
                 "Source",
-                "Eagle / Summer Costume"));
+                UiTextFactory.Create("Eagle / Summer Costume")));
             surface.Add(list);
             parent.Add(surface);
         }
@@ -564,7 +567,7 @@ namespace Ee4v.AssetManager.UI
         {
             var surface = CreateDetailStorySurface();
             var list = new AssetDetailSettingList();
-            list.Add(new AssetDetailSettingRow(
+            list.AddRow(new AssetDetailSettingRow(
                 "Target",
                 UiTextFactory.Create("Avatar")));
 
@@ -572,7 +575,7 @@ namespace Ee4v.AssetManager.UI
             editor.value = "Summer Costume";
             var save = AssetManagerControls.CreateButton("Save");
             save.clicked += () => save.SetLabel("Saved");
-            list.Add(AssetDetailSettingRow.Editable(
+            list.AddRow(AssetDetailSettingRow.Editable(
                 "Name",
                 "Summer Costume",
                 editor,
