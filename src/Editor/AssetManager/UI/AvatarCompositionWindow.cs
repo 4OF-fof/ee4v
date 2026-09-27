@@ -8,7 +8,7 @@ namespace Ee4v.AssetManager.UI
             ModificationEditorMode.Composition;
         protected override string TitleKey => "workflow.standalone.compositionTitle";
 
-        [MenuItem("ee4v/Window/Avatar/Prefab Composition")]
+        [MenuItem("ee4v/Window/Avatar/Prefab Composition", false, 202)]
         private static void ShowWindow()
         {
             GetWindow<AvatarCompositionWindow>().Show();

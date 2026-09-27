@@ -7,7 +7,7 @@ namespace Ee4v.FaceExpression
 {
     internal sealed class GestureAssignmentSettingsWindow : EditorWindow
     {
-        [MenuItem("ee4v/Window/Gesture Assignment/Gesture Assignment Settings")]
+        [MenuItem("ee4v/Window/Avatar/Gesture Assignment/Settings", false, 241)]
         internal static void ShowWindow()
         {
             var window = GetWindow<GestureAssignmentSettingsWindow>();

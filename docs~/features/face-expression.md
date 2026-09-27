@@ -1,6 +1,6 @@
 # Face Expression
 
-`ee4v/Window/Face Expression/Face Expression Editor`は、VRChatアバター向けの静止表情と時間変化する表情アニメーションクリップを作成します。表情編集、Expression Groups、BlendShape Presetsは`ee4v/Window/Face Expression`へまとめます。標準ハンドジェスチャーへの割り当てと設定は`ee4v/Window/Gesture Assignment`へまとめ、`Gesture Assignments`から独立ウィンドウを開きます。
+`ee4v/Window/Avatar/Face Expression/Editor`は、VRChatアバター向けの静止表情と時間変化する表情アニメーションクリップを作成します。表情編集、Expression Groups、BlendShape Presetsは`ee4v/Window/Avatar/Face Expression`へまとめます。標準ハンドジェスチャーへの割り当てと設定は`ee4v/Window/Avatar/Gesture Assignment`へまとめ、`Assignments`から独立ウィンドウを開きます。
 
 新規表情クリップの保存ダイアログは、表情ライブラリで現在開いているフォルダーを既定の保存先として開きます。ライブラリのルートは共通アセットルート配下の`Animation/Facial`とし、ルートフォルダーがない場合は作成します。
 
@@ -60,7 +60,7 @@ Preferencesの`4OF/ee4v`設定にある「BlendShapeの区切り文字」で、�
 
 表情エディタでAvatar Prefabまたはシーン上のPrefabインスタンスを選ぶと、Prefab Variantの対応元を最初のModel Prefabまでたどり、その`.fbx`をベースFBXとして検出します。Rendererの`sharedMesh`は検出に使いません。ベースFBXのプリセットが未登録なら、Chiffon、Kipfel、Shinano、Manukaで使われる末尾の数値、括弧、左右表記を基に大まかな分類を作り、グローバルなプリセット保存先へ自動保存します。既存プリセットは上書きしません。
 
-Preferencesの「FBX別BlendShapeプリセット」には、保存済みプリセットの名前を読み取り専用の`ListField`で一覧表示します。「保存先をエクスプローラーで開く」から保存フォルダーを開けます。専用ウィンドウは`ee4v/Window/Face Expression/BlendShape Presets`から開きます。左ペインには区切り見出しごとの役割カード、右ペインには選択した役割に属するBlendShape、左右指定、口形状指定を表示し、最上部の130px幅の入力欄で役割名を直接編集します。口形状はBlendShapeごとのトグルで編集します。役割カードを別のカードへドラッグすると役割を統合し、右ペインのBlendShapeをドラッグすると個別に所属を変更します。各見出し末尾の「＋」は通常の役割カードと同じNavigation Itemで表示し、ここへドロップすると新規役割を作成します。役割名が空の既存データはBlendShape名ごとの単独カードとして表示し、別のカードへ重ねると所属を設定できます。区切り用BlendShapeは表情エディタと同じ設定で判定し、左ペインの見出しとして扱います。「自動分類」で現在の命名とAvatar Descriptorから分類案を作り直せます。DescriptorのVisemeと同じ区切り見出しにあり、Viseme自体ではないBlendShapeを口形状の初期候補にします。保存済み分類を開いただけでは完了メッセージを表示せず、未保存、保存完了、自動分類など操作結果だけを表示します。
+Preferencesの「FBX別BlendShapeプリセット」には、保存済みプリセットの名前を読み取り専用の`ListField`で一覧表示します。「保存先をエクスプローラーで開く」から保存フォルダーを開けます。専用ウィンドウは`ee4v/Window/Avatar/Face Expression/BlendShape Presets`から開きます。左ペインには区切り見出しごとの役割カード、右ペインには選択した役割に属するBlendShape、左右指定、口形状指定を表示し、最上部の130px幅の入力欄で役割名を直接編集します。口形状はBlendShapeごとのトグルで編集します。役割カードを別のカードへドラッグすると役割を統合し、右ペインのBlendShapeをドラッグすると個別に所属を変更します。各見出し末尾の「＋」は通常の役割カードと同じNavigation Itemで表示し、ここへドロップすると新規役割を作成します。役割名が空の既存データはBlendShape名ごとの単独カードとして表示し、別のカードへ重ねると所属を設定できます。区切り用BlendShapeは表情エディタと同じ設定で判定し、左ペインの見出しとして扱います。「自動分類」で現在の命名とAvatar Descriptorから分類案を作り直せます。DescriptorのVisemeと同じ区切り見出しにあり、Viseme自体ではないBlendShapeを口形状の初期候補にします。保存済み分類を開いただけでは完了メッセージを表示せず、未保存、保存完了、自動分類など操作結果だけを表示します。
 
 プリセットはUser Settingsの「ee4v 共通データの保存先」をルートとし、`preset/blendshape/<FBX名>.json`へグローバルに保存します。各JSONではFBXのGUIDとメッシュのローカルIDへ役割、左右、口形状、見た目の部位指定と見た目グループ名を関連付けます。部位指定には「自動」「表情のみ」、各身体部位、「全身のみ」があり、部位指定の既定値は「自動」で、見た目側の名前判定を使います。プリセット画面はアバター内でBlendShapeを持つ各FBXを検出し、「FBX切替」から対象を選べます。未保存の変更がある間はFBX切替を無効化します。見た目のサイズ画面は同じ見た目グループ名、指定がなければ同じ役割名に属する複数のBlendShapeを部位内でまとめます。複数FBX由来のRendererを同時に編集する場合も、それぞれの保存済みプリセットを自動で参照します。表情エディターと口変形キャンセラーの更新時にはBlendShape名を解析せず、保存済みの対応表だけを使います。旧プロジェクト設定からの移行は行いません。
 
@@ -70,7 +70,7 @@ Preferencesの「FBX別BlendShapeプリセット」には、保存済みプリ�
 
 ## グループウィンドウ
 
-`ee4v/Window/Face Expression/Face Expression Editor`を開くと、表情エディターと`Expression Groups`ウィンドウを同時に開きます。グループウィンドウだけを`ee4v/Window/Face Expression/Face Expression Groups`から開くこともできます。
+`ee4v/Window/Avatar/Face Expression/Editor`を開くと、表情エディターと`Expression Groups`ウィンドウを同時に開きます。グループウィンドウだけを`ee4v/Window/Avatar/Face Expression/Groups`から開くこともできます。
 
 各画面は`ee4v/Debug/Catalog`の`Domain/FaceExpression` Storyで確認できます。`BlendShape Presets` Storyは実際の編集画面をサンプルmappingで表示し、設定を保存しません。`Gesture Assignments`と独立した`Gesture Assignment Settings`は別Storyに分けます。一件分の`GestureAssignmentCell`、`BlendShapePresetMappingRow`、`BlendShapeRow`は操作と値入力を受け取るため`Domain/FaceExpression/Inputs`で個別に確認できます。Toolbar、Preview、見出し、件数表示はCoreの`ActionBar`、`PreviewContainer`、`SectionHeader`、`Badge`を組み合わせます。編集行、選択Cell、一覧、Panelの境界線、面、角丸、hover、選択状態もCore UIへ揃えます。表情Previewの描画面とジェスチャー固有の状態色は維持します。
 

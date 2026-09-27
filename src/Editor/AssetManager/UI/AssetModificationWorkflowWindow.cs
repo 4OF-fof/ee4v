@@ -12,7 +12,7 @@ namespace Ee4v.AssetManager.UI
         [SerializeField] private string _derivedAssetGuid;
         private AssetModificationWorkflowView _view;
 
-        [MenuItem("ee4v/Window/Asset Manager/Modification Workflow")]
+        [MenuItem("ee4v/ee4v", false, 0)]
         private static void ShowWindow()
         {
             var window = GetWindow<AssetModificationWorkflowWindow>();

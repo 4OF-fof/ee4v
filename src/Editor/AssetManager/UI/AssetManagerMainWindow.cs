@@ -13,7 +13,7 @@ namespace Ee4v.AssetManager.UI
         protected override AssetManagerViewMode ViewMode =>
             AssetManagerViewMode.Main;
 
-        [MenuItem("ee4v/Window/Asset Manager/Main")]
+        [MenuItem("ee4v/Window/Asset Manager/Panes/Main", false, 121)]
         internal static void ShowWindow()
         {
             var window = GetWindow<AssetManagerMainWindow>();

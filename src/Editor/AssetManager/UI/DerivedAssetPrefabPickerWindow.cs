@@ -1446,8 +1446,7 @@ namespace Ee4v.AssetManager.UI
             if (_scopeSiblingIndex >= 0)
             {
                 var index = _scopeSiblingIndex.Value;
-                return !_hiddenPrefabSiblingIndices.Contains(index) &&
-                    index < _instance.transform.childCount &&
+                return index < _instance.transform.childCount &&
                     renderer.transform.IsChildOf(
                         _instance.transform.GetChild(index));
             }
@@ -1463,7 +1462,7 @@ namespace Ee4v.AssetManager.UI
                                     current.GetSiblingIndex());
             if (_scopeSiblingIndex == -1)
             {
-                return !_basePrefabHidden && !isChildPrefab;
+                return !isChildPrefab;
             }
             return isChildPrefab
                 ? !_hiddenPrefabSiblingIndices.Contains(

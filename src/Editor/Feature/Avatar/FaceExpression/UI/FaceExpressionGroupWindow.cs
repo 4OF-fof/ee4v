@@ -10,7 +10,7 @@ namespace Ee4v.FaceExpression
     {
         private FaceExpressionGroupView _view;
 
-        [MenuItem("ee4v/Window/Face Expression/Face Expression Groups")]
+        [MenuItem("ee4v/Window/Avatar/Face Expression/Groups", false, 221)]
         internal static void ShowWindow()
         {
             var window = GetWindow<FaceExpressionGroupWindow>();

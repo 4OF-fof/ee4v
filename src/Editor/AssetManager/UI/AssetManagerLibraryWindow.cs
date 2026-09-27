@@ -9,7 +9,7 @@ namespace Ee4v.AssetManager.UI
     {
         private AssetManagerWorkspaceView _view;
 
-        [MenuItem("ee4v/Window/Asset Manager/Library")]
+        [MenuItem("ee4v/Window/Asset Manager/Library", false, 100)]
         internal static void ShowWindow()
         {
             GetWindow<AssetManagerLibraryWindow>().Show();

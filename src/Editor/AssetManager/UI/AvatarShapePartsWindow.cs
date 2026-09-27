@@ -8,7 +8,7 @@ namespace Ee4v.AssetManager.UI
             ModificationEditorMode.ShapeParts;
         protected override string TitleKey => "workflow.standalone.shapePartsTitle";
 
-        [MenuItem("ee4v/Window/Avatar/Shape and Parts")]
+        [MenuItem("ee4v/Window/Avatar/Shape and Parts", false, 200)]
         private static void ShowWindow()
         {
             GetWindow<AvatarShapePartsWindow>().Show();

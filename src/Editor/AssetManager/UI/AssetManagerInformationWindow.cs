@@ -14,7 +14,7 @@ namespace Ee4v.AssetManager.UI
         protected override AssetManagerViewMode ViewMode =>
             AssetManagerViewMode.Information;
 
-        [MenuItem("ee4v/Window/Asset Manager/Information")]
+        [MenuItem("ee4v/Window/Asset Manager/Panes/Information", false, 122)]
         internal static void ShowWindow()
         {
             var window = GetWindow<AssetManagerInformationWindow>();

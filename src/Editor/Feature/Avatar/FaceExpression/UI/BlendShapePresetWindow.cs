@@ -10,7 +10,7 @@ namespace Ee4v.FaceExpression
     {
         private BlendShapePresetView _view;
 
-        [MenuItem("ee4v/Window/Face Expression/BlendShape Presets")]
+        [MenuItem("ee4v/Window/Avatar/Face Expression/BlendShape Presets", false, 222)]
         private static void Open()
         {
             ShowWindow();

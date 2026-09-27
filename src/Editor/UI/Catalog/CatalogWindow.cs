@@ -54,7 +54,7 @@ namespace Ee4v.UI
         private readonly Dictionary<string, int> _navigatorCategoryIds = new Dictionary<string, int>(StringComparer.Ordinal);
         private bool _isSyncingNavigatorSelection;
 
-        [MenuItem("ee4v/Debug/Catalog")]
+        [MenuItem("ee4v/Debug/Catalog", false, 1100)]
         private static void ShowWindow()
         {
             var window = GetWindow<CatalogWindow>();

@@ -43,6 +43,30 @@
 - 機能間共有を追加した場合は、利用する機能と共有理由を [`features/README.md`](./features/README.md) に記載する。
 - StoryにはStory自身を除く実使用箇所を記載し、対応する機能資料にも実画面との関係を残す。
 
+## Windowのメニュー登録
+
+統合ウィンドウの表示名は日英ともに`ee4v`とし、`ee4v/ee4v`から開きます。単独ウィンドウは`ee4v/Window`配下で機能別にまとめ、Asset Managerの分割ペインは`Panes`、表情とジェスチャーは`Avatar`配下へ配置します。各Windowの所有moduleで`MenuItem`のpathとpriorityを明示し、次の順序で登録します。
+
+| メニュー | priority |
+|---|---|
+| `ee4v/ee4v` | 0 |
+| `ee4v/Window/Asset Manager/Library` | 100 |
+| `ee4v/Window/Asset Manager/Open All` | 101 |
+| `ee4v/Window/Asset Manager/Panes/Navigation` | 120 |
+| `ee4v/Window/Asset Manager/Panes/Main` | 121 |
+| `ee4v/Window/Asset Manager/Panes/Information` | 122 |
+| `ee4v/Window/Avatar/Shape and Parts` | 200 |
+| `ee4v/Window/Avatar/Materials` | 201 |
+| `ee4v/Window/Avatar/Prefab Composition` | 202 |
+| `ee4v/Window/Avatar/Face Expression/Editor` | 220 |
+| `ee4v/Window/Avatar/Face Expression/Groups` | 221 |
+| `ee4v/Window/Avatar/Face Expression/BlendShape Presets` | 222 |
+| `ee4v/Window/Avatar/Gesture Assignment/Assignments` | 240 |
+| `ee4v/Window/Avatar/Gesture Assignment/Settings` | 241 |
+| `ee4v/Window/Avatar/PhysBone Collider Setup` | 260 |
+| `ee4v/Window/Window Groups` | 300 |
+| `ee4v/Debug/Catalog` | 1100 |
+
 ## 人間向け資料
 
 人間向けの入口は [`human/index.html`](./human/index.html) です。詳細はMCP、Asset Manager、Asset Protection、BOOTH / Eagle、Face Expression、PhysBone Collider、Play Mode、Project、Hierarchy、Window Groups、設定のHTMLへ分割し、全ページを共通ナビゲーションで相互にリンクします。ビルド処理や外部CDNを必要としない静的HTMLとして保持します。

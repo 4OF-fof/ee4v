@@ -14,7 +14,7 @@ namespace Ee4v.AssetManager.UI
         protected override AssetManagerViewMode ViewMode =>
             AssetManagerViewMode.Navigation;
 
-        [MenuItem("ee4v/Window/Asset Manager/Navigation")]
+        [MenuItem("ee4v/Window/Asset Manager/Panes/Navigation", false, 120)]
         internal static void ShowWindow()
         {
             var window = GetWindow<AssetManagerNavigationWindow>();

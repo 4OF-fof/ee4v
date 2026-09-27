@@ -19,7 +19,7 @@ namespace Ee4v.AssetManager.UI
                     "asset-manager-workspace",
                     "Domain/AssetManager",
                     "AssetManagerWorkspaceView",
-                    "改変ワークフローのアセット選択を担うAssetManagerの3ペインです。",
+                    "ee4vウィンドウのアセット選択を担うAssetManagerの3ペインです。",
                     "Navigation、Main、Informationをサンプルデータで操作し、選択アセットからVariant作成へ進みます。Variantタブは現在のProject内の作成済みVariantを表示します。",
                     BuildWorkspace,
                     usageLocations: new[]

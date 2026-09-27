@@ -18,7 +18,7 @@ namespace Ee4v.FaceExpression
             new AnimationClipThumbnailCache();
         private IReadOnlyList<string> _previewRendererPaths = Array.Empty<string>();
 
-        [MenuItem("ee4v/Window/Gesture Assignment/Gesture Assignments")]
+        [MenuItem("ee4v/Window/Avatar/Gesture Assignment/Assignments", false, 240)]
         private static void Open()
         {
             ShowFor(Selection.activeGameObject);

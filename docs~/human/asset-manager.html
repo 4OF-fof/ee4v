@@ -17,7 +17,7 @@
       <p class="lead">Item、配布File、Tag、Collectionと、Unity Projectへ取り込んだAssetの対応を一つの画面群で管理します。</p>
     </div>
     <dl class="header-facts" aria-label="機能概要">
-      <div><dt>入口</dt><dd>Library / Modification Workflow</dd></div>
+      <div><dt>入口</dt><dd>Library / ee4v</dd></div>
       <div><dt>Window</dt><dd>単独機能 + 改変Window</dd></div>
       <div><dt>Source</dt><dd>Eagle / ee4v</dd></div>
     </dl>
@@ -34,7 +34,7 @@
       <p>On this page</p>
       <ol>
         <li><a href="#open">開く</a></li>
-        <li><a href="#workflow">改変ワークフロー</a></li>
+        <li><a href="#workflow">ee4vウィンドウ</a></li>
         <li><a href="#variants">Variantの保存と復元</a></li>
         <li><a href="#windows">3つのWindow</a></li>
         <li><a href="#browse">探す・選ぶ</a></li>
@@ -51,9 +51,9 @@
         <h2>AssetManagerの単独版を開く</h2>
         <p><code>ee4v / Window / Asset Manager / Library</code>は検索・一覧・情報を一つに組み合わせたAssetManagerの単独版です。従来の<code>Open All</code>ではNavigation、Main、Informationを別々のWindowとして開き、Unityのlayoutに合わせてdock配置できます。</p>
         <ul class="menu-paths">
-          <li>ee4v / Window / Asset Manager / Navigation</li>
-          <li>ee4v / Window / Asset Manager / Main</li>
-          <li>ee4v / Window / Asset Manager / Information</li>
+          <li>ee4v / Window / Asset Manager / Panes / Navigation</li>
+          <li>ee4v / Window / Asset Manager / Panes / Main</li>
+          <li>ee4v / Window / Asset Manager / Panes / Information</li>
         </ul>
         <p>個別menuから開いた場合も、3つのWindowは同じ選択状態と表示位置を共有します。</p>
       </section>
@@ -61,13 +61,13 @@
       <section id="workflow">
         <p class="section-label">Modification workflow</p>
         <h2>派生アセットをキャラクリのように編集する</h2>
-        <p><code>ee4v / Window / Asset Manager / Modification Workflow</code>を開くと、通常のAssetManagerと同じ検索・一覧・情報が表示されます。素材をダブルクリックして詳細を開き、派生アセット一覧の「派生アセットを追加」カードから名前とPrefabを確認して「Variantを作成して改変開始」を押すと、同じWindowの編集画面へ進みます。取り込み前の素材はアセット詳細からImportできます。作成元は選んだ素材に固定され、ほかの素材へ変える場合は「アセット選択へ戻る」を使います。既存Variantを続けて編集するときは、その素材の派生アセットカードをダブルクリックして詳細を開き、「このアバターを改変」を押します。編集開始後のPrefabヘッダ、左のカテゴリ、中央プレビュー、右の編集ペインは従来の構成です。編集するキャラクターを決めた後は画面上部でPrefabの組み合わせを操作します。左側には「体型・パーツ」「マテリアル」「表情・アニメーション」「PhysBone」が並びます。Variant名のタブでは全Prefabの候補を、個別PrefabタブではそのPrefabの候補を「体型・パーツ」と「マテリアル」で編集できます。「体型・パーツ」の中で「パーツ」と「体型」を切り替えます。</p>
-        <p>改変機能の単独版は<code>ee4v / Window / Avatar / Shape and Parts</code>（体型・パーツ）、<code>Materials</code>（マテリアル）、<code>Prefab Composition</code>（Prefab構成）です。それぞれ単独で派生アセットを選ぶ・作るところから操作できます。表情・アニメーションとPhysBoneには既存の単独版を使えます。単独版と改変ワークフローは同じ編集・保存機能を使います。</p>
+        <p><code>ee4v / ee4v</code>を開くと、通常のAssetManagerと同じ検索・一覧・情報が表示されます。素材をダブルクリックして詳細を開き、派生アセット一覧の「派生アセットを追加」カードから名前とPrefabを確認して「Variantを作成して改変開始」を押すと、同じWindowの編集画面へ進みます。取り込み前の素材はアセット詳細からImportできます。作成元は選んだ素材に固定され、ほかの素材へ変える場合は「アセット選択へ戻る」を使います。既存Variantを続けて編集するときは、その素材の派生アセットカードをダブルクリックして詳細を開き、「このアバターを改変」を押します。編集開始後のPrefabヘッダ、左のカテゴリ、中央プレビュー、右の編集ペインは従来の構成です。編集するキャラクターを決めた後は画面上部でPrefabの組み合わせを操作します。左側には「体型・パーツ」「マテリアル」「表情・アニメーション」「PhysBone」が並びます。Variant名のタブでは全Prefabの候補を、個別PrefabタブではそのPrefabの候補を「体型・パーツ」と「マテリアル」で編集できます。「体型・パーツ」の中で「パーツ」と「体型」を切り替えます。</p>
+        <p>改変機能の単独版は<code>ee4v / Window / Avatar / Shape and Parts</code>（体型・パーツ）、<code>Materials</code>（マテリアル）、<code>Prefab Composition</code>（Prefab構成）です。それぞれ単独で派生アセットを選ぶ・作るところから操作できます。表情・アニメーションとPhysBoneには既存の単独版を使えます。単独版とee4vウィンドウは同じ編集・保存機能を使います。</p>
         <ol class="steps">
           <li><strong>AssetManagerで素材を選ぶ。</strong> 検索やTag、Collectionから改変する素材を選び、ダブルクリックして詳細を開きます。未取り込みの場合はPrefabをImportします。</li>
           <li><strong>Variantを作成する。</strong> 素材の詳細にある「派生アセットを追加」カードを押し、その素材から取り込み済みのPrefab、Variant名、説明を確認します。戻ると元のページと選択状態へ戻ります。</li>
           <li><strong>改変を開始する。</strong> 「Variantを作成して改変開始」を押すと、作成したVariantがそのまま編集画面で開きます。元の素材から取り込み済みPrefabが見つからない場合は、Importしてから作成してください。</li>
-          <li><strong>アセットを組み合わせる。</strong> 画面上部にはピル型の派生Prefab Variant名と、ブラウザのタブに似た元Prefab・追加Prefabの名前が並びます。サムネイルは表示しません。各Prefabタブの目のアイコンでプレビューだけを一時的に隠せます。ベースPrefabにも使えます。追加Prefabはタブを右クリックして削除できます。Prefabタブを押すと中央PreviewがそのPrefabだけになり、「体型・パーツ」または「マテリアル」の選択が維持されます。「体型・パーツ」内の「パーツ」ではPrefab内の子オブジェクトを一覧で確認し、チェックボックスで表示を切り替えられます。チェックを外すとプレビューから消え、非アクティブ化とEditorOnlyタグを派生Prefabへ保存します。連続したオン・オフは操作が落ち着いてからまとめて保存します。画面を切り替えるか閉じるときは保留分を保存します。変更した部分だけをプレビューと一覧へ反映し、カメラ位置は変わりません。Preferencesの「パーツ一覧から除外する名前の接頭辞」に一致する階層とその子孫は一覧に表示しません。既定値はArmatureです。全体へ戻るにはVariant名のピルを押します。編集する派生アセットを選び直すには、そのピル内の「変更」を押します。末尾の追加アイコンからPrefabを追加できます。追加後はVariant名の全体表示へ戻り、追加Prefabを含む合成プレビューと「パーツ」の全身一覧を表示します。</li>
+          <li><strong>アセットを組み合わせる。</strong> 画面上部にはピル型の派生Prefab Variant名と、ブラウザのタブに似た元Prefab・追加Prefabの名前が並びます。サムネイルは表示しません。各Prefabタブの目のアイコンで、全体プレビューからだけ一時的に隠せます。ベースPrefabにも使えます。個別Prefabタブを選ぶと、目のアイコンで非表示にしていてもそのPrefabを表示します。Variant名の全体表示へ戻ると、保持した非表示状態が再び反映されます。追加Prefabはタブを右クリックして削除できます。Prefabタブを押すと中央PreviewがそのPrefabだけになり、「体型・パーツ」または「マテリアル」の選択が維持されます。「体型・パーツ」内の「パーツ」ではPrefab内の子オブジェクトを一覧で確認し、チェックボックスで表示を切り替えられます。チェックを外すとプレビューから消え、非アクティブ化とEditorOnlyタグを派生Prefabへ保存します。連続したオン・オフは操作が落ち着いてからまとめて保存します。画面を切り替えるか閉じるときは保留分を保存します。変更した部分だけをプレビューと一覧へ反映し、カメラ位置は変わりません。Preferencesの「パーツ一覧から除外する名前の接頭辞」に一致する階層とその子孫は一覧に表示しません。既定値はArmatureです。全体へ戻るにはVariant名のピルを押します。編集する派生アセットを選び直すには、そのピル内の「変更」を押します。末尾の追加アイコンからPrefabを追加できます。追加後はVariant名の全体表示へ戻り、追加Prefabを含む合成プレビューと「パーツ」の全身一覧を表示します。</li>
           <li><strong>体型とパーツを調整する。</strong> 左側の「体型・パーツ」を開き、右ペイン上部で「パーツ」と「体型」を切り替えます。「体型」で身長やBlendShape、骨格スケールを調整し、「パーツ」で子オブジェクトの表示を切り替えます。Variant名のタブでは全Prefabの候補を、個別PrefabタブではそのPrefabの候補だけを表示します。「パーツ」と「体型」では部位選択と内側の2タブを、「マテリアル」では部位選択を上部に固定します。パーツ選択時にも、対応するHumanoid boneか衣装のSkinnedMeshRendererが参照するboneがある部位を選ぶとプレビューがそのboneへ移動し、骨・追従先・名称からその部位を判定できるオブジェクトだけが一覧に表示されます。対応するboneがない部位は選択できません。部位を判定できないオブジェクトは全身の一覧で確認できます。カテゴリや内側のタブを切り替えると編集内容は先頭から表示されます。元アセットや他Prefabと共有するMaterialは編集用Material Variantを作ってから変更できます。</li>
           <li><strong>見た目を選ぶ。</strong> 「体型・パーツ」の「体型」と「マテリアル」では、「全身」「頭・首」「肩・腕」「手」「胸」「腰・胴」「脚」「足」の順に並ぶ部位を選べます。最初は「パーツ」の全身一覧が開きます。対応するHumanoid boneか衣装のSkinnedMeshRendererが参照するboneがある部位を選ぶと、中央Previewのカメラがそのboneを基準に滑らかに移動・回転・拡大します。boneがない部位はグレーアウトします。全身はboneがないPrefabでも選べます。胸は左斜め下から少し近く低い視点、腰・胴は右斜め下、肩・腕は左斜め上、手は左斜め上、足は正面寄りの左斜め上から表示します。肩・腕と手はPreview上の「左」「右」で表示側を切り替えられます。初期状態はどちらも左です。全身、頭・首、腰・胴は「正面」「背面」で表示方向を切り替えられます。プレビューを手動操作するとカメラの移動アニメーションは止まります。「全身」を選ぶと全体表示になります。全体選択と個別Prefab選択のどちらも全身Previewは同じ距離係数で表示します。Previewの表示リセットでは、選択中の部位と正面／背面・左右の切り替えを保ったまま、その部位の基準視点に戻ります。全身では身長、全BlendShape、骨格スケール、全Materialを確認でき、部位を選ぶと対応する項目に絞られます。全身のサイズでは、VRChatのView Positionが示す眼高をアップロード時の身長としてm単位で確認し、元素材の基準眼高から±1mの範囲で調整できます。変更時はAvatar root scaleとView Positionを一緒に更新し、身長にはXYZの個別設定を表示しません。bone scaleのsliderは50%から200%で、数値入力では範囲外の値も指定できます。各bone scale行の左端にあるchevronを開くと、表情編集のL／R行と同じindentでX、Y、Zの個別調整が表示されます。Renderer名またはMesh名がBodyのメッシュは除外され、それ以外の全BlendShapeが頭・首、胸、腰・胴、肩・腕、手、脚、足へ分類され、判定できないものは全身に表示されます。BlendShapeは表情編集と同じ横一列のsliderと数値入力で0%から100%まで調整できます。全身選択時は頭、胸、腰、肩、腕、手、脚、足のbone scaleを「高度な骨格スケール」に折りたたみ、部位選択時はその部位のscaleを直接表示します。個別boneにはHumanoid Avatarが必要ですが、身長とBody以外のBlendShapeはHumanoid以外でも使用できます。BlendShapeの見出しと、画面上部や高度な骨格スケール内の説明文は表示しません。値は派生Prefabだけに保存され、中央Previewへ即時反映されます。sliderのドラッグ中は各値をPreviewへ即時反映し、Prefab保存は操作終了時にまとめます。マテリアルでは、アバター内のRendererで実際に使われているMaterialがHierarchy pathとslot番号付きの連続した一覧に表示されます。各行右端の表示アイコンを押すと、そのMaterialの表示／非表示を個別に切り替えられ、先頭の「すべて」から選択部位のMaterialを一括操作できます。部位を判定できないMaterialも全身で確認できます。右側の単一スクロール領域には、選択したMaterial名とMaterial Inspectorが1つの枠で開き、Shader固有の色、Texture、描画設定をまとめて編集できます。変更は「プレビュー」と大きな表示領域だけで構成したGame View風Previewへ即時反映されます。グリッド背景と右上の背景切り替え・表示リセットはPhysBone Previewと共通です。</li>
           <li><strong>体型の詳細を開く。</strong> 高度な骨格scaleでは、左端のchevronだけでなく部位名を押してもXYZを開閉できます。XYZは表情編集のL／Rと同じように親の部位名より一段内側へ表示されます。Body以外のBlendShape一覧では表情編集と同じ設定で区切り用BlendShapeを除外し、<code>body_base/</code>のような<code>/</code>より前の部分は表示しません。同名のBlendShapeは一つの行にまとまり、左端の矢印を開くとRendererごとの値を調整できます。既にMA Blendshape Syncでつながる参照元と追従先も一緒に表示します。まとめた行の操作は全体を同じ値で同期し、個別行の操作はMAの補正値として保存されます。個別行にはRenderer名が表示され、ポインターを重ねるとHierarchy pathと元のBlendShape名を確認できます。</li>
@@ -81,11 +81,11 @@
         <p class="section-label">Variant history</p>
         <h2>Variantを保存して編集を続ける</h2>
         <ol class="steps">
-          <li><strong>Variantを作成する。</strong> 素材の詳細からVariantを作り、改変ワークフローで編集します。</li>
+          <li><strong>Variantを作成する。</strong> 素材の詳細からVariantを作り、ee4vウィンドウで編集します。</li>
           <li><strong>版を保存する。</strong> 編集画面上部の保存ボタンは、初回保存または最新版から変更があるときに押せます。変更がないときはグレーアウトします。押すと、背景を暗くした編集画面の中央に、メッセージ入力欄と「保存」を横に並べたオーバーレイが表示されます。表示中は背景の編集操作ができません。入力は任意で、空欄でも保存できます。表示時は入力欄にフォーカスせず、メッセージを入力する場合にクリックして選択します。オーバーレイの保存ボタンまたはEnterで確定すると、現在のPrefabと独自Asset、正面から頭から足先まで収まる全身プレビュー画像を履歴へ保存します。画像は保存した版に固定され、後で改変しても過去の画像は変わりません。Prefabへの編集反映とは別に、この操作が必要です。Escape、右上の閉じるボタン、入力カード外の背景をクリックする操作で、保存せずに閉じられます。保存後や変更を元に戻した後、最新版と同じ内容になれば保存ボタンは再びグレーアウトします。</li>
           <li><strong>詳細と履歴を確認する。</strong> NavigationのVariantタブまたは素材の派生アセットカードをダブルクリックすると、Variantの詳細を開きます。上部に最新版の全身画像、Variant名と説明、操作ボタンを表示します。Informationには最新版の全身画像と名前・説明の入力欄を表示します。名前と説明は通常の素材と同じInformationウィンドウの入力欄から編集します。入力欄からフォーカスを外すと自動保存され、詳細の表示にも反映されます。Variantの複数選択時は編集欄を表示しません。名前は空欄にできません。保存済みVariantはImport前でも編集でき、再起動後や別Projectの一覧にも反映されます。名前や説明の編集だけでは履歴の版は増えず、過去版を復元しても現在の名前と説明を維持します。その下にバージョン履歴と依存素材の画像付きカードを表示し、依存素材が詳細画面の最後のセクションになります。履歴カードは保存時の全身画像、版番号、メッセージ、保存日時の順に表示します。メッセージが空欄ならその行は表示しません。依存カードで使用した素材Fileを確認できます。履歴欄には入力欄と保存ボタンを表示しません。依存数などの集計欄は表示しません。依存素材は、保存済みなら最新版を保存した時点の内容、未保存なら現在のProjectの内容です。依存欄の矢印から素材の詳細を開けます。保存完了のメッセージは表示しません。最新版と同じ内容を再保存しても版は増えません。</li>
           <li><strong>過去版を復元する。</strong> 詳細の「この版を復元」を押して確認すると、保存した状態へ戻り、詳細画面に留まります。Projectにない保存済みVariantも、詳細の履歴から復元できます。復元後の変更を保存すると新しい版になり、以前の履歴も残ります。</li>
-          <li><strong>改変を開始する。</strong> Modification Workflow内のVariant詳細にある「このアバターを改変」を押すと、同じWindowの編集画面へ進みます。ProjectにないVariantには「Import」が表示されます。押すと保存済みの最新版と必要な素材をProjectへ取り込み、同じ詳細画面に留まります。取り込み後は「このアバターを改変」に切り替わります。AssetManager単独版にはこのボタンがなく、ダブルクリックや復元で改変Windowを開くこともありません。</li>
+          <li><strong>改変を開始する。</strong> ee4vウィンドウ内のVariant詳細にある「このアバターを改変」を押すと、同じWindowの編集画面へ進みます。ProjectにないVariantには「Import」が表示されます。押すと保存済みの最新版と必要な素材をProjectへ取り込み、同じ詳細画面に留まります。取り込み後は「このアバターを改変」に切り替わります。AssetManager単独版にはこのボタンがなく、ダブルクリックや復元で改変Windowを開くこともありません。</li>
         </ol>
         <p>Variant一覧や素材詳細のVariantカードにも最新版の保存画像を使います。</p>
         <p>履歴と最新版のサムネイルは、共通データ保存先の<code>cache/asset-manager/variant-thumbnails</code>にPNGとして保持し、次回から画像ファイルを直接読み込みます。このキャッシュはEditorの再起動後も使います。削除した場合や画像が破損した場合はGit履歴から再生成されます。</p>

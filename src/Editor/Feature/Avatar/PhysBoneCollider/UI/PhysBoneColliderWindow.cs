@@ -82,7 +82,7 @@ namespace Ee4v.PhysBoneCollider
         private bool _embeddedLoadFailed;
         private bool _renderingDetail;
 
-        [MenuItem("ee4v/Window/Avatar/PhysBone Collider Setup")]
+        [MenuItem("ee4v/Window/Avatar/PhysBone Collider Setup", false, 260)]
         private static void Open()
         {
             var window = GetWindow<PhysBoneColliderWindow>();

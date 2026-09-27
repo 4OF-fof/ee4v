@@ -17,7 +17,7 @@
   <main id="main" class="content-shell">
     <aside class="toc" aria-label="このページの目次"><p>On this page</p><ol><li><a href="#open">開く</a></li><li><a href="#detect">Avatar検出</a></li><li><a href="#presets">配置Preset</a></li><li><a href="#preview">Previewと調整</a></li><li><a href="#physbones">PhysBone検出</a></li><li><a href="#apply">適用</a></li><li><a href="#requirements">必要なPackage</a></li></ol></aside>
     <article class="prose">
-      <section id="open"><p class="section-label">Open</p><h2>Scene、Prefab Mode、または改変ワークフローから使う</h2><p><code>ee4v / Window / Avatar / PhysBone Collider Setup</code>から開くと、Scene上またはPrefab Mode上のAvatarを対象にできます。Asset Managerの<code>Modification Workflow</code>では、派生アセットを選んだ後に「PhysBone」タブから同じ設定画面を使用できます。</p></section>
+      <section id="open"><p class="section-label">Open</p><h2>Scene、Prefab Mode、またはee4vウィンドウから使う</h2><p><code>ee4v / Window / Avatar / PhysBone Collider Setup</code>から開くと、Scene上またはPrefab Mode上のAvatarを対象にできます。統合ウィンドウの<code>ee4v</code>では、派生アセットを選んだ後に「PhysBone」タブから同じ設定画面を使用できます。</p></section>
       <section id="detect">
         <p class="section-label">Avatar detection</p><h2>Prefab root直下のArmatureを調べる</h2>
         <p>初期検出はPrefab root直下にある、名前が<code>Armature</code>の子Objectだけを対象にします。大文字と小文字は区別しません。衣装など別階層のArmatureは含めません。</p>
@@ -34,7 +34,7 @@
       </section>
       <section id="preview">
         <p class="section-label">Preview</p><h2>体の裏側までwireで確認する</h2>
-        <p>「プレビュー」toolbarの下にAvatarとColliderを表示します。グリッド背景と右上の背景切り替え・表示リセットはModification Workflowの見た目タブと共通で、単独Windowでも同じです。ColliderとPhysBoneの表示切り替えは共通Previewの左上へ重ねます。水色は有効なCollider候補、中心marker付きの黄色は一覧で選択中の候補です。wireはAvatarより手前に描くため、体の裏側も確認できます。</p>
+        <p>「プレビュー」toolbarの下にAvatarとColliderを表示します。グリッド背景と右上の背景切り替え・表示リセットはee4vウィンドウの見た目タブと共通で、単独Windowでも同じです。ColliderとPhysBoneの表示切り替えは共通Previewの左上へ重ねます。水色は有効なCollider候補、中心marker付きの黄色は一覧で選択中の候補です。wireはAvatarより手前に描くため、体の裏側も確認できます。</p>
         <div class="table-wrap"><table><thead><tr><th>操作</th><th>動作</th></tr></thead><tbody><tr><td>右drag</td><td>Preview回転</td></tr><tr><td>middle button drag</td><td>Preview移動</td></tr><tr><td>wheel</td><td>拡大・縮小</td></tr><tr><td>配置をリセット</td><td>追従boneを含む配置を現在のPreset案へ戻す</td></tr></tbody></table></div>
         <p>候補ごとに作成対象、追従bone、半径、全高、位置、回転を編集できます。追従boneを変えた場合もworld上の配置を維持します。</p>
       </section>
@@ -46,7 +46,7 @@
       </section>
       <section id="apply">
         <p class="section-label">Apply</p><h2>MA Bone Proxy付きPrefabへまとめる</h2>
-        <p>適用するとAvatar直下へ<code>&lt;Avatar名&gt;_PhysBoneColliders</code>という1つのPrefabを作り、生成Colliderをまとめます。各ColliderにはModular AvatarのBone Proxyを設定し、build時に選択した追従bone直下へ移動します。Modification Workflowから適用した場合は、この参照を選択中の派生Prefabへ保存します。</p>
+        <p>適用するとAvatar直下へ<code>&lt;Avatar名&gt;_PhysBoneColliders</code>という1つのPrefabを作り、生成Colliderをまとめます。各ColliderにはModular AvatarのBone Proxyを設定し、build時に選択した追従bone直下へ移動します。ee4vウィンドウから適用した場合は、この参照を選択中の派生Prefabへ保存します。</p>
         <p>生成Prefabは共通Asset rootの<code>Avatar/PhysBoneCollider/&lt;Avatar名&gt;</code>へ保存します。再適用では同じ生成Prefabの中身を置き換え、画面で選択したPhysBoneだけへ現在のCollider参照を追加します。利用者が作成したColliderは対象にしません。</p>
         <p>旧方式でbone直下に生成したColliderとその参照は自動移行・除去しません。残っている場合は手動で整理してから適用してください。</p>
         <p class="callout"><strong>Undo対応:</strong> Scene上の適用操作はUnityのUndoで取り消せます。</p>

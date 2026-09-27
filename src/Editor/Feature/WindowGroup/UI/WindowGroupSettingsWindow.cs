@@ -11,7 +11,7 @@ namespace Ee4v.WindowGroup
         private const float MinimumHeight = 400f;
         private WindowGroupSettingsView _view;
 
-        [MenuItem("ee4v/Window/Window Groups")]
+        [MenuItem("ee4v/Window/Window Groups", false, 300)]
         private static void Open()
         {
             var window = GetWindow<WindowGroupSettingsWindow>();

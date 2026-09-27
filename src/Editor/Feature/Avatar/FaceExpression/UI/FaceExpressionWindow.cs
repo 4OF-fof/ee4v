@@ -86,7 +86,7 @@ namespace Ee4v.FaceExpression
         private bool HasClipReference => !ReferenceEquals(_clip, null);
         private bool IsClipMissing => HasClipReference && _clip == null;
 
-        [MenuItem("ee4v/Window/Face Expression/Face Expression Editor")]
+        [MenuItem("ee4v/Window/Avatar/Face Expression/Editor", false, 220)]
         private static void Open()
         {
             ShowWindow();
