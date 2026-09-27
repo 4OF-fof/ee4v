@@ -11,6 +11,7 @@ namespace Ee4v.AssetManager.Contracts
         IReadOnlyList<AssetVariant> GetVariants();
         IReadOnlyList<AssetVariantRevision> GetRevisions(string variantId);
         AssetVariantRevisionDetails GetRevisionDetails(string variantId, string revisionId);
+        bool HasChanges(string rootAssetPath);
         Task<AssetThumbnail> GetRevisionThumbnail(string variantId, string revisionId,
             CancellationToken cancellationToken = default);
         Task<AssetVariantRevision> Save(AssetVariantSaveRequest request);

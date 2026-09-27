@@ -17,6 +17,8 @@ namespace Ee4v.AssetManager.Infrastructure
         private readonly IAssetManager _manager;
         private readonly GitAssetVariantRepository _repository;
         private readonly string _projectRoot;
+        private readonly Dictionary<string, (long Length, long ModifiedAt, string Hash)> _fileHashes =
+            new Dictionary<string, (long, long, string)>(StringComparer.Ordinal);
 
         internal UnityAssetVariantWorkspace(IAssetManager manager, GitAssetVariantRepository repository)
         {
@@ -26,6 +28,16 @@ namespace Ee4v.AssetManager.Infrastructure
         }
 
         public AssetVariantCapture Capture(AssetVariantSaveRequest request)
+        {
+            return Capture(request, true);
+        }
+
+        public AssetVariantSnapshot Inspect(string rootAssetPath)
+        {
+            return Capture(new AssetVariantSaveRequest { RootAssetPath = rootAssetPath }, false).Snapshot;
+        }
+
+        private AssetVariantCapture Capture(AssetVariantSaveRequest request, bool saveVersion)
         {
             GitAssetVariantRepository.ValidateAssetPath(request.RootAssetPath);
             var record = DerivedAssetCatalog.Read(request.RootAssetPath);
@@ -39,7 +51,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 throw new InvalidOperationException("A Variant must belong to an AssetManager asset.");
             }
             _manager.GetItem(record.ParentItemId);
-            AssetDatabase.SaveAssets();
+            if (saveVersion) { AssetDatabase.SaveAssets(); }
             var sourcePath = AssetDatabase.GUIDToAssetPath(record.SourceGuid);
             if (!string.IsNullOrEmpty(record.SourceGuid) && !AssetExists(sourcePath))
             {
@@ -94,13 +106,17 @@ namespace Ee4v.AssetManager.Infrastructure
                     TargetPaths = ResolveTargetPaths(file)
                 };
             }).ToArray();
-            var staging = _repository.NewStagingPath();
+            var staging = saveVersion ? _repository.NewStagingPath() : null;
             try
             {
-                var assets = owned.Select(path => CopyAsset(path, staging)).ToArray();
-                var preview = AssetVariantPreviewRenderer.Render(
-                    AssetDatabase.LoadAssetAtPath<GameObject>(request.RootAssetPath));
-                File.WriteAllBytes(Path.Combine(staging, "preview.png"), preview);
+                var assets = owned.Select(path => ReadOwnedAsset(path, staging)).ToArray();
+                byte[] preview = null;
+                if (saveVersion)
+                {
+                    preview = AssetVariantPreviewRenderer.Render(
+                        AssetDatabase.LoadAssetAtPath<GameObject>(request.RootAssetPath));
+                    File.WriteAllBytes(Path.Combine(staging, "preview.png"), preview);
+                }
                 var id = AssetDatabase.AssetPathToGUID(request.RootAssetPath);
                 var snapshot = new AssetVariantSnapshot
                 {
@@ -116,7 +132,7 @@ namespace Ee4v.AssetManager.Infrastructure
                         Memo = request.Memo ?? string.Empty
                     },
                     Assets = assets, Dependencies = dependencyRecords,
-                    PreviewHash = HashBytes(preview),
+                    PreviewHash = preview == null ? null : HashBytes(preview),
                     UnityVersion = UnityEngine.Application.unityVersion,
                     PackagesManifest = ReadProjectFile("Packages/manifest.json"),
                     PackagesLock = ReadProjectFile("Packages/packages-lock.json")
@@ -137,25 +153,48 @@ namespace Ee4v.AssetManager.Infrastructure
             }
             catch
             {
-                _repository.DeleteStaging(staging);
+                if (staging != null) { _repository.DeleteStaging(staging); }
                 throw;
             }
         }
 
-        private AssetVariantOwnedAsset CopyAsset(string path, string staging)
+        private AssetVariantOwnedAsset ReadOwnedAsset(string path, string staging)
         {
             var source = ProjectAssetPath(path);
-            var destination = Path.Combine(staging, path);
             var folder = AssetDatabase.IsValidFolder(path);
-            Directory.CreateDirectory(Path.GetDirectoryName(destination));
-            if (folder) { Directory.CreateDirectory(destination); }
-            else { File.Copy(source, destination); }
-            File.Copy(source + ".meta", destination + ".meta");
+            var destination = source;
+            if (staging != null)
+            {
+                destination = Path.Combine(staging, path);
+                Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                if (folder) { Directory.CreateDirectory(destination); }
+                else { File.Copy(source, destination); }
+                File.Copy(source + ".meta", destination + ".meta");
+            }
+            else if (!folder && AssetDatabase.IsMainAssetAtPathLoaded(path))
+            {
+                AssetDatabase.SaveAssetIfDirty(AssetDatabase.LoadMainAssetAtPath(path));
+            }
             return new AssetVariantOwnedAsset
             {
                 Path = path, Guid = AssetDatabase.AssetPathToGUID(path), IsFolder = folder,
-                Hash = folder ? null : HashFile(destination), MetaHash = HashFile(destination + ".meta")
+                Hash = folder ? null : staging == null ? GetFileHash(destination) : HashFile(destination),
+                MetaHash = staging == null ? GetFileHash(destination + ".meta") : HashFile(destination + ".meta")
             };
+        }
+
+        private string GetFileHash(string path)
+        {
+            var file = new FileInfo(path);
+            var modifiedAt = file.LastWriteTimeUtc.Ticks;
+            if (_fileHashes.TryGetValue(path, out var cached) &&
+                cached.Length == file.Length && cached.ModifiedAt == modifiedAt)
+            {
+                return cached.Hash;
+            }
+            var hash = HashFile(path);
+            _fileHashes[path] = (file.Length, modifiedAt, hash);
+            return hash;
         }
 
         public bool HasAssets(AssetVariantDependency dependency) =>

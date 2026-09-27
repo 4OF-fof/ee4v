@@ -250,7 +250,9 @@
   },
   "variant": {
     "save": "Save version",
-    "memo": "Save note",
+    "saveMessage": "Message (optional)",
+    "confirmSave": "Save",
+    "noChanges": "There are no changes from the latest saved version.",
     "history": "Version history",
     "dependencies": "Source dependencies",
     "currentDependencies": "Current project (not saved)",

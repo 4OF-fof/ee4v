@@ -14,6 +14,8 @@ namespace Ee4v.AssetManager.Application
         private readonly IAssetVariantRepository _repository;
         private readonly IAssetVariantIndex _index;
         private readonly IAssetVariantWorkspace _workspace;
+        private readonly Dictionary<string, AssetVariantSnapshot> _latestSnapshots =
+            new Dictionary<string, AssetVariantSnapshot>(StringComparer.Ordinal);
         private bool _busy;
 
         internal AssetVariantService(IAssetManager manager,
@@ -43,7 +45,26 @@ namespace Ee4v.AssetManager.Application
                 throw new InvalidOperationException("A Variant operation is in progress.");
             }
             _index.ReplaceVariantIndex(_repository.ReadAll());
+            _latestSnapshots.Clear();
             NotifyChanged();
+        }
+
+        public bool HasChanges(string rootAssetPath)
+        {
+            AssetManagerRequestValidator.Require(rootAssetPath, "root asset path");
+            var variant = _index.GetVariants().FirstOrDefault(candidate =>
+                candidate.RootAssetPath == rootAssetPath);
+            if (variant == null || string.IsNullOrEmpty(variant.HeadRevisionId))
+            {
+                return true;
+            }
+            if (!_latestSnapshots.TryGetValue(variant.Id, out var latest) ||
+                latest.Revision.Id != variant.HeadRevisionId)
+            {
+                latest = _repository.Read(variant.Id, variant.HeadRevisionId);
+                _latestSnapshots[variant.Id] = latest;
+            }
+            return _workspace.Inspect(rootAssetPath).ContentHash != latest.ContentHash;
         }
 
         public AssetVariantRevisionDetails GetRevisionDetails(string variantId, string revisionId)

@@ -250,7 +250,9 @@
   },
   "variant": {
     "save": "バージョンを保存",
-    "memo": "保存メモ",
+    "saveMessage": "メッセージ（任意）",
+    "confirmSave": "保存",
+    "noChanges": "保存済みの最新版と変更がありません。",
     "history": "バージョン履歴",
     "dependencies": "依存素材",
     "currentDependencies": "現在のProject（未保存）",

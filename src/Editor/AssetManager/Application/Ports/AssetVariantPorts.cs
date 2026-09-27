@@ -24,6 +24,7 @@ namespace Ee4v.AssetManager.Application.Ports
     internal interface IAssetVariantWorkspace
     {
         AssetVariantCapture Capture(AssetVariantSaveRequest request);
+        AssetVariantSnapshot Inspect(string rootAssetPath);
         string Restore(AssetVariantSnapshot snapshot, string stagingPath);
         void SetBaseRevision(string variantId, string revisionId);
         bool HasAssets(AssetVariantDependency dependency);

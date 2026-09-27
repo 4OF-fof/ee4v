@@ -1481,8 +1481,11 @@ namespace Ee4v.AssetManager.UI
                 strip.schedule.Execute(() => strip.ScrollTo(cardToReveal));
             }
             cards.Add(strip);
-            var save = AssetManagerControls.CreateButton(I18N.Get("variant.save"), SaveVariantRevision);
-            save.SetEnabled(!_savingVariant);
+            UiButton save = null;
+            save = AssetManagerControls.CreateButton(I18N.Get("variant.save"),
+                () => AssetVariantSaveOverlay.Show(this, SaveVariantRevision));
+            save.SetEnabled(false);
+            save.schedule.Execute(() => RefreshVariantSaveButton(save)).Every(750);
             cards.Add(save);
             header.Add(cards);
             if (!string.IsNullOrEmpty(_assetFeedback))
@@ -1494,9 +1497,9 @@ namespace Ee4v.AssetManager.UI
             return header;
         }
 
-        private async void SaveVariantRevision()
+        private async void SaveVariantRevision(string message)
         {
-            if (_savingVariant || _workingObject == null) { return; }
+            if (_disposed || _savingVariant || _workingObject == null) { return; }
             EndBodyScaleDrag();
             if (!FlushPendingPartVisibility()) { return; }
             _savingVariant = true;
@@ -1506,7 +1509,12 @@ namespace Ee4v.AssetManager.UI
             {
                 _manager = _manager ?? AssetManagerWindowSession.GetManager();
                 var variants = AssetManagerWindowSession.TryGetVariantManager(_manager);
-                await variants.Save(new AssetVariantSaveRequest { RootAssetPath = assetPath });
+                if (!variants.HasChanges(assetPath)) { return; }
+                await variants.Save(new AssetVariantSaveRequest
+                {
+                    RootAssetPath = assetPath,
+                    Memo = message
+                });
                 if (!_disposed)
                 {
                     _assetFeedback = string.Empty;
@@ -1522,6 +1530,33 @@ namespace Ee4v.AssetManager.UI
                 _savingVariant = false;
                 if (!_disposed) { BuildWindow(); }
             }
+        }
+
+        private void RefreshVariantSaveButton(UiButton save)
+        {
+            if (_disposed || _savingVariant || _workingObject == null)
+            {
+                save.SetEnabled(false);
+                return;
+            }
+            var hasChanges = true;
+            try
+            {
+                if (_pendingPartVisibility.Count == 0 && !_bodyScaleDirty &&
+                    _pendingBodySizeChange == PendingBodySizeChange.None)
+                {
+                    _manager = _manager ?? AssetManagerWindowSession.GetManager();
+                    var variants = AssetManagerWindowSession.TryGetVariantManager(_manager);
+                    hasChanges = variants != null &&
+                        variants.HasChanges(AssetDatabase.GetAssetPath(_workingObject));
+                }
+                save.tooltip = hasChanges ? string.Empty : I18N.Get("variant.noChanges");
+            }
+            catch (Exception exception)
+            {
+                save.tooltip = exception.Message;
+            }
+            save.SetEnabled(hasChanges);
         }
 
         private static VisualElement CreateHeaderPrefabCard(

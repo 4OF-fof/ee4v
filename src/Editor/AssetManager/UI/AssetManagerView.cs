@@ -362,8 +362,6 @@ namespace Ee4v.AssetManager.UI
         private readonly IAssetVariantManager _variantManager;
         private bool _variantBusy;
         private bool _disposed;
-        private string _variantFeedback;
-        private string _variantFeedbackId;
         private readonly Dictionary<string, AssetVariantRevisionDetails> _variantRevisionDetails =
             new Dictionary<string, AssetVariantRevisionDetails>(StringComparer.Ordinal);
 
@@ -1515,10 +1513,6 @@ namespace Ee4v.AssetManager.UI
                 hero.Add(modify);
             }
             detail.Add(hero);
-            if (_variantFeedbackId == variant.VariantId && !string.IsNullOrEmpty(_variantFeedback))
-            {
-                detail.Add(UiTextFactory.CreateHelpBox(_variantFeedback, HelpBoxMessageType.Error));
-            }
             AddVariantHistory(detail, variant, revisions);
             AddVariantDependencies(detail, dependencies, latest, dependencyError);
             var information = new AssetDetailSection(I18N.Get("detail.information"));
@@ -1538,19 +1532,6 @@ namespace Ee4v.AssetManager.UI
         {
             var section = new AssetDetailSection(I18N.Get("variant.history"));
             section.AddToClassList("ee4v-asset-manager__variant-history");
-            if (_variantManager != null && variant.Prefab != null)
-            {
-                var controls = new VisualElement();
-                controls.AddToClassList("ee4v-asset-manager__variant-save-controls");
-                var memo = AssetManagerControls.CreateTextField(I18N.Get("variant.memo"));
-                memo.SetEnabled(!_variantBusy);
-                controls.Add(memo);
-                var save = AssetManagerControls.CreateButton(I18N.Get("variant.save"),
-                    () => SaveVariant(variant, memo.value));
-                save.SetEnabled(!_variantBusy);
-                controls.Add(save);
-                section.Add(controls);
-            }
             if (revisions.Count == 0)
             {
                 section.Add(UiTextFactory.Create(I18N.Get("variant.noHistory"), UiClassNames.SecondaryText));
@@ -1794,35 +1775,6 @@ namespace Ee4v.AssetManager.UI
             return project.Values.ToArray();
         }
 
-        private async void SaveVariant(DerivedAssetInfo variant, string memo)
-        {
-            if (_variantBusy || _variantManager == null) { return; }
-            _variantBusy = true;
-            _variantFeedback = string.Empty;
-            _variantFeedbackId = variant.VariantId;
-            Refresh();
-            try
-            {
-                await _variantManager.Save(new AssetVariantSaveRequest
-                {
-                    RootAssetPath = variant.AssetPath, Memo = memo
-                });
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-                if (!_disposed)
-                {
-                    _variantFeedback = exception.Message;
-                }
-            }
-            finally
-            {
-                _variantBusy = false;
-                if (!_disposed) { Refresh(); }
-            }
-        }
-
         private async void RestoreVariant(string variantId, string revisionId)
         {
             if (_variantBusy || _variantManager == null || !EditorUtility.DisplayDialog(I18N.Get("variant.restore"),
@@ -1831,7 +1783,6 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             _variantBusy = true;
-            _variantFeedback = string.Empty;
             Refresh();
             try
             {
