@@ -2741,6 +2741,7 @@ namespace Ee4v.AssetManager.UI
             var previousName = _selectedPrefabName;
             var previousCategory = _currentCategory;
             var previousSection = _shapePartsSection;
+            var previousBodyPart = _selectedBodyPart;
             try
             {
                 var prefabPath = AssetDatabase.GetAssetPath(prefab);
@@ -2769,9 +2770,9 @@ namespace Ee4v.AssetManager.UI
                             "The child Prefab could not be instantiated.");
                     }
                     added.transform.SetParent(root.transform, false);
-                    _selectedPrefabSiblingIndex =
-                        added.transform.GetSiblingIndex();
-                    _selectedPrefabName = added.name;
+                    _selectedPrefabSiblingIndex = null;
+                    _selectedPrefabName = string.Empty;
+                    _selectedBodyPart = null;
                     _currentCategory = WorkflowCategory.ShapeParts;
                     _shapePartsSection = ShapePartsSection.Parts;
                     _hiddenPrefabSiblingIndices.Clear();
@@ -2784,6 +2785,7 @@ namespace Ee4v.AssetManager.UI
                 _selectedPrefabName = previousName;
                 _currentCategory = previousCategory;
                 _shapePartsSection = previousSection;
+                _selectedBodyPart = previousBodyPart;
                 Debug.LogException(exception);
                 ShowAssetError("workflow.assets.saveFailed");
             }
