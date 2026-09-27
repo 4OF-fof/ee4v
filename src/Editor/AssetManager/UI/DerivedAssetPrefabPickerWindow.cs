@@ -1415,7 +1415,7 @@ namespace Ee4v.AssetManager.UI
                 case BodyPartCategory.Chest:
                     return new Vector2(-30f, 13f);
                 case BodyPartCategory.Waist:
-                    return new Vector2(38f, 18f);
+                    return new Vector2(-38f, 18f);
                 case BodyPartCategory.Shoulders:
                 case BodyPartCategory.Arms:
                     return new Vector2(leftSide ? -38f : 38f, -18f);
