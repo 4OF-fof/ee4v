@@ -9,6 +9,7 @@ namespace Ee4v.AssetManager.Application.Ports
         IReadOnlyList<AssetVariantSnapshot> ReadAll();
         AssetVariantSnapshot Read(string variantId, string revisionId);
         AssetVariantSnapshot Save(AssetVariantSnapshot snapshot, string stagingPath);
+        void UpdateMetadata(AssetVariant variant);
         byte[] ReadPreview(AssetVariantSnapshot snapshot);
         string Extract(AssetVariantSnapshot snapshot);
         void DeleteStaging(string path);
@@ -27,6 +28,7 @@ namespace Ee4v.AssetManager.Application.Ports
         AssetVariantSnapshot Inspect(string rootAssetPath);
         string Restore(AssetVariantSnapshot snapshot, string stagingPath);
         void SetBaseRevision(string variantId, string revisionId);
+        bool UpdateMetadata(string variantId, string name, string description);
         bool HasAssets(AssetVariantDependency dependency);
         void ValidateRestore(AssetVariantSnapshot snapshot);
     }

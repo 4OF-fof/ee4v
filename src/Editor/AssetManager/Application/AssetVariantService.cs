@@ -14,8 +14,8 @@ namespace Ee4v.AssetManager.Application
         private readonly IAssetVariantRepository _repository;
         private readonly IAssetVariantIndex _index;
         private readonly IAssetVariantWorkspace _workspace;
-        private readonly Dictionary<string, AssetVariantSnapshot> _latestSnapshots =
-            new Dictionary<string, AssetVariantSnapshot>(StringComparer.Ordinal);
+        private IReadOnlyDictionary<(string VariantId, string RevisionId), AssetVariantSnapshot> _snapshots =
+            new Dictionary<(string, string), AssetVariantSnapshot>();
         private bool _busy;
 
         internal AssetVariantService(IAssetManager manager,
@@ -44,8 +44,7 @@ namespace Ee4v.AssetManager.Application
             {
                 throw new InvalidOperationException("A Variant operation is in progress.");
             }
-            _index.ReplaceVariantIndex(_repository.ReadAll());
-            _latestSnapshots.Clear();
+            ReplaceIndex();
             NotifyChanged();
         }
 
@@ -58,12 +57,7 @@ namespace Ee4v.AssetManager.Application
             {
                 return true;
             }
-            if (!_latestSnapshots.TryGetValue(variant.Id, out var latest) ||
-                latest.Revision.Id != variant.HeadRevisionId)
-            {
-                latest = _repository.Read(variant.Id, variant.HeadRevisionId);
-                _latestSnapshots[variant.Id] = latest;
-            }
+            var latest = ReadSnapshot(variant.Id, variant.HeadRevisionId);
             return _workspace.Inspect(rootAssetPath).ContentHash != latest.ContentHash;
         }
 
@@ -71,7 +65,7 @@ namespace Ee4v.AssetManager.Application
         {
             AssetManagerRequestValidator.Require(variantId, "variant id");
             AssetManagerRequestValidator.Require(revisionId, "revision id");
-            var snapshot = _repository.Read(variantId, revisionId);
+            var snapshot = ReadSnapshot(variantId, revisionId);
             return new AssetVariantRevisionDetails
             {
                 UnityVersion = snapshot.UnityVersion,
@@ -86,6 +80,51 @@ namespace Ee4v.AssetManager.Application
             };
         }
 
+        public async Task UpdateMetadata(string variantId, UpdateAssetVariantRequest request)
+        {
+            if (_busy)
+            {
+                throw new InvalidOperationException("A Variant operation is in progress.");
+            }
+            AssetManagerRequestValidator.Require(variantId, "variant id");
+            AssetManagerRequestValidator.RequireRequest(request, "variant update request");
+            AssetManagerRequestValidator.Require(request.Name, "variant name");
+            var name = request.Name.Trim();
+            var description = request.Description ?? string.Empty;
+            var variant = GetVariants().FirstOrDefault(candidate => candidate.Id == variantId);
+            _busy = true;
+            try
+            {
+                if (variant == null)
+                {
+                    if (!_workspace.UpdateMetadata(variantId, name, description))
+                    {
+                        throw new InvalidOperationException("The Variant was not found.");
+                    }
+                }
+                else
+                {
+                    if (variant.Name == name && (variant.Description ?? string.Empty) == description)
+                    {
+                        return;
+                    }
+                    variant.Name = name;
+                    variant.Description = description;
+                    variant.UpdatedAt = DateTime.UtcNow;
+                    await Task.Run(() => _repository.UpdateMetadata(variant));
+                    try { _workspace.UpdateMetadata(variantId, name, description); }
+                    finally
+                    {
+                        ReplaceIndex();
+                        NotifyChanged();
+                    }
+                    return;
+                }
+                NotifyChanged();
+            }
+            finally { _busy = false; }
+        }
+
         public async Task<AssetVariantRevision> Save(AssetVariantSaveRequest request)
         {
             if (_busy)
@@ -98,11 +137,16 @@ namespace Ee4v.AssetManager.Application
             AssetVariantCapture capture = null;
             try
             {
+                var current = GetVariants().FirstOrDefault(variant => variant.RootAssetPath == request.RootAssetPath);
+                if (current != null)
+                {
+                    _workspace.UpdateMetadata(current.Id, current.Name, current.Description);
+                }
                 capture = _workspace.Capture(request);
                 var saved = await Task.Run(() =>
                     _repository.Save(capture.Snapshot, capture.StagingPath));
                 _workspace.SetBaseRevision(saved.Variant.Id, saved.Revision.Id);
-                _index.ReplaceVariantIndex(_repository.ReadAll());
+                ReplaceIndex();
                 NotifyChanged();
                 return saved.Revision;
             }
@@ -124,7 +168,7 @@ namespace Ee4v.AssetManager.Application
             return Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var snapshot = _repository.Read(variantId, revisionId);
+                var snapshot = ReadSnapshot(variantId, revisionId);
                 var bytes = _repository.ReadPreview(snapshot);
                 cancellationToken.ThrowIfCancellationRequested();
                 return new AssetThumbnail { Found = true, Data = bytes };
@@ -148,20 +192,43 @@ namespace Ee4v.AssetManager.Application
                     Dependency = dependency,
                     File = ResolveDependency(dependency)
                 }).ToArray();
-                staging = await Task.Run(() => _repository.Extract(snapshot));
-                foreach (var import in imports)
+                var plans = AssetFileImportPlanner.Resolve(imports.SelectMany(import =>
+                    AssetManagerRequestValidator.NormalizeTargetPaths(import.Dependency.TargetPaths)
+                        .Select(path => new AssetFileTarget { FileId = import.File.Id, TargetPath = path })),
+                    _manager.GetFileDependencies).Where(plan => plan.TargetPaths.Count > 0).ToArray();
+                foreach (var plan in plans)
                 {
-                    if (_workspace.HasAssets(import.Dependency))
+                    var file = _manager.GetFile(plan.FileId);
+                    if (file.IsArchived || string.IsNullOrWhiteSpace(file.ItemId))
+                    {
+                        throw new InvalidOperationException(
+                            "A Variant dependency is archived or unassigned: " + file.FileName);
+                    }
+                    _manager.GetItem(file.ItemId);
+                    plan.TargetPaths = AssetManagerRequestValidator.NormalizeTargetPaths(plan.TargetPaths);
+                    AssetManagerRequestValidator.EnsureImportTargetsDoNotContainZip(file, plan.TargetPaths);
+                }
+                var savedImports = imports.ToLookup(import => import.File.Id, StringComparer.Ordinal);
+                staging = await Task.Run(() => _repository.Extract(snapshot));
+                foreach (var plan in plans)
+                {
+                    var saved = savedImports[plan.FileId].ToArray();
+                    if (saved.Length > 0 && saved.All(import => _workspace.HasAssets(import.Dependency)) &&
+                        plan.TargetPaths.All(path => saved.Any(import =>
+                            import.Dependency.TargetPaths.Contains(path, StringComparer.OrdinalIgnoreCase))))
                     {
                         continue;
                     }
                     var result = await _manager.ImportFileEntries(
-                        import.File.Id, import.Dependency.TargetPaths);
+                        plan.FileId, plan.TargetPaths);
                     if (!result.Succeeded)
                     {
                         throw new InvalidOperationException(
                             result.ErrorMessage ?? "A Variant dependency could not be imported.");
                     }
+                }
+                foreach (var import in imports)
+                {
                     if (!_workspace.HasAssets(import.Dependency))
                     {
                         throw new InvalidOperationException(
@@ -171,6 +238,11 @@ namespace Ee4v.AssetManager.Application
                 }
                 _workspace.ValidateRestore(snapshot);
                 var path = _workspace.Restore(snapshot, staging);
+                var current = GetVariants().FirstOrDefault(variant => variant.Id == variantId);
+                if (current != null)
+                {
+                    _workspace.UpdateMetadata(variantId, current.Name, current.Description);
+                }
                 _workspace.SetBaseRevision(variantId, revisionId);
                 NotifyChanged();
                 return path;
@@ -201,6 +273,19 @@ namespace Ee4v.AssetManager.Application
             }
             return file;
         }
+
+        private void ReplaceIndex()
+        {
+            var snapshots = _repository.ReadAll();
+            var lookup = snapshots.ToDictionary(snapshot => (snapshot.Variant.Id, snapshot.Revision.Id));
+            _index.ReplaceVariantIndex(snapshots);
+            _snapshots = lookup;
+        }
+
+        private AssetVariantSnapshot ReadSnapshot(string variantId, string revisionId) =>
+            _snapshots.TryGetValue((variantId, revisionId), out var snapshot)
+                ? snapshot
+                : _repository.Read(variantId, revisionId);
 
         private void NotifyChanged()
         {

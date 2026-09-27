@@ -37,6 +37,25 @@ namespace Ee4v.AssetManager.Infrastructure
             return Capture(new AssetVariantSaveRequest { RootAssetPath = rootAssetPath }, false).Snapshot;
         }
 
+        public bool UpdateMetadata(string variantId, string name, string description)
+        {
+            var path = AssetDatabase.GUIDToAssetPath(variantId);
+            if (string.IsNullOrEmpty(path)) { return false; }
+            var record = DerivedAssetCatalog.Read(path);
+            if (record == null || !path.StartsWith(DerivedAssetCatalog.VariantRoot + "/", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("An ee4v Variant Prefab is required.");
+            }
+            var importer = AssetImporter.GetAtPath(path);
+            var data = DerivedAssetCatalog.Serialize(record.ParentItemId, name, description, record.SourceGuid);
+            if (importer.userData != data)
+            {
+                importer.userData = data;
+                AssetDatabase.WriteImportSettingsIfDirty(path);
+            }
+            return true;
+        }
+
         private AssetVariantCapture Capture(AssetVariantSaveRequest request, bool saveVersion)
         {
             GitAssetVariantRepository.ValidateAssetPath(request.RootAssetPath);

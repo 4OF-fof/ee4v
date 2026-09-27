@@ -19,11 +19,20 @@ namespace Ee4v.AssetManager.Infrastructure
         private const string TagPrefix = "refs/tags/variant/";
         private const string VariantFolder = "variants/";
         private readonly string _root;
+        private readonly string _previewCacheRoot;
         private readonly string _stagingRoot;
+
+        private sealed class VariantMetadata
+        {
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public DateTime UpdatedAt { get; set; }
+        }
 
         internal GitAssetVariantRepository(string libraryPath)
         {
-            _root = Path.Combine(Path.GetFullPath(libraryPath), "VariantStore");
+            _root = Path.Combine(Path.GetFullPath(libraryPath), "AssetManager", "Assets", "Variant");
+            _previewCacheRoot = Path.Combine(Path.GetFullPath(libraryPath), "cache", "asset-manager", "variant-thumbnails");
             _stagingRoot = Path.Combine(Path.GetTempPath(), "ee4v-variant");
         }
 
@@ -33,6 +42,9 @@ namespace Ee4v.AssetManager.Infrastructure
             foreach (var repository in Repositories())
             {
                 var assetId = Path.GetFileNameWithoutExtension(repository);
+                var metadataPaths = new HashSet<string>(Git(repository, null, null,
+                    "ls-tree", "-r", "--name-only", MasterRef, "--", VariantFolder)
+                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), StringComparer.Ordinal);
                 var snapshots = ReadRefs(repository, TagPrefix).Select(pair =>
                 {
                     var variantId = pair.Key.Substring(TagPrefix.Length).Split('/')[0];
@@ -47,6 +59,19 @@ namespace Ee4v.AssetManager.Infrastructure
                 foreach (var group in snapshots.GroupBy(snapshot => snapshot.Variant.Id))
                 {
                     var latest = group.OrderByDescending(snapshot => snapshot.Revision.Number).First();
+                    var metadataPath = VariantFolder + group.Key + "/metadata.json";
+                    if (metadataPaths.Contains(metadataPath))
+                    {
+                        var metadata = JsonConvert.DeserializeObject<VariantMetadata>(Git(repository, null, null,
+                            "show", MasterRef + ":" + metadataPath));
+                        if (metadata == null || string.IsNullOrWhiteSpace(metadata.Name))
+                        {
+                            throw new InvalidDataException("Invalid Variant metadata.");
+                        }
+                        latest.Variant.Name = metadata.Name;
+                        latest.Variant.Description = metadata.Description ?? string.Empty;
+                        latest.Variant.UpdatedAt = metadata.UpdatedAt;
+                    }
                     foreach (var snapshot in group)
                     {
                         snapshot.Variant.HeadRevisionId = latest.Revision.Id;
@@ -83,6 +108,7 @@ namespace Ee4v.AssetManager.Infrastructure
             ValidateId(snapshot.Variant.Id);
             ValidateId(snapshot.Variant.ParentItemId);
             ValidateId(snapshot.Variant.SourcePrefabGuid);
+            var previewCachePath = PreviewCachePath(snapshot.PreviewHash);
             Directory.CreateDirectory(_root);
             var repository = RepositoryPath(snapshot.Variant.ParentItemId);
             using (new FileStream(Path.Combine(_root, snapshot.Variant.ParentItemId + ".save.lock"),
@@ -126,6 +152,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 File.Move(Path.Combine(stagingPath, "preview.png"), Path.Combine(variantStage, "preview.png"));
                 File.WriteAllText(Path.Combine(variantStage, "manifest.json"),
                     JsonConvert.SerializeObject(snapshot, Formatting.Indented), new UTF8Encoding(false));
+                WriteMetadata(variantStage, snapshot.Variant);
                 File.WriteAllText(Path.Combine(stagingPath, ".gitattributes"),
                     "* -filter -text\n", new UTF8Encoding(false));
                 WriteAssetMarker(stagingPath, snapshot.Variant.ParentItemId);
@@ -158,6 +185,8 @@ namespace Ee4v.AssetManager.Infrastructure
                     Git(repository, null, null, new[] { "update-ref", "--stdin" }, transaction);
                     snapshot.Revision.CommitId = commit;
                     Git(repository, null, null, "symbolic-ref", "HEAD", MasterRef);
+                    var preview = TryReadPreview(Path.Combine(variantStage, "preview.png"), snapshot.PreviewHash);
+                    if (preview != null) { TryWritePreview(previewCachePath, preview); }
                     return snapshot;
                 }
                 finally
@@ -166,6 +195,54 @@ namespace Ee4v.AssetManager.Infrastructure
                 }
             }
         }
+
+        public void UpdateMetadata(AssetVariant variant)
+        {
+            ValidateId(variant.Id);
+            ValidateId(variant.ParentItemId);
+            if (string.IsNullOrWhiteSpace(variant.Name))
+            {
+                throw new InvalidDataException("A Variant name is required.");
+            }
+            var repository = RepositoryPath(variant.ParentItemId);
+            using (new FileStream(Path.Combine(_root, variant.ParentItemId + ".save.lock"),
+                       FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            {
+                if (!Directory.Exists(repository) || ReadRefs(repository, TagPrefix + variant.Id + "/").Count == 0)
+                {
+                    throw new InvalidOperationException("The saved Variant was not found.");
+                }
+                var masterHead = ReadRefs(repository, MasterRef)[MasterRef];
+                var stage = NewStagingPath();
+                var index = stage + ".index";
+                try
+                {
+                    var variantPath = VariantFolder + variant.Id;
+                    var variantStage = Path.Combine(stage, variantPath);
+                    Directory.CreateDirectory(variantStage);
+                    WriteMetadata(variantStage, variant);
+                    Git(repository, stage, index, "read-tree", masterHead);
+                    Git(repository, stage, index, "add", "--force", "--", variantPath + "/metadata.json");
+                    var tree = Git(repository, stage, index, "write-tree").Trim();
+                    var commit = Git(repository, null, null, "commit-tree", tree, "-p", masterHead,
+                        "-m", "Update Variant metadata " + variant.Id).Trim();
+                    Git(repository, null, null, "update-ref", MasterRef, commit, masterHead);
+                }
+                finally
+                {
+                    if (File.Exists(index)) { File.Delete(index); }
+                    DeleteStaging(stage);
+                }
+            }
+        }
+
+        private static void WriteMetadata(string variantStage, AssetVariant variant) =>
+            File.WriteAllText(Path.Combine(variantStage, "metadata.json"),
+                JsonConvert.SerializeObject(new VariantMetadata
+                {
+                    Name = variant.Name, Description = variant.Description ?? string.Empty,
+                    UpdatedAt = variant.UpdatedAt
+                }, Formatting.Indented), new UTF8Encoding(false));
 
         public string Extract(AssetVariantSnapshot snapshot)
         {
@@ -192,6 +269,9 @@ namespace Ee4v.AssetManager.Infrastructure
 
         public byte[] ReadPreview(AssetVariantSnapshot snapshot)
         {
+            var cachePath = PreviewCachePath(snapshot.PreviewHash);
+            var cached = TryReadPreview(cachePath, snapshot.PreviewHash);
+            if (cached != null) { return cached; }
             var start = new ProcessStartInfo("git", string.Join(" ", new[]
             {
                 "--no-pager", "--git-dir=" + RepositoryPath(snapshot.Variant.ParentItemId), "show",
@@ -223,15 +303,74 @@ namespace Ee4v.AssetManager.Infrastructure
                         error.GetAwaiter().GetResult().Trim());
                 }
                 var bytes = output.ToArray();
-                using (var hash = SHA256.Create())
+                if (!HasPreviewHash(bytes, snapshot.PreviewHash))
                 {
-                    var actual = BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", string.Empty).ToLowerInvariant();
-                    if (actual != snapshot.PreviewHash)
-                    {
-                        throw new InvalidDataException("The Variant preview does not match its saved hash.");
-                    }
+                    throw new InvalidDataException("The Variant preview does not match its saved hash.");
                 }
+                TryWritePreview(cachePath, bytes);
                 return bytes;
+            }
+        }
+
+        private string PreviewCachePath(string previewHash)
+        {
+            if (!Regex.IsMatch(previewHash ?? string.Empty, "\\A[0-9a-f]{64}\\z"))
+            {
+                throw new InvalidDataException("Invalid Variant preview hash.");
+            }
+            return Path.Combine(_previewCacheRoot, previewHash + ".png");
+        }
+
+        private static byte[] TryReadPreview(string path, string expectedHash)
+        {
+            try
+            {
+                var file = new FileInfo(path);
+                if (!file.Exists || file.Length > 16L * 1024 * 1024) { return null; }
+                var bytes = File.ReadAllBytes(path);
+                return HasPreviewHash(bytes, expectedHash) ? bytes : null;
+            }
+            catch (Exception exception) when (exception is IOException ||
+                                             exception is UnauthorizedAccessException ||
+                                             exception is System.Security.SecurityException)
+            {
+                return null;
+            }
+        }
+
+        private static bool HasPreviewHash(byte[] bytes, string expectedHash)
+        {
+            using (var hash = SHA256.Create())
+            {
+                return BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", string.Empty)
+                    .ToLowerInvariant() == expectedHash;
+            }
+        }
+
+        private void TryWritePreview(string cachePath, byte[] bytes)
+        {
+            var temporaryPath = cachePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                Directory.CreateDirectory(_previewCacheRoot);
+                File.WriteAllBytes(temporaryPath, bytes);
+                if (File.Exists(cachePath)) { File.Replace(temporaryPath, cachePath, null); }
+                else { File.Move(temporaryPath, cachePath); }
+            }
+            catch (Exception exception) when (exception is IOException ||
+                                             exception is UnauthorizedAccessException ||
+                                             exception is NotSupportedException ||
+                                             exception is System.Security.SecurityException)
+            {
+            }
+            finally
+            {
+                try { if (File.Exists(temporaryPath)) { File.Delete(temporaryPath); } }
+                catch (Exception exception) when (exception is IOException ||
+                                                 exception is UnauthorizedAccessException ||
+                                                 exception is System.Security.SecurityException)
+                {
+                }
             }
         }
 

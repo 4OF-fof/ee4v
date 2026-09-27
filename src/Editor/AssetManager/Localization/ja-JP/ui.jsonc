@@ -263,14 +263,10 @@
     "revision": "v{0} · {1}",
     "modify": "このアバターを改変",
     "missing": "Variantが見つかりません。",
-    "restoreToModify": "改変するには履歴から復元してください。",
     "restore": "この版を復元",
     "restoreConfirm": "選択した版を復元し、現在のVariantを置き換えます。未保存の変更を残す場合は、先にバージョンを保存してください。",
     "searchPlaceholder": "Variantを検索",
     "reload": "ProjectのVariant一覧を再読み込み",
-    "assetPath": "Prefabの場所",
-    "sourceItem": "作成元の素材",
-    "sourceMissing": "作成元の素材が見つかりません",
     "selectedCount": "{0} 個のVariantを選択"
   },
   "detail": {

@@ -511,64 +511,8 @@ namespace Ee4v.AssetManager.Application
                         target.GroupName))
                     .Concat(choices)
                     .ToArray();
-                var targetPaths = new Dictionary<string, List<string>>(
-                    StringComparer.Ordinal);
-                var pendingTargets = new Queue<AssetFileTarget>(selected);
-                var visitedTargets = new HashSet<string>(
-                    StringComparer.OrdinalIgnoreCase);
-                while (pendingTargets.Count > 0)
-                {
-                    var target = pendingTargets.Dequeue();
-                    if (!visitedTargets.Add(
-                            target.FileId + "\n" + target.TargetPath))
-                    {
-                        continue;
-                    }
-                    AddTargetPath(
-                        targetPaths,
-                        target.FileId,
-                        target.TargetPath);
-                    foreach (var dependency in _store.GetFileDependencies(
-                                 target.FileId).Where(dependency =>
-                                 string.Equals(
-                                     dependency.DependentTargetPath,
-                                     target.TargetPath,
-                                     StringComparison.OrdinalIgnoreCase)))
-                    {
-                        pendingTargets.Enqueue(new AssetFileTarget
-                        {
-                            FileId = dependency.DependencyFileId,
-                            TargetPath = dependency.TargetPath
-                        });
-                    }
-                }
-                var order = new List<string>();
-                var seen = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var fileId in selected
-                             .Select(target => target.FileId)
-                             .Distinct(StringComparer.Ordinal))
-                {
-                    foreach (var dependencyFileId in
-                             AssetManagerRequestValidator
-                                 .ResolveDependencyOrder(
-                                     fileId,
-                                     GetDependencyIds))
-                    {
-                        if (seen.Add(dependencyFileId))
-                        {
-                            order.Add(dependencyFileId);
-                        }
-                    }
-                }
-
-                var plans = order
-                    .Select(fileId => targetPaths.TryGetValue(
-                            fileId,
-                            out var paths)
-                        ? CreateImportPlan(fileId, paths)
-                        : CreateImportPlan(
-                            fileId,
-                            Array.Empty<string>()))
+                var plans = AssetFileImportPlanner.Resolve(selected, _store.GetFileDependencies)
+                    .Select(plan => CreateImportPlan(plan.FileId, plan.TargetPaths))
                     .ToArray();
                 return await ImportPlans(plans, cancellationToken);
             }
@@ -924,25 +868,6 @@ namespace Ee4v.AssetManager.Application
                 });
             }
             return result;
-        }
-
-        private static void AddTargetPath(
-            IDictionary<string, List<string>> targetPaths,
-            string fileId,
-            string targetPath)
-        {
-            if (!targetPaths.TryGetValue(fileId, out var paths))
-            {
-                paths = new List<string>();
-                targetPaths[fileId] = paths;
-            }
-
-            if (!paths.Contains(
-                    targetPath,
-                    StringComparer.OrdinalIgnoreCase))
-            {
-                paths.Add(targetPath);
-            }
         }
 
         private async Task<AssetImportResult> ImportPlans(

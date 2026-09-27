@@ -263,14 +263,10 @@
     "revision": "v{0} · {1}",
     "modify": "Modify this avatar",
     "missing": "Variant not found.",
-    "restoreToModify": "Restore a version from the history to modify this avatar.",
     "restore": "Restore this version",
     "restoreConfirm": "Restore this version and replace the current Variant. Save a version first to keep any changes you have not saved.",
     "searchPlaceholder": "Search Variants",
     "reload": "Reload Variants from the project",
-    "assetPath": "Prefab location",
-    "sourceItem": "Source asset",
-    "sourceMissing": "Source asset not found",
     "selectedCount": "{0} Variants selected"
   },
   "detail": {

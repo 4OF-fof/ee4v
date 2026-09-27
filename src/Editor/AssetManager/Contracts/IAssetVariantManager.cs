@@ -15,6 +15,7 @@ namespace Ee4v.AssetManager.Contracts
         Task<AssetThumbnail> GetRevisionThumbnail(string variantId, string revisionId,
             CancellationToken cancellationToken = default);
         Task<AssetVariantRevision> Save(AssetVariantSaveRequest request);
+        Task UpdateMetadata(string variantId, UpdateAssetVariantRequest request);
         Task<string> Restore(string variantId, string revisionId);
         void RebuildIndex();
     }
@@ -48,6 +49,12 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string RootAssetPath { get; set; }
         public string Memo { get; set; }
+    }
+
+    public sealed class UpdateAssetVariantRequest
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
     }
 
     public sealed class AssetVariantRevisionDetails
