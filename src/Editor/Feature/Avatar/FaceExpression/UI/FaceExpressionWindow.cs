@@ -15,9 +15,9 @@ namespace Ee4v.FaceExpression
     {
         internal sealed class EmbeddedEditor : IDisposable
         {
-            private FaceExpressionWindow _controller;
+            private FaceExpressionEditor _controller;
 
-            internal EmbeddedEditor(FaceExpressionWindow controller)
+            internal EmbeddedEditor(FaceExpressionEditor controller)
             {
                 _controller = controller;
             }
@@ -37,13 +37,77 @@ namespace Ee4v.FaceExpression
                     return;
                 }
 
-                _controller._disposed = true;
-                _controller._embeddedRoot = null;
-                UnityEngine.Object.DestroyImmediate(_controller);
+                _controller.Dispose();
                 _controller = null;
             }
         }
 
+        private FaceExpressionEditor _editor;
+
+        [MenuItem("ee4v/Window/Avatar/Face Expression/Editor", false, 220)]
+        private static void Open()
+        {
+            ShowWindow();
+            FaceExpressionGroupWindow.ShowWindow();
+        }
+
+        internal static void ShowWindow()
+        {
+            var window = GetWindow<FaceExpressionWindow>();
+            window.RefreshTitle();
+            window.minSize = new Vector2(720f, 600f);
+            window.Show();
+        }
+
+        internal static EmbeddedEditor Embed(
+            VisualElement root,
+            GameObject avatar,
+            Action repaint)
+        {
+            var controller = new FaceExpressionEditor(root, repaint, true);
+            try
+            {
+                controller.Initialize(avatar);
+                return new EmbeddedEditor(controller);
+            }
+            catch
+            {
+                controller.Dispose();
+                throw;
+            }
+        }
+
+        private void OnEnable()
+        {
+            RefreshTitle();
+            I18N.Reloaded += RefreshTitle;
+        }
+
+        private void OnDisable()
+        {
+            I18N.Reloaded -= RefreshTitle;
+            _editor?.Dispose();
+            _editor = null;
+        }
+
+        private void CreateGUI()
+        {
+            if (_editor == null)
+            {
+                _editor = new FaceExpressionEditor(rootVisualElement, Repaint, false);
+            }
+
+            _editor.Initialize(Selection.activeGameObject);
+        }
+
+        private void RefreshTitle()
+        {
+            titleContent = UiTextFactory.CreateGuiContent(I18N.Get("window.title"));
+        }
+    }
+
+    internal sealed class FaceExpressionEditor : IDisposable
+    {
         private const StringComparison AssetPathComparison =
             StringComparison.OrdinalIgnoreCase;
         private const float DefaultTransitionDuration = 0.2f;
@@ -78,52 +142,23 @@ namespace Ee4v.FaceExpression
             new AnimationClipThumbnailCache();
         private double _poseThumbnailRefreshAt = -1d;
         private double _validationRefreshAt = -1d;
-        private VisualElement _embeddedRoot;
-        private Action _embeddedRepaint;
-        private bool _avatarLocked;
+        private readonly VisualElement _root;
+        private readonly Action _repaint;
+        private readonly bool _avatarLocked;
         private bool _disposed;
 
         private bool HasClipReference => !ReferenceEquals(_clip, null);
         private bool IsClipMissing => HasClipReference && _clip == null;
 
-        [MenuItem("ee4v/Window/Avatar/Face Expression/Editor", false, 220)]
-        private static void Open()
-        {
-            ShowWindow();
-            FaceExpressionGroupWindow.ShowWindow();
-        }
-
-        internal static void ShowWindow()
-        {
-            var window = GetWindow<FaceExpressionWindow>();
-            window.titleContent = UiTextFactory.CreateGuiContent(I18N.Get("window.title"));
-            window.minSize = new Vector2(720f, 600f);
-            window.Show();
-        }
-
-        internal static EmbeddedEditor Embed(
+        internal FaceExpressionEditor(
             VisualElement root,
-            GameObject avatar,
-            Action repaint)
+            Action repaint,
+            bool avatarLocked)
         {
-            if (root == null)
-            {
-                throw new ArgumentNullException(nameof(root));
-            }
+            _root = root ?? throw new ArgumentNullException(nameof(root));
+            _repaint = repaint;
+            _avatarLocked = avatarLocked;
 
-            var controller = CreateInstance<FaceExpressionWindow>();
-            controller.hideFlags = HideFlags.HideAndDontSave;
-            controller._embeddedRoot = root;
-            controller._embeddedRepaint = repaint;
-            controller._avatarLocked = true;
-            controller.BuildContent();
-            controller.RefreshLibrary();
-            controller.SetAvatar(avatar);
-            return new EmbeddedEditor(controller);
-        }
-
-        private void OnEnable()
-        {
             _settings = CoreSettings.Current;
             _settings.Changed += OnSettingChanged;
             _presetStore = BlendShapePresetStorage.Shared;
@@ -137,8 +172,15 @@ namespace Ee4v.FaceExpression
             I18N.Reloaded += Rebuild;
         }
 
-        private void OnDisable()
+        public void Dispose()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            StopPlayback();
             if (_settings != null)
             {
                 _settings.Changed -= OnSettingChanged;
@@ -161,17 +203,13 @@ namespace Ee4v.FaceExpression
             _preview = null;
         }
 
-        private void CreateGUI()
+        internal void Initialize(GameObject avatar)
         {
-            if (_embeddedRoot != null)
-            {
-                return;
-            }
             BuildContent();
             RefreshLibrary();
-            if (_avatar == null && Selection.activeGameObject != null)
+            if (_avatarLocked || (_avatar == null && avatar != null))
             {
-                SetAvatar(Selection.activeGameObject);
+                SetAvatar(avatar);
             }
             else
             {
@@ -186,8 +224,7 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            var root = _embeddedRoot ?? rootVisualElement;
-            if (root.panel == null)
+            if (_root.panel == null)
             {
                 return;
             }
@@ -199,12 +236,7 @@ namespace Ee4v.FaceExpression
 
         private void BuildContent()
         {
-            if (_embeddedRoot == null)
-            {
-                titleContent = UiTextFactory.CreateGuiContent(
-                    I18N.Get("window.title"));
-            }
-            var root = _embeddedRoot ?? rootVisualElement;
+            var root = _root;
             root.Clear();
             UiComposition.Prepare(
                 root,
@@ -577,7 +609,7 @@ namespace Ee4v.FaceExpression
             UpdateAnimationView();
         }
 
-        private void StopPlayback()
+        internal void StopPlayback()
         {
             _playing = false;
             UpdateAnimationView();
@@ -986,13 +1018,7 @@ namespace Ee4v.FaceExpression
 
         private void RequestRepaint()
         {
-            if (_embeddedRepaint != null)
-            {
-                _embeddedRepaint();
-                return;
-            }
-
-            Repaint();
+            _repaint?.Invoke();
         }
 
         private void OnSettingChanged(

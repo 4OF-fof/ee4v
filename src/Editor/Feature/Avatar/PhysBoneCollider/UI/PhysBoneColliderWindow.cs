@@ -14,9 +14,9 @@ namespace Ee4v.PhysBoneCollider
     {
         internal sealed class EmbeddedEditor : IDisposable
         {
-            private PhysBoneColliderWindow _controller;
+            private PhysBoneColliderEditor _controller;
 
-            internal EmbeddedEditor(PhysBoneColliderWindow controller)
+            internal EmbeddedEditor(PhysBoneColliderEditor controller)
             {
                 _controller = controller;
             }
@@ -28,13 +28,57 @@ namespace Ee4v.PhysBoneCollider
                     return;
                 }
 
-                _controller.DisposeResources();
-                _controller._embeddedRoot = null;
-                UnityEngine.Object.DestroyImmediate(_controller);
+                _controller.Dispose();
                 _controller = null;
             }
         }
 
+        private PhysBoneColliderEditor _editor;
+
+        [MenuItem("ee4v/Window/Avatar/PhysBone Collider Setup", false, 260)]
+        private static void Open()
+        {
+            var window = GetWindow<PhysBoneColliderWindow>();
+            window.titleContent = UiTextFactory.CreateGuiContent(I18N.Get("window.title"));
+            window.minSize = new Vector2(900f, 680f);
+            window.Show();
+        }
+
+        internal static EmbeddedEditor Embed(
+            VisualElement root,
+            GameObject avatar,
+            Action saved)
+        {
+            var controller = new PhysBoneColliderEditor(root, saved, true);
+            try
+            {
+                controller.Initialize(avatar);
+                return new EmbeddedEditor(controller);
+            }
+            catch
+            {
+                controller.Dispose();
+                throw;
+            }
+        }
+
+        private void OnDisable()
+        {
+            _editor?.Dispose();
+            _editor = null;
+        }
+
+        private void CreateGUI()
+        {
+            titleContent = UiTextFactory.CreateGuiContent(I18N.Get("window.title"));
+            _editor?.Dispose();
+            _editor = new PhysBoneColliderEditor(rootVisualElement, null, false);
+            _editor.Initialize(Selection.activeGameObject);
+        }
+    }
+
+    internal sealed class PhysBoneColliderEditor : IDisposable
+    {
         private const float DefaultMinimumBoneLength = 0.08f;
 
         private readonly VrchatPhysBoneColliderGateway _gateway =
@@ -73,58 +117,35 @@ namespace Ee4v.PhysBoneCollider
         private HelpBox _status;
         private UiButton _applyButton;
         private ScenePreviewViewport _previewViewport;
-        private VisualElement _embeddedRoot;
+        private readonly VisualElement _root;
         private GameObject _embeddedSourceAvatar;
         private GameObject _loadedPrefabContents;
         private string _embeddedPrefabPath = string.Empty;
-        private Action _embeddedSaved;
-        private bool _avatarLocked;
+        private readonly Action _embeddedSaved;
+        private readonly bool _avatarLocked;
         private bool _embeddedLoadFailed;
         private bool _renderingDetail;
 
-        [MenuItem("ee4v/Window/Avatar/PhysBone Collider Setup", false, 260)]
-        private static void Open()
-        {
-            var window = GetWindow<PhysBoneColliderWindow>();
-            window.titleContent = UiTextFactory.CreateGuiContent(I18N.Get("window.title"));
-            window.minSize = new Vector2(900f, 680f);
-            window.Show();
-        }
-
-        internal static EmbeddedEditor Embed(
+        internal PhysBoneColliderEditor(
             VisualElement root,
-            GameObject avatar,
-            Action saved)
+            Action saved,
+            bool avatarLocked)
         {
-            if (root == null)
-            {
-                throw new ArgumentNullException(nameof(root));
-            }
-
-            var controller = CreateInstance<PhysBoneColliderWindow>();
-            controller.hideFlags = HideFlags.HideAndDontSave;
-            controller._embeddedRoot = root;
-            controller._avatarLocked = true;
-            controller._embeddedSaved = saved;
-            controller.BuildContent();
-            controller.SetEmbeddedAvatar(avatar);
-            return new EmbeddedEditor(controller);
+            _root = root ?? throw new ArgumentNullException(nameof(root));
+            _avatarLocked = avatarLocked;
+            _embeddedSaved = saved;
         }
 
-        private void OnDisable()
+        internal void Initialize(GameObject avatar)
         {
-            DisposeResources();
-        }
-
-        private void CreateGUI()
-        {
-            if (_embeddedRoot != null)
+            BuildContent();
+            if (_avatarLocked)
             {
+                SetEmbeddedAvatar(avatar);
                 return;
             }
 
-            BuildContent();
-            var selected = FindAvatarRoot(Selection.activeGameObject);
+            var selected = FindAvatarRoot(avatar);
             if (selected != null)
             {
                 _avatarField.SetValueWithoutNotify(selected);
@@ -138,13 +159,7 @@ namespace Ee4v.PhysBoneCollider
 
         private void BuildContent()
         {
-            if (_embeddedRoot == null)
-            {
-                titleContent = UiTextFactory.CreateGuiContent(
-                    I18N.Get("window.title"));
-            }
-
-            var root = _embeddedRoot ?? rootVisualElement;
+            var root = _root;
             root.Clear();
             UiComposition.Prepare(
                 root,
@@ -941,7 +956,7 @@ namespace Ee4v.PhysBoneCollider
             }
         }
 
-        private void DisposeResources()
+        public void Dispose()
         {
             _preview?.Dispose();
             _preview = null;

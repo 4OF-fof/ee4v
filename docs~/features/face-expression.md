@@ -30,6 +30,12 @@ Expression Menu、表情ロック、トリガー量による変化は対象外�
 
 Clip更新は`expectedRevision`が現在値と一致しない場合に拒否します。同じ値、使用状態、単一frame curveを再指定した場合は変更なしとしてAssetを書き直しません。静止表情toolは複数ポーズClipの更新を拒否し、curveの一部だけを誤って単一frameへ戻しません。表情アニメーションtoolはUIと同じポーズindex、遷移時間、任意名、参照Clipを使用し、参照Clipと明示的なchannel値の同時指定を拒否します。各書き込みの`dryRun`はAssetを書きません。FacialSet適用も`dryRun`で設定内のGesture名とClip参照、Avatar Descriptor、Modular Avatarの前提条件を検証できます。実適用は既存UIと同じ生成先、Modular Avatar installer、Blinkと口固定の契約を使用します。
 
+## 編集画面のライフサイクル
+
+単独Windowと統合ee4vウィンドウの埋め込み画面は、通常のC#クラスである`FaceExpressionEditor`を共有します。`FaceExpressionWindow`は単独表示のホストだけを担当し、埋め込み用の非表示`EditorWindow`は生成しません。これによりUnityのレイアウト検証で親のないWindowが`Invalid editor window`として検出されることを防ぎます。
+
+ホストの終了または埋め込み画面の破棄時に編集クラスを`Dispose`し、再生を停止して、設定・プリセット・Undo・Project変更・Editor更新・翻訳・グループ変更の購読、サムネイル、Previewを解放します。埋め込み画面を非アクティブにした場合も再生を停止します。埋め込みの初期化に失敗した場合は、生成途中の編集クラスを破棄します。
+
 ## プレビュー
 
 プレビュー開始時にアバターの非表示複製を一度だけ作成します。表情の変更時はAnimatorや`AnimationMode`を動かさず、複製上のBlendShape値だけを同期的に更新して再描画します。ジェスチャー割り当てで複数のサムネイルを同じ更新内に描画する場合も、スキンメッシュを描画ごとに再計算します。
