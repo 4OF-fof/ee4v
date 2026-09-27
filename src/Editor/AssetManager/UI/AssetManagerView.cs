@@ -1549,9 +1549,10 @@ namespace Ee4v.AssetManager.UI
                 card.Insert(0, preview);
                 if (!string.IsNullOrEmpty(revision.Memo))
                 {
-                    var memoText = UiTextFactory.Create(revision.Memo, UiClassNames.SecondaryText);
+                    var memoText = UiTextFactory.Create(revision.Memo, UiClassNames.InfoCardDescription);
                     memoText.SetWhiteSpace(WhiteSpace.Normal);
-                    card.Body.Add(memoText);
+                    var headerText = card.DescriptionText.parent;
+                    headerText.Insert(headerText.IndexOf(card.DescriptionText), memoText);
                 }
                 var restore = AssetManagerControls.CreateButton(I18N.Get("variant.restore"),
                     () => RestoreVariant(variant.VariantId, revision.Id));
