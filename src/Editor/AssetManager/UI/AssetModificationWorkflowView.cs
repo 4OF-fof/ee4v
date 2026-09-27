@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
+using Ee4v.Core.Settings;
 using Ee4v.FaceExpression;
 using Ee4v.PhysBoneCollider;
 using Ee4v.UI;
@@ -41,6 +42,7 @@ namespace Ee4v.AssetManager.UI
         private const float MinimumBodyBlendShapeWeight = 0f;
         private const float MaximumBodyBlendShapeWeight = 100f;
         private const double PartVisibilitySaveDelaySeconds = 0.5d;
+        private const double VariantSaveStatusDelaySeconds = 0.5d;
         private const string AvatarDescriptorTypeName =
             "VRC.SDK3.Avatars.Components.VRCAvatarDescriptor";
 
@@ -97,6 +99,22 @@ namespace Ee4v.AssetManager.UI
             Parts
         }
 
+        private enum AppearancePanel
+        {
+            Parts,
+            Shape,
+            Material
+        }
+
+        private sealed class CachedAppearanceControls
+        {
+            internal VisualElement Content { get; set; }
+            internal BodyPartCategory? BodyPart { get; set; }
+            internal Material Material { get; set; }
+            internal string Feedback { get; set; }
+            internal HelpBoxMessageType FeedbackType { get; set; }
+        }
+
         private enum PendingBodySizeChange
         {
             None,
@@ -113,6 +131,7 @@ namespace Ee4v.AssetManager.UI
 
         private sealed class MaterialUsage
         {
+            internal Renderer Renderer { get; set; }
             internal string RendererPath { get; set; }
             internal int SlotIndex { get; set; }
             internal IReadOnlyCollection<BodyPartCategory> Categories { get; set; }
@@ -789,7 +808,25 @@ namespace Ee4v.AssetManager.UI
             MaterialGeometryCacheEntry> _materialGeometryCache =
                 new Dictionary<SkinnedMeshRenderer,
                     MaterialGeometryCacheEntry>();
+        private readonly Dictionary<AppearancePanel, CachedAppearanceControls>
+            _appearanceControlsCache =
+                new Dictionary<AppearancePanel, CachedAppearanceControls>();
+        private readonly Dictionary<BodyPartCategory, bool> _focusBoneCache =
+            new Dictionary<BodyPartCategory, bool>();
+        private readonly HashSet<Material> _materialsOutsideSelectedPrefab =
+            new HashSet<Material>();
+        private IReadOnlyList<AvatarMaterialEntry> _avatarMaterialsCache;
+        private IReadOnlyDictionary<Transform, BodyPartCategory>
+            _materialBoneCategoriesCache;
+        private IReadOnlyList<BodyBlendShapeDefinition> _bodyBlendShapesCache;
+        private ISettingsService _settings;
+        private bool _appearanceDataDirty;
         private IAssetManager _manager;
+        private IAssetVariantManager _variantStatusManager;
+        private bool _variantSaveStatusDirty = true;
+        private bool _variantHasChanges = true;
+        private string _variantSaveStatusError;
+        private double _variantSaveStatusDueAt;
         private bool _savingVariant;
         private DerivedAssetInfo _workingAsset;
         private GameObject _workingObject;
@@ -923,12 +960,16 @@ namespace Ee4v.AssetManager.UI
                 OnManagerInvalidated;
             Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
             Undo.undoRedoPerformed += RefreshAfterUndoRedo;
+            Undo.postprocessModifications += OnUndoModifications;
             BlendShapePresetStorage.Shared.Changed -= OnBlendShapePresetChanged;
             BlendShapePresetStorage.Shared.Changed += OnBlendShapePresetChanged;
             AssetManagerSettings.PartListExclusionsChanged -=
                 OnPartListExclusionsChanged;
             AssetManagerSettings.PartListExclusionsChanged +=
                 OnPartListExclusionsChanged;
+            EditorApplication.projectChanged += OnProjectChanged;
+            _settings = CoreSettings.Current;
+            _settings.Changed += OnSettingChanged;
         }
 
         public void Dispose()
@@ -944,15 +985,95 @@ namespace Ee4v.AssetManager.UI
             AssetManagerWindowSession.ManagerInvalidated -=
                 OnManagerInvalidated;
             Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
+            Undo.postprocessModifications -= OnUndoModifications;
             BlendShapePresetStorage.Shared.Changed -= OnBlendShapePresetChanged;
             AssetManagerSettings.PartListExclusionsChanged -=
                 OnPartListExclusionsChanged;
+            EditorApplication.projectChanged -= OnProjectChanged;
+            _settings.Changed -= OnSettingChanged;
+            ReleaseVariantStatusManager();
             DisposeEditors();
+            ClearAppearanceCaches();
+        }
+
+        private void OnProjectChanged()
+        {
+            _appearanceDataDirty = true;
+            InvalidateVariantSaveStatus();
+        }
+
+        private UndoPropertyModification[] OnUndoModifications(
+            UndoPropertyModification[] modifications)
+        {
+            if (_workingObject == null)
+            {
+                return modifications;
+            }
+            foreach (var modification in modifications)
+            {
+                var target = modification.currentValue?.target;
+                if (target == null)
+                {
+                    continue;
+                }
+                var transform = target is Component component
+                    ? component.transform
+                    : (target as GameObject)?.transform;
+                if (target is Material || target is Mesh ||
+                    transform != null &&
+                        transform.IsChildOf(_workingObject.transform))
+                {
+                    _appearanceDataDirty = true;
+                    InvalidateVariantSaveStatus();
+                    break;
+                }
+            }
+            return modifications;
+        }
+
+        private void OnSettingChanged(object sender, SettingChangedEventArgs args)
+        {
+            if (ReferenceEquals(args.Definition,
+                    FaceExpressionSettings.BlendShapeSeparators))
+            {
+                OnBlendShapePresetChanged();
+            }
+        }
+
+        private void ClearAppearanceCaches()
+        {
+            DisposeMaterialEditor();
+            foreach (var cached in _appearanceControlsCache.Values)
+            {
+                cached.Content.RemoveFromHierarchy();
+            }
+            _appearanceControlsCache.Clear();
+            _avatarMaterialsCache = null;
+            _materialBoneCategoriesCache = null;
+            _bodyBlendShapesCache = null;
+            _materialGeometryCache.Clear();
+            _materialsOutsideSelectedPrefab.Clear();
+            _focusBoneCache.Clear();
+            _objectEntriesCache = null;
+            _objectRows.Clear();
+            _appearanceDataDirty = false;
+        }
+
+        private void InvalidateAppearanceControls(AppearancePanel appearancePanel)
+        {
+            if (_appearanceControlsCache.TryGetValue(appearancePanel,
+                    out var cached))
+            {
+                cached.Content.RemoveFromHierarchy();
+                _appearanceControlsCache.Remove(appearancePanel);
+            }
         }
 
         private void OnPartListExclusionsChanged()
         {
             _objectEntriesCache = null;
+            InvalidateAppearanceControls(AppearancePanel.Parts);
+            _objectRows.Clear();
             if (_currentCategory == WorkflowCategory.ShapeParts &&
                 _shapePartsSection == ShapePartsSection.Parts)
             {
@@ -962,6 +1083,8 @@ namespace Ee4v.AssetManager.UI
 
         private void OnBlendShapePresetChanged()
         {
+            _bodyBlendShapesCache = null;
+            InvalidateAppearanceControls(AppearancePanel.Shape);
             if (_workingObject != null &&
                 _currentCategory == WorkflowCategory.ShapeParts &&
                 _shapePartsSection == ShapePartsSection.Shape &&
@@ -991,6 +1114,7 @@ namespace Ee4v.AssetManager.UI
 
         private void OnManagerInvalidated()
         {
+            ReleaseVariantStatusManager();
             _manager = null;
             _assetManagerViewState = new AssetManagerViewState();
             Rebuild();
@@ -998,12 +1122,11 @@ namespace Ee4v.AssetManager.UI
 
         private void BuildWindow()
         {
+            InvalidateVariantSaveStatus();
             ApplyEditorMode();
             FlushPendingPartVisibility();
             DisposeEditors();
-            _materialGeometryCache.Clear();
-            _objectEntriesCache = null;
-            _objectRows.Clear();
+            ClearAppearanceCaches();
             var root = this;
             root.Clear();
             AssetManagerWindowSession.PrepareWorkflowRoot(root);
@@ -1539,24 +1662,66 @@ namespace Ee4v.AssetManager.UI
                 save.SetEnabled(false);
                 return;
             }
-            var hasChanges = true;
-            try
+            var pending = _pendingPartVisibility.Count > 0 || _bodyScaleDirty ||
+                _pendingBodySizeChange != PendingBodySizeChange.None;
+            if (!pending && _variantSaveStatusDirty)
             {
-                if (_pendingPartVisibility.Count == 0 && !_bodyScaleDirty &&
-                    _pendingBodySizeChange == PendingBodySizeChange.None)
+                if (EditorApplication.timeSinceStartup < _variantSaveStatusDueAt)
+                {
+                    return;
+                }
+                try
                 {
                     _manager = _manager ?? AssetManagerWindowSession.GetManager();
                     var variants = AssetManagerWindowSession.TryGetVariantManager(_manager);
-                    hasChanges = variants != null &&
+                    if (!ReferenceEquals(_variantStatusManager, variants))
+                    {
+                        ReleaseVariantStatusManager();
+                        _variantStatusManager = variants;
+                        if (_variantStatusManager != null)
+                        {
+                            _variantStatusManager.Changed += InvalidateVariantSaveStatus;
+                            _manager.Changed += OnVariantStatusAssetManagerChanged;
+                        }
+                    }
+                    _variantHasChanges = variants != null &&
                         variants.HasChanges(AssetDatabase.GetAssetPath(_workingObject));
+                    _variantSaveStatusError = null;
                 }
-                save.tooltip = hasChanges ? string.Empty : I18N.Get("variant.noChanges");
+                catch (Exception exception)
+                {
+                    _variantHasChanges = true;
+                    _variantSaveStatusError = exception.Message;
+                }
+                _variantSaveStatusDirty = false;
             }
-            catch (Exception exception)
-            {
-                save.tooltip = exception.Message;
-            }
+            var hasChanges = pending || _variantHasChanges;
+            save.tooltip = pending ? string.Empty : _variantSaveStatusError ??
+                (hasChanges ? string.Empty : I18N.Get("variant.noChanges"));
             save.SetEnabled(hasChanges);
+        }
+
+        private void InvalidateVariantSaveStatus()
+        {
+            _variantSaveStatusDirty = true;
+            _variantSaveStatusDueAt = EditorApplication.timeSinceStartup +
+                VariantSaveStatusDelaySeconds;
+        }
+
+        private void OnVariantStatusAssetManagerChanged(AssetManagerChange change)
+        {
+            InvalidateVariantSaveStatus();
+        }
+
+        private void ReleaseVariantStatusManager()
+        {
+            if (_variantStatusManager == null)
+            {
+                return;
+            }
+            _variantStatusManager.Changed -= InvalidateVariantSaveStatus;
+            _manager.Changed -= OnVariantStatusAssetManagerChanged;
+            _variantStatusManager = null;
         }
 
         private static VisualElement CreateHeaderPrefabCard(
@@ -1722,6 +1887,15 @@ namespace Ee4v.AssetManager.UI
                 _feedback = string.Empty;
             }
             _currentCategory = category;
+            if (_appearanceDataDirty)
+            {
+                if (!FlushPendingPartVisibility())
+                {
+                    BuildWindow();
+                    return;
+                }
+                ClearAppearanceCaches();
+            }
             _scenePreview?.SetHiddenMaterials(
                 category == WorkflowCategory.Material
                     ? _hiddenMaterials
@@ -1736,7 +1910,6 @@ namespace Ee4v.AssetManager.UI
             var faceExpression =
                 category == WorkflowCategory.ExpressionAnimation;
             var physBone = category == WorkflowCategory.PhysBone;
-            DisposeMaterialEditor();
             _customizerHost.EnableInClassList(
                 "ee4v-modification-workflow__hidden",
                 faceExpression || physBone);
@@ -1793,8 +1966,46 @@ namespace Ee4v.AssetManager.UI
                     "ee4v-modification-workflow__part-selector--standalone");
                 _appearanceHeader.Add(selector);
             }
-            _controlsHost.Clear();
-            _controlsHost.Add(BuildAppearanceControls());
+            var appearancePanel = category == WorkflowCategory.Material
+                ? AppearancePanel.Material
+                : _shapePartsSection == ShapePartsSection.Shape
+                    ? AppearancePanel.Shape
+                    : AppearancePanel.Parts;
+            if (!_appearanceControlsCache.TryGetValue(appearancePanel,
+                    out var cached) ||
+                cached.BodyPart != _selectedBodyPart ||
+                appearancePanel == AppearancePanel.Material &&
+                    cached.Material != _selectedMaterial ||
+                cached.Feedback != _feedback ||
+                cached.FeedbackType != _feedbackType)
+            {
+                InvalidateAppearanceControls(appearancePanel);
+                if (appearancePanel == AppearancePanel.Material)
+                {
+                    DisposeMaterialEditor();
+                }
+                else if (appearancePanel == AppearancePanel.Parts)
+                {
+                    _objectRows.Clear();
+                }
+                var content = BuildAppearanceControls();
+                cached = new CachedAppearanceControls
+                {
+                    Content = content,
+                    BodyPart = _selectedBodyPart,
+                    Material = _selectedMaterial,
+                    Feedback = _feedback,
+                    FeedbackType = _feedbackType
+                };
+                _appearanceControlsCache[appearancePanel] = cached;
+                _controlsHost.Add(cached.Content);
+            }
+            foreach (var pair in _appearanceControlsCache)
+            {
+                pair.Value.Content.EnableInClassList(
+                    "ee4v-modification-workflow__hidden",
+                    pair.Key != appearancePanel);
+            }
             if (categoryChanged)
             {
                 _controlsHost.scrollOffset = Vector2.zero;
@@ -2351,6 +2562,7 @@ namespace Ee4v.AssetManager.UI
                     _scenePreview?.UpdatePrefabReference(_workingObject);
                 }
                 _assetFeedback = string.Empty;
+                InvalidateVariantSaveStatus();
                 return true;
             }
             catch (Exception exception)
@@ -2711,7 +2923,9 @@ namespace Ee4v.AssetManager.UI
             foreach (var entry in allMaterials)
             {
                 var usages = entry.Usages.Where(usage =>
-                    usage.Categories.Any(MatchesSelectedBodyPart)).ToArray();
+                    !_selectedBodyPart.HasValue ||
+                    GetMaterialUsageCategories(usage, entry.Material)
+                        .Any(MatchesSelectedBodyPart)).ToArray();
                 if (usages.Length == 0)
                 {
                     continue;
@@ -2864,8 +3078,14 @@ namespace Ee4v.AssetManager.UI
 
         private bool HasFocusBone(BodyPartCategory part)
         {
-            return DerivedAssetPrefabScenePreview.HasFocusBone(
+            if (_focusBoneCache.TryGetValue(part, out var available))
+            {
+                return available;
+            }
+            available = DerivedAssetPrefabScenePreview.HasFocusBone(
                 _workingObject, part, IsInSelectedPrefabScope);
+            _focusBoneCache[part] = available;
+            return available;
         }
 
         private VisualElement BuildBodyScaleControls()
@@ -3720,6 +3940,17 @@ namespace Ee4v.AssetManager.UI
                 return Array.Empty<BodyBlendShapeDefinition>();
             }
 
+            if (_bodyBlendShapesCache != null)
+            {
+                foreach (var definition in _bodyBlendShapesCache)
+                {
+                    var renderer = GetBodyBlendShapeRenderer(definition);
+                    definition.Value = GetEffectiveBodyBlendShapeWeight(
+                        renderer, definition.ShapeName);
+                }
+                return _bodyBlendShapesCache;
+            }
+
             var renderers = _workingObject
                 .GetComponentsInChildren<SkinnedMeshRenderer>(true)
                 .Where(renderer =>
@@ -3821,7 +4052,8 @@ namespace Ee4v.AssetManager.UI
                 }
             }
             AddSyncedBodyBlendShapes(result);
-            return result;
+            _bodyBlendShapesCache = result;
+            return _bodyBlendShapesCache;
         }
 
         private void AddSyncedBodyBlendShapes(
@@ -4890,7 +5122,10 @@ namespace Ee4v.AssetManager.UI
                 if (editsSource && this.panel != null)
                 {
                     this.schedule.Execute(() =>
-                        ShowCategory(WorkflowCategory.ShapeParts, false));
+                    {
+                        InvalidateAppearanceControls(AppearancePanel.Shape);
+                        ShowCategory(WorkflowCategory.ShapeParts, false);
+                    });
                 }
             }
             catch (Exception exception)
@@ -5148,6 +5383,7 @@ namespace Ee4v.AssetManager.UI
                 }
                 _scenePreview?.SetPrefab(savedPrefab);
                 _bodyScaleDirty = false;
+                InvalidateVariantSaveStatus();
                 _feedback = string.Empty;
             }
             catch (Exception exception)
@@ -5613,16 +5849,25 @@ namespace Ee4v.AssetManager.UI
                 return Array.Empty<AvatarMaterialEntry>();
             }
 
+            if (_avatarMaterialsCache != null)
+            {
+                return _avatarMaterialsCache;
+            }
+
             var entries = new List<AvatarMaterialEntry>();
             var byMaterial = new Dictionary<Material, AvatarMaterialEntry>();
-            var boneCategories = GetHumanoidMaterialBoneCategories(
-                FindHumanoidAnimator());
+            _materialsOutsideSelectedPrefab.Clear();
             foreach (var renderer in _workingObject
                          .GetComponentsInChildren<Renderer>(true))
             {
-                if (renderer == null ||
-                    !IsInSelectedPrefabScope(renderer.transform))
+                if (renderer == null)
                 {
+                    continue;
+                }
+                var assigned = renderer.sharedMaterials;
+                if (!IsInSelectedPrefabScope(renderer.transform))
+                {
+                    _materialsOutsideSelectedPrefab.UnionWith(assigned);
                     continue;
                 }
                 var rendererPath = AnimationUtility.CalculateTransformPath(
@@ -5633,7 +5878,6 @@ namespace Ee4v.AssetManager.UI
                     rendererPath = _workingObject.name;
                 }
 
-                var assigned = renderer.sharedMaterials;
                 for (var index = 0; index < assigned.Length; index++)
                 {
                     var material = assigned[index];
@@ -5654,19 +5898,29 @@ namespace Ee4v.AssetManager.UI
 
                     entry.Usages.Add(new MaterialUsage
                     {
+                        Renderer = renderer,
                         RendererPath = rendererPath,
-                        SlotIndex = index,
-                        Categories = ClassifyMaterialUsage(
-                            renderer,
-                            material,
-                            rendererPath,
-                            index,
-                            boneCategories)
+                        SlotIndex = index
                     });
                 }
             }
 
-            return entries;
+            _avatarMaterialsCache = entries;
+            return _avatarMaterialsCache;
+        }
+
+        private IReadOnlyCollection<BodyPartCategory> GetMaterialUsageCategories(
+            MaterialUsage usage, Material material)
+        {
+            if (usage.Categories == null)
+            {
+                _materialBoneCategoriesCache = _materialBoneCategoriesCache ??
+                    GetHumanoidMaterialBoneCategories(FindHumanoidAnimator());
+                usage.Categories = ClassifyMaterialUsage(
+                    usage.Renderer, material, usage.RendererPath,
+                    usage.SlotIndex, _materialBoneCategoriesCache);
+            }
+            return usage.Categories;
         }
 
         private IReadOnlyCollection<BodyPartCategory>
@@ -6101,24 +6355,25 @@ namespace Ee4v.AssetManager.UI
             {
                 return false;
             }
-            return _workingObject.GetComponentsInChildren<Renderer>(true)
-                .Any(renderer =>
-                    renderer != null &&
-                    !IsInSelectedPrefabScope(renderer.transform) &&
-                    renderer.sharedMaterials.Contains(material));
+            GetAvatarMaterials();
+            return _materialsOutsideSelectedPrefab.Contains(material);
         }
 
         private void RefreshMaterialPreview()
         {
+            InvalidateVariantSaveStatus();
             _scenePreview?.RefreshPreview();
         }
 
         private void RefreshAfterUndoRedo()
         {
+            InvalidateVariantSaveStatus();
+            ClearAppearanceCaches();
             if (_currentCategory != WorkflowCategory.ShapeParts ||
                 _shapePartsSection != ShapePartsSection.Shape)
             {
                 RefreshMaterialPreview();
+                ShowCategory(_currentCategory, false);
                 return;
             }
 
@@ -6150,9 +6405,7 @@ namespace Ee4v.AssetManager.UI
             {
                 return;
             }
-            _objectEntriesCache = null;
-            _controlsHost.Clear();
-            _controlsHost.Add(BuildAppearanceControls());
+            ShowCategory(_currentCategory, false);
         }
 
         private void DisposeMaterialEditor()
