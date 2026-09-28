@@ -152,6 +152,27 @@
     margin: var(--ee4v-space-none);
 }
 
+.ee4v-asset-manager__variant-restore.ee4v-ui-button:enabled {
+    border-color: var(--ee4v-color-warning);
+    background-color: var(--ee4v-color-warning-surface-strong);
+}
+
+.ee4v-asset-manager__variant-restore.ee4v-ui-button:enabled:hover,
+.ee4v-ui .ee4v-asset-manager__variant-restore.ee4v-ui-button:enabled:focus {
+    border-color: var(--ee4v-color-warning);
+    background-color: var(--ee4v-color-warning-surface-hover);
+}
+
+.ee4v-ui .ee4v-asset-manager__variant-restore.ee4v-ui-button:enabled:active {
+    border-color: var(--ee4v-color-warning);
+    background-color: var(--ee4v-color-warning-surface-pressed);
+}
+
+.ee4v-asset-manager__variant-restore.ee4v-ui-button:disabled {
+    border-color: var(--ee4v-color-border-active);
+    background-color: var(--ee4v-color-surface-soft);
+}
+
 .ee4v-asset-manager__variant-history {
     flex-shrink: 0;
     margin-top: var(--ee4v-space-none);

@@ -195,14 +195,11 @@
   },
   "tagList": {
     "searchPlaceholder": "タグを検索",
-    "countDescription": "件数は下位タグを含むItem数です。",
     "sortName": "名前順（昇順）",
     "sortUsage": "使用数順（多い順）",
     "orderName": "名前順",
     "orderUsage": "使用数順",
     "otherHeading": "その他",
-    "count": "{0} タグ",
-    "filteredCount": "{0} / {1} タグ",
     "itemCountTooltip": "{0}\n下位タグを含むItem数: {1}",
     "noMatches": "検索に一致するタグはありません。"
   },

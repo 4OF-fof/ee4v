@@ -7,6 +7,9 @@ namespace Ee4v.FaceExpression
 {
     internal sealed class AnimationClipThumbnailCache
     {
+        private const int MinimumRenderSize = 64;
+        private const int MaximumRenderSize = 512;
+        private const int RenderSizeStep = 64;
         private static readonly Color EmptyColor =
             new Color(0.1f, 0.1f, 0.1f, 1f);
         private readonly Dictionary<AnimationClip, Dictionary<int, Entry>>
@@ -41,12 +44,18 @@ namespace Ee4v.FaceExpression
             Action restorePreview = null,
             bool refreshWhenDirty = true)
         {
+            if (rect.width < 2f || rect.height < 2f)
+            {
+                return;
+            }
+
             if (clip == null || preview == null || avatar == null)
             {
                 EditorGUI.DrawRect(rect, EmptyColor);
                 return;
             }
 
+            var renderSize = GetRenderSize(rect);
             var frameRate = clip.frameRate <= 0f ? 60f : clip.frameRate;
             var frame = Mathf.RoundToInt(Mathf.Max(0f, time) * frameRate);
             var dirtyCount = EditorUtility.GetDirtyCount(clip);
@@ -58,6 +67,7 @@ namespace Ee4v.FaceExpression
 
             if (!clipEntries.TryGetValue(frame, out var entry) ||
                 entry.Texture == null ||
+                entry.Texture.width < renderSize ||
                 (refreshWhenDirty && entry.DirtyCount != dirtyCount))
             {
                 Destroy(entry.Texture);
@@ -72,8 +82,8 @@ namespace Ee4v.FaceExpression
                         frame / frameRate);
                     texture = preview.RenderThumbnail(
                         channels,
-                        160,
-                        160);
+                        renderSize,
+                        renderSize);
                 }
                 finally
                 {
@@ -100,6 +110,20 @@ namespace Ee4v.FaceExpression
                 entry.Texture,
                 ScaleMode.ScaleAndCrop,
                 false);
+        }
+
+        private static int GetRenderSize(Rect rect)
+        {
+            var pixelScale = Mathf.Max(
+                2f, EditorGUIUtility.pixelsPerPoint);
+            var pixelSize = Mathf.Max(rect.width, rect.height) *
+                pixelScale;
+            var rounded = Mathf.CeilToInt(pixelSize / RenderSizeStep) *
+                RenderSizeStep;
+            return Mathf.Clamp(
+                rounded,
+                MinimumRenderSize,
+                MaximumRenderSize);
         }
 
         internal void Clear()

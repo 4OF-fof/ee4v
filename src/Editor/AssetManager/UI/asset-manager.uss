@@ -765,7 +765,7 @@
     flex-shrink: 0;
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     margin-top: var(--ee4v-space-sm);
     margin-bottom: var(--ee4v-space-xl);
 }
@@ -773,7 +773,6 @@
 .ee4v-asset-manager__tag-list-sort {
     flex-shrink: 0;
     flex-direction: row;
-    margin-left: var(--ee4v-space-lg);
 }
 
 .ee4v-asset-manager__tag-sort-choice.ee4v-ui-button {
@@ -801,11 +800,6 @@
 
 .ee4v-asset-manager__tag-sort-choice.ee4v-ui-button:focus {
     background-color: var(--ee4v-color-surface-hover);
-}
-
-.ee4v-asset-manager__tag-list-summary {
-    flex-shrink: 1;
-    min-width: 0;
 }
 
 .ee4v-asset-manager__tag-list-scroll {

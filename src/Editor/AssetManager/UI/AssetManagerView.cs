@@ -1618,7 +1618,8 @@ namespace Ee4v.AssetManager.UI
             {
                 var modify = canModify();
                 operation.SetLabel(I18N.Get(modify ? "variant.modify" : isImported ? "variant.restore" : "action.import"));
-                operation.SetLabelColor(modify || !isImported ? UiColorTokens.TextOnState : UiColorTokens.TextPrimary);
+                operation.SetLabelColor(modify || !isImported ? UiColorTokens.TextOnState :
+                    _variantBusy ? UiColorTokens.TextPrimary : UiColorTokens.StatusRunningText);
                 operation.EnableInClassList("ee4v-asset-manager__primary-action", modify || !isImported);
                 operation.EnableInClassList("ee4v-asset-manager__variant-modify", modify);
                 operation.EnableInClassList("ee4v-asset-manager__variant-import", !isImported);

@@ -61,6 +61,9 @@
     --ee4v-color-info-surface-soft: rgba(58, 121, 187, 0.10);
     --ee4v-color-info-surface-strong: rgba(58, 121, 187, 0.22);
     --ee4v-color-warning-surface-soft: rgba(220, 180, 72, 0.10);
+    --ee4v-color-warning-surface-strong: rgba(220, 180, 72, 0.22);
+    --ee4v-color-warning-surface-hover: rgba(220, 180, 72, 0.32);
+    --ee4v-color-warning-surface-pressed: rgba(220, 180, 72, 0.40);
     --ee4v-color-error-surface-soft: rgba(220, 92, 92, 0.10);
     --ee4v-color-status-idle: rgba(128, 128, 128, 0.35);
     --ee4v-color-status-running: rgba(220, 180, 72, 0.35);
@@ -138,6 +141,9 @@
     --ee4v-color-info-surface-soft: rgba(47, 111, 174, 0.10);
     --ee4v-color-info-surface-strong: rgba(47, 111, 174, 0.22);
     --ee4v-color-warning-surface-soft: rgba(167, 124, 24, 0.10);
+    --ee4v-color-warning-surface-strong: rgba(167, 124, 24, 0.18);
+    --ee4v-color-warning-surface-hover: rgba(167, 124, 24, 0.28);
+    --ee4v-color-warning-surface-pressed: rgba(167, 124, 24, 0.36);
     --ee4v-color-error-surface-soft: rgba(183, 55, 55, 0.10);
     --ee4v-color-status-idle: rgba(128, 128, 128, 0.25);
     --ee4v-color-status-running: rgba(167, 124, 24, 0.25);

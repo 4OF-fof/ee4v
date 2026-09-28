@@ -22,7 +22,6 @@ namespace Ee4v.AssetManager.UI
         private readonly SearchField _search;
         private readonly UiButton _usageSortButton;
         private readonly UiButton _nameSortButton;
-        private readonly UiTextElement _summary;
         private readonly UiTextElement _empty;
         private readonly ScrollView _scroll;
         private readonly VisualElement _pills;
@@ -45,14 +44,6 @@ namespace Ee4v.AssetManager.UI
 
             var metadata = new VisualElement();
             metadata.AddToClassList("ee4v-asset-manager__tag-list-metadata");
-            _summary = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.SecondaryText,
-                "ee4v-asset-manager__tag-list-summary");
-            _summary.tooltip = I18N.Get("tagList.countDescription");
-            _summary.SetWhiteSpace(WhiteSpace.NoWrap);
-            metadata.Add(_summary);
-
             var sort = new VisualElement();
             sort.AddToClassList("ee4v-asset-manager__tag-list-sort");
             _usageSortButton = AssetManagerControls.CreateButton(
@@ -165,9 +156,6 @@ namespace Ee4v.AssetManager.UI
                 : matching.OrderBy(entry => entry.Path, StringComparer.OrdinalIgnoreCase);
             var entries = ordered.ThenBy(entry => entry.Path, StringComparer.Ordinal)
                 .ToArray();
-            _summary.SetText(query.Length == 0
-                ? I18N.Get("tagList.count", _entries.Count)
-                : I18N.Get("tagList.filteredCount", entries.Length, _entries.Count));
             _usageSortButton.EnableInClassList(
                 "ee4v-asset-manager__tag-sort-choice--selected", _sortByUsage);
             _nameSortButton.EnableInClassList(
