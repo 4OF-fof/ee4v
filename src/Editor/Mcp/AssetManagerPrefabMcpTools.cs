@@ -341,6 +341,11 @@ namespace Ee4v.Mcp
                     var materialGuid = string.IsNullOrEmpty(materialPath)
                         ? string.Empty
                         : AssetDatabase.AssetPathToGUID(materialPath);
+                    var materialLocalId = material != null &&
+                        AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+                            material, out _, out long localId)
+                        ? localId.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        : string.Empty;
                     var textures = MaterialTextures(material).ToArray();
                     materialValues.Add(new
                     {
@@ -351,6 +356,7 @@ namespace Ee4v.Mcp
                             : material.name,
                         MaterialGuid = materialGuid,
                         MaterialPath = materialPath,
+                        MaterialLocalId = materialLocalId,
                         ShaderName = material?.shader == null
                             ? string.Empty
                             : material.shader.name,
@@ -362,7 +368,8 @@ namespace Ee4v.Mcp
                         RelativeRendererPath = relativePath,
                         MaterialSlot = slot,
                         MaterialGuid = materialGuid,
-                        MaterialPath = materialPath
+                        MaterialPath = materialPath,
+                        MaterialLocalId = materialLocalId
                     });
                 }
 

@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace Ee4v.AssetManager.UI
 {
-    internal sealed class DerivedAssetCreationRequest
+    public sealed class DerivedAssetCreationRequest
     {
         public string ParentItemId { get; set; }
         public string Name { get; set; }
@@ -18,7 +18,7 @@ namespace Ee4v.AssetManager.UI
         public GameObject Prefab { get; set; }
     }
 
-    internal sealed class DerivedAssetInfo
+    public sealed class DerivedAssetInfo
     {
         public string VariantId { get; set; }
         public string ParentItemId { get; set; }
@@ -29,7 +29,7 @@ namespace Ee4v.AssetManager.UI
         public GameObject Prefab { get; set; }
     }
 
-    internal static class DerivedAssetCreator
+    public static class DerivedAssetCreator
     {
         internal const string VariantRoot = DerivedAssetCatalog.VariantRoot;
         private const string MaterialsFolderName = "Materials";
@@ -206,6 +206,88 @@ namespace Ee4v.AssetManager.UI
             catch
             {
                 AssetDatabase.DeleteAsset(outputFolder);
+                throw;
+            }
+        }
+
+        public static string CreateMaterialVariant(
+            string variantPath,
+            Material sourceMaterial)
+        {
+            var record = DerivedAssetCatalog.Read(variantPath);
+            if (record == null || sourceMaterial == null ||
+                !variantPath.StartsWith(VariantRoot + "/", StringComparison.Ordinal))
+            {
+                throw new ArgumentException("An ee4v Variant and a source Material are required.");
+            }
+
+            var sourcePath = AssetDatabase.GetAssetPath(sourceMaterial);
+            var variantFolder = Path.GetDirectoryName(variantPath)?.Replace('\\', '/');
+            if (string.IsNullOrEmpty(sourcePath) ||
+                sourcePath.StartsWith(variantFolder + "/", StringComparison.OrdinalIgnoreCase) ||
+                !AssetDatabase.GetDependencies(variantPath, true)
+                    .Contains(sourcePath, StringComparer.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("The Material must be an external dependency of the Variant.");
+            }
+
+            var materialsFolder = variantFolder + "/Assets/Materials";
+            EnsureFolder(materialsFolder);
+            var safeName = new string(sourceMaterial.name
+                .Select(character => char.IsLetterOrDigit(character) ||
+                    character == ' ' || character == '_' || character == '-'
+                    ? character : '_')
+                .Take(80).ToArray());
+            if (string.IsNullOrWhiteSpace(safeName))
+            {
+                safeName = "Material";
+            }
+            var destinationPath = AssetDatabase.GenerateUniqueAssetPath(
+                materialsFolder + "/" + safeName + ".mat");
+            var materialVariant = new Material(sourceMaterial)
+            {
+                name = sourceMaterial.name,
+                parent = sourceMaterial,
+                hideFlags = HideFlags.None
+            };
+            AssetDatabase.CreateAsset(materialVariant, destinationPath);
+            try
+            {
+                var objectMap = new Dictionary<AssetObjectKey, Object>();
+                MapAsset(sourceMaterial, materialVariant, objectMap);
+                var root = PrefabUtility.LoadPrefabContents(variantPath);
+                try
+                {
+                    var replaced = false;
+                    foreach (var component in root.GetComponentsInChildren<Component>(true))
+                    {
+                        if (component != null && RemapObjectReferences(component, objectMap))
+                        {
+                            replaced = true;
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+                        }
+                    }
+                    if (!replaced)
+                    {
+                        throw new InvalidOperationException(
+                            "The source Material is not assigned in the Variant Prefab.");
+                    }
+                    PrefabUtility.SaveAsPrefabAsset(root, variantPath, out var success);
+                    if (!success)
+                    {
+                        throw new InvalidOperationException("The Variant Prefab could not be saved.");
+                    }
+                }
+                finally
+                {
+                    PrefabUtility.UnloadPrefabContents(root);
+                }
+                AssetDatabase.SaveAssets();
+                return destinationPath;
+            }
+            catch
+            {
+                AssetDatabase.DeleteAsset(destinationPath);
                 throw;
             }
         }

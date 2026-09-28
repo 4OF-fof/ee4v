@@ -30,7 +30,7 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 - dispatch待ちの操作がないEditor frameではqueueの配列を生成しない。
 - tool結果は機械処理用の`structuredContent`と、同じ内容のtext contentを返す。preview PNGはimage contentも返す。
 - tool annotationでread-only、破壊性、冪等性、open-world accessを宣言する。
-- AssetManagerではmetadata編集と、明示的な`ee4v_asset_import`によるUnity ProjectへのImportを公開する。同期、Item／Fileの削除、File登録、新規Item作成は公開しない。Collectionの作成・削除も公開し、削除toolは削除前の名前と条件を返す。Importは既存Project Assetを上書きする可能性があるため、破壊性あり・冪等性なしのannotationを付ける。
+- AssetManagerではmetadata編集、明示的な`ee4v_asset_import`によるUnity ProjectへのImport、Itemに紐付くVariantの作成・改変・履歴保存を公開する。同期、Item／Fileの削除、File登録、新規Item作成は公開しない。Collectionの作成・削除も公開し、削除toolは削除前の名前と条件を返す。Importは既存Project Assetを上書きする可能性があるため、破壊性あり・冪等性なしのannotationを付ける。
 - AssetManagerのPrefab調査は、既にUnity Projectへ取り込まれたPrefab assetとAssetManagerで作成済みの派生Prefabだけを対象にする。Prefab調査・previewからImportを暗黙には開始しない。必要な場合は登録済みFileを明示的なImport toolで取り込む。
 - Prefab previewはUnityの内部Preview sceneへだけinstanceを作成し、Play Mode、利用者のScene、Prefab assetを変更しない。外部APIへ画像を送信しない。
 - 表情Clipと表情アニメーションの更新は`expectedRevision`で競合を検出できる。静止Clipは作成・部分更新・完全置換を一つのtoolで扱う。アニメーションはポーズ単位の追加・更新・並び替え・Loop変更を一つの編集toolへまとめ、削除は破壊性ありの別toolとする。`dryRun`で書き込み前の結果を確認できる。
@@ -43,7 +43,7 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 
 ## Tool設計
 
-現行catalogは28 tools。対象と編集単位が同じ操作は、部分更新または明示的なactionへ統合する。読み取り、書き込み、破壊的な削除はannotationと承認単位が異なるため分離する。検索／一覧と詳細取得は返す情報量と用途が異なるため維持する。Avatar inventoryとauditも、事実の取得と問題の検出を分ける。
+現行catalogは33 tools。対象と編集単位が同じ操作は、部分更新または明示的なactionへ統合する。読み取り、書き込み、破壊的な削除はannotationと承認単位が異なるため分離する。検索／一覧と詳細取得は返す情報量と用途が異なるため維持する。Avatar inventoryとauditも、事実の取得と問題の検出を分ける。
 
 Item編集へ名前・説明・Tag・Archive・Import Targetを統合し、一括編集を維持する。Collectionの作成と更新はupsertへ、ポーズ追加・更新・移動・Loop変更はanimation編集へ、Clipの調査とvalidationはClip調査へ統合する。左右Gestureの単独更新はFacialSetのpatch適用で扱う。
 
@@ -97,6 +97,7 @@ AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_exp
 | 依存設定 | `ee4v_asset_set_dependencies` |
 | Collection | `ee4v_asset_list_collections`、`ee4v_asset_upsert_collection`、`ee4v_asset_delete_collection` |
 | Prefab調査 | `ee4v_asset_inspect_prefab`、`ee4v_asset_render_prefab_preview` |
+| Variant改変 | `ee4v_asset_list_variants`、`ee4v_asset_create_variant`、`ee4v_asset_add_prefab_to_variant`、`ee4v_asset_create_material_variant`、`ee4v_asset_save_variant` |
 
 `ee4v_asset_edit_items`は`itemIds`に1件以上を渡し、`name`、`description`、`tags`、`archived`、`targets`のうち変更する項目だけを指定する。未指定項目は保持する。空のdescriptionは消去、空のtags／targets配列は全解除、`archived: false`はArchive解除を意味する。targets変更は1 Itemだけを対象とし、各要素はfileId、targetPath、任意のgroupNameを持つ。groupNameを省略すると既存Groupを保持し、空文字はGroup解除を意味する。Eagle由来Itemの名前・説明は変更できず、Eagle由来Tagは維持する。名前・説明・Tag・Archiveの一括指定も可能。複合編集は複数の公開APIを順に実行するため全体transactionではなく、途中失敗時はerrorの`details.appliedChanges`に完了した編集を返す。
 
@@ -108,7 +109,19 @@ AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_exp
 
 `ee4v_asset_set_dependencies`はdependentTargetsとdependencyTargetsの両方にfileIdとtargetPathを渡す。ZIPは空pathで指定せず、解析で得た内部実体を選ぶ。
 
-MCPはUIと同じ公開API、validation、change notificationを使用し、独自のDB接続・schema・Import処理は持たない。UIとMCPは`AssetManagerFactory.OpenSession`で同じDBのmanagerを共有するため、MCPからのImportや編集も画面、Project Thumbnail、AssetProtectionへ通知される。DBは共通data rootの`asset-manager-v1.db`。同期、新規Item／File登録、Item／File削除はUIから実行する。
+MCPはUIと同じ公開API、validation、change notificationを使用し、独自のDB接続・schema・Import処理は持たない。UIとMCPは`AssetManagerFactory.OpenSession`で同じDBのmanagerを共有し、Variant履歴には`OpenVariantSession`で同じmanagerを共有するため、MCPからのImport、編集、履歴保存も画面へ通知される。DBは共通data rootの`asset-manager-v1.db`。同期、新規Item／File登録、Item／File削除はUIから実行する。
+
+### ItemからVariantを作成して改変する
+
+`ee4v_asset_get_item`でベースItemの`prefabCandidates`を確認し、そのItemへ取り込み済みの元Prefab GUIDを選ぶ。`ee4v_asset_create_variant`へ`itemId`、`sourcePrefabGuid`、`name`、任意の`description`を渡す。AssetManager画面と同じ`DerivedAssetCreator`が`Assets/!ee4vAsset/Variant/<name>/<name>.prefab`を作成し、Material依存のMaterial Variantと親Item・元Prefabのmetadataを登録する。元Prefabは変更しない。Itemに取り込み済みでないPrefab、無効な名前、既存のVariantフォルダーは拒否する。作成はProject内への保存であり、履歴revisionの保存は別操作になる。
+
+`ee4v_asset_list_variants`へ`itemId`を渡すと、そのItemに登録されたProject内VariantのGUID、path、元Prefab GUID、Material Variant pathを取得できる。作成直後は一覧と`ee4v_asset_get_item`の`prefabCandidates`で親ItemとPrefab Variantを確認してから改変する。
+
+追加素材のPrefabを接続を保ったまま組み合わせるには、`ee4v_asset_add_prefab_to_variant`へ`variantGuid`とAssetManagerから取り込み済みの`sourcePrefabGuid`を渡す。追加先はVariant直下で、local Transformを維持する。Prefab循環参照は拒否する。追加素材のMaterialを編集する場合は`ee4v_asset_create_material_variant`へ`variantGuid`と依存Materialの`sourceMaterialPath`を渡し、派生フォルダーのMaterial Variantへ参照を差し替える。同じpathに複数Materialがあるときは、Prefab調査結果の`materialLocalId`を`sourceMaterialLocalId`へ指定する。元Materialおよび元Prefabを直接変更しない。Transform、BlendShape、Material値などの任意の編集にはProject内の派生Prefab／Material Variantを指定してUnity MCPを使用する。改変後は`ee4v_asset_save_variant`へ`variantGuid`と任意の`memo`を渡してAssetManagerの履歴revisionへ保存する。
+
+```json
+{"itemId":"item-id","sourcePrefabGuid":"0123456789abcdef0123456789abcdef","name":"My Avatar Variant","description":"改変内容"}
+```
 
 ### 明示的なImport
 
@@ -135,7 +148,7 @@ File全体を取り込む場合はpathsへ空文字列を1件指定する。た�
 2. 各Itemを`ee4v_asset_get_item`で取得し、`prefabCandidates`からProject内に実在するPrefab GUIDを選ぶ。候補はItemの取り込み済みAsset GUIDと、親Item IDを持つAssetManager派生Prefabから解決する。
 3. `ee4v_asset_render_prefab_preview`の同じview、size、backgroundで候補を描画し、image contentを比較する。`turntable`は8方向を4×2へ並べる。
 4. 選んだPrefabを`ee4v_asset_inspect_prefab`で調査し、Renderer path、Material slot、Material path、Shader、Texture、Mesh、BlendShape、参照切れを得る。
-5. `unityMcpHandoff`のRenderer pathとMaterial pathを既存Unity MCPへ渡し、Material編集は既存Unity MCPで行う。
+5. `unityMcpHandoff`のRenderer pathとMaterial pathを確認する。改変時はItemからee4v Variantを作成し、派生PrefabとそのMaterial Variantのpathを既存Unity MCPへ渡して編集する。
 
 未ImportのZIPまたはunitypackageしか存在しない場合、`prefabCandidates`は空になり、`prefabCandidateResolution.emptyReason`または`unresolvedImportedAssets`に理由を返します。Prefab調査はImportを開始しません。必要な場合は`ee4v_asset_import`を明示的に呼び、完了後にItem詳細を再取得します。
 
@@ -144,8 +157,8 @@ File全体を取り込む場合はpathsへ空文字列を1件指定する。た�
 | tool | 主な入力 | 主な出力 | Projectへの書き込み |
 |---|---|---|---|
 | `ee4v_asset_get_item` | `itemId` | Item、File、取り込み済みGUID、`prefabCandidates`。各候補はPrefab GUID／path／name／type、Variant親、dependency hash、preview可否・不可理由・警告を持つ | なし |
-| `ee4v_asset_inspect_prefab` | `prefabGuid`、または`Assets/`／`Packages/`から始まる`prefabPath` | hierarchy、Renderer、Meshとtriangle、bounds、Material slot、Shader、Texture、BlendShape、Missing Script、参照切れ、preview可否・警告、Unity MCP handoff | なし |
-| `ee4v_asset_render_prefab_preview` | `prefabGuid`または`prefabPath`、`viewPreset`、`width`、`height`、`background`、`forceRefresh` | 固定撮影条件のPNG image content、dependency hash、cache path、cache hit、警告、Unity／Render Pipeline情報 | 再生成可能なcacheだけ |
+| `ee4v_asset_inspect_prefab` | `prefabGuid`、または`Assets/`／`Packages/`から始まる`prefabPath` | hierarchy、Renderer、Meshとtriangle、bounds、Material slot・path・local ID、Shader、Texture、BlendShape、Missing Script、参照切れ、preview可否・警告、Unity MCP handoff | なし |
+| `ee4v_asset_render_prefab_preview` | `prefabGuid`または`prefabPath`、`viewPreset`、`width`、`height`、`background`、`forceRefresh` | 固定撮影条件のPNG image content、dependency hash、cache path、cache hit、警告、Unity／Render Pipeline情報。`width`と`height`の既定値は各1536px、指定範囲は128〜3072px | 再生成可能なcacheだけ |
 
 `prefabGuid`と`prefabPath`を両方渡す場合は同じAssetを指す必要があります。絶対path、`Assets/`と`Packages/`以外のpath、PrefabでないAssetは拒否します。`ee4v_asset_inspect_prefab`とpreviewはいずれもPrefab、Scene、AssetManager DBを変更しません。
 
@@ -164,11 +177,11 @@ File全体を取り込む場合はpathsへ空文字列を1件指定する。た�
 
 ### Preview cache
 
-PNGはSQLiteへ格納せず、共通data rootの`asset-preview/<prefab-guid>/<dependency-hash>/`以下へ保存します。共通data rootがProjectの`Assets`内に設定されている場合だけ、`Library/ee4v-cache`へ退避します。file名にはrender profile version、view、size、backgroundを含め、同じ条件の再呼び出しでは再利用します。隣接JSONにはPrefab GUID、dependency hash、render profile version、view、image path、size、Unity version、Render Pipeline、作成日時、警告、errorを記録します。cache directory名と描画条件の世代は分離し、現在のrender profile versionは`v2`です。
+PNGはSQLiteへ格納せず、共通data rootの`asset-preview/<prefab-guid>/<dependency-hash>/`以下へ保存します。共通data rootがProjectの`Assets`内に設定されている場合だけ、`Library/ee4v-cache`へ退避します。file名にはrender profile version、view、size、backgroundを含め、同じ条件の再呼び出しでは再利用します。隣接JSONにはPrefab GUID、dependency hash、render profile version、view、image path、size、Unity version、Render Pipeline、作成日時、警告、errorを記録します。cache directory名と描画条件の世代は分離し、現在のrender profile versionは`v4`です。
 
 dependency hashには`AssetDatabase.GetAssetDependencyHash`を使用します。Prefab、Variant親、Mesh、Material、Texture、ShaderなどUnityが依存関係として追跡するAssetが変化すると保存先hashが変わるため、古い画像を使用しません。`forceRefresh: true`は同じ条件を再撮影します。cacheは再生成可能であり、Unity Project Assetの状態には含めません。
 
-撮影は`PreviewRenderUtility`の内部Preview sceneへPrefabを直接instance化し、Renderer boundsを基準にscaleを正規化し、各viewへ投影した横幅と縦幅を使ってcamera framingを決めます。照明、背景、camera FOVは固定し、instance上の`Behaviour`を無効化してParticle Systemを停止します。描画後はinstanceを破棄します。空のMaterial slotやMaterial slotなしは`missing_material`警告として返し、撮影を続けます。Missing Mesh、Shader、描画可能Rendererなし、無効なboundsは構造化errorとして返します。
+撮影は`PreviewRenderUtility`の内部Preview sceneへPrefabを直接instance化します。SkinnedMeshRendererは現在の姿勢をBakeしたMeshのbounds、その他のRendererは通常のboundsを使い、実際に描画する形状を囲んでscaleを正規化します。各viewへ投影した横幅と縦幅でcamera framingを決め、大きなアニメーション用SkinnedMeshRenderer boundsによる余白を避けます。BakeできないMeshはRenderer boundsへ戻します。照明、背景、camera FOVは固定し、instance上の`Behaviour`を無効化してParticle Systemを停止します。描画後はinstanceを破棄します。空のMaterial slotやMaterial slotなしは`missing_material`警告として返し、撮影を続けます。Missing Mesh、Shader、描画可能Rendererなし、無効なboundsは構造化errorとして返します。
 
 RAG、Embedding、Vector DB、Semantic Search、自動caption、全Prefabの事前indexは持ちません。検索metadataで候補を絞り、要求されたPrefabだけをオンデマンド撮影します。
 

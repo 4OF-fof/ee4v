@@ -22,6 +22,7 @@ namespace Ee4v.Mcp
             RegisterSetDependencies();
             RegisterCollections();
             AssetManagerPrefabMcpTools.Register();
+            AssetManagerVariantMcpTools.Register();
         }
 
         private static void RegisterSearch()
@@ -458,7 +459,7 @@ namespace Ee4v.Mcp
                 "Collection icon is invalid.");
         }
 
-        private static IAssetManager Manager()
+        internal static IAssetManager Manager()
         {
             var root = GlobalDataSettings.RootDirectory;
             var path = Path.Combine(root, "asset-manager-v1.db");

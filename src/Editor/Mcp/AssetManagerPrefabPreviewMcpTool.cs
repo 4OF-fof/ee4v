@@ -19,10 +19,10 @@ namespace Ee4v.Mcp
     internal static class AssetManagerPrefabPreviewMcpTool
     {
         private const string CacheDirectoryName = "asset-preview";
-        private const string RenderProfileVersion = "v2";
-        private const int DefaultSize = 1024;
+        private const string RenderProfileVersion = "v4";
+        private const int DefaultSize = 1536;
         private const int MinimumSize = 128;
-        private const int MaximumSize = 2048;
+        private const int MaximumSize = 3072;
 
         private static readonly string[] TurntableViews =
         {
@@ -631,10 +631,10 @@ namespace Ee4v.Mcp
                         "The Preview instance has no active Renderer bounds.");
                 }
 
-                var bounds = renderers[0].bounds;
+                var bounds = PreviewBounds(renderers[0]);
                 for (var index = 1; index < renderers.Length; index++)
                 {
-                    bounds.Encapsulate(renderers[index].bounds);
+                    bounds.Encapsulate(PreviewBounds(renderers[index]));
                 }
 
                 if (!IsFinite(bounds.center) || !IsFinite(bounds.size))
@@ -645,6 +645,66 @@ namespace Ee4v.Mcp
                 }
 
                 return bounds;
+            }
+
+            private static Bounds PreviewBounds(Renderer renderer)
+            {
+                if (!(renderer is SkinnedMeshRenderer skinned) ||
+                    skinned.sharedMesh == null)
+                {
+                    return renderer.bounds;
+                }
+
+                var mesh = new Mesh
+                {
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                try
+                {
+                    // Keep baked vertices in renderer-local space so the
+                    // matrix below applies the instance scale only once.
+                    skinned.BakeMesh(mesh, true);
+                    if (mesh.vertexCount == 0)
+                    {
+                        return renderer.bounds;
+                    }
+
+                    var bounds = TransformBounds(
+                        mesh.bounds,
+                        skinned.localToWorldMatrix);
+                    return IsFinite(bounds.center) && IsFinite(bounds.size) &&
+                           bounds.size.sqrMagnitude > 0.00000001f
+                        ? bounds
+                        : renderer.bounds;
+                }
+                catch (Exception)
+                {
+                    return renderer.bounds;
+                }
+                finally
+                {
+                    Object.DestroyImmediate(mesh);
+                }
+            }
+
+            private static Bounds TransformBounds(
+                Bounds bounds,
+                Matrix4x4 matrix)
+            {
+                var extents = bounds.extents;
+                var transformedExtents = new Vector3(
+                    Mathf.Abs(matrix.m00) * extents.x +
+                    Mathf.Abs(matrix.m01) * extents.y +
+                    Mathf.Abs(matrix.m02) * extents.z,
+                    Mathf.Abs(matrix.m10) * extents.x +
+                    Mathf.Abs(matrix.m11) * extents.y +
+                    Mathf.Abs(matrix.m12) * extents.z,
+                    Mathf.Abs(matrix.m20) * extents.x +
+                    Mathf.Abs(matrix.m21) * extents.y +
+                    Mathf.Abs(matrix.m22) * extents.z);
+                return new Bounds(
+                    matrix.MultiplyPoint3x4(bounds.center),
+                    transformedExtents * 2f);
             }
 
             private static void DisableBehaviours(GameObject instance)

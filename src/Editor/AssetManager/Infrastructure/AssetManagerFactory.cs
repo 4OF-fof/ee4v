@@ -11,6 +11,9 @@ namespace Ee4v.AssetManager.Infrastructure
     {
         private static string _sessionDatabasePath;
         private static IAssetManager _sessionManager;
+        private static string _variantSessionDatabasePath;
+        private static IAssetManager _variantSessionAssetManager;
+        private static IAssetVariantManager _variantSessionManager;
 
         public static IAssetManager OpenSession(string databasePath)
         {
@@ -57,6 +60,28 @@ namespace Ee4v.AssetManager.Infrastructure
                 new UnityAssetVariantWorkspace(manager, repository));
             service.RebuildIndex();
             return service;
+        }
+
+        public static IAssetVariantManager OpenVariantSession(string databasePath, IAssetManager manager)
+        {
+            if (string.IsNullOrWhiteSpace(databasePath))
+            {
+                throw new ArgumentException("Database path is required.", nameof(databasePath));
+            }
+            if (manager == null)
+            {
+                throw new ArgumentNullException(nameof(manager));
+            }
+            var path = System.IO.Path.GetFullPath(databasePath);
+            if (_variantSessionManager == null ||
+                !string.Equals(_variantSessionDatabasePath, path, StringComparison.Ordinal) ||
+                !ReferenceEquals(_variantSessionAssetManager, manager))
+            {
+                _variantSessionManager = OpenVariants(path, manager);
+                _variantSessionDatabasePath = path;
+                _variantSessionAssetManager = manager;
+            }
+            return _variantSessionManager;
         }
     }
 }

@@ -111,7 +111,7 @@ namespace Ee4v.AssetManager.UI
             if (manager == null || !ReferenceEquals(manager, _manager)) { return null; }
             if (_variantManager == null)
             {
-                _variantManager = AssetManagerFactory.OpenVariants(Path.Combine(
+                _variantManager = AssetManagerFactory.OpenVariantSession(Path.Combine(
                     Environment.ExpandEnvironmentVariables(AssetManagerSettings.Ee4vLibraryPath),
                     "asset-manager-v1.db"), manager);
             }

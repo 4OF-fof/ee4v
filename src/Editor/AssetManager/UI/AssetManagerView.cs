@@ -5237,7 +5237,8 @@ namespace Ee4v.AssetManager.UI
         {
             _importedItemIdsInProject = null;
             if (_variantMetadataSaveCount > 0) { return; }
-            if (ShowsVariants || !string.IsNullOrEmpty(_viewState.DetailVariantId))
+            if (ShowsVariants || !string.IsNullOrEmpty(_viewState.DetailVariantId) ||
+                !string.IsNullOrEmpty(_viewState.DetailItemId))
             {
                 Refresh();
                 return;
