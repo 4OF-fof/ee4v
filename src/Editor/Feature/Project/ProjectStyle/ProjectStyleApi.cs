@@ -12,6 +12,11 @@ namespace Ee4v.ProjectStyle
             return ProjectStyleBootstrap.Service.Get(folderGuid);
         }
 
+        public static string GetIconGuid(string folderGuid)
+        {
+            return ProjectStyleBootstrap.Service.Get(folderGuid).IconGuid;
+        }
+
         public static void SetColor(
             IReadOnlyList<string> folderGuids,
             Color color)

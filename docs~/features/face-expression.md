@@ -32,7 +32,9 @@ Clip更新は`expectedRevision`が現在値と一致しない場合に拒否し�
 
 ## 編集画面のライフサイクル
 
-単独Windowと統合ee4vウィンドウの埋め込み画面は、通常のC#クラスである`FaceExpressionEditor`を共有します。`FaceExpressionWindow`は単独表示のホストだけを担当し、埋め込み用の非表示`EditorWindow`は生成しません。これによりUnityのレイアウト検証で親のないWindowが`Invalid editor window`として検出されることを防ぎます。
+単独Windowと統合ee4vウィンドウの埋め込み画面は、通常のC#クラスである`FaceExpressionEditor`を共有します。外部の埋め込み側は公開境界`FaceExpressionEmbeddedView`で生成・初期化・再生停止・破棄を行い、Editor内部型にはアクセスしません。`FaceExpressionWindow`は単独表示のホストだけを担当し、埋め込み用の非表示`EditorWindow`は生成しません。これによりUnityのレイアウト検証で親のないWindowが`Invalid editor window`として検出されることを防ぎます。
+
+改変画面がBlendShapeを体型・パーツへ分類するときは、`FaceExpressionShapeNamingSnapshot`から現在の区切り文字、FBX別プリセットの分類・グループ・役割を読みます。`Create`は未登録のFBXプリセットを従来どおり補完します。プリセット変更通知と区切り文字設定の判定も同じ公開境界を使用し、AssetManagerへFace Expression内部型のfriend assemblyを公開しません。分類値は`BlendShapeAppearancePart`で共有します。
 
 ホストの終了または埋め込み画面の破棄時に編集クラスを`Dispose`し、再生を停止して、設定・プリセット・Undo・Project変更・Editor更新・翻訳・グループ変更の購読、サムネイル、Previewを解放します。埋め込み画面を非アクティブにした場合も再生を停止します。埋め込みの初期化に失敗した場合は、生成途中の編集クラスを破棄します。
 

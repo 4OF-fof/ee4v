@@ -20,7 +20,7 @@
 
 グループ設定は利用者ごとの `EditorPrefs` に保存します。型の識別には完全な型名と assembly 名を使い、Unity の版番号は含めません。
 
-実画面は`ee4v/Debug/Catalog`の`Domain/WindowGroup/Window Groups` Storyで確認できます。Storyの操作は`EditorPrefs`を変更しません。
+実画面は`ee4v/Debug/Catalog`の`Domain/WindowGroup/Window Groups` Storyで確認できます。StoryはUnity標準Windowだけをサンプルに使い、操作は`EditorPrefs`を変更しません。
 
 UIは`WindowGroupSettingsView`へ分離し、`WindowGroupSettingsWindow`はWindowの生成、共通styleの適用、実設定との接続だけを行います。Viewがドック移動などでPanelから切り離されたときは変更通知の購読だけを解除し、再接続時に購読と表示を復元します。終端のDisposeはWindowの終了時に行います。即時再構築で反映済みの変更は予約中の再構築で重複させません。Group一件分にはCoreの`NavigationItem`、空表示には`EmptyState`、見出しには`SectionHeader`を使用します。Groupの選択状態とWindow候補Cardの境界線、面、角丸、hover、割り当て状態もCore UIへ揃えます。Storyは同じViewへメモリ上の設定とWindow候補を渡します。
 

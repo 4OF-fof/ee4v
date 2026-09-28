@@ -59,6 +59,33 @@ namespace Ee4v.FaceExpression
         }
     }
 
+    public sealed class FaceExpressionEmbeddedView : IDisposable
+    {
+        private readonly FaceExpressionEditor _editor;
+
+        public FaceExpressionEmbeddedView(
+            VisualElement root,
+            Action repaint)
+        {
+            _editor = new FaceExpressionEditor(root, repaint, true);
+        }
+
+        public void Initialize(GameObject avatar)
+        {
+            _editor.Initialize(avatar);
+        }
+
+        public void StopPlayback()
+        {
+            _editor.StopPlayback();
+        }
+
+        public void Dispose()
+        {
+            _editor.Dispose();
+        }
+    }
+
     internal sealed class FaceExpressionEditor : IDisposable
     {
         private const StringComparison AssetPathComparison =

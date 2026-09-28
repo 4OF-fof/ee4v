@@ -62,26 +62,26 @@ namespace Ee4v.WindowGroup
             public WindowGroupDocument Load()
             {
                 var document = new WindowGroupDocument();
-                var avatar = new WindowGroupDefinition(
-                    "avatar-tools",
-                    "Avatar Tools");
-                avatar.WindowTypeIds.Add(
-                    "Ee4v.FaceExpression.FaceExpressionWindow, Ee4v.FaceExpression.Editor");
-                avatar.WindowTypeIds.Add(
+                var scene = new WindowGroupDefinition(
+                    "scene-work",
+                    "Scene Work");
+                scene.WindowTypeIds.Add(
                     "UnityEditor.SceneView, UnityEditor");
-                avatar.FollowerWindowTypeIds.Add(
-                    "UnityEditor.SceneView, UnityEditor");
+                scene.WindowTypeIds.Add(
+                    "UnityEditor.InspectorWindow, UnityEditor");
+                scene.FollowerWindowTypeIds.Add(
+                    "UnityEditor.InspectorWindow, UnityEditor");
 
-                var assetManagement = new WindowGroupDefinition(
-                    "asset-management",
-                    "Asset Management");
-                assetManagement.WindowTypeIds.Add(
-                    "Ee4v.AssetManager.UI.AssetManagerMainWindow, Ee4v.AssetManager.UI.Editor");
-                assetManagement.WindowTypeIds.Add(
+                var project = new WindowGroupDefinition(
+                    "project-work",
+                    "Project Work");
+                project.WindowTypeIds.Add(
                     "UnityEditor.ProjectBrowser, UnityEditor");
+                project.WindowTypeIds.Add(
+                    "UnityEditor.GameView, UnityEditor");
 
-                document.Groups.Add(avatar);
-                document.Groups.Add(assetManagement);
+                document.Groups.Add(scene);
+                document.Groups.Add(project);
                 return document;
             }
 

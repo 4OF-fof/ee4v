@@ -40,18 +40,18 @@ namespace Ee4v.FaceExpression
         public string appearanceGroup;
     }
 
-    internal static class BlendShapeAppearancePart
+    public static class BlendShapeAppearancePart
     {
-        internal const string Expression = "expression";
-        internal const string Head = "head";
-        internal const string Chest = "chest";
-        internal const string Waist = "waist";
-        internal const string Shoulders = "shoulders";
-        internal const string Arms = "arms";
-        internal const string Hands = "hands";
-        internal const string Legs = "legs";
-        internal const string Feet = "feet";
-        internal const string Other = "other";
+        public const string Expression = "expression";
+        public const string Head = "head";
+        public const string Chest = "chest";
+        public const string Waist = "waist";
+        public const string Shoulders = "shoulders";
+        public const string Arms = "arms";
+        public const string Hands = "hands";
+        public const string Legs = "legs";
+        public const string Feet = "feet";
+        public const string Other = "other";
     }
 
     internal static class BlendShapeNamePresetSetting

@@ -1,6 +1,6 @@
 # コードベース監査
 
-最終更新日: 2026-09-27
+最終更新日: 2026-09-28
 
 ## 対象と方法
 
@@ -48,6 +48,12 @@
 - WindowGroupの旧所属設定のFollower変換を除去した。
 - 廃止した互換動作だけを検証するテストとassertionを削除した。新しいテストは追加していない。Unity 2022.3と現在のVRChat／Modular Avatar SDKへの接続、入力検証、現在の生成物の再適用は引き続き対象とする。
 - Unity 2022.3の関連する既存EditModeテスト57件の成功と、コンパイルエラー0件を確認した。変更通知テストのfixtureを現在のZIP拒否仕様に合うunitypackageへ修正した。新規DBでCollectionのアイコン変更、未指定時の維持、既定値、再オープン、並び替え、削除後の末尾追加も確認した。
+
+## 2026-09-28のモジュール境界の確認
+
+- Editor production asmdef 28個の依存グラフに循環はない。ee4vウィンドウの組み立てを除く機能間参照はProjectStyleとHierarchyStyleの`ItemStyle`共有、およびAssetManager UIからProjectStyleとFace Expressionへの既存の連携に限られる。NDMF接続は各機能の専用assembly、MCPは外部composition rootである。
+- AssetManager UIの`Ee4v.ItemStyle.Editor`参照は`ProjectStyleApi.Get`の戻り値型を通じた間接依存だった。`GetIconGuid`へ変更してこの依存を削除した。改変画面がFace Expressionの内部型へ依存していた箇所を埋め込み表示とBlendShape分類の公開境界に置き換え、`InternalsVisibleTo`を削除した。
+- WindowGroup StoryのサンプルからFace ExpressionとAssetManagerの型名を除き、Unity標準Windowだけでグループ設定を示す。
 
 ## 残る構造課題
 

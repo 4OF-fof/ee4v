@@ -22,6 +22,7 @@ AssetManagerはImport時に、アイコンが未設定の取り込み先フォ�
 | メンバー | 戻り値・動作 |
 |---|---|
 | `Get(folderGuid)` | フォルダー GUID に対応する `ItemStyleValue` を返す |
+| `GetIconGuid(folderGuid)` | フォルダーのアイコン GUID を返す。未設定なら空文字列。共有`ItemStyle`型を参照しない連携用 |
 | `SetColor(folderGuids, color)` | 指定したフォルダーへ背景色を設定する |
 | `SetIcon(folderGuids, iconGuid)` | 指定したフォルダーへアセット GUID でアイコンを設定する |
 | `Clear(folderGuids)` | 指定したフォルダーの背景色とアイコンを解除する |

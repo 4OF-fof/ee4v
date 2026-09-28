@@ -198,4 +198,95 @@ namespace Ee4v.FaceExpression
             }
         }
     }
+
+    public readonly struct FaceExpressionShapeMapping
+    {
+        internal FaceExpressionShapeMapping(
+            string appearancePart,
+            string appearanceGroup,
+            string role)
+        {
+            AppearancePart = appearancePart;
+            AppearanceGroup = appearanceGroup;
+            Role = role;
+        }
+
+        public string AppearancePart { get; }
+        public string AppearanceGroup { get; }
+        public string Role { get; }
+    }
+
+    public sealed class FaceExpressionShapeNamingSnapshot
+    {
+        private readonly IReadOnlyList<string> _separators;
+        private readonly BlendShapeNamingRule _namingRule;
+
+        private FaceExpressionShapeNamingSnapshot(
+            IReadOnlyList<string> separators,
+            BlendShapeNamingRule namingRule)
+        {
+            _separators = separators;
+            _namingRule = namingRule;
+        }
+
+        public static event Action PresetsChanged
+        {
+            add { BlendShapePresetStorage.Shared.Changed += value; }
+            remove { BlendShapePresetStorage.Shared.Changed -= value; }
+        }
+
+        public static bool IsSeparatorSetting(
+            SettingDefinitionBase definition)
+        {
+            return ReferenceEquals(
+                definition,
+                FaceExpressionSettings.BlendShapeSeparators);
+        }
+
+        public static FaceExpressionShapeNamingSnapshot Create(
+            GameObject avatar,
+            IEnumerable<Mesh> meshes)
+        {
+            var presetStore = BlendShapePresetStorage.Shared;
+            FaceExpressionSettings.EnsureNamePresets(
+                avatar,
+                meshes,
+                null,
+                presetStore);
+            return new FaceExpressionShapeNamingSnapshot(
+                FaceExpressionSettings.GetSeparators(),
+                FaceExpressionSettings.GetNameRule(presetStore));
+        }
+
+        public bool IsHeader(string shapeName)
+        {
+            return FaceExpressionClipEditor.TryGetHeader(
+                shapeName,
+                _separators,
+                out _);
+        }
+
+        public bool TryGetMapping(
+            string assetGuid,
+            long meshLocalId,
+            string shapeName,
+            out FaceExpressionShapeMapping result)
+        {
+            if (!_namingRule.TryGetMapping(
+                    assetGuid,
+                    meshLocalId,
+                    shapeName,
+                    out var mapping))
+            {
+                result = default;
+                return false;
+            }
+
+            result = new FaceExpressionShapeMapping(
+                mapping.appearancePart,
+                mapping.appearanceGroup,
+                mapping.role);
+            return true;
+        }
+    }
 }

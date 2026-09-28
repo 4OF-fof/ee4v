@@ -835,7 +835,7 @@ namespace Ee4v.AssetManager.UI
         private UiButton _allMaterialsVisibilityButton;
         private EmbeddedMaterialInspector _materialInspector;
         private DerivedAssetPrefabScenePreview _scenePreview;
-        private FaceExpressionEditor _faceExpressionEditor;
+        private FaceExpressionEmbeddedView _faceExpressionEditor;
         private VisualElement _customizerHost;
         private VisualElement _faceExpressionHost;
         private ScrollView _controlsHost;
@@ -962,8 +962,10 @@ namespace Ee4v.AssetManager.UI
             Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
             Undo.undoRedoPerformed += RefreshAfterUndoRedo;
             Undo.postprocessModifications += OnUndoModifications;
-            BlendShapePresetStorage.Shared.Changed -= OnBlendShapePresetChanged;
-            BlendShapePresetStorage.Shared.Changed += OnBlendShapePresetChanged;
+            FaceExpressionShapeNamingSnapshot.PresetsChanged -=
+                OnBlendShapePresetChanged;
+            FaceExpressionShapeNamingSnapshot.PresetsChanged +=
+                OnBlendShapePresetChanged;
             AssetManagerSettings.PartListExclusionsChanged -=
                 OnPartListExclusionsChanged;
             AssetManagerSettings.PartListExclusionsChanged +=
@@ -987,7 +989,8 @@ namespace Ee4v.AssetManager.UI
                 OnManagerInvalidated;
             Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
             Undo.postprocessModifications -= OnUndoModifications;
-            BlendShapePresetStorage.Shared.Changed -= OnBlendShapePresetChanged;
+            FaceExpressionShapeNamingSnapshot.PresetsChanged -=
+                OnBlendShapePresetChanged;
             AssetManagerSettings.PartListExclusionsChanged -=
                 OnPartListExclusionsChanged;
             EditorApplication.projectChanged -= OnProjectChanged;
@@ -1034,8 +1037,8 @@ namespace Ee4v.AssetManager.UI
 
         private void OnSettingChanged(object sender, SettingChangedEventArgs args)
         {
-            if (ReferenceEquals(args.Definition,
-                    FaceExpressionSettings.BlendShapeSeparators))
+            if (FaceExpressionShapeNamingSnapshot.IsSeparatorSetting(
+                    args.Definition))
             {
                 OnBlendShapePresetChanged();
             }
@@ -2060,8 +2063,8 @@ namespace Ee4v.AssetManager.UI
             {
                 if (_faceExpressionEditor == null)
                 {
-                    var editor = new FaceExpressionEditor(
-                        _faceExpressionHost, RequestRepaint, true);
+                    var editor = new FaceExpressionEmbeddedView(
+                        _faceExpressionHost, RequestRepaint);
                     try
                     {
                         editor.Initialize(_workingObject);
@@ -4175,15 +4178,10 @@ namespace Ee4v.AssetManager.UI
                 return Array.Empty<BodyBlendShapeDefinition>();
             }
 
-            FaceExpressionSettings.EnsureNamePresets(
+            var naming = FaceExpressionShapeNamingSnapshot.Create(
                 _workingObject,
-                renderers.Select(renderer => renderer.sharedMesh),
-                null,
-                BlendShapePresetStorage.Shared);
+                renderers.Select(renderer => renderer.sharedMesh));
             var result = new List<BodyBlendShapeDefinition>();
-            var separators = FaceExpressionSettings.GetSeparators();
-            var namingRule = FaceExpressionSettings.GetNameRule(
-                BlendShapePresetStorage.Shared);
             foreach (var renderer in renderers)
             {
                 var rendererPath = AnimationUtility.CalculateTransformPath(
@@ -4209,27 +4207,24 @@ namespace Ee4v.AssetManager.UI
                 {
                     var shapeName = renderer.sharedMesh
                         .GetBlendShapeName(shapeIndex);
-                    if (FaceExpressionClipEditor.TryGetHeader(
-                            shapeName,
-                            separators,
-                            out _))
+                    if (naming.IsHeader(shapeName))
                     {
                         continue;
                     }
-                    namingRule.TryGetMapping(
+                    naming.TryGetMapping(
                         sourceAssetGuid,
                         sourceMeshLocalId,
                         shapeName,
                         out var mapping);
                     if (string.Equals(
-                            mapping?.appearancePart,
+                            mapping.AppearancePart,
                             BlendShapeAppearancePart.Expression,
                             StringComparison.Ordinal))
                     {
                         continue;
                     }
                     if (!TryGetPresetBodyPart(
-                            mapping?.appearancePart,
+                            mapping.AppearancePart,
                             out var category))
                     {
                         if (IsBodyMesh(renderer))
@@ -4251,9 +4246,9 @@ namespace Ee4v.AssetManager.UI
                         DisplayName = GetBodyBlendShapeDisplayName(shapeName),
                         Category = category,
                         Group = string.IsNullOrWhiteSpace(
-                            mapping?.appearanceGroup)
-                            ? mapping?.role?.Trim() ?? string.Empty
-                            : mapping.appearanceGroup.Trim(),
+                            mapping.AppearanceGroup)
+                            ? mapping.Role?.Trim() ?? string.Empty
+                            : mapping.AppearanceGroup.Trim(),
                         Value = GetEffectiveBodyBlendShapeWeight(
                             renderer, shapeName),
                         BaseValue = GetBaseBlendShapeWeight(

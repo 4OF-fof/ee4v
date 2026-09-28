@@ -268,13 +268,13 @@ namespace Ee4v.AssetManager.UI
 
         private static bool CanApplyGeneratedThumbnail(string folderGuid)
         {
-            var style = ProjectStyleApi.Get(folderGuid);
-            if (!style.HasIcon)
+            var iconGuid = ProjectStyleApi.GetIconGuid(folderGuid);
+            if (string.IsNullOrEmpty(iconGuid))
             {
                 return true;
             }
 
-            var path = AssetDatabase.GUIDToAssetPath(style.IconGuid);
+            var path = AssetDatabase.GUIDToAssetPath(iconGuid);
             return IsUnder(path, GeneratedAssetRoot);
         }
 

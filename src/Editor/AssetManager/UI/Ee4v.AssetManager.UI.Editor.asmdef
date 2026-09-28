@@ -11,7 +11,6 @@
     "Ee4v.Core.Unity.Editor",
     "Ee4v.UI.Editor",
     "Ee4v.ProjectStyle.Editor",
-    "Ee4v.ItemStyle.Editor",
     "Ee4v.FaceExpression.Editor",
     "nadena.dev.modular-avatar.core"
   ],
