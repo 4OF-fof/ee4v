@@ -238,7 +238,8 @@
     white-space: nowrap;
 }
 
-.ee4v-modification-workflow__header-card-visibility.ee4v-ui-button {
+.ee4v-modification-workflow__header-card-visibility.ee4v-ui-button,
+.ee4v-modification-workflow__object-preview-visibility.ee4v-ui-button {
     width: 24px;
     min-width: 24px;
     height: 24px;
@@ -251,7 +252,8 @@
     background-color: var(--ee4v-color-transparent);
 }
 
-.ee4v-modification-workflow__header-card-visibility.ee4v-ui-button:hover {
+.ee4v-modification-workflow__header-card-visibility.ee4v-ui-button:hover,
+.ee4v-modification-workflow__object-preview-visibility.ee4v-ui-button:hover {
     background-color: var(--ee4v-color-surface-hover);
 }
 
@@ -345,11 +347,36 @@
     white-space: nowrap;
 }
 
-.ee4v-modification-workflow__object-visibility {
-    width: 30px;
-    min-width: 30px;
+.ee4v-modification-workflow__object-actions {
+    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-size-24);
+    flex-direction: row;
+    align-items: center;
     flex-shrink: 0;
     margin-left: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__object-preview-visibility.ee4v-ui-button {
+    align-self: center;
+    margin-left: var(--ee4v-space-none);
+}
+
+.ee4v-modification-workflow__object-visibility.ee4v-ui-standard-input.unity-toggle {
+    width: var(--ee4v-size-24);
+    min-width: var(--ee4v-size-24);
+    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-size-24);
+    flex-shrink: 0;
+    align-self: center;
+    margin-left: var(--ee4v-space-xxs);
+    top: var(--ee4v-size-1);
+}
+
+.ee4v-modification-workflow__object-visibility.ee4v-ui-standard-input.unity-toggle > .unity-toggle__input {
+    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-size-24);
+    align-items: center;
+    justify-content: center;
 }
 
 .ee4v-modification-workflow__object-visibility > .unity-base-field__label {

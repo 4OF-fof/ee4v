@@ -410,6 +410,7 @@ namespace Ee4v.AssetManager.UI
         {
             internal VisualElement Row { get; set; }
             internal Toggle Visibility { get; set; }
+            internal UiButton PreviewVisibility { get; set; }
         }
 
         private sealed class PendingPartVisibility
@@ -870,6 +871,8 @@ namespace Ee4v.AssetManager.UI
             Array.Empty<int>();
         private readonly HashSet<int> _hiddenPrefabSiblingIndices =
             new HashSet<int>();
+        private readonly HashSet<string> _hiddenPreviewParts =
+            new HashSet<string>(StringComparer.Ordinal);
         private bool _basePrefabHidden;
         private bool _prefabPreviewVisibilityInitialized;
         private HelpBoxMessageType _feedbackType =
@@ -1853,6 +1856,7 @@ namespace Ee4v.AssetManager.UI
             _scenePreview.SetHiddenPrefabs(
                 _basePrefabHidden,
                 _hiddenPrefabSiblingIndices);
+            _scenePreview.SetHiddenParts(_hiddenPreviewParts);
             _scenePreview.SetPrefab(_workingObject);
             viewport.Add(_scenePreview);
             pane.Add(viewport);
@@ -2202,23 +2206,34 @@ namespace Ee4v.AssetManager.UI
             path.tooltip = entry.Path;
             text.Add(path);
             row.Add(text);
+            var actions = new VisualElement();
+            actions.AddToClassList(
+                "ee4v-modification-workflow__object-actions");
+            var previewVisibility = CreatePrefabVisibilityButton(
+                true,
+                string.Empty,
+                () => TogglePartPreviewVisibility(entry),
+                "ee4v-modification-workflow__object-preview-visibility");
+            actions.Add(previewVisibility);
             var visibility = UiTextFactory.CreateToggle();
             visibility.AddToClassList(
                 "ee4v-modification-workflow__object-visibility");
             visibility.RegisterValueChangedCallback(evt =>
                 ChangePrefabObject(entry, evt.newValue));
-            row.Add(visibility);
+            actions.Add(visibility);
+            row.Add(actions);
             var state = new PrefabObjectRowState
             {
                 Row = row,
-                Visibility = visibility
+                Visibility = visibility,
+                PreviewVisibility = previewVisibility
             };
             _objectRows[entry] = state;
             UpdateObjectRow(entry, state);
             return row;
         }
 
-        private static void UpdateObjectRow(
+        private void UpdateObjectRow(
             PrefabObjectEntry entry,
             PrefabObjectRowState state)
         {
@@ -2234,6 +2249,32 @@ namespace Ee4v.AssetManager.UI
             state.Visibility.tooltip = I18N.Get(entry.IsVisible
                 ? "workflow.objects.turnOff"
                 : "workflow.objects.turnOn");
+            var previewVisible = !_hiddenPreviewParts.Contains(
+                DerivedAssetPrefabScenePreview.GetPartKey(
+                    entry.PrefabSiblingIndex, entry.SiblingPath));
+            var previewTooltip = I18N.Get(previewVisible
+                ? "workflow.assets.clickToHide"
+                : "workflow.assets.clickToShow");
+            state.PreviewVisibility.tooltip = previewTooltip;
+            state.PreviewVisibility.SetIcon(FluentUiIcons.CreateState(
+                previewVisible ? "eye.png" : "eye_off.png",
+                UiSizeTokens.Size18,
+                previewTooltip));
+        }
+
+        private void TogglePartPreviewVisibility(PrefabObjectEntry entry)
+        {
+            var key = DerivedAssetPrefabScenePreview.GetPartKey(
+                entry.PrefabSiblingIndex, entry.SiblingPath);
+            if (!_hiddenPreviewParts.Add(key))
+            {
+                _hiddenPreviewParts.Remove(key);
+            }
+            _scenePreview?.SetHiddenParts(_hiddenPreviewParts);
+            if (_objectRows.TryGetValue(entry, out var row))
+            {
+                UpdateObjectRow(entry, row);
+            }
         }
 
         private IReadOnlyList<PrefabObjectEntry> ReadPrefabObjects()
@@ -2273,6 +2314,40 @@ namespace Ee4v.AssetManager.UI
                         continue;
                     }
 
+                    void AddEntry(
+                        Transform target,
+                        int[] indices,
+                        string objectPath)
+                    {
+                        var gameObject = target.gameObject;
+                        result.Add(new PrefabObjectEntry
+                        {
+                            PrefabSiblingIndex = prefabSiblingIndex,
+                            PrefabName = selected.name,
+                            SiblingPath = indices,
+                            Name = target.name,
+                            Path = objectPath,
+                            IsVisible = gameObject.activeSelf &&
+                                !string.Equals(gameObject.tag,
+                                    "EditorOnly", StringComparison.Ordinal) &&
+                                (gameObject.hideFlags &
+                                    HideFlags.HideInHierarchy) == 0,
+                            IsActiveSelf = gameObject.activeSelf,
+                            ParentActiveInHierarchy =
+                                target.parent.gameObject.activeInHierarchy,
+                            IsVisibleInHierarchy =
+                                gameObject.activeInHierarchy,
+                            Categories = classifier.Classify(target)
+                        });
+                    }
+
+                    if (prefabSiblingIndex >= 0 &&
+                        selected.GetComponent<Renderer>() != null)
+                    {
+                        AddEntry(selected.transform, Array.Empty<int>(),
+                            selected.name);
+                    }
+
                     void Visit(
                         Transform parent,
                         IReadOnlyList<int> parentIndices,
@@ -2299,25 +2374,7 @@ namespace Ee4v.AssetManager.UI
                             var objectPath = string.IsNullOrEmpty(parentPath)
                                 ? child.name
                                 : parentPath + "/" + child.name;
-                            result.Add(new PrefabObjectEntry
-                            {
-                                PrefabSiblingIndex = prefabSiblingIndex,
-                                PrefabName = selected.name,
-                                SiblingPath = indices,
-                                Name = child.name,
-                                Path = objectPath,
-                                IsVisible = child.gameObject.activeSelf &&
-                                    !string.Equals(child.gameObject.tag,
-                                        "EditorOnly", StringComparison.Ordinal) &&
-                                    (child.gameObject.hideFlags &
-                                        HideFlags.HideInHierarchy) == 0,
-                                IsActiveSelf = child.gameObject.activeSelf,
-                                ParentActiveInHierarchy =
-                                    child.parent.gameObject.activeInHierarchy,
-                                IsVisibleInHierarchy =
-                                    child.gameObject.activeInHierarchy,
-                                Categories = classifier.Classify(child)
-                            });
+                            AddEntry(child, indices, objectPath);
                             Visit(child, indices, objectPath);
                         }
                     }
@@ -2401,6 +2458,8 @@ namespace Ee4v.AssetManager.UI
                     _pendingPartVisibility.Remove(entry);
                 }
                 UpdateCachedObjectVisibility(entry, visible, activeSelf);
+                _avatarMaterialsCache = null;
+                InvalidateAppearanceControls(AppearancePanel.Material);
                 _scenePreview?.SetPartVisibility(
                     _workingObject,
                     entry.PrefabSiblingIndex,
@@ -2905,6 +2964,7 @@ namespace Ee4v.AssetManager.UI
             _avatarDescriptor = null;
             _selectedMaterial = null;
             _hiddenMaterials.Clear();
+            _hiddenPreviewParts.Clear();
             _feedback = string.Empty;
             _assetFeedback = string.Empty;
             BuildWindow();
@@ -5812,6 +5872,7 @@ namespace Ee4v.AssetManager.UI
             _workingObject = asset.Prefab;
             _basePrefabHidden = false;
             _hiddenPrefabSiblingIndices.Clear();
+            _hiddenPreviewParts.Clear();
             _prefabPreviewVisibilityInitialized = false;
             _selectedPrefabSiblingIndex = null;
             _selectedPrefabName = string.Empty;
@@ -5844,6 +5905,7 @@ namespace Ee4v.AssetManager.UI
             _workingObject = null;
             _basePrefabHidden = false;
             _hiddenPrefabSiblingIndices.Clear();
+            _hiddenPreviewParts.Clear();
             _prefabPreviewVisibilityInitialized = false;
             _selectedPrefabSiblingIndex = null;
             _selectedPrefabName = string.Empty;
@@ -5894,7 +5956,9 @@ namespace Ee4v.AssetManager.UI
             foreach (var renderer in _workingObject
                          .GetComponentsInChildren<Renderer>(true))
             {
-                if (renderer == null)
+                if (renderer == null ||
+                    IsEditorOnlyPart(renderer.transform,
+                        _workingObject.transform))
                 {
                     continue;
                 }
@@ -5941,6 +6005,25 @@ namespace Ee4v.AssetManager.UI
 
             _avatarMaterialsCache = entries;
             return _avatarMaterialsCache;
+        }
+
+        private static bool IsEditorOnlyPart(Transform target, Transform root)
+        {
+            for (var current = target;
+                 current != null;
+                 current = current.parent)
+            {
+                if (string.Equals(current.gameObject.tag, "EditorOnly",
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+                if (current == root)
+                {
+                    break;
+                }
+            }
+            return false;
         }
 
         private IReadOnlyCollection<BodyPartCategory> GetMaterialUsageCategories(

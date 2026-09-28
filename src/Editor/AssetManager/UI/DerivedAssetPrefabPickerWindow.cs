@@ -378,6 +378,10 @@ namespace Ee4v.AssetManager.UI
             new HashSet<int>();
         private readonly HashSet<int> _hiddenPrefabSiblingIndices =
             new HashSet<int>();
+        private readonly HashSet<string> _hiddenPartKeys =
+            new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<Renderer> _hiddenPartRenderers =
+            new HashSet<Renderer>();
         private bool _basePrefabHidden;
         private PreviewRenderUtility _utility;
         private GameObject _prefab;
@@ -494,6 +498,60 @@ namespace Ee4v.AssetManager.UI
             _hiddenPrefabSiblingIndices.Clear();
             _hiddenPrefabSiblingIndices.UnionWith(next);
             RequestPreviewRepaint();
+        }
+
+        internal static string GetPartKey(
+            int prefabSiblingIndex,
+            IReadOnlyList<int> siblingPath)
+        {
+            var indices = prefabSiblingIndex >= 0
+                ? new[] { prefabSiblingIndex }.Concat(siblingPath)
+                : siblingPath;
+            return string.Join("/", indices);
+        }
+
+        internal void SetHiddenParts(IEnumerable<string> hiddenPartKeys)
+        {
+            var next = hiddenPartKeys == null
+                ? new HashSet<string>(StringComparer.Ordinal)
+                : new HashSet<string>(hiddenPartKeys, StringComparer.Ordinal);
+            if (_hiddenPartKeys.SetEquals(next))
+            {
+                return;
+            }
+            _hiddenPartKeys.Clear();
+            _hiddenPartKeys.UnionWith(next);
+            RebuildHiddenPartRenderers();
+            RefreshBounds();
+            RequestPreviewRepaint();
+        }
+
+        private void RebuildHiddenPartRenderers()
+        {
+            _hiddenPartRenderers.Clear();
+            if (_instance == null)
+            {
+                return;
+            }
+            foreach (var key in _hiddenPartKeys)
+            {
+                var target = _instance.transform;
+                foreach (var segment in key.Split('/'))
+                {
+                    if (!int.TryParse(segment, out var index) ||
+                        index < 0 || index >= target.childCount)
+                    {
+                        target = null;
+                        break;
+                    }
+                    target = target.GetChild(index);
+                }
+                if (target != null)
+                {
+                    _hiddenPartRenderers.UnionWith(
+                        target.GetComponentsInChildren<Renderer>(true));
+                }
+            }
         }
 
         internal void RefreshPreview()
@@ -803,6 +861,7 @@ namespace Ee4v.AssetManager.UI
                 ApplyInitialShapeChanges();
                 _renderers = _instance
                     .GetComponentsInChildren<Renderer>(true);
+                RebuildHiddenPartRenderers();
                 _skinnedRenderers = _renderers
                     .OfType<SkinnedMeshRenderer>()
                     .ToArray();
@@ -1475,14 +1534,16 @@ namespace Ee4v.AssetManager.UI
             _temporarilyScopedRenderers.Clear();
             if (!_scopeSiblingIndex.HasValue &&
                 !_basePrefabHidden &&
-                _hiddenPrefabSiblingIndices.Count == 0)
+                _hiddenPrefabSiblingIndices.Count == 0 &&
+                _hiddenPartRenderers.Count == 0)
             {
                 return;
             }
             foreach (var renderer in _renderers)
             {
                 if (renderer == null || !renderer.enabled ||
-                    IsInScope(renderer))
+                    (IsInScope(renderer) &&
+                     !_hiddenPartRenderers.Contains(renderer)))
                 {
                     continue;
                 }
@@ -1863,7 +1924,9 @@ namespace Ee4v.AssetManager.UI
                         ? _instance.transform.GetChild(
                             _scopeSiblingIndex.Value).position
                         : _instance.transform.position,
-                    _renderers.Where(IsInScope).ToArray());
+                    _renderers.Where(renderer =>
+                        IsInScope(renderer) &&
+                        !_hiddenPartRenderers.Contains(renderer)).ToArray());
             }
         }
 
@@ -1932,6 +1995,7 @@ namespace Ee4v.AssetManager.UI
             _blendShapeTargets.Clear();
             _filteredRenderers.Clear();
             _temporarilyHiddenRenderers.Clear();
+            _hiddenPartRenderers.Clear();
             _renderers = Array.Empty<Renderer>();
             _skinnedRenderers = Array.Empty<SkinnedMeshRenderer>();
             if (_utility != null)
