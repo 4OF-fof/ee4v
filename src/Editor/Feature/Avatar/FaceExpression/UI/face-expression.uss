@@ -21,8 +21,12 @@
     margin-right: var(--ee4v-space-md);
 }
 
-.ee4v-face-expression__asset-field--last {
+.ee4v-face-expression__clip-field {
+    flex-grow: 0;
+    flex-basis: auto;
+    flex-shrink: 0;
     margin-right: 0;
+    margin-bottom: var(--ee4v-space-xs);
 }
 
 .ee4v-face-expression__asset-field > .unity-base-field__label {
@@ -180,7 +184,7 @@
 .ee4v-face-expression__library {
     flex-grow: 1;
     min-height: 0;
-    margin-top: var(--ee4v-space-lg);
+    margin-top: var(--ee4v-space-sm);
     margin-left: var(--ee4v-space-xs);
     margin-right: var(--ee4v-space-xs);
 }

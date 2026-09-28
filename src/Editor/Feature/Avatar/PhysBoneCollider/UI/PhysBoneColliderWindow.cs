@@ -126,6 +126,8 @@ namespace Ee4v.PhysBoneCollider
                 root,
                 "Editor/Feature/Avatar/PhysBoneCollider/UI/physbone-collider.uss");
             root.AddToClassList("ee4v-physbone-collider");
+            root.EnableInClassList(
+                "ee4v-physbone-collider--embedded", _avatarLocked);
 
             if (!_avatarLocked)
             {
@@ -135,7 +137,10 @@ namespace Ee4v.PhysBoneCollider
                 I18N.Get("status.selectAvatar"),
                 HelpBoxMessageType.Info,
                 "ee4v-physbone-collider__status");
-            root.Add(_status);
+            if (!_avatarLocked)
+            {
+                root.Add(_status);
+            }
 
             var workspace = new VisualElement();
             workspace.AddToClassList("ee4v-physbone-collider__workspace");
@@ -145,7 +150,9 @@ namespace Ee4v.PhysBoneCollider
 
             _preview?.Dispose();
             _preview = new PhysBoneColliderPreview(
-                () => _previewViewport?.RequestRepaint());
+                () => _previewViewport?.RequestRepaint(),
+                _avatarLocked,
+                () => _previewViewport?.PreviewRect ?? default);
         }
 
         private void BuildToolbar(VisualElement root)
@@ -184,6 +191,17 @@ namespace Ee4v.PhysBoneCollider
                 I18N.Get("action.resetView"));
             _previewViewport.AddToClassList(
                 "ee4v-physbone-collider__preview-viewport");
+            if (_avatarLocked)
+            {
+                _previewViewport.RegisterCallback<GeometryChangedEvent>(evt =>
+                {
+                    if (Mathf.Abs(evt.newRect.width - evt.oldRect.width) >= 0.5f ||
+                        Mathf.Abs(evt.newRect.height - evt.oldRect.height) >= 0.5f)
+                    {
+                        _preview?.ResetView();
+                    }
+                });
+            }
 
             var layers = new VisualElement();
             layers.AddToClassList("ee4v-physbone-collider__preview-layers");
@@ -211,6 +229,12 @@ namespace Ee4v.PhysBoneCollider
             pane.AddToClassList("ee4v-physbone-collider__editor-pane");
             var content = new ScrollView(ScrollViewMode.Vertical);
             content.AddToClassList("ee4v-physbone-collider__editor-content");
+            if (_avatarLocked)
+            {
+                content.contentContainer.AddToClassList(
+                    "ee4v-physbone-collider__editor-content--embedded");
+                content.Add(_status);
+            }
             content.Add(BuildLayoutControls());
             content.Add(new SectionHeader(
                 I18N.Get("section.candidates")));

@@ -153,22 +153,10 @@ namespace Ee4v.FaceExpression
                 toolbar.Leading.Add(_avatarField);
             }
 
-            _clipField = UiTextFactory.CreateObjectField(
-                text.Clip,
-                "ee4v-face-expression__asset-field");
-            _clipField.AddToClassList(
-                "ee4v-face-expression__asset-field--last");
-            _clipField.objectType = typeof(AnimationClip);
-            _clipField.allowSceneObjects = false;
-            _clipField.RegisterValueChangedCallback(evt =>
+            if (showAvatarField)
             {
-                if (!_rendering)
-                {
-                    ClipChanged?.Invoke(evt.newValue as AnimationClip);
-                }
-            });
-            toolbar.Leading.Add(_clipField);
-            Add(toolbar);
+                Add(toolbar);
+            }
 
             _validation = UiTextFactory.CreateHelpBox(
                 string.Empty,
@@ -231,6 +219,21 @@ namespace Ee4v.FaceExpression
             _clipOnly.RegisterValueChangedCallback(_ => RefreshFilter());
             _sectionHeader.Actions.Add(_clipOnly);
             editorPane.Add(_sectionHeader);
+
+            _clipField = UiTextFactory.CreateObjectField(
+                text.Clip,
+                "ee4v-face-expression__asset-field",
+                "ee4v-face-expression__clip-field");
+            _clipField.objectType = typeof(AnimationClip);
+            _clipField.allowSceneObjects = false;
+            _clipField.RegisterValueChangedCallback(evt =>
+            {
+                if (!_rendering)
+                {
+                    ClipChanged?.Invoke(evt.newValue as AnimationClip);
+                }
+            });
+            editorPane.Add(_clipField);
 
             _animationControls = new VisualElement();
             _animationControls.AddToClassList(

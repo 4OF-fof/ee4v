@@ -10,7 +10,7 @@
 
 ## 機能
 
-`ee4v/Window/Avatar/PhysBone Collider Setup`から、シーンまたはPrefab Mode上のアバターへカプセル形のVRC PhysBone Colliderを設定します。統合ee4vウィンドウでは「PhysBone」カテゴリとして同じ画面を埋め込み、選択中の派生Prefabへ設定を保存できます。探索対象はPrefabルート直下にある、名前が`Armature`の子オブジェクトだけです。大文字と小文字は区別しません。衣装など別階層のArmatureは初期探索へ含めません。
+`ee4v/Window/Avatar/PhysBone Collider Setup`から、シーンまたはPrefab Mode上のアバターへカプセル形のVRC PhysBone Colliderを設定します。統合ee4vウィンドウでは「PhysBone」カテゴリへ共通編集部品を組み込み、選択中の派生Prefabへ設定を保存できます。中央の3D Previewと右の編集ペインは「体型・パーツ」「マテリアル」と同じ幅・余白で配置し、カメラの初期位置と表示リセットは「全身」と同じbounds・画角・距離係数0.52・注視点の下方補正を使用します。単独Windowの配置とカメラ距離は従来どおりです。探索対象はPrefabルート直下にある、名前が`Armature`の子オブジェクトだけです。大文字と小文字は区別しません。衣装など別階層のArmatureは初期探索へ含めません。
 
 Armature内ではSkinnedMeshRendererが参照する変形ボーンを調査します。`EditorOnly`タグを持つ階層は対象外です。VRC SDKの`IEditorOnly`またはNDMFの`INDMFEditorOnly`を実装するコンポーネントを持つ階層も除外します。
 

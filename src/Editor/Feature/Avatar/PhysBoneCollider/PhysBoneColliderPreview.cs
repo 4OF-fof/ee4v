@@ -15,6 +15,8 @@ namespace Ee4v.PhysBoneCollider
 
         private readonly Action _repaint;
         private readonly PreviewOrbitController _orbit;
+        private readonly bool _matchWorkflowFullBody;
+        private readonly Func<Rect> _previewRect;
         private readonly List<PreviewCapsule> _capsules = new List<PreviewCapsule>();
         private IReadOnlyList<PhysBoneTarget> _physBones =
             Array.Empty<PhysBoneTarget>();
@@ -30,10 +32,15 @@ namespace Ee4v.PhysBoneCollider
         private MeshRenderer _selectedPhysBoneRenderer;
         private bool _showColliders = true;
         private bool _showPhysBones = true;
-        internal PhysBoneColliderPreview(Action repaint)
+        internal PhysBoneColliderPreview(
+            Action repaint,
+            bool matchWorkflowFullBody,
+            Func<Rect> previewRect)
         {
             _repaint = repaint;
             _orbit = new PreviewOrbitController(ControlHash, repaint);
+            _matchWorkflowFullBody = matchWorkflowFullBody;
+            _previewRect = previewRect;
         }
 
         internal void SetAvatar(
@@ -172,6 +179,25 @@ namespace Ee4v.PhysBoneCollider
             }
 
             var bounds = CalculateBounds();
+            if (_matchWorkflowFullBody)
+            {
+                var rect = _previewRect?.Invoke() ?? default;
+                var aspect = rect.height > 1f
+                    ? rect.width / rect.height
+                    : 1f;
+                var halfViewSize = Mathf.Max(
+                    bounds.extents.y,
+                    bounds.extents.x / Mathf.Max(0.01f, aspect));
+                var distance = bounds.extents.z +
+                    Mathf.Max(0.05f, halfViewSize) /
+                    Mathf.Tan(_utility.cameraFieldOfView * 0.5f *
+                              Mathf.Deg2Rad) * 1.05f * 0.52f;
+                var target = bounds.center - _clone.transform.up *
+                    bounds.size.y * 0.025f;
+                _orbit.Reset(target, distance);
+                return;
+            }
+
             var radius = Mathf.Max(0.05f, bounds.extents.magnitude);
             _orbit.Reset(
                 bounds.center,
@@ -220,7 +246,12 @@ namespace Ee4v.PhysBoneCollider
             var bounds = new Bounds(_clone.transform.position, Vector3.one * 0.2f);
             foreach (var renderer in _clone.GetComponentsInChildren<Renderer>(true))
             {
-                if (_capsules.Exists(capsule => capsule.Renderer == renderer))
+                if (_capsules.Exists(capsule => capsule.Renderer == renderer) ||
+                    _matchWorkflowFullBody &&
+                    (renderer == _physBoneRenderer ||
+                     renderer == _selectedPhysBoneRenderer ||
+                     !renderer.enabled ||
+                     !renderer.gameObject.activeInHierarchy))
                 {
                     continue;
                 }
