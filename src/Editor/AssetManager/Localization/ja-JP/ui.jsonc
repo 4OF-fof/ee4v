@@ -35,6 +35,8 @@
       "empty": "表示を切り替えられるパーツがありません。",
       "turnOn": "このパーツを表示",
       "turnOff": "このパーツを非表示",
+      "enable": "Enable",
+      "disable": "Disable",
       "parentHidden": "親のパーツが非表示です。"
     },
     "shapeParts": {

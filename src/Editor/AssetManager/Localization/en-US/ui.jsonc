@@ -35,6 +35,8 @@
       "empty": "There are no parts to show or hide.",
       "turnOn": "Show this part",
       "turnOff": "Hide this part",
+      "enable": "Enable",
+      "disable": "Disable",
       "parentHidden": "A parent part is hidden."
     },
     "shapeParts": {

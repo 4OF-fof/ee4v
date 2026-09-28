@@ -534,6 +534,21 @@ namespace Ee4v.AssetManager.UI
             {
                 return;
             }
+            foreach (var target in _instance
+                         .GetComponentsInChildren<Transform>(true))
+            {
+                if (!string.Equals(target.tag, "EditorOnly",
+                        StringComparison.Ordinal) ||
+                    (_scopeSiblingIndex.HasValue &&
+                     _scopeSiblingIndex.Value >= 0 &&
+                     target.parent == _instance.transform &&
+                     target.GetSiblingIndex() == _scopeSiblingIndex.Value))
+                {
+                    continue;
+                }
+                _hiddenPartRenderers.UnionWith(
+                    target.GetComponentsInChildren<Renderer>(true));
+            }
             foreach (var key in _hiddenPartKeys)
             {
                 var target = _instance.transform;
