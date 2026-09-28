@@ -94,6 +94,12 @@ namespace Ee4v.AssetManager.UI
             PhysBone
         }
 
+        private enum PhysBoneSection
+        {
+            Collider,
+            Bone
+        }
+
         private enum ShapePartsSection
         {
             Shape,
@@ -827,6 +833,7 @@ namespace Ee4v.AssetManager.UI
         private IAssetVariantManager _variantStatusManager;
         private bool _variantSaveStatusDirty = true;
         private bool _variantHasChanges = true;
+        private bool _variantHasDiscardableChanges;
         private string _variantSaveStatusError;
         private double _variantSaveStatusDueAt;
         private bool _savingVariant;
@@ -841,6 +848,8 @@ namespace Ee4v.AssetManager.UI
         private VisualElement _customizerHost;
         private VisualElement _faceExpressionHost;
         private VisualElement _physBoneHost;
+        private VisualElement _physBoneTabs;
+        private PhysBoneSection _physBoneSection;
         private ScrollView _controlsHost;
         private VisualElement _appearanceHeader;
         private UiTextElement _previewTitle;
@@ -1190,6 +1199,7 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-modification-workflow__hidden");
             body.Add(_faceExpressionHost);
 
+            BuildPhysBoneTabs();
             _physBoneHost = new VisualElement();
             _physBoneHost.AddToClassList(
                 "ee4v-modification-workflow__physbone-host");
@@ -1608,12 +1618,24 @@ namespace Ee4v.AssetManager.UI
                 strip.schedule.Execute(() => strip.ScrollTo(cardToReveal));
             }
             cards.Add(strip);
+            var discard = new UiButton(
+                I18N.Get("variant.discardChanges"),
+                DiscardVariantChanges,
+                variant: UiButtonVariant.Ghost);
+            discard.AddToClassList(
+                "ee4v-modification-workflow__variant-discard");
+            discard.SetEnabled(false);
+            cards.Add(discard);
             UiButton save = null;
             save = AssetManagerControls.CreateButton(I18N.Get("variant.save"),
                 () => AssetVariantSaveOverlay.Show(this, SaveVariantRevision));
             save.AddToClassList("ee4v-modification-workflow__variant-save");
             save.SetEnabled(false);
-            save.schedule.Execute(() => RefreshVariantSaveButton(save)).Every(750);
+            save.schedule.Execute(() =>
+            {
+                RefreshVariantSaveButton(save);
+                RefreshVariantDiscardButton(discard);
+            }).Every(750);
             cards.Add(save);
             header.Add(cards);
             if (!string.IsNullOrEmpty(_assetFeedback))
@@ -1660,6 +1682,99 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
+        private async void DiscardVariantChanges()
+        {
+            if (_disposed || _savingVariant || _workingObject == null ||
+                string.IsNullOrEmpty(_workingAsset?.VariantId))
+            {
+                return;
+            }
+
+            var assetPath = AssetDatabase.GetAssetPath(_workingObject);
+            var variantId = _workingAsset.VariantId;
+            var category = _currentCategory;
+            var shapePartsSection = _shapePartsSection;
+            var physBoneSection = _physBoneSection;
+            var rebuild = false;
+            try
+            {
+                _manager = _manager ?? AssetManagerWindowSession.GetManager();
+                var variants = AssetManagerWindowSession.TryGetVariantManager(
+                    _manager);
+                var revisionId = variants?.GetCurrentRevisionId(variantId);
+                if (string.IsNullOrEmpty(revisionId) ||
+                    _pendingPartVisibility.Count == 0 &&
+                    !_bodyScaleDirty &&
+                    _pendingBodySizeChange == PendingBodySizeChange.None &&
+                    !variants.HasChangesFromCurrentRevision(assetPath))
+                {
+                    return;
+                }
+                if (!EditorUtility.DisplayDialog(
+                    I18N.Get("variant.discardChanges"),
+                    I18N.Get("variant.discardConfirm"),
+                    I18N.Get("variant.discardChanges"),
+                    I18N.Get("action.cancel")))
+                {
+                    return;
+                }
+
+                _savingVariant = true;
+                rebuild = true;
+                EditorApplication.update -= OnPartVisibilitySaveUpdate;
+                _pendingPartVisibility.Clear();
+                _pendingPartAssetPath = null;
+                _bodyScaleDragging = false;
+                _bodyScaleDirty = false;
+                ClearPendingBodySizeChange();
+                BuildWindow();
+
+                await variants.Restore(variantId, revisionId);
+                if (_disposed)
+                {
+                    return;
+                }
+
+                var restored = DerivedAssetCreator.FindAll()
+                    .FirstOrDefault(candidate =>
+                        candidate.VariantId == variantId);
+                if (restored?.Prefab == null)
+                {
+                    throw new InvalidOperationException(
+                        "The restored Variant Prefab could not be loaded.");
+                }
+                SelectDerivedAsset(restored);
+                _currentCategory = category;
+                _shapePartsSection = shapePartsSection;
+                _physBoneSection = physBoneSection;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                if (!_disposed)
+                {
+                    rebuild = true;
+                    _assetFeedback = exception.Message;
+                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                        assetPath);
+                    if (prefab != null && _workingAsset != null)
+                    {
+                        _workingObject = prefab;
+                        _workingAsset.Prefab = prefab;
+                    }
+                }
+            }
+            finally
+            {
+                _savingVariant = false;
+                if (!_disposed && rebuild)
+                {
+                    InvalidateVariantSaveStatus();
+                    BuildWindow();
+                }
+            }
+        }
+
         private void RefreshVariantSaveButton(UiButton save)
         {
             if (_disposed || _savingVariant || _workingObject == null)
@@ -1691,11 +1806,15 @@ namespace Ee4v.AssetManager.UI
                     }
                     _variantHasChanges = variants != null &&
                         variants.HasChanges(AssetDatabase.GetAssetPath(_workingObject));
+                    _variantHasDiscardableChanges = variants != null &&
+                        variants.HasChangesFromCurrentRevision(
+                            AssetDatabase.GetAssetPath(_workingObject));
                     _variantSaveStatusError = null;
                 }
                 catch (Exception exception)
                 {
                     _variantHasChanges = true;
+                    _variantHasDiscardableChanges = false;
                     _variantSaveStatusError = exception.Message;
                 }
                 _variantSaveStatusDirty = false;
@@ -1704,6 +1823,41 @@ namespace Ee4v.AssetManager.UI
             save.tooltip = pending ? string.Empty : _variantSaveStatusError ??
                 (hasChanges ? string.Empty : I18N.Get("variant.noChanges"));
             SetVariantSaveButtonEnabled(save, hasChanges);
+        }
+
+        private void RefreshVariantDiscardButton(UiButton discard)
+        {
+            if (_disposed || _savingVariant || _workingObject == null ||
+                string.IsNullOrEmpty(_workingAsset?.VariantId) ||
+                _variantSaveStatusError != null)
+            {
+                discard.SetEnabled(false);
+                return;
+            }
+
+            try
+            {
+                _manager = _manager ?? AssetManagerWindowSession.GetManager();
+                var variants = AssetManagerWindowSession.TryGetVariantManager(
+                    _manager);
+                var revisionId = variants?.GetCurrentRevisionId(
+                    _workingAsset.VariantId);
+                var pending = _pendingPartVisibility.Count > 0 ||
+                    _bodyScaleDirty ||
+                    _pendingBodySizeChange != PendingBodySizeChange.None;
+                discard.SetEnabled(!string.IsNullOrEmpty(revisionId) &&
+                                   (pending || _variantHasDiscardableChanges));
+                discard.tooltip = string.IsNullOrEmpty(revisionId)
+                    ? I18N.Get("variant.noSavedRevision")
+                    : pending || _variantHasDiscardableChanges
+                        ? string.Empty
+                        : I18N.Get("variant.noChanges");
+            }
+            catch (Exception exception)
+            {
+                discard.SetEnabled(false);
+                discard.tooltip = exception.Message;
+            }
         }
 
         private static void SetVariantSaveButtonEnabled(UiButton save, bool enabled)
@@ -1773,6 +1927,127 @@ namespace Ee4v.AssetManager.UI
                 UiSizeTokens.Size18,
                 tooltip));
             return button;
+        }
+
+        private void BuildPhysBoneTabs()
+        {
+            _physBoneTabs = new VisualElement();
+            _physBoneTabs.AddToClassList(
+                "ee4v-modification-workflow__physbone-tabs");
+            _physBoneTabs.AddToClassList(
+                "ee4v-modification-workflow__shape-parts-tabs");
+            RefreshPhysBoneTabs();
+        }
+
+        private void RefreshPhysBoneTabs()
+        {
+            _physBoneTabs.Clear();
+            AddPhysBoneTab(PhysBoneSection.Collider,
+                "workflow.physBoneTabs.collider");
+            AddPhysBoneTab(PhysBoneSection.Bone,
+                "workflow.physBoneTabs.bone");
+        }
+
+        private void AddPhysBoneTab(PhysBoneSection section, string labelKey)
+        {
+            var button = new UiButton(
+                I18N.Get(labelKey),
+                () => ShowPhysBoneSection(section),
+                variant: UiButtonVariant.Ghost);
+            button.AddToClassList(
+                "ee4v-modification-workflow__shape-parts-tab");
+            button.EnableInClassList(
+                "ee4v-modification-workflow__shape-parts-tab--active",
+                section == _physBoneSection);
+            _physBoneTabs.Add(button);
+        }
+
+        private void ShowPhysBoneSection(PhysBoneSection section)
+        {
+            if (_physBoneSection == section)
+            {
+                return;
+            }
+
+            _physBoneSection = section;
+            RefreshPhysBoneTabs();
+            _physBoneEditor?.SetEmbeddedSection(
+                section == PhysBoneSection.Bone);
+        }
+
+        private void ShowPhysBoneEditor()
+        {
+            if (_physBoneEditor != null)
+            {
+                return;
+            }
+
+            var editor = new PhysBoneColliderEditor(
+                _physBoneHost, RefreshMaterialPreview, true);
+            try
+            {
+                editor.Initialize(_workingObject);
+                ApplyPhysBoneWorkflowLayout();
+                editor.SetEmbeddedSection(
+                    _physBoneSection == PhysBoneSection.Bone);
+                _physBoneEditor = editor;
+            }
+            catch
+            {
+                editor.Dispose();
+                throw;
+            }
+        }
+
+        private void ApplyPhysBoneWorkflowLayout()
+        {
+            _physBoneHost.Q<VisualElement>(className:
+                    "ee4v-physbone-collider__preview-pane")
+                ?.AddToClassList(
+                    "ee4v-modification-workflow__preview-pane");
+            _physBoneHost.Q<VisualElement>(className:
+                    "ee4v-physbone-collider__preview-toolbar")
+                ?.AddToClassList(
+                    "ee4v-modification-workflow__preview-toolbar");
+            _physBoneHost.Q<VisualElement>(className:
+                    "ee4v-physbone-collider__preview-title")
+                ?.AddToClassList(
+                    "ee4v-modification-workflow__preview-title");
+            _physBoneHost.Q<VisualElement>(className:
+                    "ee4v-physbone-collider__preview-viewport")
+                ?.AddToClassList(
+                    "ee4v-modification-workflow__preview-viewport");
+
+            var editorPane = _physBoneHost.Q<VisualElement>(className:
+                "ee4v-physbone-collider__editor-pane");
+            if (editorPane == null)
+            {
+                throw new InvalidOperationException(
+                    "PhysBone Collider editor pane was not created.");
+            }
+            editorPane.AddToClassList(
+                "ee4v-modification-workflow__controls-column");
+            var header = new VisualElement();
+            header.AddToClassList(
+                "ee4v-modification-workflow__appearance-header");
+            header.Add(_physBoneTabs);
+            editorPane.Insert(0, header);
+
+            var content = _physBoneHost.Q<ScrollView>(className:
+                "ee4v-physbone-collider__editor-content");
+            if (content != null)
+            {
+                content.AddToClassList(
+                    "ee4v-modification-workflow__controls");
+                content.contentContainer.AddToClassList(
+                    "ee4v-modification-workflow__controls-content");
+            }
+        }
+
+        private void DisposePhysBoneEditor()
+        {
+            _physBoneEditor?.Dispose();
+            _physBoneEditor = null;
         }
 
         private VisualElement BuildCategoryRail()
@@ -1933,6 +2208,10 @@ namespace Ee4v.AssetManager.UI
             _physBoneHost.EnableInClassList(
                 "ee4v-modification-workflow__hidden",
                 !physBone);
+            if (categoryChanged)
+            {
+                DisposePhysBoneEditor();
+            }
             if (faceExpression)
             {
                 if (_faceExpressionEditor == null)
@@ -1956,24 +2235,9 @@ namespace Ee4v.AssetManager.UI
             _faceExpressionEditor?.StopPlayback();
             if (physBone)
             {
-                if (_physBoneEditor == null)
-                {
-                    var editor = new PhysBoneColliderEditor(
-                        _physBoneHost, RefreshMaterialPreview, true);
-                    try
-                    {
-                        editor.Initialize(_workingObject);
-                        _physBoneEditor = editor;
-                    }
-                    catch
-                    {
-                        editor.Dispose();
-                        throw;
-                    }
-                }
+                ShowPhysBoneEditor();
                 return;
             }
-
             if (_selectedBodyPart.HasValue &&
                 !HasFocusBone(_selectedBodyPart.Value))
             {
@@ -6585,6 +6849,10 @@ namespace Ee4v.AssetManager.UI
         {
             InvalidateVariantSaveStatus();
             ClearAppearanceCaches();
+            if (_currentCategory == WorkflowCategory.PhysBone)
+            {
+                DisposePhysBoneEditor();
+            }
             if (_currentCategory != WorkflowCategory.ShapeParts ||
                 _shapePartsSection != ShapePartsSection.Shape)
             {
@@ -6642,8 +6910,7 @@ namespace Ee4v.AssetManager.UI
             DisposeMaterialEditor();
             _faceExpressionEditor?.Dispose();
             _faceExpressionEditor = null;
-            _physBoneEditor?.Dispose();
-            _physBoneEditor = null;
+            DisposePhysBoneEditor();
             _scenePreview?.Dispose();
             _scenePreview = null;
         }

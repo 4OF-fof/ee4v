@@ -157,6 +157,11 @@
     align-items: center;
 }
 
+.ee4v-modification-workflow__variant-discard.ee4v-ui-button {
+    flex-shrink: 0;
+    margin-right: var(--ee4v-space-sm);
+}
+
 .ee4v-modification-workflow__header-strip {
     min-width: 0;
     flex-grow: 1;

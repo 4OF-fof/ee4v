@@ -67,6 +67,25 @@ namespace Ee4v.AssetManager.Application
             return _workspace.Inspect(rootAssetPath).ContentHash != latest.ContentHash;
         }
 
+        public bool HasChangesFromCurrentRevision(string rootAssetPath)
+        {
+            AssetManagerRequestValidator.Require(rootAssetPath, "root asset path");
+            var variant = _index.GetVariants().FirstOrDefault(candidate =>
+                candidate.RootAssetPath == rootAssetPath);
+            if (variant == null)
+            {
+                return false;
+            }
+            var revisionId = GetCurrentRevisionId(variant.Id);
+            if (string.IsNullOrEmpty(revisionId))
+            {
+                return false;
+            }
+            var saved = ReadSnapshot(variant.Id, revisionId);
+            return _workspace.Inspect(rootAssetPath).ContentHash !=
+                   saved.ContentHash;
+        }
+
         public AssetVariantRevisionDetails GetRevisionDetails(string variantId, string revisionId)
         {
             AssetManagerRequestValidator.Require(variantId, "variant id");

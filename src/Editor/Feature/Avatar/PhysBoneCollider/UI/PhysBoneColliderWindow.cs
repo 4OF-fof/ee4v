@@ -60,6 +60,10 @@ namespace Ee4v.PhysBoneCollider
         private FloatField _minimumLengthField;
         private ScrollView _candidateList;
         private VisualElement _detail;
+        private VisualElement _layoutControls;
+        private VisualElement _colliderDetails;
+        private VisualElement _boneDetails;
+        private ScrollView _editorContent;
         private UiTextElement _selectedBone;
         private Toggle _enabledField;
         private ObjectField _boneField;
@@ -228,6 +232,7 @@ namespace Ee4v.PhysBoneCollider
             var pane = new VisualElement();
             pane.AddToClassList("ee4v-physbone-collider__editor-pane");
             var content = new ScrollView(ScrollViewMode.Vertical);
+            _editorContent = content;
             content.AddToClassList("ee4v-physbone-collider__editor-content");
             if (_avatarLocked)
             {
@@ -235,7 +240,8 @@ namespace Ee4v.PhysBoneCollider
                     "ee4v-physbone-collider__editor-content--embedded");
                 content.Add(_status);
             }
-            content.Add(BuildLayoutControls());
+            _layoutControls = BuildLayoutControls();
+            content.Add(_layoutControls);
             content.Add(new SectionHeader(
                 I18N.Get("section.candidates")));
 
@@ -298,6 +304,7 @@ namespace Ee4v.PhysBoneCollider
             var detail = new VisualElement();
             detail.AddToClassList("ee4v-physbone-collider__detail");
             var placement = new VisualElement();
+            _colliderDetails = placement;
             placement.AddToClassList("ee4v-physbone-collider__detail-group");
             placement.Add(new SectionHeader(
                 I18N.Get("section.collider")));
@@ -410,6 +417,7 @@ namespace Ee4v.PhysBoneCollider
             detail.Add(placement);
 
             var assignments = new VisualElement();
+            _boneDetails = assignments;
             assignments.AddToClassList("ee4v-physbone-collider__detail-group");
             var assignmentsHeader = new SectionHeader(
                 I18N.Get("section.physBones"));
@@ -444,6 +452,25 @@ namespace Ee4v.PhysBoneCollider
             EnsurePhysBoneSearchRootRow();
             RenderPhysBoneSearchRoots();
             return detail;
+        }
+
+        internal void SetEmbeddedSection(bool showBone)
+        {
+            if (!_avatarLocked)
+            {
+                return;
+            }
+
+            _layoutControls?.EnableInClassList(
+                "ee4v-physbone-collider__section-hidden", showBone);
+            _colliderDetails?.EnableInClassList(
+                "ee4v-physbone-collider__section-hidden", showBone);
+            _boneDetails?.EnableInClassList(
+                "ee4v-physbone-collider__section-hidden", !showBone);
+            if (_editorContent != null)
+            {
+                _editorContent.scrollOffset = Vector2.zero;
+            }
         }
 
         private FloatField CreateDetailField(string label, Action<float> changed)

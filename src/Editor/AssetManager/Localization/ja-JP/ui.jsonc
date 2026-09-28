@@ -18,6 +18,10 @@
       "expressionAnimation": "表情",
       "physBone": "PhysBone"
     },
+    "physBoneTabs": {
+      "collider": "Collider",
+      "bone": "Bone"
+    },
     "assets": {
       "add": "アセットを追加",
       "base": "ベース",
@@ -247,6 +251,9 @@
   },
   "variant": {
     "save": "保存",
+    "discardChanges": "変更を破棄",
+    "discardConfirm": "前に保存した状態へ戻します。保存後に行った変更は失われます。続けますか？",
+    "noSavedRevision": "戻せる保存済みの版がありません。",
     "saveMessage": "メッセージ（任意）",
     "confirmSave": "保存",
     "noChanges": "保存済みの最新版と変更がありません。",

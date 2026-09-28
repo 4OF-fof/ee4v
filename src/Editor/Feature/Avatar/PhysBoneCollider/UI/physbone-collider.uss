@@ -123,6 +123,10 @@
     min-height: 0;
 }
 
+.ee4v-physbone-collider__section-hidden {
+    display: none;
+}
+
 .ee4v-physbone-collider__layout-controls,
 .ee4v-physbone-collider__detail-group {
     flex-shrink: 0;
@@ -152,6 +156,7 @@
 
 .ee4v-physbone-collider__minimum-length {
     flex-grow: 1;
+    flex-shrink: 1;
     min-width: 0;
     margin-right: var(--ee4v-space-sm);
 }
