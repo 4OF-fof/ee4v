@@ -6,7 +6,6 @@ using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.FaceExpression;
-using Ee4v.PhysBoneCollider;
 using Ee4v.UI;
 using nadena.dev.modular_avatar.core;
 using UnityEditor;
@@ -90,14 +89,7 @@ namespace Ee4v.AssetManager.UI
         {
             ShapeParts,
             Material,
-            ExpressionAnimation,
-            PhysBone
-        }
-
-        private enum PhysBoneSection
-        {
-            Collider,
-            Bone
+            ExpressionAnimation
         }
 
         private enum ShapePartsSection
@@ -844,12 +836,8 @@ namespace Ee4v.AssetManager.UI
         private EmbeddedMaterialInspector _materialInspector;
         private DerivedAssetPrefabScenePreview _scenePreview;
         private FaceExpressionEditor _faceExpressionEditor;
-        private PhysBoneColliderEditor _physBoneEditor;
         private VisualElement _customizerHost;
         private VisualElement _faceExpressionHost;
-        private VisualElement _physBoneHost;
-        private VisualElement _physBoneTabs;
-        private PhysBoneSection _physBoneSection;
         private ScrollView _controlsHost;
         private VisualElement _appearanceHeader;
         private UiTextElement _previewTitle;
@@ -1190,7 +1178,6 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-modification-workflow__controls");
             controlsColumn.Add(_controlsHost);
             _customizerHost.Add(controlsColumn);
-            body.Add(_customizerHost);
 
             _faceExpressionHost = new VisualElement();
             _faceExpressionHost.AddToClassList(
@@ -1199,13 +1186,7 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-modification-workflow__hidden");
             body.Add(_faceExpressionHost);
 
-            BuildPhysBoneTabs();
-            _physBoneHost = new VisualElement();
-            _physBoneHost.AddToClassList(
-                "ee4v-modification-workflow__physbone-host");
-            _physBoneHost.AddToClassList(
-                "ee4v-modification-workflow__hidden");
-            body.Add(_physBoneHost);
+            body.Add(_customizerHost);
             root.Add(body);
             ShowCategory(_currentCategory, false);
         }
@@ -1694,7 +1675,6 @@ namespace Ee4v.AssetManager.UI
             var variantId = _workingAsset.VariantId;
             var category = _currentCategory;
             var shapePartsSection = _shapePartsSection;
-            var physBoneSection = _physBoneSection;
             var rebuild = false;
             try
             {
@@ -1746,7 +1726,6 @@ namespace Ee4v.AssetManager.UI
                 SelectDerivedAsset(restored);
                 _currentCategory = category;
                 _shapePartsSection = shapePartsSection;
-                _physBoneSection = physBoneSection;
             }
             catch (Exception exception)
             {
@@ -1929,127 +1908,6 @@ namespace Ee4v.AssetManager.UI
             return button;
         }
 
-        private void BuildPhysBoneTabs()
-        {
-            _physBoneTabs = new VisualElement();
-            _physBoneTabs.AddToClassList(
-                "ee4v-modification-workflow__physbone-tabs");
-            _physBoneTabs.AddToClassList(
-                "ee4v-modification-workflow__shape-parts-tabs");
-            RefreshPhysBoneTabs();
-        }
-
-        private void RefreshPhysBoneTabs()
-        {
-            _physBoneTabs.Clear();
-            AddPhysBoneTab(PhysBoneSection.Collider,
-                "workflow.physBoneTabs.collider");
-            AddPhysBoneTab(PhysBoneSection.Bone,
-                "workflow.physBoneTabs.bone");
-        }
-
-        private void AddPhysBoneTab(PhysBoneSection section, string labelKey)
-        {
-            var button = new UiButton(
-                I18N.Get(labelKey),
-                () => ShowPhysBoneSection(section),
-                variant: UiButtonVariant.Ghost);
-            button.AddToClassList(
-                "ee4v-modification-workflow__shape-parts-tab");
-            button.EnableInClassList(
-                "ee4v-modification-workflow__shape-parts-tab--active",
-                section == _physBoneSection);
-            _physBoneTabs.Add(button);
-        }
-
-        private void ShowPhysBoneSection(PhysBoneSection section)
-        {
-            if (_physBoneSection == section)
-            {
-                return;
-            }
-
-            _physBoneSection = section;
-            RefreshPhysBoneTabs();
-            _physBoneEditor?.SetEmbeddedSection(
-                section == PhysBoneSection.Bone);
-        }
-
-        private void ShowPhysBoneEditor()
-        {
-            if (_physBoneEditor != null)
-            {
-                return;
-            }
-
-            var editor = new PhysBoneColliderEditor(
-                _physBoneHost, RefreshMaterialPreview, true);
-            try
-            {
-                editor.Initialize(_workingObject);
-                ApplyPhysBoneWorkflowLayout();
-                editor.SetEmbeddedSection(
-                    _physBoneSection == PhysBoneSection.Bone);
-                _physBoneEditor = editor;
-            }
-            catch
-            {
-                editor.Dispose();
-                throw;
-            }
-        }
-
-        private void ApplyPhysBoneWorkflowLayout()
-        {
-            _physBoneHost.Q<VisualElement>(className:
-                    "ee4v-physbone-collider__preview-pane")
-                ?.AddToClassList(
-                    "ee4v-modification-workflow__preview-pane");
-            _physBoneHost.Q<VisualElement>(className:
-                    "ee4v-physbone-collider__preview-toolbar")
-                ?.AddToClassList(
-                    "ee4v-modification-workflow__preview-toolbar");
-            _physBoneHost.Q<VisualElement>(className:
-                    "ee4v-physbone-collider__preview-title")
-                ?.AddToClassList(
-                    "ee4v-modification-workflow__preview-title");
-            _physBoneHost.Q<VisualElement>(className:
-                    "ee4v-physbone-collider__preview-viewport")
-                ?.AddToClassList(
-                    "ee4v-modification-workflow__preview-viewport");
-
-            var editorPane = _physBoneHost.Q<VisualElement>(className:
-                "ee4v-physbone-collider__editor-pane");
-            if (editorPane == null)
-            {
-                throw new InvalidOperationException(
-                    "PhysBone Collider editor pane was not created.");
-            }
-            editorPane.AddToClassList(
-                "ee4v-modification-workflow__controls-column");
-            var header = new VisualElement();
-            header.AddToClassList(
-                "ee4v-modification-workflow__appearance-header");
-            header.Add(_physBoneTabs);
-            editorPane.Insert(0, header);
-
-            var content = _physBoneHost.Q<ScrollView>(className:
-                "ee4v-physbone-collider__editor-content");
-            if (content != null)
-            {
-                content.AddToClassList(
-                    "ee4v-modification-workflow__controls");
-                content.contentContainer.AddToClassList(
-                    "ee4v-modification-workflow__controls-content");
-            }
-        }
-
-        private void DisposePhysBoneEditor()
-        {
-            _physBoneEditor?.Dispose();
-            _physBoneEditor = null;
-        }
-
         private VisualElement BuildCategoryRail()
         {
             _categoryButtons.Clear();
@@ -2071,11 +1929,6 @@ namespace Ee4v.AssetManager.UI
                 WorkflowCategory.ExpressionAnimation,
                 "workflow.category.expressionAnimation",
                 "star.png");
-            AddCategoryButton(
-                rail,
-                WorkflowCategory.PhysBone,
-                "workflow.category.physBone",
-                "cube.png");
             return rail;
         }
 
@@ -2164,8 +2017,7 @@ namespace Ee4v.AssetManager.UI
                 EndBodyScaleDrag();
             }
             if (_customizerHost == null ||
-                _faceExpressionHost == null ||
-                _physBoneHost == null)
+                _faceExpressionHost == null)
             {
                 _currentCategory = category;
                 return;
@@ -2198,20 +2050,12 @@ namespace Ee4v.AssetManager.UI
 
             var faceExpression =
                 category == WorkflowCategory.ExpressionAnimation;
-            var physBone = category == WorkflowCategory.PhysBone;
             _customizerHost.EnableInClassList(
                 "ee4v-modification-workflow__hidden",
-                faceExpression || physBone);
+                faceExpression);
             _faceExpressionHost.EnableInClassList(
                 "ee4v-modification-workflow__hidden",
                 !faceExpression);
-            _physBoneHost.EnableInClassList(
-                "ee4v-modification-workflow__hidden",
-                !physBone);
-            if (categoryChanged)
-            {
-                DisposePhysBoneEditor();
-            }
             if (faceExpression)
             {
                 if (_faceExpressionEditor == null)
@@ -2233,18 +2077,12 @@ namespace Ee4v.AssetManager.UI
             }
 
             _faceExpressionEditor?.StopPlayback();
-            if (physBone)
-            {
-                ShowPhysBoneEditor();
-                return;
-            }
             if (_selectedBodyPart.HasValue &&
                 !HasFocusBone(_selectedBodyPart.Value))
             {
                 _selectedBodyPart = null;
                 _scenePreview?.FocusBodyPart(null);
             }
-
             _appearanceHeader.Clear();
             _appearanceHeader.style.display = DisplayStyle.Flex;
             if (category == WorkflowCategory.ShapeParts)
@@ -6849,10 +6687,6 @@ namespace Ee4v.AssetManager.UI
         {
             InvalidateVariantSaveStatus();
             ClearAppearanceCaches();
-            if (_currentCategory == WorkflowCategory.PhysBone)
-            {
-                DisposePhysBoneEditor();
-            }
             if (_currentCategory != WorkflowCategory.ShapeParts ||
                 _shapePartsSection != ShapePartsSection.Shape)
             {
@@ -6910,7 +6744,6 @@ namespace Ee4v.AssetManager.UI
             DisposeMaterialEditor();
             _faceExpressionEditor?.Dispose();
             _faceExpressionEditor = null;
-            DisposePhysBoneEditor();
             _scenePreview?.Dispose();
             _scenePreview = null;
         }

@@ -24,7 +24,6 @@ namespace Ee4v.UI
                     {
                         "Editor/AssetManager/UI/SearchableFileTree.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionGroupView.cs",
-                        "Editor/Feature/Avatar/PhysBoneCollider/UI/PhysBoneColliderWindow.cs",
                         "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/Components/HiddenObjectTreeRow.cs",
                         "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",
                         "Editor/Feature/Project/ProjectTabs/UI/ProjectTabsView.cs",

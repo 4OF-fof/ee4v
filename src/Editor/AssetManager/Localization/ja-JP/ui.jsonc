@@ -15,12 +15,7 @@
     "category": {
       "shapeParts": "体型・パーツ",
       "material": "マテリアル",
-      "expressionAnimation": "表情",
-      "physBone": "PhysBone"
-    },
-    "physBoneTabs": {
-      "collider": "Collider",
-      "bone": "Bone"
+      "expressionAnimation": "表情"
     },
     "assets": {
       "add": "アセットを追加",

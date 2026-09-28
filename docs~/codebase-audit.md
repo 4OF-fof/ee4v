@@ -35,7 +35,7 @@
 ## 2026-09-25の整理
 
 - AssetManagerの改変Windowと派生Prefab選択Previewに重複していた、名前の単語分割とPrefab内選択範囲の判定を`AssetManagerPrefabUtility`へ統合した。部位分類と選択範囲の条件は維持する。
-- AssetManager、Face Expression、PhysBone Collider、MCPのPreviewで重複していた複製階層の`HideFlags`設定を`EditorSceneApi.HidePreviewHierarchy`へ統合した。
+- AssetManager、Face Expression、MCPのPreviewで重複していた複製階層の`HideFlags`設定を`EditorSceneApi.HidePreviewHierarchy`へ統合した。
 - 同梱Fluent UI System Iconsから、コード、USS、資料、GUID参照のない`code.png`、`document.png`、`music_note_2.png`、`video.png`と対応する`.meta`、元SVGを除き、選定リストとベンダー資料を更新した。
 - EditModeテストは公開契約、状態遷移、外部境界に対応しており、同一保証を重ねたテストは確認されなかった。`test.md`の表と実際のテスト名のずれを修正し、クリップ複製の保証を追記した。
 - 公開API型、UnityのMenuItem・初期化・AssetPostprocessorは、単純な参照数だけで削除しない。
@@ -45,7 +45,7 @@
 - AssetManager DBはschema v1に固定し、バージョン差の検出と自動削除を除去した。Collectionアイコンは本体の必須列へ統合し、アイコン・順序行がない旧DBの補完も除去した。schema変更後はDBを削除して再生成する。
 - Projectサムネイルの旧保存先からの移動、旧Sceneアイコンの消去を除去した。
 - Face Expressionの旧メニューレイヤー読み取り、旧口変形キャンセラーの除去、旧生成クリップ・アイコン・MA Menu Item・メニュー子Objectの除去を撤去した。現在生成する単一レイヤー、Motion、アイコンとMAコンポーネントの再適用だけを維持する。
-- PhysBone Colliderのボーン直下にある旧生成物の探索・除去、ボーン一致による旧設定の読み替えと、WindowGroupの旧所属設定のFollower変換を除去した。
+- WindowGroupの旧所属設定のFollower変換を除去した。
 - 廃止した互換動作だけを検証するテストとassertionを削除した。新しいテストは追加していない。Unity 2022.3と現在のVRChat／Modular Avatar SDKへの接続、入力検証、現在の生成物の再適用は引き続き対象とする。
 - Unity 2022.3の関連する既存EditModeテスト57件の成功と、コンパイルエラー0件を確認した。変更通知テストのfixtureを現在のZIP拒否仕様に合うunitypackageへ修正した。新規DBでCollectionのアイコン変更、未指定時の維持、既定値、再オープン、並び替え、削除後の末尾追加も確認した。
 

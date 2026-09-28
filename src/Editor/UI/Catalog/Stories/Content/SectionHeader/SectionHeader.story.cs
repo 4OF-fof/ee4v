@@ -29,7 +29,6 @@ namespace Ee4v.UI
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionGroupView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs",
-                        "Editor/Feature/Avatar/PhysBoneCollider/UI/PhysBoneColliderWindow.cs",
                         "Editor/Feature/Shared/ItemStyle/ItemStyleEditor.cs",
                         "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs"
                     }));

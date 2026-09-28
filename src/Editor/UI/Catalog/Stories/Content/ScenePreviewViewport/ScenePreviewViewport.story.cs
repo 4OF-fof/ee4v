@@ -23,8 +23,7 @@ namespace Ee4v.UI
                         window.BuildScenePreviewViewportStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs",
-                        "Editor/Feature/Avatar/PhysBoneCollider/UI/PhysBoneColliderWindow.cs"
+                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs"
                     }));
             }
         }

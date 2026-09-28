@@ -15,12 +15,7 @@
     "category": {
       "shapeParts": "Shape & parts",
       "material": "Material",
-      "expressionAnimation": "Expressions",
-      "physBone": "PhysBone"
-    },
-    "physBoneTabs": {
-      "collider": "Collider",
-      "bone": "Bone"
+      "expressionAnimation": "Expressions"
     },
     "assets": {
       "add": "Add asset",

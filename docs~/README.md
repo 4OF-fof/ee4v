@@ -63,10 +63,9 @@
 | `ee4v/Window/Avatar/Face Expression/BlendShape Presets` | 222 |
 | `ee4v/Window/Avatar/Gesture Assignment/Assignments` | 240 |
 | `ee4v/Window/Avatar/Gesture Assignment/Settings` | 241 |
-| `ee4v/Window/Avatar/PhysBone Collider Setup` | 260 |
 | `ee4v/Window/Window Groups` | 300 |
 | `ee4v/Debug/Catalog` | 1100 |
 
 ## 人間向け資料
 
-人間向けの入口は [`human/index.html`](./human/index.html) です。詳細はMCP、Asset Manager、Asset Protection、BOOTH / Eagle、Face Expression、PhysBone Collider、Play Mode、Project、Hierarchy、Window Groups、設定のHTMLへ分割し、全ページを共通ナビゲーションで相互にリンクします。ビルド処理や外部CDNを必要としない静的HTMLとして保持します。
+人間向けの入口は [`human/index.html`](./human/index.html) です。詳細はMCP、Asset Manager、Asset Protection、BOOTH / Eagle、Face Expression、Play Mode、Project、Hierarchy、Window Groups、設定のHTMLへ分割し、全ページを共通ナビゲーションで相互にリンクします。ビルド処理や外部CDNを必要としない静的HTMLとして保持します。

@@ -32,7 +32,6 @@ namespace Ee4v.UI
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs",
-                        "Editor/Feature/Avatar/PhysBoneCollider/UI/PhysBoneColliderWindow.cs",
                         "Editor/Feature/Project/ProjectTabs/UI/ProjectTabsView.cs",
                         "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs",
                         "Editor/UI/Catalog/CatalogWindow.cs"

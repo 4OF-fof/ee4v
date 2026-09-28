@@ -44,7 +44,7 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 
 `PreviewContainer` Storyはコンテナの範囲を枠で示し、中央のContent、空表示のPlaceholder、右上のOverlay操作を重ねて確認できる構成にします。
 
-`ScenePreviewViewport` Storyは共有グリッド、右上の背景切り替えと表示リセット、左上の機能固有オーバーレイを一つのPreview内で確認できる構成にします。AssetManagerのAppearance PreviewとPhysBone Collider Previewはこの部品を共有します。
+`ScenePreviewViewport` Storyは共有グリッド、右上の背景切り替えと表示リセット、左上の機能固有オーバーレイを一つのPreview内で確認できる構成にします。AssetManagerのAppearance Previewはこの部品を使用します。
 
 ### Collections
 

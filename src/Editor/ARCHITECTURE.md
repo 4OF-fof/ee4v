@@ -26,7 +26,7 @@ AssetManagerは例外として、他の機能モジュールへ依存できま�
 
 AssetManager内はContracts、Domain、Application、Infrastructure、UI、AssetProtectionに分割します。この層分割は一つの機能モジュール内の依存として扱います。
 
-`Ee4v.Mcp.Editor`は外部クライアントから複数機能を呼び分けるintegration／composition rootです。MCP protocolとtransport、tool registry、JSON変換だけを所有し、Face Expression、PhysBone Collider、AssetManagerの公開境界へ依存できます。この例外から機能module同士への依存は追加せず、domain処理は所有moduleの公開APIへ置きます。詳細は[`docs~/mcp.md`](../../docs~/mcp.md)を参照します。
+`Ee4v.Mcp.Editor`は外部クライアントから複数機能を呼び分けるintegration／composition rootです。MCP protocolとtransport、tool registry、JSON変換だけを所有し、Face ExpressionとAssetManagerの公開境界へ依存できます。この例外から機能module同士への依存は追加せず、domain処理は所有moduleの公開APIへ置きます。詳細は[`docs~/mcp.md`](../../docs~/mcp.md)を参照します。
 
 ## 単独機能とee4vウィンドウ
 

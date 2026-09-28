@@ -32,7 +32,6 @@
 | module | 所有する振る舞い | 実装 | 契約 |
 |---|---|---|---|
 | Face Expression | BlendShape表情の作成、表情Group、preset、Gesture割り当てを扱う。 | `Feature/Avatar/FaceExpression` | [Face Expression](./face-expression.md) |
-| PhysBone Collider | Collider候補の生成、preview、PhysBoneへの割り当て、Prefab生成を扱う。 | `Feature/Avatar/PhysBoneCollider` | [PhysBone Collider](./physbone-collider.md) |
 | Play Mode Component Suppression | Play Mode向けNDMF処理で指定componentをbuild対象Avatarから除く。 | `Feature/Avatar/PlayModeComponentSuppression` | [Play Mode Component Suppression](./play-mode-component-suppression.md) |
 
 ## Editor
@@ -49,7 +48,7 @@
 
 外部コードから各機能を操作する場合は、共有実装を直接参照せず`ProjectStyleApi`または`HierarchyStyleApi`を使用します。
 
-`src/Editor/Mcp`は機能moduleではなく外部integration層です。Face ExpressionとPhysBone Colliderの公開API、AssetManager Contractsを組み合わせますが、機能module間の参照は作りません。MCP固有の契約は[`../mcp.md`](../mcp.md)で管理します。
+`src/Editor/Mcp`は機能moduleではなく外部integration層です。Face Expressionの公開APIとAssetManager Contractsを組み合わせますが、機能module間の参照は作りません。MCP固有の契約は[`../mcp.md`](../mcp.md)で管理します。
 
 ## 更新条件
 

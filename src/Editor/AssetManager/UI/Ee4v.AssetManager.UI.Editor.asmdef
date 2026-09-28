@@ -13,7 +13,6 @@
     "Ee4v.ProjectStyle.Editor",
     "Ee4v.ItemStyle.Editor",
     "Ee4v.FaceExpression.Editor",
-    "Ee4v.PhysBoneCollider.Editor",
     "nadena.dev.modular-avatar.core"
   ],
   "includePlatforms": [

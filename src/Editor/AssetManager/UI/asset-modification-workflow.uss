@@ -401,8 +401,7 @@
     flex-direction: row;
 }
 
-.ee4v-modification-workflow__face-expression-host,
-.ee4v-modification-workflow__physbone-host {
+.ee4v-modification-workflow__face-expression-host {
     min-width: 0;
     min-height: 0;
     flex-grow: 1;
