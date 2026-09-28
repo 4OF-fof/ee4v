@@ -341,6 +341,10 @@
     background-color: var(--ee4v-color-surface-subtle);
 }
 
+.ee4v-modification-workflow__prefab-group-header:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}
+
 .ee4v-modification-workflow__prefab-group--last.ee4v-modification-workflow__prefab-group--header-last > .ee4v-modification-workflow__prefab-group-header {
     border-bottom-width: 0;
 }
@@ -356,7 +360,7 @@
 }
 
 .ee4v-modification-workflow__prefab-group-toggle.ee4v-ui-button:hover {
-    background-color: var(--ee4v-color-surface-hover);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-modification-workflow__prefab-group-toggle .ee4v-ui-button__content {
@@ -1004,7 +1008,7 @@
 }
 
 .ee4v-modification-workflow__object-disclosure.ee4v-ui-button:hover {
-    background-color: var(--ee4v-color-surface-hover);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-modification-workflow__objects-list .ee4v-modification-workflow__list-last-row,
