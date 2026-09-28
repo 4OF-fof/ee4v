@@ -45,7 +45,7 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 
 現行catalogは28 tools。対象と編集単位が同じ操作は、部分更新または明示的なactionへ統合する。読み取り、書き込み、破壊的な削除はannotationと承認単位が異なるため分離する。検索／一覧と詳細取得は返す情報量と用途が異なるため維持する。Avatar inventoryとauditも、事実の取得と問題の検出を分ける。
 
-Item編集へ名前・説明・Tag・Archive・Import Targetを統合し、一括編集を維持する。Collectionの作成と更新はupsertへ、ポーズ追加・更新・移動・Loop変更はanimation編集へ、Clipの調査とvalidationはClip調査へ統合する。左右Gestureの単独更新はFacialSetのpatch適用で扱う。旧tool名のaliasは登録しない。クライアントは`tools/list`を再取得する。
+Item編集へ名前・説明・Tag・Archive・Import Targetを統合し、一括編集を維持する。Collectionの作成と更新はupsertへ、ポーズ追加・更新・移動・Loop変更はanimation編集へ、Clipの調査とvalidationはClip調査へ統合する。左右Gestureの単独更新はFacialSetのpatch適用で扱う。
 
 ## Tool catalog
 
@@ -143,9 +143,9 @@ File全体を取り込む場合はpathsへ空文字列を1件指定する。た�
 
 | tool | 主な入力 | 主な出力 | Projectへの書き込み |
 |---|---|---|---|
-| `ee4v_asset_get_item` | `itemId` | Item、File、取り込み済みGUID、`prefabCandidates`。各候補はPrefab GUID／path／name／type、Variant親、dependency hash、preview可否と理由を持つ | なし |
-| `ee4v_asset_inspect_prefab` | `prefabGuid`、または`Assets/`／`Packages/`から始まる`prefabPath` | hierarchy、Renderer、Meshとtriangle、bounds、Material slot、Shader、Texture、BlendShape、Missing Script、参照切れ、Unity MCP handoff | なし |
-| `ee4v_asset_render_prefab_preview` | `prefabGuid`または`prefabPath`、`viewPreset`、`width`、`height`、`background`、`forceRefresh` | 固定撮影条件のPNG image content、dependency hash、cache path、cache hit、Unity／Render Pipeline情報 | 再生成可能なcacheだけ |
+| `ee4v_asset_get_item` | `itemId` | Item、File、取り込み済みGUID、`prefabCandidates`。各候補はPrefab GUID／path／name／type、Variant親、dependency hash、preview可否・不可理由・警告を持つ | なし |
+| `ee4v_asset_inspect_prefab` | `prefabGuid`、または`Assets/`／`Packages/`から始まる`prefabPath` | hierarchy、Renderer、Meshとtriangle、bounds、Material slot、Shader、Texture、BlendShape、Missing Script、参照切れ、preview可否・警告、Unity MCP handoff | なし |
+| `ee4v_asset_render_prefab_preview` | `prefabGuid`または`prefabPath`、`viewPreset`、`width`、`height`、`background`、`forceRefresh` | 固定撮影条件のPNG image content、dependency hash、cache path、cache hit、警告、Unity／Render Pipeline情報 | 再生成可能なcacheだけ |
 
 `prefabGuid`と`prefabPath`を両方渡す場合は同じAssetを指す必要があります。絶対path、`Assets/`と`Packages/`以外のpath、PrefabでないAssetは拒否します。`ee4v_asset_inspect_prefab`とpreviewはいずれもPrefab、Scene、AssetManager DBを変更しません。
 
@@ -164,11 +164,11 @@ File全体を取り込む場合はpathsへ空文字列を1件指定する。た�
 
 ### Preview cache
 
-PNGはSQLiteへ格納せず、共通data rootの`asset-preview/<prefab-guid>/<dependency-hash>/`以下へ保存します。共通data rootがProjectの`Assets`内に設定されている場合だけ、`Library/ee4v-cache`へ退避します。file名にはrender profile version、view、size、backgroundを含め、同じ条件の再呼び出しでは再利用します。隣接JSONにはPrefab GUID、dependency hash、render profile version、view、image path、size、Unity version、Render Pipeline、作成日時、errorを記録します。cache directory名と描画条件の世代は分離し、現在のrender profile versionは`v2`です。
+PNGはSQLiteへ格納せず、共通data rootの`asset-preview/<prefab-guid>/<dependency-hash>/`以下へ保存します。共通data rootがProjectの`Assets`内に設定されている場合だけ、`Library/ee4v-cache`へ退避します。file名にはrender profile version、view、size、backgroundを含め、同じ条件の再呼び出しでは再利用します。隣接JSONにはPrefab GUID、dependency hash、render profile version、view、image path、size、Unity version、Render Pipeline、作成日時、警告、errorを記録します。cache directory名と描画条件の世代は分離し、現在のrender profile versionは`v2`です。
 
 dependency hashには`AssetDatabase.GetAssetDependencyHash`を使用します。Prefab、Variant親、Mesh、Material、Texture、ShaderなどUnityが依存関係として追跡するAssetが変化すると保存先hashが変わるため、古い画像を使用しません。`forceRefresh: true`は同じ条件を再撮影します。cacheは再生成可能であり、Unity Project Assetの状態には含めません。
 
-撮影は`PreviewRenderUtility`の内部Preview sceneへPrefabを直接instance化し、Renderer boundsを基準にscaleを正規化し、各viewへ投影した横幅と縦幅を使ってcamera framingを決めます。照明、背景、camera FOVは固定し、instance上の`Behaviour`を無効化してParticle Systemを停止します。描画後はinstanceを破棄します。Missing Mesh、Material、Shader、描画可能Rendererなし、無効なboundsは構造化errorとして返します。
+撮影は`PreviewRenderUtility`の内部Preview sceneへPrefabを直接instance化し、Renderer boundsを基準にscaleを正規化し、各viewへ投影した横幅と縦幅を使ってcamera framingを決めます。照明、背景、camera FOVは固定し、instance上の`Behaviour`を無効化してParticle Systemを停止します。描画後はinstanceを破棄します。空のMaterial slotやMaterial slotなしは`missing_material`警告として返し、撮影を続けます。Missing Mesh、Shader、描画可能Rendererなし、無効なboundsは構造化errorとして返します。
 
 RAG、Embedding、Vector DB、Semantic Search、自動caption、全Prefabの事前indexは持ちません。検索metadataで候補を絞り、要求されたPrefabだけをオンデマンド撮影します。
 

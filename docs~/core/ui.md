@@ -81,7 +81,7 @@ Footerに並ぶボタンの間隔は共通スタイルで12px確保します。
 | `CustomPopupWindow.ShowAsPopup(VisualElement, Vector2)` | anchor直下へ指定サイズで表示する |
 | `CustomPopupWindow.ShowAsPopup(VisualElement, Vector2, Vector2)` | panel上の指定位置を起点に表示する |
 | `CustomPopupWindow.ShowAsPopup(Vector2, Vector2)` | screen上の指定位置を起点に表示する |
-| `CustomPopupWindow.SetPopup(CustomPopup)` | 旧`BaseWindow`形式の外枠、Header、Close操作を設定する |
+| `CustomPopupWindow.SetPopup(CustomPopup)` | `BaseWindow`形式の外枠、Header、Close操作を設定する |
 | `CustomPopupWindow.ConfigureCloseAndSubmitKeys(VisualElement, Action)` | Escapeで閉じ、任意のEnter確定処理を呼び出す |
 
 AssetManagerのタグ選択画面、Target選択画面、コレクション作成画面に加え、Project StyleとHierarchy Styleが共有するItem Style画面で使用します。表示は`ee4v/Debug/Catalog`の`Containers/CustomPopup`、`Domain/ProjectStyle/Project Style Window`、`Domain/HierarchyStyle/Hierarchy Style Window` Storyで確認できます。

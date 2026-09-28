@@ -2,13 +2,7 @@
 
 `src/Editor/Feature`配下の所有範囲と、変更時に読む契約の索引です。機能モジュールは原則として互いに依存せず、CoreとUIの公開APIを利用します。
 
-## 共通のUI契約
-
-- 検索、追加、閉じる、固定などの汎用操作・状態アイコンにはMicrosoft Fluent UI System Iconsを使用する。
-- Scene、GameObject、FolderなどUnityの実体やEditor概念を指すアイコンにはUnity組み込みアイコンを使用する。
-- Project内アセットのサムネイルと利用者が指定したTextureは実体表現として維持する。
-- 文字を描画する要素は`UiTextFactory`経由で作成する。詳細な規則はルートの`AGENTS.md`を参照する。
-- Domain固有の入力、一覧、Card、PanelもCore UIと同じ境界線、面、角丸、hover、選択状態を使用する。機能固有の配置と意味を持つ状態色は維持する。
+機能 UI の共通部品は [Core UI](../core/ui.md) を参照します。
 
 ## Project
 
@@ -51,9 +45,3 @@
 `src/Editor/Mcp`は機能moduleではなく外部integration層です。Face Expressionの公開APIとAssetManager Contractsを組み合わせますが、機能module間の参照は作りません。MCP固有の契約は[`../mcp.md`](../mcp.md)で管理します。
 
 AssetManager UIは例外として、取り込み先フォルダーの初期アイコン設定に`ProjectStyleApi`、改変画面の埋め込み表情エディターとBlendShape分類にFace Expressionの公開APIを使用します。`ItemStyle`の直接参照は不要です。ProjectStyleとFace ExpressionからAssetManagerへの逆方向参照はありません。
-
-## 更新条件
-
-- moduleの所有範囲、実装場所、機能間共有が変わった場合はこの索引を更新する。
-- 公開API、永続化、副作用、失敗時の動作が変わった場合は対応する個別資料を更新する。
-- UIから観測できる操作や注意事項が変わった場合は`../human`配下の対応する機能ページも更新する。ページ構成が変わる場合は[`../human/index.html`](../human/index.html)と全ページの共通ナビゲーションも更新する。

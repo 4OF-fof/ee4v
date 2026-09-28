@@ -76,7 +76,7 @@ constructor は `ProjectTabLocation(folderGuid, folderPath, searchText = "")` �
 
 ## 永続化と連携
 
-タブ一覧と履歴は `UserSettings/ee4v.project-tabs.asset` へ保存します。固定フラグと削除記録は保存しません。固定状態は Core の `ProjectFavoritesApi` から取得します。起動時と Favorites の変更時は、Favorite に対応するタブがなければ追加し、既存タブがあればそのタブを使用します。保存済みタブの旧固定フラグは読み込みません。
+タブ一覧と履歴は `UserSettings/ee4v.project-tabs.asset` へ保存します。固定フラグと削除記録は保存しません。固定状態は Core の `ProjectFavoritesApi` から取得します。起動時と Favorites の変更時は、Favorite に対応するタブがなければ追加し、既存タブがあればそのタブを使用します。
 
 選択中のタブは Project ウィンドウごとに保持する UI 状態であり、`ProjectTabsState` には含みません。
 

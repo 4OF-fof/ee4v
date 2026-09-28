@@ -231,6 +231,8 @@ namespace Ee4v.Mcp
                 ["unityVersion"] = Application.unityVersion,
                 ["renderPipeline"] = pipeline,
                 ["createdAtUtc"] = createdAt.ToString("O"),
+                ["warnings"] = McpJson.From(
+                    AssetManagerPrefabMcpTools.GetPreviewWarnings(resolved.Asset)),
                 ["error"] = error ?? string.Empty
             };
         }

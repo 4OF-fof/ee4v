@@ -4,7 +4,7 @@
 
 HierarchyStyle は GameObject の背景色と Hierarchy 項目アイコンを設定します。`GlobalObjectId` を識別子として使用します。
 
-アイコンはHierarchy項目の表示だけを変更します。`EditorGUIUtility.SetIconForObject`でSceneへ保存されたアイコンを消去する移行処理は行いません。
+アイコンはHierarchy項目の表示だけを変更します。
 
 背景色は対象から親へ向かって明示設定を探し、最初に見つかった色を使用します。アイコンは対象の GameObject だけに適用します。Alt キーを押した状態で GameObject を指すと、Core UIの`CustomPopup`を使用した編集ウィンドウを開きます。
 

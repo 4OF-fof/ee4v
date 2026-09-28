@@ -55,7 +55,7 @@
 | `Copy_CreatesIndependentClipWithCurves` | 複製した表情クリップが元のカーブを保持し、その後の編集が元クリップへ影響しない | 複製後に元アセットを書き換える破壊的な参照共有を防ぐ |
 | `Read_ConvertsHeadersAndIncludesSelectedMeshes` | 複数の区切り文字をヘッダーとして読み、グループウィンドウで選択した各RendererパスのBlendShapeを列挙する | 複数メッシュの同名BlendShapeを正しいAnimationカーブへ結ぶ契約を維持する |
 | `BlendShapeRows_NestSidesUnderNormal` | FBX別プリセットで同じ見出し内の役割について通常版を親行、LとRを子行にし、番号などが異なる役割は別の親子行にする | 左右以外の名前まで誤って同じ親へまとめる問題は実名一覧だけでは検出できない |
-| `BlendShapeRows_KeepClipChannelsSeparateWithoutSideControls` | クリップ内表示ではFBX別プリセットで対応した各BlendShapeも個別行にし、左右切替コントロールを生成しない | 使用中カーブの再集約や、廃止した左右切替UIの再混入を防ぐ |
+| `BlendShapeRows_KeepClipChannelsSeparateWithoutSideControls` | クリップ内表示ではFBX別プリセットで対応した各BlendShapeも個別行にし、左右切替コントロールを生成しない | クリップ内表示で各カーブを独立して扱う契約を守る |
 | `BlendShapeClipboard_PastesMatchingNamesWithoutUsingIndices` | 表情のBodyからコピーした値を、並び順ではなく名前が一致するPrefabのBlendShapeだけへ貼り付ける | アバター間でBlendShapeの順序や構成が異なるとき、別の表情値を上書きする問題は同一メッシュへの貼り付けだけでは検出できない |
 | `BlendShapePresetClassifier_SeedsSupportedAvatarConventions` | Chiffon、Kipfel、Shinano、Manukaの命名形式から役割と左右指定の初期分類を作る | 左右表記だけを役割名から除き、番号や括弧表記を維持する条件は一覧表示だけでは確認できない |
 | `BlendShapePresets_RoundTripManualFbxMapping` | `<FBX名>.json`へFBXとメッシュに結び付いた手動分類と口形状指定を保存して復元し、別FBXには適用しない | 再起動後や複数FBX利用時のファイル形式と対応表の取り違えは設定画面だけでは確認できない |

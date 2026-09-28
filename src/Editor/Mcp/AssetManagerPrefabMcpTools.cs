@@ -221,16 +221,21 @@ namespace Ee4v.Mcp
             };
         }
 
-        internal static IReadOnlyList<object> GetPreviewIssues(
+        internal static IReadOnlyList<object> GetPreviewWarnings(
             GameObject prefab)
         {
-            return FindPreviewIssues(prefab).Cast<object>().ToArray();
+            return FindPreviewIssues(prefab)
+                .Where(issue => issue.Code == "missing_material")
+                .Cast<object>()
+                .ToArray();
         }
 
         internal static void EnsurePreviewable(ResolvedPrefab resolved)
         {
-            var issues = FindPreviewIssues(resolved?.Asset);
-            if (issues.Count == 0)
+            var issues = FindPreviewIssues(resolved?.Asset)
+                .Where(issue => issue.Code != "missing_material")
+                .ToArray();
+            if (issues.Length == 0)
             {
                 return;
             }
@@ -379,6 +384,9 @@ namespace Ee4v.Mcp
             }
 
             var issues = FindPreviewIssues(root);
+            var unavailableReasons = issues
+                .Where(issue => issue.Code != "missing_material")
+                .ToArray();
             return new
             {
                 Ok = true,
@@ -430,8 +438,11 @@ namespace Ee4v.Mcp
                     Renderers = rendererHandoffs,
                     Materials = materialHandoffs
                 },
-                PreviewAvailable = issues.Count == 0,
-                PreviewUnavailableReasons = issues
+                PreviewAvailable = unavailableReasons.Length == 0,
+                PreviewUnavailableReasons = unavailableReasons,
+                PreviewWarnings = issues
+                    .Where(issue => issue.Code == "missing_material")
+                    .ToArray()
             };
         }
 
@@ -440,6 +451,9 @@ namespace Ee4v.Mcp
             CandidateSeed seed)
         {
             var issues = FindPreviewIssues(seed.Asset);
+            var unavailableReasons = issues
+                .Where(issue => issue.Code != "missing_material")
+                .ToArray();
             return new
             {
                 ItemId = itemId,
@@ -452,11 +466,14 @@ namespace Ee4v.Mcp
                 DependencyHash = AssetDatabase
                     .GetAssetDependencyHash(seed.Path)
                     .ToString(),
-                PreviewAvailable = issues.Count == 0,
-                PreviewUnavailableReason = issues.Count == 0
+                PreviewAvailable = unavailableReasons.Length == 0,
+                PreviewUnavailableReason = unavailableReasons.Length == 0
                     ? string.Empty
-                    : issues[0].Code,
-                PreviewUnavailableReasons = issues,
+                    : unavailableReasons[0].Code,
+                PreviewUnavailableReasons = unavailableReasons,
+                PreviewWarnings = issues
+                    .Where(issue => issue.Code == "missing_material")
+                    .ToArray(),
                 Sources = seed.Sources.OrderBy(
                     value => value,
                     StringComparer.Ordinal).ToArray()
