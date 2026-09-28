@@ -3,10 +3,13 @@ using System.IO;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Infrastructure;
 using Ee4v.AssetProtection;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
@@ -212,6 +215,128 @@ namespace Ee4v.AssetManager.UI
             Debug.LogWarning(
                 "AssetManager startup " + source + " sync: " +
                 string.Join(Environment.NewLine, result.ErrorMessages));
+        }
+    }
+
+    [InitializeOnLoad]
+    internal static class DerivedAssetHierarchyVisibility
+    {
+        private static bool _syncScheduled;
+
+        static DerivedAssetHierarchyVisibility()
+        {
+            EditorApplication.hierarchyChanged += ScheduleSync;
+            EditorSceneManager.sceneOpened += OnSceneOpened;
+            PrefabUtility.prefabInstanceUpdated += OnPrefabInstanceUpdated;
+            Undo.undoRedoPerformed += ScheduleSync;
+            ScheduleSync();
+        }
+
+        private static void OnSceneOpened(Scene scene, OpenSceneMode mode)
+        {
+            ScheduleSync();
+        }
+
+        private static void OnPrefabInstanceUpdated(GameObject instance)
+        {
+            ScheduleSync();
+        }
+
+        private static void ScheduleSync()
+        {
+            if (_syncScheduled)
+            {
+                return;
+            }
+
+            _syncScheduled = true;
+            EditorApplication.delayCall += SyncOpenScenes;
+        }
+
+        private static void SyncOpenScenes()
+        {
+            EditorApplication.delayCall -= SyncOpenScenes;
+            _syncScheduled = false;
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                return;
+            }
+
+            for (var index = 0; index < SceneManager.sceneCount; index++)
+            {
+                var scene = SceneManager.GetSceneAt(index);
+                if (!scene.IsValid() || !scene.isLoaded ||
+                    EditorSceneManager.IsPreviewScene(scene))
+                {
+                    continue;
+                }
+
+                var wasDirty = scene.isDirty;
+                var changed = false;
+                foreach (var root in scene.GetRootGameObjects())
+                {
+                    changed |= SyncSceneTree(root.transform);
+                }
+
+                if (changed && !wasDirty)
+                {
+                    EditorSceneApi.TryClearDirtiness(scene);
+                }
+            }
+        }
+
+        private static bool SyncSceneTree(Transform current)
+        {
+            var gameObject = current.gameObject;
+            if (PrefabUtility.IsOutermostPrefabInstanceRoot(gameObject) &&
+                IsDerivedAssetInstance(gameObject))
+            {
+                return SyncDerivedAssetInstance(gameObject);
+            }
+
+            var changed = false;
+            for (var index = 0; index < current.childCount; index++)
+            {
+                changed |= SyncSceneTree(current.GetChild(index));
+            }
+            return changed;
+        }
+
+        private static bool IsDerivedAssetInstance(GameObject root)
+        {
+            var source = PrefabUtility.GetCorrespondingObjectFromSource(root);
+            var path = AssetDatabase.GetAssetPath(source);
+            return !string.IsNullOrEmpty(path) && path.StartsWith(
+                DerivedAssetCreator.VariantRoot + "/",
+                StringComparison.Ordinal);
+        }
+
+        private static bool SyncDerivedAssetInstance(GameObject root)
+        {
+            var changed = false;
+            foreach (var transform in root.GetComponentsInChildren<Transform>(true))
+            {
+                var gameObject = transform.gameObject;
+                var hidden = (gameObject.hideFlags &
+                    HideFlags.HideInHierarchy) != 0;
+                var shouldHide = string.Equals(gameObject.tag,
+                    "EditorOnly", StringComparison.Ordinal);
+                if (hidden == shouldHide)
+                {
+                    continue;
+                }
+
+                gameObject.hideFlags = shouldHide
+                    ? gameObject.hideFlags | HideFlags.HideInHierarchy
+                    : gameObject.hideFlags & ~HideFlags.HideInHierarchy;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                EditorApplication.RepaintHierarchyWindow();
+            }
+            return changed;
         }
     }
 }

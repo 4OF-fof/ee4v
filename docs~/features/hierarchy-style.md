@@ -51,7 +51,7 @@ Hidden Objects も HierarchyStyle に含まれます。非表示にした GameOb
 
 非表示にした対象の `GlobalObjectId` も保存します。エディターの再起動、スクリプトの再読み込み、シーンの開き直し後に対象のシーンが読み込まれると、保存した非表示状態を再適用します。保存済みの active state と tag が既に非表示状態なら、非永続の `HideFlags.HideInHierarchy` だけを再適用し、GameObject、Prefab instance、シーンを dirty にしません。active state または tag の復元も必要な場合、再適用前に未変更だったシーンは処理後に dirty を解除します。
 
-`Reveal` は `HideFlags.HideInHierarchy` を外します。保存した状態がある場合は tag と active state も復元します。保存した tag が現在の Tag Manager に存在しない場合は `Untagged` を設定します。
+`Reveal` は `HideFlags.HideInHierarchy` を外します。保存した通常の tag と active state がある場合はそれらを復元します。対象に復元記録がない、または保存したtagが`EditorOnly`で、現在のtagも`EditorOnly`なら、再びHierarchyから隠れないように元Prefabの通常のtag（見つからなければ`Untagged`）へ戻し、active stateを有効にします。復元するtagが現在の Tag Manager に存在しない場合も`Untagged`を設定します。Prefabインスタンスの復元はScene側のoverrideとして記録し、元Prefab Assetは変更しません。
 
 `Reveal` の完了後は復元記録を削除し、保存先には現在非表示の対象だけを保持します。Undo と Redo に必要な復元記録は、そのエディターセッション中だけメモリに保持します。
 

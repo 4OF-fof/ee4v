@@ -215,10 +215,18 @@ namespace Ee4v.HiddenObjects
 
                 gameObject.hideFlags &=
                     ~HideFlags.HideInHierarchy;
-                if (state != null)
+                if (state != null &&
+                    !string.Equals(state.Tag, HiddenTag,
+                        StringComparison.Ordinal))
                 {
                     RestoreTag(gameObject, state.Tag);
                     gameObject.SetActive(state.ActiveSelf);
+                }
+                else if (string.Equals(gameObject.tag, HiddenTag,
+                             StringComparison.Ordinal))
+                {
+                    RestoreTag(gameObject, GetVisibleSourceTag(gameObject));
+                    gameObject.SetActive(true);
                 }
 
                 MarkDirty(gameObject, dirtyScenes);
@@ -291,6 +299,30 @@ namespace Ee4v.HiddenObjects
             {
                 gameObject.tag = "Untagged";
             }
+        }
+
+        private static string GetVisibleSourceTag(GameObject gameObject)
+        {
+            var source = PrefabUtility.GetCorrespondingObjectFromSource(
+                gameObject);
+            while (source != null)
+            {
+                if (!string.Equals(source.tag, HiddenTag,
+                        StringComparison.Ordinal))
+                {
+                    return source.tag;
+                }
+
+                var parentSource =
+                    PrefabUtility.GetCorrespondingObjectFromSource(source);
+                if (parentSource == source)
+                {
+                    break;
+                }
+                source = parentSource;
+            }
+
+            return "Untagged";
         }
 
         private static void MarkDirty(

@@ -3476,8 +3476,7 @@ namespace Ee4v.AssetManager.UI
             if (change.Visible)
             {
                 if (string.Equals(gameObject.tag, "EditorOnly",
-                        StringComparison.Ordinal) ||
-                    (gameObject.hideFlags & HideFlags.HideInHierarchy) != 0)
+                        StringComparison.Ordinal))
                 {
                     var source = PrefabUtility.GetCorrespondingObjectFromSource(
                         gameObject) as GameObject;
@@ -3488,7 +3487,6 @@ namespace Ee4v.AssetManager.UI
                               StringComparison.Ordinal)
                             ? source.tag
                             : "Untagged";
-                    gameObject.hideFlags &= ~HideFlags.HideInHierarchy;
                     gameObject.tag = tag;
                 }
                 gameObject.SetActive(true);
@@ -3505,7 +3503,6 @@ namespace Ee4v.AssetManager.UI
                 });
                 gameObject.SetActive(false);
                 gameObject.tag = "EditorOnly";
-                gameObject.hideFlags |= HideFlags.HideInHierarchy;
             }
             if (PrefabUtility.IsPartOfPrefabInstance(gameObject))
             {
