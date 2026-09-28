@@ -325,6 +325,95 @@
     overflow: hidden;
 }
 
+.ee4v-modification-workflow__prefab-group,
+.ee4v-modification-workflow__prefab-group-content {
+    min-width: 0;
+}
+
+.ee4v-modification-workflow__prefab-group-header {
+    min-width: 0;
+    min-height: 38px;
+    flex-direction: row;
+    align-items: center;
+    padding-right: var(--ee4v-space-sm);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-bottom-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-modification-workflow__prefab-group--last.ee4v-modification-workflow__prefab-group--header-last > .ee4v-modification-workflow__prefab-group-header {
+    border-bottom-width: 0;
+}
+
+.ee4v-modification-workflow__prefab-group-toggle.ee4v-ui-button {
+    min-width: 0;
+    min-height: 38px;
+    flex-grow: 1;
+    justify-content: flex-start;
+    border-width: 0;
+    border-radius: 0;
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-modification-workflow__prefab-group-toggle.ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-modification-workflow__prefab-group-toggle .ee4v-ui-button__content {
+    justify-content: flex-start;
+}
+
+.ee4v-modification-workflow__prefab-group-toggle .ee4v-ui-button__label {
+    -unity-font-style: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ee4v-modification-workflow__prefab-group-actions {
+    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-size-24);
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__prefab-group-preview-visibility.ee4v-ui-button {
+    width: var(--ee4v-size-24);
+    min-width: var(--ee4v-size-24);
+    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-size-24);
+    padding: var(--ee4v-space-none);
+    border-width: 0;
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-modification-workflow__prefab-group-preview-visibility.ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-modification-workflow__prefab-group-visibility.ee4v-ui-standard-input.unity-toggle {
+    width: var(--ee4v-size-24);
+    min-width: var(--ee4v-size-24);
+    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-size-24);
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-xxs);
+}
+
+.ee4v-modification-workflow__prefab-group-visibility.ee4v-ui-standard-input.unity-toggle > .unity-toggle__input {
+    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-size-24);
+    align-items: center;
+    justify-content: center;
+}
+
+.ee4v-modification-workflow__prefab-group-visibility > .unity-base-field__label {
+    display: none;
+}
+
 .ee4v-modification-workflow__object-row {
     min-width: 0;
     min-height: 46px;
@@ -878,6 +967,12 @@
 
 .ee4v-modification-workflow__material-item.ee4v-ui-navigation-item:hover {
     border-bottom-color: var(--ee4v-color-border-default);
+}
+
+.ee4v-modification-workflow__objects-list > .ee4v-modification-workflow__list-last-row,
+.ee4v-modification-workflow__material-list > .ee4v-modification-workflow__list-last-row,
+.ee4v-modification-workflow__prefab-group--last > .ee4v-modification-workflow__prefab-group-content > .ee4v-modification-workflow__list-last-row {
+    border-bottom-width: 0;
 }
 
 .ee4v-modification-workflow__material-item.ee4v-ui-navigation-item--selected,
