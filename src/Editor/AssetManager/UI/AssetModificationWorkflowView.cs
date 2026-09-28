@@ -836,8 +836,8 @@ namespace Ee4v.AssetManager.UI
         private UiButton _allMaterialsVisibilityButton;
         private EmbeddedMaterialInspector _materialInspector;
         private DerivedAssetPrefabScenePreview _scenePreview;
-        private FaceExpressionWindow.EmbeddedEditor _faceExpressionEditor;
-        private PhysBoneColliderWindow.EmbeddedEditor _physBoneEditor;
+        private FaceExpressionEditor _faceExpressionEditor;
+        private PhysBoneColliderEditor _physBoneEditor;
         private VisualElement _customizerHost;
         private VisualElement _faceExpressionHost;
         private VisualElement _physBoneHost;
@@ -1937,24 +1937,39 @@ namespace Ee4v.AssetManager.UI
             {
                 if (_faceExpressionEditor == null)
                 {
-                    _faceExpressionEditor = FaceExpressionWindow.Embed(
-                        _faceExpressionHost,
-                        _workingObject,
-                        RequestRepaint);
+                    var editor = new FaceExpressionEditor(
+                        _faceExpressionHost, RequestRepaint, true);
+                    try
+                    {
+                        editor.Initialize(_workingObject);
+                        _faceExpressionEditor = editor;
+                    }
+                    catch
+                    {
+                        editor.Dispose();
+                        throw;
+                    }
                 }
-                _faceExpressionEditor.SetActive(true);
                 return;
             }
 
-            _faceExpressionEditor?.SetActive(false);
+            _faceExpressionEditor?.StopPlayback();
             if (physBone)
             {
                 if (_physBoneEditor == null)
                 {
-                    _physBoneEditor = PhysBoneColliderWindow.Embed(
-                        _physBoneHost,
-                        _workingObject,
-                        RefreshMaterialPreview);
+                    var editor = new PhysBoneColliderEditor(
+                        _physBoneHost, RefreshMaterialPreview, true);
+                    try
+                    {
+                        editor.Initialize(_workingObject);
+                        _physBoneEditor = editor;
+                    }
+                    catch
+                    {
+                        editor.Dispose();
+                        throw;
+                    }
                 }
                 return;
             }

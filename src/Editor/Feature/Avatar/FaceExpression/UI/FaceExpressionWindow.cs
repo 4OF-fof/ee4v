@@ -13,35 +13,6 @@ namespace Ee4v.FaceExpression
 {
     internal sealed class FaceExpressionWindow : EditorWindow
     {
-        internal sealed class EmbeddedEditor : IDisposable
-        {
-            private FaceExpressionEditor _controller;
-
-            internal EmbeddedEditor(FaceExpressionEditor controller)
-            {
-                _controller = controller;
-            }
-
-            internal void SetActive(bool active)
-            {
-                if (!active)
-                {
-                    _controller?.StopPlayback();
-                }
-            }
-
-            public void Dispose()
-            {
-                if (_controller == null)
-                {
-                    return;
-                }
-
-                _controller.Dispose();
-                _controller = null;
-            }
-        }
-
         private FaceExpressionEditor _editor;
 
         [MenuItem("ee4v/Window/Avatar/Face Expression/Editor", false, 220)]
@@ -57,24 +28,6 @@ namespace Ee4v.FaceExpression
             window.RefreshTitle();
             window.minSize = new Vector2(720f, 600f);
             window.Show();
-        }
-
-        internal static EmbeddedEditor Embed(
-            VisualElement root,
-            GameObject avatar,
-            Action repaint)
-        {
-            var controller = new FaceExpressionEditor(root, repaint, true);
-            try
-            {
-                controller.Initialize(avatar);
-                return new EmbeddedEditor(controller);
-            }
-            catch
-            {
-                controller.Dispose();
-                throw;
-            }
         }
 
         private void OnEnable()
@@ -245,7 +198,8 @@ namespace Ee4v.FaceExpression
             _view = new FaceExpressionView(
                 CreateText(),
                 rect => _preview?.Draw(rect),
-                DrawPoseThumbnail);
+                DrawPoseThumbnail,
+                !_avatarLocked);
             _view.SetAvatarEditable(!_avatarLocked);
             _view.AvatarChanged += SetAvatar;
             _view.ClipChanged += SetClip;

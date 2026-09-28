@@ -12,27 +12,6 @@ namespace Ee4v.PhysBoneCollider
 {
     internal sealed class PhysBoneColliderWindow : EditorWindow
     {
-        internal sealed class EmbeddedEditor : IDisposable
-        {
-            private PhysBoneColliderEditor _controller;
-
-            internal EmbeddedEditor(PhysBoneColliderEditor controller)
-            {
-                _controller = controller;
-            }
-
-            public void Dispose()
-            {
-                if (_controller == null)
-                {
-                    return;
-                }
-
-                _controller.Dispose();
-                _controller = null;
-            }
-        }
-
         private PhysBoneColliderEditor _editor;
 
         [MenuItem("ee4v/Window/Avatar/PhysBone Collider Setup", false, 260)]
@@ -42,24 +21,6 @@ namespace Ee4v.PhysBoneCollider
             window.titleContent = UiTextFactory.CreateGuiContent(I18N.Get("window.title"));
             window.minSize = new Vector2(900f, 680f);
             window.Show();
-        }
-
-        internal static EmbeddedEditor Embed(
-            VisualElement root,
-            GameObject avatar,
-            Action saved)
-        {
-            var controller = new PhysBoneColliderEditor(root, saved, true);
-            try
-            {
-                controller.Initialize(avatar);
-                return new EmbeddedEditor(controller);
-            }
-            catch
-            {
-                controller.Dispose();
-                throw;
-            }
         }
 
         private void OnDisable()
@@ -166,7 +127,10 @@ namespace Ee4v.PhysBoneCollider
                 "Editor/Feature/Avatar/PhysBoneCollider/UI/physbone-collider.uss");
             root.AddToClassList("ee4v-physbone-collider");
 
-            BuildToolbar(root);
+            if (!_avatarLocked)
+            {
+                BuildToolbar(root);
+            }
             _status = UiTextFactory.CreateHelpBox(
                 I18N.Get("status.selectAvatar"),
                 HelpBoxMessageType.Info,
@@ -196,7 +160,6 @@ namespace Ee4v.PhysBoneCollider
             _avatarField.allowSceneObjects = true;
             _avatarField.RegisterValueChangedCallback(evt =>
                 SetAvatar(evt.newValue as GameObject));
-            _avatarField.SetEnabled(!_avatarLocked);
             toolbar.Add(_avatarField);
             root.Add(toolbar);
         }

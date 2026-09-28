@@ -919,6 +919,8 @@
     border-radius: 0;
     background-color: var(--ee4v-color-transparent);
     padding-top: var(--ee4v-space-sm);
+    padding-left: var(--ee4v-space-2xl);
+    padding-right: var(--ee4v-space-sm);
 }
 
 .ee4v-modification-workflow__material-editor-imgui {

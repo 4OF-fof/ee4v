@@ -15,7 +15,7 @@
     "category": {
       "shapeParts": "体型・パーツ",
       "material": "マテリアル",
-      "expressionAnimation": "表情・アニメーション",
+      "expressionAnimation": "表情",
       "physBone": "PhysBone"
     },
     "assets": {

@@ -109,7 +109,8 @@ namespace Ee4v.FaceExpression
         public FaceExpressionView(
             FaceExpressionViewText text,
             Action<Rect> drawPreview,
-            Action<AnimationClip, float, Rect> drawPosePreview = null)
+            Action<AnimationClip, float, Rect> drawPosePreview = null,
+            bool showAvatarField = true)
         {
             text = text ?? new FaceExpressionViewText();
             _defaultSectionTitle = text.BlendShapes ?? string.Empty;
@@ -147,7 +148,10 @@ namespace Ee4v.FaceExpression
                     AvatarChanged?.Invoke(evt.newValue as GameObject);
                 }
             });
-            toolbar.Leading.Add(_avatarField);
+            if (showAvatarField)
+            {
+                toolbar.Leading.Add(_avatarField);
+            }
 
             _clipField = UiTextFactory.CreateObjectField(
                 text.Clip,
