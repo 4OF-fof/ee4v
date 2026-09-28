@@ -363,6 +363,11 @@
     justify-content: flex-start;
 }
 
+.ee4v-modification-workflow__prefab-group-icon {
+    flex-shrink: 0;
+    margin-right: var(--ee4v-space-xs);
+}
+
 .ee4v-modification-workflow__prefab-group-toggle .ee4v-ui-button__label {
     -unity-font-style: bold;
     overflow: hidden;
@@ -969,9 +974,41 @@
     border-bottom-color: var(--ee4v-color-border-default);
 }
 
-.ee4v-modification-workflow__objects-list > .ee4v-modification-workflow__list-last-row,
-.ee4v-modification-workflow__material-list > .ee4v-modification-workflow__list-last-row,
-.ee4v-modification-workflow__prefab-group--last > .ee4v-modification-workflow__prefab-group-content > .ee4v-modification-workflow__list-last-row {
+.ee4v-modification-workflow__object-group,
+.ee4v-modification-workflow__object-group-content {
+    min-width: 0;
+}
+
+.ee4v-modification-workflow__object-group-content {
+    padding-left: var(--ee4v-space-md);
+}
+
+.ee4v-modification-workflow__object-group--last.ee4v-modification-workflow__object-group--header-last > .ee4v-modification-workflow__object-row {
+    border-bottom-width: 0;
+}
+
+.ee4v-modification-workflow__object-disclosure.ee4v-ui-button,
+.ee4v-modification-workflow__object-disclosure-placeholder {
+    width: var(--ee4v-size-24);
+    min-width: var(--ee4v-size-24);
+    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-size-24);
+    flex-shrink: 0;
+    margin-right: var(--ee4v-space-xs);
+}
+
+.ee4v-modification-workflow__object-disclosure.ee4v-ui-button {
+    padding: var(--ee4v-space-none);
+    border-width: 0;
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-modification-workflow__object-disclosure.ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-modification-workflow__objects-list .ee4v-modification-workflow__list-last-row,
+.ee4v-modification-workflow__material-list .ee4v-modification-workflow__list-last-row {
     border-bottom-width: 0;
 }
 

@@ -401,8 +401,16 @@ namespace Ee4v.AssetManager.UI
             internal bool IsActiveSelf { get; set; }
             internal bool ParentActiveInHierarchy { get; set; }
             internal bool IsVisibleInHierarchy { get; set; }
+            internal bool HasMeshInSubtree { get; set; }
             internal string Path { get; set; }
             internal IReadOnlyCollection<BodyPartCategory> Categories { get; set; }
+        }
+
+        private sealed class PrefabObjectNode
+        {
+            internal PrefabObjectEntry Entry { get; set; }
+            internal List<PrefabObjectNode> Children { get; } =
+                new List<PrefabObjectNode>();
         }
 
         private sealed class PrefabObjectRowState
@@ -873,6 +881,8 @@ namespace Ee4v.AssetManager.UI
             new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<int> _expandedPartPrefabGroups =
             new HashSet<int>();
+        private readonly HashSet<string> _expandedObjectGroups =
+            new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<int> _expandedMaterialPrefabGroups =
             new HashSet<int>();
         private bool _basePrefabHidden;
@@ -1522,20 +1532,22 @@ namespace Ee4v.AssetManager.UI
             baseCard.EnableInClassList(
                 "ee4v-modification-workflow__header-card--hidden",
                 _basePrefabHidden);
-            UiButton baseVisibility = null;
-            baseVisibility = CreatePrefabVisibilityButton(
-                !_basePrefabHidden,
-                I18N.Get(_basePrefabHidden
-                    ? "workflow.assets.clickToShow"
-                    : "workflow.assets.clickToHide"),
-                () => TogglePrefabPreviewVisibility(-1),
-                "ee4v-modification-workflow__header-card-visibility");
-            baseVisibility.userData = -1;
-            baseVisibility.AddToClassList(
-                "ee4v-modification-workflow__prefab-preview-visibility");
-            baseVisibility.RegisterCallback<ClickEvent>(
-                evt => evt.StopPropagation());
-            baseCard.Add(baseVisibility);
+            if (HasMeshInPrefabScope(-1))
+            {
+                var baseVisibility = CreatePrefabVisibilityButton(
+                    !_basePrefabHidden,
+                    I18N.Get(_basePrefabHidden
+                        ? "workflow.assets.clickToShow"
+                        : "workflow.assets.clickToHide"),
+                    () => TogglePrefabPreviewVisibility(-1),
+                    "ee4v-modification-workflow__header-card-visibility");
+                baseVisibility.userData = -1;
+                baseVisibility.AddToClassList(
+                    "ee4v-modification-workflow__prefab-preview-visibility");
+                baseVisibility.RegisterCallback<ClickEvent>(
+                    evt => evt.StopPropagation());
+                baseCard.Add(baseVisibility);
+            }
             baseCard.EnableInClassList(
                 "ee4v-modification-workflow__header-card--selected",
                 _selectedPrefabSiblingIndex == -1);
@@ -2172,19 +2184,21 @@ namespace Ee4v.AssetManager.UI
             card.EnableInClassList(
                 "ee4v-modification-workflow__header-card--hidden",
                 _hiddenPrefabSiblingIndices.Contains(child.SiblingIndex));
-            UiButton visibility = null;
-            visibility = CreatePrefabVisibilityButton(
-                !_hiddenPrefabSiblingIndices.Contains(child.SiblingIndex),
-                I18N.Get(_hiddenPrefabSiblingIndices.Contains(child.SiblingIndex)
-                    ? "workflow.assets.clickToShow"
-                    : "workflow.assets.clickToHide"),
-                () => TogglePrefabPreviewVisibility(child.SiblingIndex),
-                "ee4v-modification-workflow__header-card-visibility");
-            visibility.userData = child.SiblingIndex;
-            visibility.AddToClassList(
-                "ee4v-modification-workflow__prefab-preview-visibility");
-            visibility.RegisterCallback<ClickEvent>(evt => evt.StopPropagation());
-            card.Add(visibility);
+            if (HasMeshInPrefabScope(child.SiblingIndex))
+            {
+                var visibility = CreatePrefabVisibilityButton(
+                    !_hiddenPrefabSiblingIndices.Contains(child.SiblingIndex),
+                    I18N.Get(_hiddenPrefabSiblingIndices.Contains(child.SiblingIndex)
+                        ? "workflow.assets.clickToShow"
+                        : "workflow.assets.clickToHide"),
+                    () => TogglePrefabPreviewVisibility(child.SiblingIndex),
+                    "ee4v-modification-workflow__header-card-visibility");
+                visibility.userData = child.SiblingIndex;
+                visibility.AddToClassList(
+                    "ee4v-modification-workflow__prefab-preview-visibility");
+                visibility.RegisterCallback<ClickEvent>(evt => evt.StopPropagation());
+                card.Add(visibility);
+            }
             if (child.IsAdded)
             {
                 card.RegisterCallback<ContextClickEvent>(evt =>
@@ -2336,23 +2350,130 @@ namespace Ee4v.AssetManager.UI
                     prefabSiblingIndex >= 0)
                 {
                     var content = new VisualElement();
-                    foreach (var entry in group)
-                    {
-                        content.Add(BuildObjectRow(entry));
-                    }
+                    AddObjectHierarchy(content, group);
                     list.Add(BuildCollapsiblePrefabGroup(
                         prefabSiblingIndex,
                         content,
                         _expandedPartPrefabGroups));
                     continue;
                 }
-                foreach (var entry in group)
-                {
-                    list.Add(BuildObjectRow(entry));
-                }
+                AddObjectHierarchy(list, group);
             }
             MarkLastListItem(list);
             return panel;
+        }
+
+        private void AddObjectHierarchy(
+            VisualElement container,
+            IReadOnlyList<PrefabObjectEntry> entries)
+        {
+            var roots = new List<PrefabObjectNode>();
+            var ancestors = new Stack<PrefabObjectNode>();
+            foreach (var entry in entries)
+            {
+                while (ancestors.Count > 0 &&
+                       !IsAncestorPath(
+                           ancestors.Peek().Entry.SiblingPath,
+                           entry.SiblingPath))
+                {
+                    ancestors.Pop();
+                }
+
+                var node = new PrefabObjectNode { Entry = entry };
+                if (ancestors.Count == 0)
+                {
+                    roots.Add(node);
+                }
+                else
+                {
+                    ancestors.Peek().Children.Add(node);
+                }
+                ancestors.Push(node);
+            }
+
+            foreach (var root in roots)
+            {
+                container.Add(BuildObjectNode(root));
+            }
+        }
+
+        private static bool IsAncestorPath(
+            IReadOnlyList<int> ancestor,
+            IReadOnlyList<int> descendant)
+        {
+            if (ancestor.Count >= descendant.Count)
+            {
+                return false;
+            }
+            for (var index = 0; index < ancestor.Count; index++)
+            {
+                if (ancestor[index] != descendant[index])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private VisualElement BuildObjectNode(PrefabObjectNode node)
+        {
+            var row = BuildObjectRow(node.Entry);
+            if (node.Children.Count == 0)
+            {
+                var placeholder = new VisualElement();
+                placeholder.AddToClassList(
+                    "ee4v-modification-workflow__object-disclosure-placeholder");
+                row.Insert(0, placeholder);
+                return row;
+            }
+
+            var group = new VisualElement();
+            group.AddToClassList(
+                "ee4v-modification-workflow__object-group");
+            var content = new VisualElement();
+            content.AddToClassList(
+                "ee4v-modification-workflow__object-group-content");
+            foreach (var child in node.Children)
+            {
+                content.Add(BuildObjectNode(child));
+            }
+
+            var key = DerivedAssetPrefabScenePreview.GetPartKey(
+                node.Entry.PrefabSiblingIndex,
+                node.Entry.SiblingPath);
+            UiButton toggle = null;
+            void UpdateFoldout()
+            {
+                var expanded = _expandedObjectGroups.Contains(key);
+                toggle.SetIcon(AssetManagerControls.LoadFluentIconState(
+                    expanded ? "chevron_down.png" : "chevron_right.png",
+                    UiSizeTokens.Size12));
+                content.EnableInClassList(
+                    "ee4v-modification-workflow__hidden", !expanded);
+                group.EnableInClassList(
+                    "ee4v-modification-workflow__object-group--header-last",
+                    !expanded);
+            }
+            void ToggleFoldout()
+            {
+                if (!_expandedObjectGroups.Add(key))
+                {
+                    _expandedObjectGroups.Remove(key);
+                }
+                UpdateFoldout();
+            }
+            toggle = new UiButton(
+                string.Empty,
+                ToggleFoldout,
+                variant: UiButtonVariant.Ghost);
+            toggle.AddToClassList(
+                "ee4v-modification-workflow__object-disclosure");
+            row[0].RegisterCallback<ClickEvent>(_ => ToggleFoldout());
+            row.Insert(0, toggle);
+            group.Add(row);
+            group.Add(content);
+            UpdateFoldout();
+            return group;
         }
 
         private static void MarkLastListItem(VisualElement list)
@@ -2363,8 +2484,11 @@ namespace Ee4v.AssetManager.UI
             }
 
             var last = list[list.childCount - 1];
-            if (!last.ClassListContains(
-                    "ee4v-modification-workflow__prefab-group"))
+            var isPrefabGroup = last.ClassListContains(
+                "ee4v-modification-workflow__prefab-group");
+            var isObjectGroup = last.ClassListContains(
+                "ee4v-modification-workflow__object-group");
+            if (!isPrefabGroup && !isObjectGroup)
             {
                 last.AddToClassList(
                     "ee4v-modification-workflow__list-last-row");
@@ -2372,13 +2496,10 @@ namespace Ee4v.AssetManager.UI
             }
 
             last.AddToClassList(
-                "ee4v-modification-workflow__prefab-group--last");
-            var content = last[last.childCount - 1];
-            if (content.childCount > 0)
-            {
-                content[content.childCount - 1].AddToClassList(
-                    "ee4v-modification-workflow__list-last-row");
-            }
+                isPrefabGroup
+                    ? "ee4v-modification-workflow__prefab-group--last"
+                    : "ee4v-modification-workflow__object-group--last");
+            MarkLastListItem(last[last.childCount - 1]);
         }
 
         private IEnumerable<int> GetDisplayedPrefabScopes()
@@ -2427,23 +2548,32 @@ namespace Ee4v.AssetManager.UI
                 variant: UiButtonVariant.Ghost);
             toggle.AddToClassList(
                 "ee4v-modification-workflow__prefab-group-toggle");
+            var prefabIcon = new Icon(
+                AssetManagerControls.LoadFluentIconState(
+                    "cube.png", UiSizeTokens.Size16));
+            prefabIcon.AddToClassList(
+                "ee4v-modification-workflow__prefab-group-icon");
+            toggle.Content.Insert(1, prefabIcon);
             header.Add(toggle);
             var actions = new VisualElement();
             actions.AddToClassList(
                 "ee4v-modification-workflow__prefab-group-actions");
-            var previewHidden = _hiddenPrefabSiblingIndices.Contains(
-                prefabSiblingIndex);
-            var previewVisibility = CreatePrefabVisibilityButton(
-                !previewHidden,
-                I18N.Get(previewHidden
-                    ? "workflow.assets.clickToShow"
-                    : "workflow.assets.clickToHide"),
-                () => TogglePrefabPreviewVisibility(prefabSiblingIndex),
-                "ee4v-modification-workflow__prefab-group-preview-visibility");
-            previewVisibility.userData = prefabSiblingIndex;
-            previewVisibility.AddToClassList(
-                "ee4v-modification-workflow__prefab-preview-visibility");
-            actions.Add(previewVisibility);
+            if (HasMeshInPrefabScope(prefabSiblingIndex))
+            {
+                var previewHidden = _hiddenPrefabSiblingIndices.Contains(
+                    prefabSiblingIndex);
+                var previewVisibility = CreatePrefabVisibilityButton(
+                    !previewHidden,
+                    I18N.Get(previewHidden
+                        ? "workflow.assets.clickToShow"
+                        : "workflow.assets.clickToHide"),
+                    () => TogglePrefabPreviewVisibility(prefabSiblingIndex),
+                    "ee4v-modification-workflow__prefab-group-preview-visibility");
+                previewVisibility.userData = prefabSiblingIndex;
+                previewVisibility.AddToClassList(
+                    "ee4v-modification-workflow__prefab-preview-visibility");
+                actions.Add(previewVisibility);
+            }
             var visibility = UiTextFactory.CreateToggle();
             visibility.AddToClassList(
                 "ee4v-modification-workflow__prefab-group-visibility");
@@ -2467,6 +2597,38 @@ namespace Ee4v.AssetManager.UI
                    prefabSiblingIndex < _workingObject.transform.childCount
                 ? _workingObject.transform.GetChild(prefabSiblingIndex).name
                 : _workingObject.name;
+        }
+
+        private bool HasMeshInPrefabScope(int prefabSiblingIndex)
+        {
+            if (_workingObject == null)
+            {
+                return false;
+            }
+            var root = _workingObject.transform;
+            var meshPresence = new Dictionary<Transform, bool>();
+            if (prefabSiblingIndex >= 0)
+            {
+                return prefabSiblingIndex < root.childCount &&
+                       HasMeshInSubtree(
+                           root.GetChild(prefabSiblingIndex),
+                           meshPresence);
+            }
+
+            if (HasPartMesh(root))
+            {
+                return true;
+            }
+            for (var index = 0; index < root.childCount; index++)
+            {
+                var child = root.GetChild(index);
+                if (!PrefabUtility.IsAnyPrefabInstanceRoot(child.gameObject) &&
+                    HasMeshInSubtree(child, meshPresence))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private bool IsPrefabGroupEnabled(int prefabSiblingIndex)
@@ -2605,12 +2767,16 @@ namespace Ee4v.AssetManager.UI
             var actions = new VisualElement();
             actions.AddToClassList(
                 "ee4v-modification-workflow__object-actions");
-            var previewVisibility = CreatePrefabVisibilityButton(
-                true,
-                string.Empty,
-                () => TogglePartPreviewVisibility(entry),
-                "ee4v-modification-workflow__object-preview-visibility");
-            actions.Add(previewVisibility);
+            UiButton previewVisibility = null;
+            if (entry.HasMeshInSubtree)
+            {
+                previewVisibility = CreatePrefabVisibilityButton(
+                    true,
+                    string.Empty,
+                    () => TogglePartPreviewVisibility(entry),
+                    "ee4v-modification-workflow__object-preview-visibility");
+                actions.Add(previewVisibility);
+            }
             var visibility = UiTextFactory.CreateToggle();
             visibility.AddToClassList(
                 "ee4v-modification-workflow__object-visibility");
@@ -2645,6 +2811,10 @@ namespace Ee4v.AssetManager.UI
             state.Visibility.tooltip = I18N.Get(entry.IsVisible
                 ? "workflow.objects.turnOff"
                 : "workflow.objects.turnOn");
+            if (state.PreviewVisibility == null)
+            {
+                return;
+            }
             var previewVisible = !_hiddenPreviewParts.Contains(
                 DerivedAssetPrefabScenePreview.GetPartKey(
                     entry.PrefabSiblingIndex, entry.SiblingPath));
@@ -2685,6 +2855,7 @@ namespace Ee4v.AssetManager.UI
             {
                 var result = new List<PrefabObjectEntry>();
                 var classifier = new PrefabPartClassifier(root);
+                var meshPresence = new Dictionary<Transform, bool>();
                 var excludedPrefixes =
                     AssetManagerSettings.ExcludedPartPrefixes;
                 var scopes = _selectedPrefabSiblingIndex.HasValue
@@ -2715,10 +2886,6 @@ namespace Ee4v.AssetManager.UI
                         int[] indices,
                         string objectPath)
                     {
-                        if (!HasPartMesh(target))
-                        {
-                            return;
-                        }
                         var gameObject = target.gameObject;
                         result.Add(new PrefabObjectEntry
                         {
@@ -2737,6 +2904,8 @@ namespace Ee4v.AssetManager.UI
                                 target.parent.gameObject.activeInHierarchy,
                             IsVisibleInHierarchy =
                                 gameObject.activeInHierarchy,
+                            HasMeshInSubtree = HasMeshInSubtree(
+                                target, meshPresence),
                             Categories = classifier.Classify(target)
                         });
                     }
@@ -2802,6 +2971,25 @@ namespace Ee4v.AssetManager.UI
                        name.StartsWith(
                            prefix,
                            StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool HasMeshInSubtree(
+            Transform target,
+            Dictionary<Transform, bool> meshPresence)
+        {
+            if (meshPresence.TryGetValue(target, out var hasMesh))
+            {
+                return hasMesh;
+            }
+            hasMesh = HasPartMesh(target);
+            for (var index = 0; index < target.childCount; index++)
+            {
+                var childHasMesh = HasMeshInSubtree(
+                    target.GetChild(index), meshPresence);
+                hasMesh |= childHasMesh;
+            }
+            meshPresence.Add(target, hasMesh);
+            return hasMesh;
         }
 
         private static bool HasPartMesh(Transform target)
@@ -3401,6 +3589,7 @@ namespace Ee4v.AssetManager.UI
             _hiddenMaterials.Clear();
             _hiddenPreviewParts.Clear();
             _expandedPartPrefabGroups.Clear();
+            _expandedObjectGroups.Clear();
             _expandedMaterialPrefabGroups.Clear();
             _feedback = string.Empty;
             _assetFeedback = string.Empty;
@@ -6371,6 +6560,7 @@ namespace Ee4v.AssetManager.UI
             _hiddenPrefabSiblingIndices.Clear();
             _hiddenPreviewParts.Clear();
             _expandedPartPrefabGroups.Clear();
+            _expandedObjectGroups.Clear();
             _expandedMaterialPrefabGroups.Clear();
             _prefabPreviewVisibilityInitialized = false;
             _selectedPrefabSiblingIndex = null;
@@ -6406,6 +6596,7 @@ namespace Ee4v.AssetManager.UI
             _hiddenPrefabSiblingIndices.Clear();
             _hiddenPreviewParts.Clear();
             _expandedPartPrefabGroups.Clear();
+            _expandedObjectGroups.Clear();
             _expandedMaterialPrefabGroups.Clear();
             _prefabPreviewVisibilityInitialized = false;
             _selectedPrefabSiblingIndex = null;
