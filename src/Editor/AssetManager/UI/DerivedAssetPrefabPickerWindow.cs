@@ -338,6 +338,7 @@ namespace Ee4v.AssetManager.UI
         private const float PreviewFitPadding = 1.05f;
         private const float AppearanceFullBodyDistanceScale = 0.52f;
         private const float AppearanceFullBodyVerticalOffsetScale = 0.025f;
+        private const float HeadFaceViewScale = 1.5f;
         private const float CameraTransitionDuration = 0.45f;
         private const float MinimumPreviewSize = 320f;
         private const float MaximumPreviewSize = 560f;
@@ -1020,6 +1021,25 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            var minimumHalfView = avatarHeight * GetMinimumHalfView(part);
+            if (part == BodyPartCategory.Head &&
+                TryGetHeadFaceFraming(out var faceCenter,
+                    out var faceHeight, out var faceWidth))
+            {
+                var up = _instance.transform.up;
+                var right = _instance.transform.right;
+                var offset = faceCenter - focusBounds.center;
+                focusBounds.center += up * Vector3.Dot(offset, up) +
+                    right * Vector3.Dot(offset, right);
+                var previewRect = _viewport.PreviewRect;
+                var aspect = previewRect.height > 1f
+                    ? previewRect.width / previewRect.height
+                    : 1f;
+                minimumHalfView = Mathf.Max(faceHeight,
+                    faceWidth / Mathf.Max(0.01f, aspect)) *
+                    HeadFaceViewScale;
+            }
+
             if (part == BodyPartCategory.Chest)
             {
                 focusBounds.center += _instance.transform.up *
@@ -1037,7 +1057,7 @@ namespace Ee4v.AssetManager.UI
             }
             FrameBounds(
                 focusBounds,
-                avatarHeight * GetMinimumHalfView(part),
+                minimumHalfView,
                 viewAngles,
                 animate,
                 GetDistanceScale(part));
@@ -1238,6 +1258,148 @@ namespace Ee4v.AssetManager.UI
                     _instance.transform.up * avatarHeight * 0.1f);
             }
             bounds.Expand(avatarHeight * 0.06f);
+            return true;
+        }
+
+        private bool TryGetHeadFaceFraming(
+            out Vector3 faceCenter,
+            out float faceHeight,
+            out float faceWidth)
+        {
+            faceCenter = default;
+            faceHeight = 0f;
+            faceWidth = 0f;
+            var animator = _instance
+                .GetComponentsInChildren<Animator>(true)
+                .FirstOrDefault(candidate => candidate != null &&
+                    IsInFocusScope(candidate.transform) &&
+                    candidate.avatar != null &&
+                    candidate.avatar.isHuman && candidate.isHuman);
+            var head = animator != null
+                ? animator.GetBoneTransform(HumanBodyBones.Head)
+                : null;
+            if (head == null || !IsInFocusScope(head))
+            {
+                return false;
+            }
+
+            var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+            var up = _instance.transform.up;
+            var right = _instance.transform.right;
+            var bestCount = 0;
+            var bestHasHips = false;
+            var bestMin = 0f;
+            var bestMax = 0f;
+            var bestLeft = 0f;
+            var bestRight = 0f;
+            foreach (var renderer in _skinnedRenderers)
+            {
+                if (renderer == null || !renderer.enabled ||
+                    !renderer.gameObject.activeInHierarchy ||
+                    !IsInScope(renderer) ||
+                    _hiddenPartRenderers.Contains(renderer) ||
+                    renderer.sharedMesh == null ||
+                    !renderer.sharedMesh.isReadable)
+                {
+                    continue;
+                }
+
+                var bones = renderer.bones;
+                var headIndex = Array.IndexOf(bones, head);
+                if (headIndex < 0)
+                {
+                    continue;
+                }
+
+                var weights = renderer.sharedMesh.boneWeights;
+                if (weights.Length != renderer.sharedMesh.vertexCount)
+                {
+                    continue;
+                }
+
+                var baked = new Mesh();
+                var count = 0;
+                var minimum = float.MaxValue;
+                var maximum = float.MinValue;
+                var left = float.MaxValue;
+                var rightmost = float.MinValue;
+                try
+                {
+                    renderer.BakeMesh(baked, true);
+                    var vertices = baked.vertices;
+                    if (vertices.Length != weights.Length)
+                    {
+                        continue;
+                    }
+                    for (var index = 0; index < vertices.Length; index++)
+                    {
+                        var weight = weights[index];
+                        var headWeight = 0f;
+                        if (weight.boneIndex0 == headIndex)
+                        {
+                            headWeight += weight.weight0;
+                        }
+                        if (weight.boneIndex1 == headIndex)
+                        {
+                            headWeight += weight.weight1;
+                        }
+                        if (weight.boneIndex2 == headIndex)
+                        {
+                            headWeight += weight.weight2;
+                        }
+                        if (weight.boneIndex3 == headIndex)
+                        {
+                            headWeight += weight.weight3;
+                        }
+                        if (headWeight < 0.5f)
+                        {
+                            continue;
+                        }
+
+                        var point = renderer.transform.TransformPoint(
+                            vertices[index]);
+                        var height = Vector3.Dot(point - head.position, up);
+                        var horizontal = Vector3.Dot(
+                            point - head.position, right);
+                        minimum = Mathf.Min(minimum, height);
+                        maximum = Mathf.Max(maximum, height);
+                        left = Mathf.Min(left, horizontal);
+                        rightmost = Mathf.Max(rightmost, horizontal);
+                        count++;
+                    }
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(baked);
+                }
+
+                var hasHips = hips != null && Array.IndexOf(bones, hips) >= 0;
+                if (count < 32 ||
+                    (bestCount > 0 &&
+                     (bestHasHips && !hasHips ||
+                      bestHasHips == hasHips && count <= bestCount)))
+                {
+                    continue;
+                }
+
+                bestCount = count;
+                bestHasHips = hasHips;
+                bestMin = minimum;
+                bestMax = maximum;
+                bestLeft = left;
+                bestRight = rightmost;
+            }
+
+            if (bestCount == 0 || bestMax - bestMin < 0.01f)
+            {
+                return false;
+            }
+
+            faceCenter = head.position +
+                up * ((bestMin + bestMax) * 0.5f) +
+                right * ((bestLeft + bestRight) * 0.5f);
+            faceHeight = bestMax - bestMin;
+            faceWidth = bestRight - bestLeft;
             return true;
         }
 
