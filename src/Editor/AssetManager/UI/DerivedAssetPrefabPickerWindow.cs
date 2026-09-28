@@ -383,6 +383,8 @@ namespace Ee4v.AssetManager.UI
             new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<Renderer> _hiddenPartRenderers =
             new HashSet<Renderer>();
+        private readonly HashSet<Transform> _temporarilyEnabledEditorOnlyParts =
+            new HashSet<Transform>();
         private bool _basePrefabHidden;
         private PreviewRenderUtility _utility;
         private GameObject _prefab;
@@ -539,6 +541,7 @@ namespace Ee4v.AssetManager.UI
             {
                 if (!string.Equals(target.tag, "EditorOnly",
                         StringComparison.Ordinal) ||
+                    _temporarilyEnabledEditorOnlyParts.Contains(target) ||
                     (_scopeSiblingIndex.HasValue &&
                      _scopeSiblingIndex.Value >= 0 &&
                      target.parent == _instance.transform &&
@@ -597,7 +600,8 @@ namespace Ee4v.AssetManager.UI
             int prefabSiblingIndex,
             IReadOnlyList<int> siblingPath,
             string objectName,
-            bool visible)
+            bool activeSelf,
+            bool included)
         {
             _prefab = prefab;
             if (_instance == null || siblingPath == null)
@@ -637,8 +641,17 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            current.gameObject.SetActive(visible);
-            if (visible)
+            current.gameObject.SetActive(activeSelf);
+            var hiddenRenderersChanged = included &&
+                string.Equals(current.tag, "EditorOnly",
+                    StringComparison.Ordinal)
+                    ? _temporarilyEnabledEditorOnlyParts.Add(current)
+                    : _temporarilyEnabledEditorOnlyParts.Remove(current);
+            if (hiddenRenderersChanged)
+            {
+                RebuildHiddenPartRenderers();
+            }
+            if (activeSelf)
             {
                 _forceSkinningRecalculation = true;
                 SetSkinningRecalculation(true);
@@ -2173,6 +2186,7 @@ namespace Ee4v.AssetManager.UI
             _filteredRenderers.Clear();
             _temporarilyHiddenRenderers.Clear();
             _hiddenPartRenderers.Clear();
+            _temporarilyEnabledEditorOnlyParts.Clear();
             _renderers = Array.Empty<Renderer>();
             _skinnedRenderers = Array.Empty<SkinnedMeshRenderer>();
             if (_utility != null)

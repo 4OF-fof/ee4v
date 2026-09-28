@@ -2783,99 +2783,34 @@ namespace Ee4v.AssetManager.UI
             int prefabSiblingIndex,
             bool visible)
         {
-            if (IsPrefabGroupCheckboxChecked(prefabSiblingIndex) == visible)
+            var entry = _objectEntriesCache?.FirstOrDefault(candidate =>
+                candidate.PrefabSiblingIndex == prefabSiblingIndex &&
+                candidate.SiblingPath.Length == 0);
+            if (entry == null)
+            {
+                ShowAssetError("workflow.assets.saveFailed");
+                return;
+            }
+            if (entry.IsVisible == visible)
             {
                 return;
             }
-            try
+            ChangePrefabObject(entry, visible);
+            if (entry.IsVisible != visible)
             {
-                if (!IsEditableWorkflowPrefab() ||
-                    !FlushPendingPartVisibility())
-                {
-                    throw new InvalidOperationException(
-                        "The selected Prefab cannot be edited.");
-                }
-                var assetPath = AssetDatabase.GetAssetPath(_workingObject);
-                var prefabName = GetPrefabGroupName(prefabSiblingIndex);
-                var restoreTags = new List<PartTagChange>();
-                var root = PrefabUtility.LoadPrefabContents(assetPath);
-                try
-                {
-                    ApplyPartVisibility(root, new PendingPartVisibility
-                    {
-                        Entry = new PrefabObjectEntry
-                        {
-                            PrefabSiblingIndex = prefabSiblingIndex,
-                            PrefabName = prefabName,
-                            SiblingPath = Array.Empty<int>(),
-                            Name = prefabName
-                        },
-                        Visible = visible,
-                        RestoreKey = "ee4v.asset-manager.object-tag." +
-                            AssetDatabase.AssetPathToGUID(assetPath) + "." +
-                            prefabSiblingIndex + ".." + prefabName
-                    }, restoreTags);
-                    var saved = PrefabUtility.SaveAsPrefabAsset(
-                        root, assetPath, out var success);
-                    if (!success || saved == null)
-                    {
-                        throw new InvalidOperationException(
-                            "The derived Prefab could not be saved.");
-                    }
-                }
-                finally
-                {
-                    PrefabUtility.UnloadPrefabContents(root);
-                }
-                foreach (var tag in restoreTags)
-                {
-                    if (tag.Visible)
-                    {
-                        EditorPrefs.DeleteKey(tag.RestoreKey);
-                    }
-                    else if (tag.OriginalTag != null)
-                    {
-                        EditorPrefs.SetString(
-                            tag.RestoreKey, tag.OriginalTag);
-                    }
-                }
-                _workingObject = AssetDatabase.LoadAssetAtPath<GameObject>(
-                    assetPath);
-                if (_workingObject == null)
-                {
-                    throw new InvalidOperationException(
-                        "The saved derived Prefab could not be loaded.");
-                }
-                if (_workingAsset != null)
-                {
-                    _workingAsset.Prefab = _workingObject;
-                }
-                if (visible)
-                {
-                    _hiddenPrefabSiblingIndices.Remove(
-                        prefabSiblingIndex);
-                }
-                else
-                {
-                    _hiddenPrefabSiblingIndices.Add(
-                        prefabSiblingIndex);
-                }
-                _scenePreview?.SetHiddenPrefabs(
-                    _basePrefabHidden, _hiddenPrefabSiblingIndices);
-                _scenePreview?.ReloadPrefabPreservingView(_workingObject);
-                _assetFeedback = string.Empty;
-                ClearAppearanceCaches();
-                InvalidateVariantSaveStatus();
-                RefreshPrefabPreviewVisibilityControls(
-                    prefabSiblingIndex);
-                RefreshPrefabHeaderActiveSelf(prefabSiblingIndex, visible);
-                ShowCategory(_currentCategory, false);
+                return;
             }
-            catch (Exception exception)
+            if (entry.IsActiveSelf && entry.IsVisible)
             {
-                Debug.LogException(exception);
-                ShowAssetError("workflow.assets.saveFailed");
+                _hiddenPrefabSiblingIndices.Remove(prefabSiblingIndex);
             }
+            else
+            {
+                _hiddenPrefabSiblingIndices.Add(prefabSiblingIndex);
+            }
+            _scenePreview?.SetHiddenPrefabs(
+                _basePrefabHidden, _hiddenPrefabSiblingIndices);
+            RefreshPrefabPreviewVisibilityControls(prefabSiblingIndex);
         }
 
         private VisualElement BuildObjectRow(PrefabObjectEntry entry)
@@ -2959,7 +2894,8 @@ namespace Ee4v.AssetManager.UI
 
         private void UpdateObjectRow(
             PrefabObjectEntry entry,
-            PrefabObjectRowState state)
+            PrefabObjectRowState state,
+            bool updatePreviewIcon = true)
         {
             var parentHidden = entry.IsActiveSelf &&
                                !entry.ParentActiveInHierarchy;
@@ -2979,7 +2915,7 @@ namespace Ee4v.AssetManager.UI
             state.Visibility.tooltip = I18N.Get(entry.IsVisible
                 ? "workflow.objects.turnOff"
                 : "workflow.objects.turnOn");
-            if (state.PreviewVisibility == null)
+            if (!updatePreviewIcon || state.PreviewVisibility == null)
             {
                 return;
             }
@@ -3323,7 +3259,8 @@ namespace Ee4v.AssetManager.UI
                     entry.PrefabSiblingIndex,
                     entry.SiblingPath,
                     entry.Name,
-                    activeSelf);
+                    activeSelf,
+                    visible);
                 if (_pendingPartVisibility.Count == 0)
                 {
                     _pendingPartAssetPath = null;
@@ -3348,15 +3285,17 @@ namespace Ee4v.AssetManager.UI
             bool visible,
             bool activeSelf)
         {
+            var previousActiveSelf = entry.IsActiveSelf;
             entry.IsVisible = visible;
             entry.IsActiveSelf = activeSelf;
             entry.IsVisibleInHierarchy =
                 entry.ParentActiveInHierarchy && activeSelf;
             if (_objectRows.TryGetValue(entry, out var changedRow))
             {
-                UpdateObjectRow(entry, changedRow);
+                UpdateObjectRow(entry, changedRow, false);
             }
-            if (_objectEntriesCache == null)
+            if (_objectEntriesCache == null ||
+                previousActiveSelf == activeSelf)
             {
                 return;
             }
@@ -3364,18 +3303,25 @@ namespace Ee4v.AssetManager.UI
             {
                 if (candidate == entry ||
                     candidate.PrefabSiblingIndex !=
-                        entry.PrefabSiblingIndex)
+                        entry.PrefabSiblingIndex ||
+                    !IsAncestorPath(
+                        entry.SiblingPath, candidate.SiblingPath))
                 {
                     continue;
                 }
-                candidate.ParentActiveInHierarchy =
+                var parentActive =
                     IsCurrentPartParentActive(candidate);
+                if (candidate.ParentActiveInHierarchy == parentActive)
+                {
+                    continue;
+                }
+                candidate.ParentActiveInHierarchy = parentActive;
                 candidate.IsVisibleInHierarchy =
                     candidate.ParentActiveInHierarchy &&
                     candidate.IsActiveSelf;
                 if (_objectRows.TryGetValue(candidate, out var row))
                 {
-                    UpdateObjectRow(candidate, row);
+                    UpdateObjectRow(candidate, row, false);
                 }
             }
         }
