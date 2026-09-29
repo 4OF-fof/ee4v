@@ -844,7 +844,6 @@ namespace Ee4v.AssetManager.UI
         private DerivedAssetInfo _workingAsset;
         private GameObject _workingObject;
         private Material _selectedMaterial;
-        private bool _materialSelectionExplicitlyCleared;
         private UiButton _allMaterialsVisibilityButton;
         private EmbeddedMaterialInspector _materialInspector;
         private DerivedAssetPrefabScenePreview _scenePreview;
@@ -2369,7 +2368,6 @@ namespace Ee4v.AssetManager.UI
             _selectedBodyPart = null;
             _selectedPartKey = null;
             _selectedMaterial = null;
-            _materialSelectionExplicitlyCleared = false;
             if (siblingIndex.HasValue &&
                 _currentCategory != WorkflowCategory.Material)
             {
@@ -2937,7 +2935,6 @@ namespace Ee4v.AssetManager.UI
                     _selectedBodyPart = null;
                 }
                 _selectedMaterial = material;
-                _materialSelectionExplicitlyCleared = false;
                 if (prefabSiblingIndex >= 0)
                 {
                     _expandedMaterialPrefabGroups.Add(prefabSiblingIndex);
@@ -3009,7 +3006,6 @@ namespace Ee4v.AssetManager.UI
             if (_currentCategory == WorkflowCategory.Material)
             {
                 _selectedMaterial = null;
-                _materialSelectionExplicitlyCleared = true;
                 InvalidateAppearanceControls(AppearancePanel.Material);
                 ShowCategory(WorkflowCategory.Material, false);
                 return;
@@ -4022,7 +4018,6 @@ namespace Ee4v.AssetManager.UI
             _baseAvatarViewPosition = null;
             _avatarDescriptor = null;
             _selectedMaterial = null;
-            _materialSelectionExplicitlyCleared = false;
             _hiddenMaterials.Clear();
             _hiddenPreviewParts.Clear();
             _expandedPartPrefabGroups.Clear();
@@ -4090,18 +4085,6 @@ namespace Ee4v.AssetManager.UI
                     entry.Material == _selectedMaterial))
             {
                 _selectedMaterial = null;
-            }
-            if (_selectedMaterial == null &&
-                !_materialSelectionExplicitlyCleared)
-            {
-                _selectedMaterial = GetDisplayedPrefabScopes()
-                    .SelectMany(prefabSiblingIndex =>
-                        filteredMaterials.Where(entry =>
-                            entry.Usages.Any(usage =>
-                                usage.PrefabSiblingIndex ==
-                                prefabSiblingIndex)))
-                    .Select(entry => entry.Material)
-                    .FirstOrDefault() ?? filteredMaterials[0].Material;
             }
             var availableMaterials = new HashSet<Material>(
                 filteredMaterials.Select(entry => entry.Material));
@@ -4195,7 +4178,6 @@ namespace Ee4v.AssetManager.UI
                 () =>
                 {
                     _selectedMaterial = material;
-                    _materialSelectionExplicitlyCleared = false;
                     ShowCategory(WorkflowCategory.Material, false);
                 });
             choice.AddToClassList(
@@ -4287,8 +4269,8 @@ namespace Ee4v.AssetManager.UI
                     }
                     EndBodyScaleDrag();
                     _selectedBodyPart = part;
+                    _selectedPartKey = null;
                     _selectedMaterial = null;
-                    _materialSelectionExplicitlyCleared = false;
                     ShowCategory(_currentCategory, false);
                     _scenePreview?.FocusBodyPart(part);
                 },
@@ -7012,7 +6994,6 @@ namespace Ee4v.AssetManager.UI
             _selectedBodyPart = null;
             _selectedPartKey = null;
             _selectedMaterial = null;
-            _materialSelectionExplicitlyCleared = false;
             _hiddenMaterials.Clear();
             _feedback = string.Empty;
             _assetFeedback = string.Empty;
@@ -7046,7 +7027,6 @@ namespace Ee4v.AssetManager.UI
             _selectedBodyPart = null;
             _selectedPartKey = null;
             _selectedMaterial = null;
-            _materialSelectionExplicitlyCleared = false;
             _hiddenMaterials.Clear();
             _feedback = string.Empty;
             _assetFeedback = string.Empty;
