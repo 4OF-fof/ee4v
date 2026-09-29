@@ -351,7 +351,9 @@ namespace Ee4v.AssetManager.UI
         private readonly VisualElement _viewToggle;
         private readonly UiButton _primaryViewButton;
         private readonly UiButton _secondaryViewButton;
+        private readonly VisualElement _selectionOverlay;
         private readonly UiTextElement _selectionLabel;
+        private readonly UiButton _selectionHighlightButton;
         private Material _outlineMaterial;
         private Material _invisiblePreviewMaterial;
         private readonly List<Material> _pickMaterialsById =
@@ -360,6 +362,7 @@ namespace Ee4v.AssetManager.UI
         private RenderTexture _outlineTexture;
         private Vector2 _outlineTextureSize;
         private bool _outlineDirty = true;
+        private bool _selectionHighlightVisible = true;
         private readonly Dictionary<Transform, Vector3>
             _pendingTransformScales =
                 new Dictionary<Transform, Vector3>();
@@ -465,12 +468,27 @@ namespace Ee4v.AssetManager.UI
             _viewToggle.Add(_primaryViewButton);
             _viewToggle.Add(_secondaryViewButton);
             _viewport.FeatureOverlay.Add(_viewToggle);
+            _selectionOverlay = new VisualElement
+            {
+                pickingMode = PickingMode.Position
+            };
+            _selectionOverlay.AddToClassList(
+                "ee4v-asset-manager__preview-selection");
+            _selectionOverlay.style.display = DisplayStyle.None;
             _selectionLabel = UiTextFactory.Create(
                 string.Empty,
                 "ee4v-asset-manager__preview-selection-label");
             _selectionLabel.pickingMode = PickingMode.Ignore;
-            _selectionLabel.style.display = DisplayStyle.None;
-            _viewport.FeatureOverlay.Add(_selectionLabel);
+            _selectionOverlay.Add(_selectionLabel);
+            _selectionHighlightButton = new UiButton(
+                string.Empty,
+                ToggleSelectionHighlight,
+                variant: UiButtonVariant.Ghost);
+            _selectionHighlightButton.AddToClassList(
+                "ee4v-asset-manager__preview-selection-toggle");
+            _selectionOverlay.Add(_selectionHighlightButton);
+            _viewport.FeatureOverlay.Add(_selectionOverlay);
+            RefreshSelectionHighlightButton();
             Add(_viewport);
             SetPreviewAvailable(false);
 
@@ -576,12 +594,35 @@ namespace Ee4v.AssetManager.UI
                     }
                 }
             }
-            _selectionLabel.style.display =
+            _selectionOverlay.style.display =
                 _outlinedRenderers.Count > 0
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
             _outlineDirty = true;
             _viewport.RequestRepaint();
+        }
+
+        private void ToggleSelectionHighlight()
+        {
+            _selectionHighlightVisible = !_selectionHighlightVisible;
+            _outlineDirty = true;
+            RefreshSelectionHighlightButton();
+            _viewport.RequestRepaint();
+        }
+
+        private void RefreshSelectionHighlightButton()
+        {
+            var tooltip = I18N.Get(_selectionHighlightVisible
+                ? "detail.derivedAssetPreviewHideHighlight"
+                : "detail.derivedAssetPreviewShowHighlight");
+            _selectionHighlightButton.tooltip = tooltip;
+            _selectionHighlightButton.SetIcon(FluentUiIcons.CreateState(
+                _selectionHighlightVisible ? "eye.png" : "eye_off.png",
+                UiSizeTokens.Size18,
+                tooltip));
+            _selectionOverlay.EnableInClassList(
+                "ee4v-asset-manager__preview-selection--highlight-hidden",
+                !_selectionHighlightVisible);
         }
 
         internal void SetScope(
@@ -1177,7 +1218,7 @@ namespace Ee4v.AssetManager.UI
             _outlinedMaterial = null;
             _outlineDirty = true;
             _selectionLabel.SetText(renderer.name + " / " + material.name);
-            _selectionLabel.style.display = DisplayStyle.Flex;
+            _selectionOverlay.style.display = DisplayStyle.Flex;
             RequestPreviewRepaint();
             var partKey = GetPreviewPartKey(renderer.transform);
             EditorApplication.delayCall += () =>
@@ -1534,7 +1575,8 @@ namespace Ee4v.AssetManager.UI
 
         private void DrawPickedOutline(Rect rect)
         {
-            if (_outlinedRenderers.Count == 0 ||
+            if (!_selectionHighlightVisible ||
+                _outlinedRenderers.Count == 0 ||
                 (_outlinedMaterial != null &&
                  _hiddenMaterials.Contains(_outlinedMaterial)) ||
                 !_outlinedRenderers.Any(renderer =>
@@ -1711,7 +1753,7 @@ namespace Ee4v.AssetManager.UI
             _outlinedMaterial = null;
             _outlineDirty = true;
             _selectionLabel.SetText(string.Empty);
-            _selectionLabel.style.display = DisplayStyle.None;
+            _selectionOverlay.style.display = DisplayStyle.None;
         }
 
         private void ClearSelectionFromPreview()

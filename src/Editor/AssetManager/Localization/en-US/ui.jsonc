@@ -291,6 +291,8 @@
     "derivedAssetPrefabNoMatch": "No matching Prefabs",
     "derivedAssetPreviewReset": "Reset preview view",
     "derivedAssetPreviewBackground": "Toggle preview background",
+    "derivedAssetPreviewHideHighlight": "Hide selection highlight",
+    "derivedAssetPreviewShowHighlight": "Show selection highlight",
     "settings": "SETTINGS",
     "fileTreeSelectedCount": "{0} selected",
     "batchDependenciesTooltip": "Common dependency targets are shown. Saving replaces the dependencies of every selected file with the same targets.",
