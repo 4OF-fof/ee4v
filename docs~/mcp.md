@@ -113,11 +113,11 @@ MCPはUIと同じ公開API、validation、change notificationを使用し、独�
 
 ### ItemからVariantを作成して改変する
 
-`ee4v_asset_get_item`でベースItemの`prefabCandidates`を確認し、そのItemへ取り込み済みの元Prefab GUIDを選ぶ。`ee4v_asset_create_variant`へ`itemId`、`sourcePrefabGuid`、`name`、任意の`description`を渡す。AssetManager画面と同じ`DerivedAssetCreator`が`Assets/!ee4vAsset/Variant/<name>/<name>.prefab`を作成し、Material依存のMaterial Variantと親Item・元Prefabのmetadataを登録する。元Prefabは変更しない。Itemに取り込み済みでないPrefab、無効な名前、既存のVariantフォルダーは拒否する。作成はProject内への保存であり、履歴revisionの保存は別操作になる。
+`ee4v_asset_get_item`でベースItemの`prefabCandidates`を確認し、そのItemへ取り込み済みの元Prefab GUIDを選ぶ。`ee4v_asset_create_variant`へ`itemId`、`sourcePrefabGuid`、`name`、任意の`description`を渡す。AssetManager画面と同じ`DerivedAssetCreator`が`Assets/!ee4vAsset/Variant/<name>/<name>.prefab`と`<name>.unity`を作成し、SceneへVariant Prefabインスタンスを配置して開き、対象インスタンスを選択する。Material依存のMaterial Variantと親Item・元Prefabのmetadataも登録する。元Prefabは変更しない。Itemに取り込み済みでないPrefab、無効な名前、既存のVariantフォルダーは拒否する。作成はProject内への保存であり、履歴revisionの保存は別操作になる。
 
-`ee4v_asset_list_variants`へ`itemId`を渡すと、そのItemに登録されたProject内VariantのGUID、path、元Prefab GUID、Material Variant pathを取得できる。作成直後は一覧と`ee4v_asset_get_item`の`prefabCandidates`で親ItemとPrefab Variantを確認してから改変する。
+`ee4v_asset_list_variants`へ`itemId`を渡すと、そのItemに登録されたProject内VariantのGUID、Prefab path、作業Scene path、元Prefab GUID、Material Variant pathを取得できる。作成直後は一覧と`ee4v_asset_get_item`の`prefabCandidates`で親ItemとPrefab Variantを確認してから改変する。
 
-追加素材のPrefabを接続を保ったまま組み合わせるには、`ee4v_asset_add_prefab_to_variant`へ`variantGuid`とAssetManagerから取り込み済みの`sourcePrefabGuid`を渡す。追加先はVariant直下で、local Transformを維持する。Prefab循環参照は拒否する。追加素材のMaterialを編集する場合は`ee4v_asset_create_material_variant`へ`variantGuid`と依存Materialの`sourceMaterialPath`を渡し、派生フォルダーのMaterial Variantへ参照を差し替える。同じpathに複数Materialがあるときは、Prefab調査結果の`materialLocalId`を`sourceMaterialLocalId`へ指定する。元Materialおよび元Prefabを直接変更しない。Transform、BlendShape、Material値などの任意の編集にはProject内の派生Prefab／Material Variantを指定してUnity MCPを使用する。改変後は`ee4v_asset_save_variant`へ`variantGuid`と任意の`memo`を渡してAssetManagerの履歴revisionへ保存する。
+追加素材のPrefabを接続を保ったまま組み合わせるには、`ee4v_asset_add_prefab_to_variant`へ`variantGuid`とAssetManagerから取り込み済みの`sourcePrefabGuid`を渡す。追加先は作業Scene内のVariant Prefabインスタンス直下で、local Transformを維持する。Prefab循環参照は拒否する。追加素材のMaterialを編集する場合は`ee4v_asset_create_material_variant`へ`variantGuid`と依存Materialの`sourceMaterialPath`を渡し、作業SceneのPrefabインスタンスにある参照を派生フォルダーのMaterial Variantへ差し替える。同じpathに複数Materialがあるときは、Prefab調査結果の`materialLocalId`を`sourceMaterialLocalId`へ指定する。元Materialおよび元Prefabを直接変更しない。TransformやBlendShapeなどの任意のAvatar編集には作業SceneのPrefabインスタンスを指定してUnity MCPを使用する。Material値の編集には派生フォルダー内のMaterial Variantを指定する。`ee4v_asset_save_variant`はScene上のPrefab overrideをVariant Prefabへ適用し、Sceneを保存してからAssetManagerの履歴revisionへ保存する。
 
 ```json
 {"itemId":"item-id","sourcePrefabGuid":"0123456789abcdef0123456789abcdef","name":"My Avatar Variant","description":"改変内容"}
@@ -148,7 +148,7 @@ File全体を取り込む場合はpathsへ空文字列を1件指定する。た�
 2. 各Itemを`ee4v_asset_get_item`で取得し、`prefabCandidates`からProject内に実在するPrefab GUIDを選ぶ。候補はItemの取り込み済みAsset GUIDと、親Item IDを持つAssetManager派生Prefabから解決する。
 3. `ee4v_asset_render_prefab_preview`の同じview、size、backgroundで候補を描画し、image contentを比較する。`turntable`は8方向を4×2へ並べる。
 4. 選んだPrefabを`ee4v_asset_inspect_prefab`で調査し、Renderer path、Material slot、Material path、Shader、Texture、Mesh、BlendShape、参照切れを得る。
-5. `unityMcpHandoff`のRenderer pathとMaterial pathを確認する。改変時はItemからee4v Variantを作成し、派生PrefabとそのMaterial Variantのpathを既存Unity MCPへ渡して編集する。
+5. `unityMcpHandoff`のRenderer pathとMaterial pathを確認する。改変時はItemからee4v Variantを作成し、作業SceneのPrefabインスタンスとMaterial Variantのpathを既存Unity MCPへ渡して編集する。
 
 未ImportのZIPまたはunitypackageしか存在しない場合、`prefabCandidates`は空になり、`prefabCandidateResolution.emptyReason`または`unresolvedImportedAssets`に理由を返します。Prefab調査はImportを開始しません。必要な場合は`ee4v_asset_import`を明示的に呼び、完了後にItem詳細を再取得します。
 

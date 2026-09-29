@@ -6,6 +6,7 @@ using Ee4v.AssetManager.Infrastructure;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace Ee4v.AssetManager.UI
@@ -25,6 +26,7 @@ namespace Ee4v.AssetManager.UI
         public string Name { get; set; }
         public string Description { get; set; }
         public string AssetPath { get; set; }
+        public string ScenePath { get; set; }
         public DateTime UpdatedAt { get; set; }
         public GameObject Prefab { get; set; }
     }
@@ -189,6 +191,7 @@ namespace Ee4v.AssetManager.UI
                     request.Description,
                     AssetDatabase.AssetPathToGUID(sourcePath));
                 importer.SaveAndReimport();
+                var scenePath = EnsureWorkingScene(rootPath);
                 AssetDatabase.SaveAssets();
 
                 return new DerivedAssetInfo
@@ -198,6 +201,7 @@ namespace Ee4v.AssetManager.UI
                     Name = name,
                     Description = request.Description ?? string.Empty,
                     AssetPath = rootPath,
+                    ScenePath = scenePath,
                     UpdatedAt = File.GetLastWriteTimeUtc(rootPath),
                     Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                         rootPath)
@@ -223,10 +227,12 @@ namespace Ee4v.AssetManager.UI
 
             var sourcePath = AssetDatabase.GetAssetPath(sourceMaterial);
             var variantFolder = Path.GetDirectoryName(variantPath)?.Replace('\\', '/');
+            var root = OpenWorkingScene(variantPath);
             if (string.IsNullOrEmpty(sourcePath) ||
                 sourcePath.StartsWith(variantFolder + "/", StringComparison.OrdinalIgnoreCase) ||
-                !AssetDatabase.GetDependencies(variantPath, true)
-                    .Contains(sourcePath, StringComparer.OrdinalIgnoreCase))
+                !root.GetComponentsInChildren<Renderer>(true)
+                    .Any(renderer => renderer.sharedMaterials
+                        .Contains(sourceMaterial)))
             {
                 throw new ArgumentException("The Material must be an external dependency of the Variant.");
             }
@@ -255,33 +261,22 @@ namespace Ee4v.AssetManager.UI
             {
                 var objectMap = new Dictionary<AssetObjectKey, Object>();
                 MapAsset(sourceMaterial, materialVariant, objectMap);
-                var root = PrefabUtility.LoadPrefabContents(variantPath);
-                try
+                var replaced = false;
+                foreach (var component in root.GetComponentsInChildren<Component>(true))
                 {
-                    var replaced = false;
-                    foreach (var component in root.GetComponentsInChildren<Component>(true))
+                    if (component != null && RemapObjectReferences(component, objectMap))
                     {
-                        if (component != null && RemapObjectReferences(component, objectMap))
-                        {
-                            replaced = true;
-                            PrefabUtility.RecordPrefabInstancePropertyModifications(component);
-                        }
-                    }
-                    if (!replaced)
-                    {
-                        throw new InvalidOperationException(
-                            "The source Material is not assigned in the Variant Prefab.");
-                    }
-                    PrefabUtility.SaveAsPrefabAsset(root, variantPath, out var success);
-                    if (!success)
-                    {
-                        throw new InvalidOperationException("The Variant Prefab could not be saved.");
+                        replaced = true;
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(
+                            component);
                     }
                 }
-                finally
+                if (!replaced)
                 {
-                    PrefabUtility.UnloadPrefabContents(root);
+                    throw new InvalidOperationException(
+                        "The source Material is not assigned in the working Scene.");
                 }
+                EditorSceneManager.MarkSceneDirty(root.scene);
                 AssetDatabase.SaveAssets();
                 return destinationPath;
             }
@@ -328,10 +323,95 @@ namespace Ee4v.AssetManager.UI
                 Name = record.Name,
                 Description = record.Description,
                 AssetPath = record.AssetPath,
+                ScenePath = GetWorkingScenePath(record.AssetPath),
                 UpdatedAt = File.GetLastWriteTimeUtc(record.AssetPath),
                 Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                     record.AssetPath)
             };
+        }
+
+        public static string GetWorkingScenePath(string prefabPath)
+        {
+            return string.IsNullOrEmpty(prefabPath)
+                ? string.Empty
+                : Path.ChangeExtension(prefabPath, ".unity")
+                    .Replace('\\', '/');
+        }
+
+        public static string EnsureWorkingScene(string prefabPath)
+        {
+            var scenePath = GetWorkingScenePath(prefabPath);
+            if (string.IsNullOrEmpty(scenePath) ||
+                AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) == null)
+            {
+                throw new InvalidOperationException(
+                    "The Variant Prefab is unavailable.");
+            }
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath) != null)
+            {
+                return scenePath;
+            }
+
+            var scene = EditorSceneManager.NewScene(
+                NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            try
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                if (!(PrefabUtility.InstantiatePrefab(prefab, scene)
+                      is GameObject))
+                {
+                    throw new InvalidOperationException(
+                        "The Variant Prefab could not be placed in the Scene.");
+                }
+                if (!EditorSceneManager.SaveScene(scene, scenePath))
+                {
+                    throw new InvalidOperationException(
+                        "The Variant working Scene could not be saved.");
+                }
+                return scenePath;
+            }
+            finally
+            {
+                EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        public static GameObject OpenWorkingScene(string prefabPath)
+        {
+            var scenePath = EnsureWorkingScene(prefabPath);
+            var scene = SceneManager.GetSceneByPath(scenePath);
+            if (!scene.IsValid() || !scene.isLoaded)
+            {
+                scene = EditorSceneManager.OpenScene(
+                    scenePath, OpenSceneMode.Additive);
+            }
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            var root = scene.GetRootGameObjects().FirstOrDefault(candidate =>
+                PrefabUtility.GetCorrespondingObjectFromSource(candidate) ==
+                prefab);
+            if (root == null)
+            {
+                throw new InvalidOperationException(
+                    "The Variant working Scene has no Variant Prefab instance: " +
+                    scenePath);
+            }
+            return root;
+        }
+
+        public static GameObject ApplyWorkingScene(string prefabPath)
+        {
+            var root = OpenWorkingScene(prefabPath);
+            if (PrefabUtility.HasPrefabInstanceAnyOverrides(root, false))
+            {
+                PrefabUtility.ApplyPrefabInstance(
+                    root, InteractionMode.AutomatedAction);
+            }
+            if (!EditorSceneManager.SaveScene(root.scene))
+            {
+                throw new InvalidOperationException(
+                    "The Variant working Scene could not be saved.");
+            }
+            return AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
         }
 
         private static void EnsureFolder(string path)

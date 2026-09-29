@@ -70,14 +70,25 @@ namespace Ee4v.AssetManager.Infrastructure
                 throw new InvalidOperationException("A dedicated ee4v Variant folder is required.");
             }
             var renamedFolder = DerivedAssetCatalog.VariantRoot + "/" + name;
+            var scenePath = Path.ChangeExtension(path, ".unity").Replace('\\', '/');
+            var sceneGuid = AssetDatabase.AssetPathToGUID(scenePath);
             ValidateMove(folder, renamedFolder);
             ValidateMove(path, folder + "/" + name + ".prefab");
+            if (!string.IsNullOrEmpty(sceneGuid))
+            {
+                ValidateMove(scenePath, folder + "/" + name + ".unity");
+            }
             var originalData = AssetImporter.GetAtPath(path).userData;
             Action rollback = () =>
             {
                 var currentPath = AssetDatabase.GUIDToAssetPath(variantId);
                 var currentFolder = Path.GetDirectoryName(currentPath).Replace('\\', '/');
                 MoveAsset(currentPath, currentFolder + "/" + Path.GetFileName(path));
+                if (!string.IsNullOrEmpty(sceneGuid))
+                {
+                    MoveAsset(AssetDatabase.GUIDToAssetPath(sceneGuid),
+                        currentFolder + "/" + Path.GetFileName(scenePath));
+                }
                 MoveAsset(currentFolder, folder);
                 var importer = AssetImporter.GetAtPath(path);
                 importer.userData = originalData;
@@ -88,6 +99,11 @@ namespace Ee4v.AssetManager.Infrastructure
                 MoveAsset(folder, renamedFolder);
                 var currentPath = AssetDatabase.GUIDToAssetPath(variantId);
                 MoveAsset(currentPath, renamedFolder + "/" + name + ".prefab");
+                if (!string.IsNullOrEmpty(sceneGuid))
+                {
+                    MoveAsset(AssetDatabase.GUIDToAssetPath(sceneGuid),
+                        renamedFolder + "/" + name + ".unity");
+                }
                 currentPath = AssetDatabase.GUIDToAssetPath(variantId);
                 var importer = AssetImporter.GetAtPath(currentPath);
                 var data = DerivedAssetCatalog.Serialize(record.ParentItemId, name, description, record.SourceGuid);

@@ -9,7 +9,9 @@ using Ee4v.AssetManager.UI;
 using Ee4v.Core.Settings;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Ee4v.Mcp
 {
@@ -19,7 +21,7 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_list_variants",
-                "Lists Project Variants registered to an AssetManager Item, including their source Prefab, root path, and editable Material Variants.",
+                "Lists Project Variants with their working Scene, source Prefab, root path, and editable Material Variants.",
                 McpSchemas.Object(new JObject { ["itemId"] = McpSchemas.String() }, "itemId"),
                 arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
                     ListVariants(Required(arguments, "itemId"))))),
@@ -27,7 +29,7 @@ namespace Ee4v.Mcp
 
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_create_variant",
-                "Creates an ee4v Prefab Variant from a Prefab imported for the specified Item. Uses the same creator as AssetManager UI, including Material Variants and Item metadata. Does not save a history revision.",
+                "Creates an ee4v Prefab Variant and opens a working Scene containing its selected instance. Uses the same creator as AssetManager UI, including Material Variants and Item metadata. Does not save a history revision.",
                 McpSchemas.Object(new JObject
                 {
                     ["itemId"] = McpSchemas.String(),
@@ -41,7 +43,7 @@ namespace Ee4v.Mcp
 
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_add_prefab_to_variant",
-                "Adds an AssetManager-imported Prefab as a nested Prefab under an ee4v Variant root. Keeps the source Prefab linked and unmodified; rejects dependency cycles.",
+                "Adds an AssetManager-imported Prefab under the Variant instance in its working Scene. Keeps the source Prefab linked and unmodified; rejects dependency cycles. Apply it to the Variant Prefab with ee4v_asset_save_variant.",
                 McpSchemas.Object(new JObject
                 {
                     ["variantGuid"] = McpSchemas.String(),
@@ -53,7 +55,7 @@ namespace Ee4v.Mcp
 
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_create_material_variant",
-                "Creates an editable Material Variant inside an ee4v Variant and replaces references to its external source Material in that Prefab. Does not modify the imported source Material.",
+                "Creates an editable Material Variant and replaces references on the Variant instance in its working Scene. Does not modify the imported source Material or Variant Prefab until ee4v_asset_save_variant.",
                 McpSchemas.Object(new JObject
                 {
                     ["variantGuid"] = McpSchemas.String(),
@@ -67,7 +69,7 @@ namespace Ee4v.Mcp
 
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_save_variant",
-                "Saves the current ee4v Variant as an AssetManager history revision after Prefab and Material edits are complete.",
+                "Applies the working Scene instance to the Variant Prefab, saves the Scene, then saves an AssetManager history revision.",
                 McpSchemas.Object(new JObject
                 {
                     ["variantGuid"] = McpSchemas.String(),
@@ -117,6 +119,9 @@ namespace Ee4v.Mcp
                 Name = name,
                 Description = (string)arguments["description"] ?? string.Empty
             });
+            var root = DerivedAssetCreator.OpenWorkingScene(result.AssetPath);
+            SceneManager.SetActiveScene(root.scene);
+            Selection.activeGameObject = root;
             return Describe(DerivedAssetCatalog.Read(result.AssetPath));
         }
 
@@ -139,37 +144,27 @@ namespace Ee4v.Mcp
                     "The source Prefab would create a dependency cycle.");
             }
 
-            var root = PrefabUtility.LoadPrefabContents(variant.AssetPath);
-            try
+            var root = DerivedAssetCreator.OpenWorkingScene(variant.AssetPath);
+            var added = PrefabUtility.InstantiatePrefab(
+                source.Asset, root.scene) as GameObject;
+            if (added == null)
             {
-                var added = PrefabUtility.InstantiatePrefab(source.Asset, root.scene) as GameObject;
-                if (added == null)
-                {
-                    throw new McpToolException("prefab_instantiate_failed",
-                        "The source Prefab could not be instantiated.");
-                }
-                added.transform.SetParent(root.transform, false);
-                PrefabUtility.SaveAsPrefabAsset(root, variant.AssetPath, out var success);
-                if (!success)
-                {
-                    throw new McpToolException("variant_save_failed",
-                        "The Variant Prefab could not be saved.");
-                }
-                AssetDatabase.SaveAssets();
-                return new
-                {
-                    VariantGuid = AssetDatabase.AssetPathToGUID(variant.AssetPath),
-                    VariantPath = variant.AssetPath,
-                    SourcePrefabGuid = source.Guid,
-                    SourcePrefabPath = source.Path,
-                    ChildName = added.name,
-                    SiblingIndex = added.transform.GetSiblingIndex()
-                };
+                throw new McpToolException("prefab_instantiate_failed",
+                    "The source Prefab could not be instantiated.");
             }
-            finally
+            added.transform.SetParent(root.transform, false);
+            Undo.RegisterCreatedObjectUndo(added, "Add Variant Prefab");
+            EditorSceneManager.MarkSceneDirty(root.scene);
+            return new
             {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
+                VariantGuid = AssetDatabase.AssetPathToGUID(variant.AssetPath),
+                VariantPath = variant.AssetPath,
+                WorkingScenePath = root.scene.path,
+                SourcePrefabGuid = source.Guid,
+                SourcePrefabPath = source.Path,
+                ChildName = added.name,
+                SiblingIndex = added.transform.GetSiblingIndex()
+            };
         }
 
         private static object CreateMaterialVariant(JObject arguments)
@@ -223,6 +218,8 @@ namespace Ee4v.Mcp
             {
                 VariantGuid = AssetDatabase.AssetPathToGUID(variant.AssetPath),
                 VariantPath = variant.AssetPath,
+                WorkingScenePath = DerivedAssetCreator.GetWorkingScenePath(
+                    variant.AssetPath),
                 SourceMaterialPath = sourcePath,
                 SourceMaterialLocalId = localIdText,
                 MaterialVariantPath = materialPath,
@@ -233,6 +230,7 @@ namespace Ee4v.Mcp
         private static async Task<McpToolResult> SaveVariant(JObject arguments)
         {
             var variant = ResolveVariant(Required(arguments, "variantGuid"));
+            DerivedAssetCreator.ApplyWorkingScene(variant.AssetPath);
             var databasePath = Path.Combine(GlobalDataSettings.RootDirectory, "asset-manager-v1.db");
             var manager = AssetManagerFactory.OpenVariantSession(
                 databasePath, AssetManagerMcpTools.Manager());
@@ -245,6 +243,8 @@ namespace Ee4v.Mcp
             {
                 VariantGuid = AssetDatabase.AssetPathToGUID(variant.AssetPath),
                 VariantPath = variant.AssetPath,
+                WorkingScenePath = DerivedAssetCreator.GetWorkingScenePath(
+                    variant.AssetPath),
                 Revision = revision
             }));
         }
@@ -273,6 +273,8 @@ namespace Ee4v.Mcp
             {
                 VariantGuid = AssetDatabase.AssetPathToGUID(record.AssetPath),
                 VariantPath = record.AssetPath,
+                WorkingScenePath = DerivedAssetCreator.GetWorkingScenePath(
+                    record.AssetPath),
                 record.ParentItemId,
                 record.Name,
                 record.Description,

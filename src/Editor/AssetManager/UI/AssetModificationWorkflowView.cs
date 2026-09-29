@@ -9,7 +9,9 @@ using Ee4v.FaceExpression;
 using Ee4v.UI;
 using nadena.dev.modular_avatar.core;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
@@ -41,7 +43,6 @@ namespace Ee4v.AssetManager.UI
         private const float MaximumBodyScale = 2f;
         private const float MinimumBodyBlendShapeWeight = 0f;
         private const float MaximumBodyBlendShapeWeight = 100f;
-        private const double PartVisibilitySaveDelaySeconds = 0.5d;
         private const double VariantSaveStatusDelaySeconds = 0.5d;
         private const string AvatarDescriptorTypeName =
             "VRC.SDK3.Avatars.Components.VRCAvatarDescriptor";
@@ -391,6 +392,19 @@ namespace Ee4v.AssetManager.UI
             internal bool IsVisible { get; set; }
             internal bool IsActiveSelf { get; set; }
         }
+
+        private sealed class WorkingSceneSession
+        {
+            internal GameObject Root;
+            internal string PrefabPath;
+            internal Scene Scene;
+            internal int Users;
+            internal bool Dirty;
+        }
+
+        private static readonly Dictionary<string, WorkingSceneSession>
+            WorkingScenes = new Dictionary<string, WorkingSceneSession>(
+                StringComparer.OrdinalIgnoreCase);
 
         private sealed class PrefabObjectEntry
         {
@@ -876,7 +890,6 @@ namespace Ee4v.AssetManager.UI
             _pendingPartVisibility =
                 new Dictionary<PrefabObjectEntry, PendingPartVisibility>();
         private string _pendingPartAssetPath;
-        private double _partVisibilitySaveDueAt;
         private IReadOnlyList<int> _prefabSiblingIndices =
             Array.Empty<int>();
         private readonly HashSet<int> _hiddenPrefabSiblingIndices =
@@ -905,6 +918,28 @@ namespace Ee4v.AssetManager.UI
             _pendingBodyBlendShapeGroup;
         private BodyBlendShapeDefinition _pendingIndividualBlendShape;
         private bool _bodyScaleDirty;
+        private WorkingSceneSession _workingSceneSession;
+        private bool _workingSceneDirty
+        {
+            get => _workingSceneSession != null &&
+                   (_workingSceneSession.Dirty ||
+                    _workingSceneSession.Root != null &&
+                    _workingSceneSession.Root.scene.isDirty);
+            set
+            {
+                if (_workingSceneSession != null)
+                {
+                    _workingSceneSession.Dirty = value;
+                    if (value && _workingSceneSession.Root != null &&
+                        !_workingSceneSession.Root.scene.isDirty)
+                    {
+                        EditorSceneManager.MarkSceneDirty(
+                            _workingSceneSession.Root.scene);
+                    }
+                }
+            }
+        }
+        private GameObject _workingPrefabAsset;
         private bool _advancedBodyScaleExpanded;
         private readonly HashSet<string> _expandedBodyScaleAxes =
             new HashSet<string>(StringComparer.Ordinal);
@@ -990,6 +1025,7 @@ namespace Ee4v.AssetManager.UI
             AssetManagerSettings.PartListExclusionsChanged +=
                 OnPartListExclusionsChanged;
             EditorApplication.projectChanged += OnProjectChanged;
+            EditorSceneManager.sceneClosed += OnWorkingSceneClosed;
             _settings = CoreSettings.Current;
             _settings.Changed += OnSettingChanged;
         }
@@ -1002,7 +1038,9 @@ namespace Ee4v.AssetManager.UI
             }
             _disposed = true;
             EndBodyScaleDrag(false);
+            SaveBodyScalePrefab(false);
             FlushPendingPartVisibility();
+            ReleaseWorkingScene();
             I18N.Reloaded -= Rebuild;
             AssetManagerWindowSession.ManagerInvalidated -=
                 OnManagerInvalidated;
@@ -1013,6 +1051,7 @@ namespace Ee4v.AssetManager.UI
             AssetManagerSettings.PartListExclusionsChanged -=
                 OnPartListExclusionsChanged;
             EditorApplication.projectChanged -= OnProjectChanged;
+            EditorSceneManager.sceneClosed -= OnWorkingSceneClosed;
             _settings.Changed -= OnSettingChanged;
             ReleaseVariantStatusManager();
             DisposeEditors();
@@ -1023,6 +1062,22 @@ namespace Ee4v.AssetManager.UI
         {
             _appearanceDataDirty = true;
             InvalidateVariantSaveStatus();
+        }
+
+        private void OnWorkingSceneClosed(Scene scene)
+        {
+            if (_workingSceneSession == null ||
+                _workingSceneSession.Scene != scene)
+            {
+                return;
+            }
+            ReleaseWorkingScene();
+            _workingAsset = null;
+            _bodyScaleDirty = false;
+            if (!_disposed && this.panel != null)
+            {
+                this.schedule.Execute(BuildWindow);
+            }
         }
 
         private UndoPropertyModification[] OnUndoModifications(
@@ -1156,11 +1211,11 @@ namespace Ee4v.AssetManager.UI
             root.AddToClassList("ee4v-modification-workflow");
 
             if (_workingObject == null ||
-                string.IsNullOrEmpty(AssetDatabase.GetAssetPath(
-                    _workingObject)))
+                string.IsNullOrEmpty(GetWorkingAssetPath()))
             {
+                DisposePreview();
+                ReleaseWorkingScene();
                 _workingAsset = null;
-                _workingObject = null;
                 root.Add(_creatingDerivedAsset
                     ? BuildDerivedAssetCreation()
                     : BuildDerivedAssetSelection());
@@ -1657,9 +1712,12 @@ namespace Ee4v.AssetManager.UI
         {
             if (_disposed || _savingVariant || _workingObject == null) { return; }
             EndBodyScaleDrag();
+            SaveBodyScalePrefab();
+            if (_bodyScaleDirty) { return; }
             if (!FlushPendingPartVisibility()) { return; }
+            if (!CommitWorkingScene()) { return; }
             _savingVariant = true;
-            var assetPath = AssetDatabase.GetAssetPath(_workingObject);
+            var assetPath = GetWorkingAssetPath();
             BuildWindow();
             try
             {
@@ -1696,7 +1754,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var assetPath = AssetDatabase.GetAssetPath(_workingObject);
+            var assetPath = GetWorkingAssetPath();
             var variantId = _workingAsset.VariantId;
             var category = _currentCategory;
             var shapePartsSection = _shapePartsSection;
@@ -1709,6 +1767,7 @@ namespace Ee4v.AssetManager.UI
                 var revisionId = variants?.GetCurrentRevisionId(variantId);
                 if (string.IsNullOrEmpty(revisionId) ||
                     _pendingPartVisibility.Count == 0 &&
+                    !_workingSceneDirty &&
                     !_bodyScaleDirty &&
                     _pendingBodySizeChange == PendingBodySizeChange.None &&
                     !variants.HasChangesFromCurrentRevision(assetPath))
@@ -1726,13 +1785,21 @@ namespace Ee4v.AssetManager.UI
 
                 _savingVariant = true;
                 rebuild = true;
-                EditorApplication.update -= OnPartVisibilitySaveUpdate;
                 _pendingPartVisibility.Clear();
                 _pendingPartAssetPath = null;
                 _bodyScaleDragging = false;
                 _bodyScaleDirty = false;
                 ClearPendingBodySizeChange();
                 BuildWindow();
+
+                var scene = _workingObject.scene;
+                ReleaseWorkingScene(true);
+                if (scene.IsValid() && scene.isLoaded &&
+                    !EditorSceneManager.CloseScene(scene, true))
+                {
+                    throw new InvalidOperationException(
+                        "The Variant working Scene could not be closed.");
+                }
 
                 await variants.Restore(variantId, revisionId);
                 if (_disposed)
@@ -1763,7 +1830,8 @@ namespace Ee4v.AssetManager.UI
                         assetPath);
                     if (prefab != null && _workingAsset != null)
                     {
-                        _workingObject = prefab;
+                        _workingPrefabAsset = prefab;
+                        _workingObject = AcquireWorkingScene(prefab);
                         _workingAsset.Prefab = prefab;
                     }
                 }
@@ -1786,7 +1854,8 @@ namespace Ee4v.AssetManager.UI
                 SetVariantSaveButtonEnabled(save, false);
                 return;
             }
-            var pending = _pendingPartVisibility.Count > 0 || _bodyScaleDirty ||
+            var pending = _workingSceneDirty ||
+                _pendingPartVisibility.Count > 0 || _bodyScaleDirty ||
                 _pendingBodySizeChange != PendingBodySizeChange.None;
             if (!pending && _variantSaveStatusDirty)
             {
@@ -1809,7 +1878,7 @@ namespace Ee4v.AssetManager.UI
                         }
                     }
                     var status = variants?.GetChangeStatus(
-                        AssetDatabase.GetAssetPath(_workingObject));
+                        GetWorkingAssetPath());
                     _variantHasChanges = status?.HasChanges ?? false;
                     _variantHasDiscardableChanges =
                         status?.HasChangesFromCurrentRevision ?? false;
@@ -1846,7 +1915,8 @@ namespace Ee4v.AssetManager.UI
                     _manager);
                 var revisionId = variants?.GetCurrentRevisionId(
                     _workingAsset.VariantId);
-                var pending = _pendingPartVisibility.Count > 0 ||
+                var pending = _workingSceneDirty ||
+                    _pendingPartVisibility.Count > 0 ||
                     _bodyScaleDirty ||
                     _pendingBodySizeChange != PendingBodySizeChange.None;
                 discard.SetEnabled(!string.IsNullOrEmpty(revisionId) &&
@@ -2047,6 +2117,8 @@ namespace Ee4v.AssetManager.UI
                 category != WorkflowCategory.ShapeParts)
             {
                 EndBodyScaleDrag();
+                SaveBodyScalePrefab();
+                if (_bodyScaleDirty) { return; }
             }
             if (_customizerHost == null ||
                 _faceExpressionHost == null)
@@ -2096,7 +2168,7 @@ namespace Ee4v.AssetManager.UI
                         _faceExpressionHost, RequestRepaint);
                     try
                     {
-                        editor.Initialize(_workingObject);
+                        editor.Initialize(_workingPrefabAsset);
                         _faceExpressionEditor = editor;
                     }
                     catch
@@ -2363,6 +2435,8 @@ namespace Ee4v.AssetManager.UI
             }
 
             EndBodyScaleDrag();
+            SaveBodyScalePrefab();
+            if (_bodyScaleDirty) { return; }
             _selectedPrefabSiblingIndex = siblingIndex;
             _selectedPrefabName = name ?? string.Empty;
             _selectedBodyPart = null;
@@ -3173,9 +3247,7 @@ namespace Ee4v.AssetManager.UI
             {
                 return _objectEntriesCache;
             }
-            var path = AssetDatabase.GetAssetPath(_workingObject);
-            var root = PrefabUtility.LoadPrefabContents(path);
-            try
+            var root = _workingObject;
             {
                 var result = new List<PrefabObjectEntry>();
                 var classifier = new PrefabPartClassifier(root);
@@ -3279,10 +3351,6 @@ namespace Ee4v.AssetManager.UI
                 _objectEntriesCache = result.ToArray();
                 return _objectEntriesCache;
             }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
         }
 
         private static bool IsExcludedPartName(
@@ -3331,47 +3399,28 @@ namespace Ee4v.AssetManager.UI
         {
             try
             {
+                EndBodyScaleDrag();
+                SaveBodyScalePrefab();
+                if (_bodyScaleDirty)
+                {
+                    throw new InvalidOperationException(
+                        "The derived Prefab size could not be saved.");
+                }
                 if (!IsEditableWorkflowPrefab() ||
                     !FlushPendingPartVisibility())
                 {
                     throw new InvalidOperationException(
                         "The selected Prefab cannot be edited.");
                 }
-                var assetPath = AssetDatabase.GetAssetPath(_workingObject);
-                var root = PrefabUtility.LoadPrefabContents(assetPath);
-                try
+                var gameObject = ResolvePartObject(_workingObject, entry);
+                Undo.RecordObject(gameObject, "Toggle Prefab object");
+                gameObject.SetActive(!gameObject.activeSelf);
+                if (PrefabUtility.IsPartOfPrefabInstance(gameObject))
                 {
-                    var gameObject = ResolvePartObject(root, entry);
-                    gameObject.SetActive(!gameObject.activeSelf);
-                    if (PrefabUtility.IsPartOfPrefabInstance(gameObject))
-                    {
-                        PrefabUtility.RecordPrefabInstancePropertyModifications(
-                            gameObject);
-                    }
-                    var saved = PrefabUtility.SaveAsPrefabAsset(
-                        root, assetPath, out var success);
-                    if (!success || saved == null)
-                    {
-                        throw new InvalidOperationException(
-                            "The derived Prefab could not be saved.");
-                    }
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(
+                        gameObject);
                 }
-                finally
-                {
-                    PrefabUtility.UnloadPrefabContents(root);
-                }
-
-                _workingObject = AssetDatabase.LoadAssetAtPath<GameObject>(
-                    assetPath);
-                if (_workingObject == null)
-                {
-                    throw new InvalidOperationException(
-                        "The saved derived Prefab could not be loaded.");
-                }
-                if (_workingAsset != null)
-                {
-                    _workingAsset.Prefab = _workingObject;
-                }
+                _workingSceneDirty = true;
                 if (entry.PrefabSiblingIndex >= 0 &&
                     entry.SiblingPath.Length == 0)
                 {
@@ -3426,7 +3475,7 @@ namespace Ee4v.AssetManager.UI
                     throw new InvalidOperationException(
                         "The selected Prefab is not a derived asset.");
                 }
-                var assetPath = AssetDatabase.GetAssetPath(_workingObject);
+                var assetPath = GetWorkingAssetPath();
                 if (_pendingPartVisibility.Count > 0 &&
                     !string.Equals(_pendingPartAssetPath, assetPath,
                         StringComparison.Ordinal) &&
@@ -3481,17 +3530,24 @@ namespace Ee4v.AssetManager.UI
                     entry.Name,
                     activeSelf,
                     visible);
-                if (_pendingPartVisibility.Count == 0)
+                var restoreTags = new List<PartTagChange>();
+                ApplyPartVisibility(_workingObject, pending, restoreTags);
+                foreach (var tag in restoreTags)
                 {
-                    _pendingPartAssetPath = null;
-                    EditorApplication.update -= OnPartVisibilitySaveUpdate;
-                    return;
+                    if (tag.Visible)
+                    {
+                        EditorPrefs.DeleteKey(tag.RestoreKey);
+                    }
+                    else if (tag.OriginalTag != null)
+                    {
+                        EditorPrefs.SetString(tag.RestoreKey,
+                            tag.OriginalTag);
+                    }
                 }
-                _partVisibilitySaveDueAt =
-                    EditorApplication.timeSinceStartup +
-                    PartVisibilitySaveDelaySeconds;
-                EditorApplication.update -= OnPartVisibilitySaveUpdate;
-                EditorApplication.update += OnPartVisibilitySaveUpdate;
+                _pendingPartVisibility.Clear();
+                _pendingPartAssetPath = null;
+                _workingSceneDirty = true;
+                InvalidateVariantSaveStatus();
             }
             catch (Exception exception)
             {
@@ -3598,52 +3654,30 @@ namespace Ee4v.AssetManager.UI
             return target.gameObject.activeSelf;
         }
 
-        private void OnPartVisibilitySaveUpdate()
-        {
-            if (EditorApplication.timeSinceStartup <
-                _partVisibilitySaveDueAt)
-            {
-                return;
-            }
-            if (!FlushPendingPartVisibility())
-            {
-                BuildWindow();
-            }
-        }
-
         private bool FlushPendingPartVisibility()
         {
-            EditorApplication.update -= OnPartVisibilitySaveUpdate;
             if (_pendingPartVisibility.Count == 0)
             {
                 return true;
             }
 
+            EndBodyScaleDrag();
+            SaveBodyScalePrefab();
+            if (_bodyScaleDirty)
+            {
+                return false;
+            }
+
             var changes = _pendingPartVisibility.Values.ToArray();
-            var assetPath = _pendingPartAssetPath;
             _pendingPartVisibility.Clear();
             _pendingPartAssetPath = null;
             try
             {
                 var restoreTags = new List<PartTagChange>();
-                var root = PrefabUtility.LoadPrefabContents(assetPath);
-                try
+                foreach (var change in changes)
                 {
-                    foreach (var change in changes)
-                    {
-                        ApplyPartVisibility(root, change, restoreTags);
-                    }
-                    var saved = PrefabUtility.SaveAsPrefabAsset(
-                        root, assetPath, out var success);
-                    if (!success || saved == null)
-                    {
-                        throw new InvalidOperationException(
-                            "The derived Prefab could not be saved.");
-                    }
-                }
-                finally
-                {
-                    PrefabUtility.UnloadPrefabContents(root);
+                    ApplyPartVisibility(_workingObject, change,
+                        restoreTags);
                 }
 
                 foreach (var tag in restoreTags)
@@ -3658,23 +3692,7 @@ namespace Ee4v.AssetManager.UI
                             tag.RestoreKey, tag.OriginalTag);
                     }
                 }
-                if (_workingObject != null &&
-                    string.Equals(AssetDatabase.GetAssetPath(_workingObject),
-                        assetPath, StringComparison.Ordinal))
-                {
-                    _workingObject = AssetDatabase.LoadAssetAtPath<GameObject>(
-                        assetPath);
-                    if (_workingObject == null)
-                    {
-                        throw new InvalidOperationException(
-                            "The saved derived Prefab could not be loaded.");
-                    }
-                    if (_workingAsset != null)
-                    {
-                        _workingAsset.Prefab = _workingObject;
-                    }
-                    _scenePreview?.UpdatePrefabReference(_workingObject);
-                }
+                _workingSceneDirty = true;
                 _assetFeedback = string.Empty;
                 InvalidateVariantSaveStatus();
                 return true;
@@ -3693,6 +3711,7 @@ namespace Ee4v.AssetManager.UI
             ICollection<PartTagChange> restoreTags)
         {
             var gameObject = ResolvePartObject(root, change.Entry);
+            Undo.RecordObject(gameObject, "Change Variant part visibility");
             if (change.Visible)
             {
                 if (string.Equals(gameObject.tag, "EditorOnly",
@@ -3794,9 +3813,7 @@ namespace Ee4v.AssetManager.UI
 
         private IReadOnlyList<AssetChildEntry> ReadAssetChildren()
         {
-            var path = AssetDatabase.GetAssetPath(_workingObject);
-            var root = PrefabUtility.LoadPrefabContents(path);
-            try
+            var root = _workingObject;
             {
                 var children = new List<AssetChildEntry>();
                 for (var index = 0; index < root.transform.childCount; index++)
@@ -3819,10 +3836,6 @@ namespace Ee4v.AssetManager.UI
                 }
                 return children.OrderBy(child => child.SiblingIndex)
                     .ToArray();
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
             }
         }
 
@@ -3869,7 +3882,7 @@ namespace Ee4v.AssetManager.UI
             try
             {
                 var prefabPath = AssetDatabase.GetAssetPath(prefab);
-                var variantPath = AssetDatabase.GetAssetPath(_workingObject);
+                var variantPath = GetWorkingAssetPath();
                 if (string.IsNullOrEmpty(prefabPath) ||
                     !prefabPath.EndsWith(".prefab",
                         StringComparison.OrdinalIgnoreCase) ||
@@ -3894,6 +3907,8 @@ namespace Ee4v.AssetManager.UI
                             "The child Prefab could not be instantiated.");
                     }
                     added.transform.SetParent(root.transform, false);
+                    Undo.RegisterCreatedObjectUndo(added,
+                        "Add Variant Prefab");
                     _selectedPrefabSiblingIndex = null;
                     _selectedPrefabName = string.Empty;
                     _selectedBodyPart = null;
@@ -3952,7 +3967,7 @@ namespace Ee4v.AssetManager.UI
                         throw new InvalidOperationException(
                             "Inherited Prefab children cannot be removed.");
                     }
-                    UnityEngine.Object.DestroyImmediate(child);
+                    Undo.DestroyObjectImmediate(child);
                     _selectedPrefabSiblingIndex = null;
                     _selectedPrefabName = string.Empty;
                     _currentCategory = previousCategory ==
@@ -3976,6 +3991,13 @@ namespace Ee4v.AssetManager.UI
         private void EditAssetChildren(
             Action<GameObject> edit)
         {
+            EndBodyScaleDrag();
+            SaveBodyScalePrefab();
+            if (_bodyScaleDirty)
+            {
+                throw new InvalidOperationException(
+                    "The derived Prefab size could not be saved.");
+            }
             if (!FlushPendingPartVisibility())
             {
                 throw new InvalidOperationException(
@@ -3986,34 +4008,10 @@ namespace Ee4v.AssetManager.UI
                 throw new InvalidOperationException(
                     "The selected Prefab is not a derived asset.");
             }
-            var path = AssetDatabase.GetAssetPath(_workingObject);
-            var root = PrefabUtility.LoadPrefabContents(path);
-            try
-            {
-                edit(root);
-                var saved = PrefabUtility.SaveAsPrefabAsset(
-                    root, path, out var success);
-                if (!success || saved == null)
-                {
-                    throw new InvalidOperationException(
-                        "The derived Prefab could not be saved.");
-                }
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
-
-            _workingObject = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (_workingObject == null)
-            {
-                throw new InvalidOperationException(
-                    "The saved derived Prefab could not be loaded.");
-            }
-            if (_workingAsset != null)
-            {
-                _workingAsset.Prefab = _workingObject;
-            }
+            edit(_workingObject);
+            _workingSceneDirty = true;
+            _scenePreview?.ReloadPrefabPreservingView(_workingObject);
+            InvalidateVariantSaveStatus();
             _bodyScaleBaseScales.Clear();
             _baseAvatarViewPosition = null;
             _avatarDescriptor = null;
@@ -6564,31 +6562,40 @@ namespace Ee4v.AssetManager.UI
             {
                 return;
             }
+            _bodyScaleDirty = false;
+            _workingSceneDirty = true;
+            InvalidateVariantSaveStatus();
+            _feedback = string.Empty;
+        }
 
+        private bool CommitWorkingScene()
+        {
+            if (!IsEditableWorkflowPrefab())
+            {
+                return false;
+            }
             try
             {
-                var savedPrefab = PrefabUtility.SavePrefabAsset(
-                    _workingObject,
-                    out var savedSuccessfully);
-                if (!savedSuccessfully || savedPrefab == null)
+                var saved = DerivedAssetCreator.ApplyWorkingScene(
+                    GetWorkingAssetPath());
+                if (saved == null)
                 {
                     throw new InvalidOperationException(
-                        "The derived Prefab size could not be saved.");
+                        "The Variant Prefab is unavailable after applying the Scene.");
                 }
-
-                _workingObject = savedPrefab;
+                _workingPrefabAsset = saved;
                 if (_workingAsset != null)
                 {
-                    _workingAsset.Prefab = savedPrefab;
+                    _workingAsset.Prefab = saved;
                 }
-                _scenePreview?.SetPrefab(savedPrefab);
-                _bodyScaleDirty = false;
+                _workingSceneDirty = false;
                 InvalidateVariantSaveStatus();
-                _feedback = string.Empty;
+                return true;
             }
             catch (Exception exception)
             {
-                ReportBodyScaleFailure(exception, rebuildOnFailure);
+                ReportBodyScaleFailure(exception, true);
+                return false;
             }
         }
 
@@ -6609,17 +6616,84 @@ namespace Ee4v.AssetManager.UI
 
         private bool IsEditableWorkflowPrefab()
         {
-            if (_workingObject == null)
+            if (_workingObject == null || _workingPrefabAsset == null)
             {
                 return false;
             }
 
-            var path = AssetDatabase.GetAssetPath(_workingObject);
+            var path = GetWorkingAssetPath();
             return !string.IsNullOrEmpty(path) &&
                    path.StartsWith(
                        DerivedAssetCreator.VariantRoot + "/",
                        StringComparison.OrdinalIgnoreCase) &&
-                   PrefabUtility.IsPartOfPrefabAsset(_workingObject);
+                   PrefabUtility.IsPartOfPrefabAsset(_workingPrefabAsset);
+        }
+
+        private string GetWorkingAssetPath()
+        {
+            return _workingPrefabAsset == null
+                ? string.Empty
+                : AssetDatabase.GetAssetPath(_workingPrefabAsset);
+        }
+
+        private GameObject AcquireWorkingScene(GameObject asset)
+        {
+            var path = AssetDatabase.GetAssetPath(asset);
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new InvalidOperationException(
+                    "The selected Prefab has no asset path.");
+            }
+            if (!WorkingScenes.TryGetValue(path, out var session) ||
+                session.Root == null)
+            {
+                session = WorkingScenes.Values.FirstOrDefault(candidate =>
+                    candidate.Root != null &&
+                    AssetDatabase.GetAssetPath(
+                        PrefabUtility.GetCorrespondingObjectFromSource(
+                            candidate.Root)) == path);
+                if (session != null)
+                {
+                    WorkingScenes.Remove(session.PrefabPath);
+                    session.PrefabPath = path;
+                }
+                else
+                {
+                    var root = DerivedAssetCreator.OpenWorkingScene(path);
+                    session = new WorkingSceneSession
+                    {
+                        Root = root,
+                        PrefabPath = path,
+                        Scene = root.scene,
+                        Dirty = PrefabUtility.HasPrefabInstanceAnyOverrides(
+                            root, false)
+                    };
+                }
+                WorkingScenes[path] = session;
+            }
+            session.Users++;
+            _workingSceneSession = session;
+            SceneManager.SetActiveScene(session.Root.scene);
+            Selection.activeGameObject = session.Root;
+            SceneView.lastActiveSceneView?.FrameSelected();
+            return session.Root;
+        }
+
+        private void ReleaseWorkingScene(bool discard = false)
+        {
+            var session = _workingSceneSession;
+            if (session != null)
+            {
+                session.Users = Math.Max(0, session.Users - 1);
+                if (discard) { session.Dirty = false; }
+                if (session.Users == 0)
+                {
+                    WorkingScenes.Remove(session.PrefabPath);
+                }
+            }
+            _workingObject = null;
+            _workingPrefabAsset = null;
+            _workingSceneSession = null;
         }
 
         private static string FormatBodyHeight(float value)
@@ -6659,6 +6733,8 @@ namespace Ee4v.AssetManager.UI
                     if (_shapePartsSection == ShapePartsSection.Shape)
                     {
                         EndBodyScaleDrag();
+                        SaveBodyScalePrefab();
+                        if (_bodyScaleDirty) { return; }
                     }
                     _shapePartsSection = section;
                     ShowCategory(WorkflowCategory.ShapeParts, false);
@@ -6967,6 +7043,9 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             EndBodyScaleDrag();
+            SaveBodyScalePrefab();
+            if (_bodyScaleDirty) { return; }
+            ReleaseWorkingScene();
             _bodyScaleDirty = false;
             _bodyScaleDragging = false;
             ClearPendingBodySizeChange();
@@ -6977,7 +7056,8 @@ namespace Ee4v.AssetManager.UI
             _baseAvatarViewPosition = null;
             _avatarDescriptor = null;
             _workingAsset = asset;
-            _workingObject = asset.Prefab;
+            _workingPrefabAsset = asset.Prefab;
+            _workingObject = AcquireWorkingScene(_workingPrefabAsset);
             _basePrefabHidden = false;
             _hiddenPrefabSiblingIndices.Clear();
             _hiddenPreviewParts.Clear();
@@ -7004,6 +7084,9 @@ namespace Ee4v.AssetManager.UI
         private void ClearDerivedAsset()
         {
             EndBodyScaleDrag();
+            SaveBodyScalePrefab();
+            if (_bodyScaleDirty) { return; }
+            ReleaseWorkingScene();
             _bodyScaleDirty = false;
             _bodyScaleDragging = false;
             ClearPendingBodySizeChange();
@@ -7014,7 +7097,6 @@ namespace Ee4v.AssetManager.UI
             _baseAvatarViewPosition = null;
             _avatarDescriptor = null;
             _workingAsset = null;
-            _workingObject = null;
             _basePrefabHidden = false;
             _hiddenPrefabSiblingIndices.Clear();
             _hiddenPreviewParts.Clear();
@@ -7500,6 +7582,13 @@ namespace Ee4v.AssetManager.UI
 
         private void ReplaceMaterialAssignments(Material sourceMaterial, Material replacement)
         {
+            EndBodyScaleDrag();
+            SaveBodyScalePrefab();
+            if (_bodyScaleDirty)
+            {
+                throw new InvalidOperationException(
+                    "The derived Prefab size could not be saved.");
+            }
             if (!IsEditableWorkflowPrefab() || sourceMaterial == null ||
                 replacement == null || !EditorUtility.IsPersistent(replacement))
             {
@@ -7511,9 +7600,8 @@ namespace Ee4v.AssetManager.UI
                 throw new InvalidOperationException(
                     "Pending part visibility could not be saved.");
             }
-            var path = AssetDatabase.GetAssetPath(_workingObject);
-            var root = PrefabUtility.LoadPrefabContents(path);
-            try
+            var root = _workingObject;
+            // Apply overrides only when the Variant revision is saved.
             {
                 var replaced = false;
                 foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
@@ -7538,6 +7626,8 @@ namespace Ee4v.AssetManager.UI
                     {
                         continue;
                     }
+                    Undo.RecordObject(renderer,
+                        "Replace Variant Material");
                     renderer.sharedMaterials = materials;
                     if (PrefabUtility.IsPartOfPrefabInstance(renderer))
                     {
@@ -7551,21 +7641,8 @@ namespace Ee4v.AssetManager.UI
                     throw new InvalidOperationException(
                         "The selected Material is no longer assigned.");
                 }
-                var saved = PrefabUtility.SaveAsPrefabAsset(root, path, out var success);
-                if (!success || saved == null)
-                {
-                    throw new InvalidOperationException(
-                        "The derived Prefab could not be saved.");
-                }
-                _workingObject = saved;
-                if (_workingAsset != null)
-                {
-                    _workingAsset.Prefab = saved;
-                }
-            }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
+                _workingSceneDirty = true;
+                InvalidateVariantSaveStatus();
             }
         }
 
@@ -7596,7 +7673,7 @@ namespace Ee4v.AssetManager.UI
             var assigned = false;
             try
             {
-                var prefabPath = AssetDatabase.GetAssetPath(_workingObject);
+                var prefabPath = GetWorkingAssetPath();
                 var variantFolder = System.IO.Path
                     .GetDirectoryName(prefabPath)?.Replace('\\', '/');
                 if (string.IsNullOrEmpty(variantFolder))
@@ -7670,7 +7747,7 @@ namespace Ee4v.AssetManager.UI
                 return false;
             }
             var path = AssetDatabase.GetAssetPath(material);
-            var prefabPath = AssetDatabase.GetAssetPath(_workingObject);
+            var prefabPath = GetWorkingAssetPath();
             var variantFolder = System.IO.Path
                 .GetDirectoryName(prefabPath)?.Replace('\\', '/');
             return !string.IsNullOrEmpty(path) &&
@@ -7712,28 +7789,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            if (IsEditableWorkflowPrefab())
-            {
-                try
-                {
-                    var savedPrefab = PrefabUtility.SavePrefabAsset(
-                        _workingObject,
-                        out var savedSuccessfully);
-                    if (savedSuccessfully && savedPrefab != null)
-                    {
-                        _workingObject = savedPrefab;
-                        if (_workingAsset != null)
-                        {
-                            _workingAsset.Prefab = savedPrefab;
-                        }
-                        _bodyScaleDirty = false;
-                    }
-                }
-                catch (Exception exception)
-                {
-                    Debug.LogException(exception);
-                }
-            }
+            if (IsEditableWorkflowPrefab()) { _workingSceneDirty = true; }
 
             _scenePreview?.ReloadPrefab();
             if (_controlsHost == null)
@@ -7761,6 +7817,11 @@ namespace Ee4v.AssetManager.UI
             DisposeMaterialEditor();
             _faceExpressionEditor?.Dispose();
             _faceExpressionEditor = null;
+            DisposePreview();
+        }
+
+        private void DisposePreview()
+        {
             _scenePreview?.Dispose();
             _scenePreview = null;
         }
