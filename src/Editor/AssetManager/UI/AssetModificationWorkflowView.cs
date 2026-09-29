@@ -1809,11 +1809,11 @@ namespace Ee4v.AssetManager.UI
                             _manager.Changed += OnVariantStatusAssetManagerChanged;
                         }
                     }
-                    _variantHasChanges = variants != null &&
-                        variants.HasChanges(AssetDatabase.GetAssetPath(_workingObject));
-                    _variantHasDiscardableChanges = variants != null &&
-                        variants.HasChangesFromCurrentRevision(
-                            AssetDatabase.GetAssetPath(_workingObject));
+                    var status = variants?.GetChangeStatus(
+                        AssetDatabase.GetAssetPath(_workingObject));
+                    _variantHasChanges = status?.HasChanges ?? false;
+                    _variantHasDiscardableChanges =
+                        status?.HasChangesFromCurrentRevision ?? false;
                     _variantSaveStatusError = null;
                 }
                 catch (Exception exception)

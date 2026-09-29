@@ -64,6 +64,10 @@ namespace Ee4v.AssetManager.Application
                 return true;
             }
             var latest = ReadSnapshot(variant.Id, variant.HeadRevisionId);
+            if (_workspace.HasChangedRootAsset(rootAssetPath, latest))
+            {
+                return true;
+            }
             return _workspace.Inspect(rootAssetPath).ContentHash != latest.ContentHash;
         }
 
@@ -82,8 +86,48 @@ namespace Ee4v.AssetManager.Application
                 return false;
             }
             var saved = ReadSnapshot(variant.Id, revisionId);
+            if (_workspace.HasChangedRootAsset(rootAssetPath, saved))
+            {
+                return true;
+            }
             return _workspace.Inspect(rootAssetPath).ContentHash !=
                    saved.ContentHash;
+        }
+
+        public AssetVariantChangeStatus GetChangeStatus(string rootAssetPath)
+        {
+            AssetManagerRequestValidator.Require(rootAssetPath, "root asset path");
+            var variant = _index.GetVariants().FirstOrDefault(candidate =>
+                candidate.RootAssetPath == rootAssetPath);
+            if (variant == null)
+            {
+                return new AssetVariantChangeStatus { HasChanges = true };
+            }
+            var latest = string.IsNullOrEmpty(variant.HeadRevisionId)
+                ? null : ReadSnapshot(variant.Id, variant.HeadRevisionId);
+            var revisionId = GetCurrentRevisionId(variant.Id);
+            var current = string.IsNullOrEmpty(revisionId)
+                ? null : ReadSnapshot(variant.Id, revisionId);
+            var latestRootChanged = latest != null &&
+                _workspace.HasChangedRootAsset(rootAssetPath, latest);
+            var currentRootChanged = current != null &&
+                _workspace.HasChangedRootAsset(rootAssetPath, current);
+            if ((latest == null || latestRootChanged) &&
+                (current == null || currentRootChanged))
+            {
+                return new AssetVariantChangeStatus
+                {
+                    HasChanges = true,
+                    HasChangesFromCurrentRevision = currentRootChanged
+                };
+            }
+            var contentHash = _workspace.Inspect(rootAssetPath).ContentHash;
+            return new AssetVariantChangeStatus
+            {
+                HasChanges = latest == null || contentHash != latest.ContentHash,
+                HasChangesFromCurrentRevision = current != null &&
+                    contentHash != current.ContentHash
+            };
         }
 
         public AssetVariantRevisionDetails GetRevisionDetails(string variantId, string revisionId)

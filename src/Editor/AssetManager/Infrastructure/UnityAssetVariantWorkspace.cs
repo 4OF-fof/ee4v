@@ -37,6 +37,23 @@ namespace Ee4v.AssetManager.Infrastructure
             return Capture(new AssetVariantSaveRequest { RootAssetPath = rootAssetPath }, false).Snapshot;
         }
 
+        public bool HasChangedRootAsset(string rootAssetPath, AssetVariantSnapshot saved)
+        {
+            var root = saved.Assets?.FirstOrDefault(asset =>
+                asset.Path == rootAssetPath && !asset.IsFolder);
+            if (root == null || string.IsNullOrEmpty(root.Hash))
+            {
+                return false;
+            }
+            if (AssetDatabase.IsMainAssetAtPathLoaded(rootAssetPath))
+            {
+                AssetDatabase.SaveAssetIfDirty(
+                    AssetDatabase.LoadMainAssetAtPath(rootAssetPath));
+            }
+            var path = ProjectAssetPath(rootAssetPath);
+            return File.Exists(path) && GetFileHash(path) != root.Hash;
+        }
+
         public Action UpdateMetadata(string variantId, string name, string description)
         {
             ValidateName(name);
