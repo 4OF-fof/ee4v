@@ -1262,13 +1262,9 @@ namespace Ee4v.AssetManager.UI
                 }
                 var visiblePixel = ReadPreviewPixel(
                     baseline, pixelX, pixelY, readback);
-                for (var attempt = 0; attempt < 16; attempt++)
+                while (TryPickPreviewCandidate(rect, pixelX, pixelY,
+                           skipped, readback, out var candidate))
                 {
-                    if (!TryPickPreviewCandidate(rect, pixelX, pixelY,
-                            skipped, readback, out var candidate))
-                    {
-                        return false;
-                    }
                     RenderPreviewForComparison(comparison,
                         candidate.Renderer, candidate.SubMeshIndex);
                     var withoutCandidate = ReadPreviewPixel(
@@ -1299,8 +1295,14 @@ namespace Ee4v.AssetManager.UI
             out MaterialPreviewTarget candidate)
         {
             candidate = null;
-            var shader = Shader.Find("Hidden/Internal-Colored");
+            var shader = Shader.Find(
+                "Hidden/ee4v/PreviewSelectionOutline");
             if (shader == null)
+            {
+                return false;
+            }
+            var pickPass = GetPickMaterial(shader, 1).FindPass("Pick");
+            if (pickPass < 0)
             {
                 return false;
             }
@@ -1345,7 +1347,8 @@ namespace Ee4v.AssetManager.UI
                         SubMeshIndex = slot
                     });
                     command.DrawRenderer(
-                        renderer, GetPickMaterial(shader, id), slot);
+                        renderer, GetPickMaterial(shader, id), slot,
+                        pickPass);
                 });
                 if (targets.Count == 1)
                 {
@@ -1388,8 +1391,13 @@ namespace Ee4v.AssetManager.UI
                     ((nextId >> 8) & 255) / 255f,
                     ((nextId >> 16) & 255) / 255f,
                     1f);
-                _pickMaterialsById.Add(
-                    CreateSolidPreviewMaterial(shader, color));
+                var material = new Material(shader)
+                {
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                material.SetVector("_PickColor",
+                    new Vector4(color.r, color.g, color.b, 1f));
+                _pickMaterialsById.Add(material);
             }
             return _pickMaterialsById[id - 1];
         }
@@ -1724,25 +1732,6 @@ namespace Ee4v.AssetManager.UI
                     }
                 }
             }
-        }
-
-        private static Material CreateSolidPreviewMaterial(
-            Shader shader,
-            Color color)
-        {
-            var material = new Material(shader)
-            {
-                hideFlags = HideFlags.HideAndDontSave
-            };
-            material.SetColor("_Color",
-                QualitySettings.activeColorSpace == ColorSpace.Linear
-                    ? color.gamma : color);
-            material.SetInt("_SrcBlend", (int)BlendMode.One);
-            material.SetInt("_DstBlend", (int)BlendMode.Zero);
-            material.SetInt("_ZWrite", 1);
-            material.SetInt("_ZTest", (int)CompareFunction.LessEqual);
-            material.SetInt("_Cull", (int)CullMode.Off);
-            return material;
         }
 
         private void ClearPickedSelection()

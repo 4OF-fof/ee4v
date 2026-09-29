@@ -5,6 +5,7 @@ Shader "Hidden/ee4v/PreviewSelectionOutline"
         _MainTex ("Preview", 2D) = "black" {}
         _WithoutSelectionTex ("Preview Without Selection", 2D) = "black" {}
         _OutlineColor ("Outline Color", Color) = (1, 0.4, 0, 1)
+        _PickColor ("Pick Color", Vector) = (0, 0, 0, 1)
     }
 
     SubShader
@@ -68,6 +69,45 @@ Shader "Hidden/ee4v/PreviewSelectionOutline"
 
                 float edge = (1 - step(0.5, center)) * step(0.5, neighbor);
                 return fixed4(_OutlineColor.rgb, _OutlineColor.a * edge);
+            }
+            ENDCG
+        }
+
+        Pass
+        {
+            Name "Pick"
+            Cull Off
+            ZWrite On
+            ZTest LEqual
+            Blend One Zero
+
+            CGPROGRAM
+            #pragma vertex vertPick
+            #pragma fragment fragPick
+            #include "UnityCG.cginc"
+
+            float4 _PickColor;
+
+            struct PickVertex
+            {
+                float4 vertex : POSITION;
+            };
+
+            struct PickFragment
+            {
+                float4 position : SV_POSITION;
+            };
+
+            PickFragment vertPick(PickVertex input)
+            {
+                PickFragment output;
+                output.position = UnityObjectToClipPos(input.vertex);
+                return output;
+            }
+
+            float4 fragPick(PickFragment input) : SV_Target
+            {
+                return _PickColor;
             }
             ENDCG
         }
