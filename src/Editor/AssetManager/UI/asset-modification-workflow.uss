@@ -974,6 +974,10 @@
     border-bottom-color: var(--ee4v-color-border-default);
 }
 
+.ee4v-modification-workflow__object-row--selected {
+    background-color: var(--ee4v-color-selection-soft);
+}
+
 .ee4v-modification-workflow__object-group,
 .ee4v-modification-workflow__object-group-content {
     min-width: 0;

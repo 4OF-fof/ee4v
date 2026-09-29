@@ -709,6 +709,22 @@
     background-color: var(--ee4v-color-panel);
 }
 
+.ee4v-asset-manager__preview-selection-label {
+    position: absolute;
+    bottom: var(--ee4v-space-lg);
+    left: var(--ee4v-space-lg);
+    max-width: 70%;
+    padding: var(--ee4v-space-xs) var(--ee4v-space-sm);
+    border-width: var(--ee4v-border-hairline);
+    border-color: #ff6600;
+    border-radius: var(--ee4v-radius-xl);
+    background-color: var(--ee4v-color-panel);
+    color: var(--ee4v-color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .ee4v-asset-manager__preview-side-button.ee4v-ui-button {
     min-width: 44px;
     min-height: 28px;

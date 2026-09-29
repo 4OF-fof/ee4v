@@ -844,6 +844,7 @@ namespace Ee4v.AssetManager.UI
         private DerivedAssetInfo _workingAsset;
         private GameObject _workingObject;
         private Material _selectedMaterial;
+        private bool _materialSelectionExplicitlyCleared;
         private UiButton _allMaterialsVisibilityButton;
         private EmbeddedMaterialInspector _materialInspector;
         private DerivedAssetPrefabScenePreview _scenePreview;
@@ -871,6 +872,7 @@ namespace Ee4v.AssetManager.UI
         private readonly Dictionary<PrefabObjectEntry, PrefabObjectRowState>
             _objectRows = new Dictionary<PrefabObjectEntry,
                 PrefabObjectRowState>();
+        private string _selectedPartKey;
         private readonly Dictionary<PrefabObjectEntry, PendingPartVisibility>
             _pendingPartVisibility =
                 new Dictionary<PrefabObjectEntry, PendingPartVisibility>();
@@ -1999,6 +2001,12 @@ namespace Ee4v.AssetManager.UI
             viewport.AddToClassList(
                 "ee4v-modification-workflow__preview-viewport");
             _scenePreview = new DerivedAssetPrefabScenePreview();
+            if (_mode != ModificationEditorMode.Composition)
+            {
+                _scenePreview.PreviewObjectClicked += OnPreviewObjectClicked;
+                _scenePreview.PreviewSelectionCleared +=
+                    OnPreviewSelectionCleared;
+            }
             _scenePreview.SetFlexibleLayout(true);
             _scenePreview.AddToClassList(
                 "ee4v-modification-workflow__preview");
@@ -2010,6 +2018,7 @@ namespace Ee4v.AssetManager.UI
                 _hiddenPrefabSiblingIndices);
             _scenePreview.SetHiddenParts(_hiddenPreviewParts);
             _scenePreview.SetPrefab(_workingObject);
+            SyncPreviewSelection();
             viewport.Add(_scenePreview);
             pane.Add(viewport);
             return pane;
@@ -2169,6 +2178,32 @@ namespace Ee4v.AssetManager.UI
                 category == WorkflowCategory.Material
                     ? "workflow.preview.appearanceTitle"
                     : "workflow.preview.sizeTitle");
+            SyncPreviewSelection();
+        }
+
+        private void SyncPreviewSelection()
+        {
+            if (_scenePreview == null)
+            {
+                return;
+            }
+            if (_mode == ModificationEditorMode.Composition)
+            {
+                _scenePreview.SetListSelection(null, null);
+            }
+            else if (_currentCategory == WorkflowCategory.Material)
+            {
+                _scenePreview.SetListSelection(null, _selectedMaterial);
+            }
+            else if (_currentCategory == WorkflowCategory.ShapeParts &&
+                     _shapePartsSection == ShapePartsSection.Parts)
+            {
+                _scenePreview.SetListSelection(_selectedPartKey, null);
+            }
+            else
+            {
+                _scenePreview.SetListSelection(null, null);
+            }
         }
 
         private VisualElement BuildAssetChildCard(AssetChildEntry child)
@@ -2332,7 +2367,9 @@ namespace Ee4v.AssetManager.UI
             _selectedPrefabSiblingIndex = siblingIndex;
             _selectedPrefabName = name ?? string.Empty;
             _selectedBodyPart = null;
+            _selectedPartKey = null;
             _selectedMaterial = null;
+            _materialSelectionExplicitlyCleared = false;
             if (siblingIndex.HasValue &&
                 _currentCategory != WorkflowCategory.Material)
             {
@@ -2818,9 +2855,15 @@ namespace Ee4v.AssetManager.UI
             var row = new VisualElement();
             row.AddToClassList(
                 "ee4v-modification-workflow__object-row");
+            var key = DerivedAssetPrefabScenePreview.GetPartKey(
+                entry.PrefabSiblingIndex, entry.SiblingPath);
+            row.EnableInClassList(
+                "ee4v-modification-workflow__object-row--selected",
+                key == _selectedPartKey);
             var text = new VisualElement();
             text.AddToClassList(
                 "ee4v-modification-workflow__object-text");
+            text.RegisterCallback<ClickEvent>(_ => SelectPartRow(key));
             var name = UiTextFactory.Create(
                 entry.Name,
                 "ee4v-modification-workflow__object-name");
@@ -2866,6 +2909,187 @@ namespace Ee4v.AssetManager.UI
             _objectRows[entry] = state;
             UpdateObjectRow(entry, state);
             return row;
+        }
+
+        private void OnPreviewObjectClicked(string partKey, Material material)
+        {
+            if (_mode == ModificationEditorMode.Composition ||
+                _controlsHost == null)
+            {
+                return;
+            }
+
+            var prefabSiblingIndex = GetPreviewPrefabSiblingIndex(partKey);
+            if (_currentCategory == WorkflowCategory.Material)
+            {
+                if (material == null)
+                {
+                    return;
+                }
+                if (_selectedBodyPart.HasValue &&
+                    !GetAvatarMaterials().Any(entry =>
+                        entry.Material == material &&
+                        entry.Usages.Any(usage =>
+                            usage.PrefabSiblingIndex == prefabSiblingIndex &&
+                            GetMaterialUsageCategories(usage, material)
+                                .Any(MatchesSelectedBodyPart))))
+                {
+                    _selectedBodyPart = null;
+                }
+                _selectedMaterial = material;
+                _materialSelectionExplicitlyCleared = false;
+                if (prefabSiblingIndex >= 0)
+                {
+                    _expandedMaterialPrefabGroups.Add(prefabSiblingIndex);
+                }
+                InvalidateAppearanceControls(AppearancePanel.Material);
+                ShowCategory(WorkflowCategory.Material, false);
+                ScrollToMaterial(material, prefabSiblingIndex);
+                return;
+            }
+
+            var entries = ReadPrefabObjects();
+            var entry = entries.FirstOrDefault(candidate =>
+                DerivedAssetPrefabScenePreview.GetPartKey(
+                    candidate.PrefabSiblingIndex,
+                    candidate.SiblingPath) == partKey);
+            while (entry == null && !string.IsNullOrEmpty(partKey))
+            {
+                var separator = partKey.LastIndexOf('/');
+                partKey = separator < 0
+                    ? string.Empty
+                    : partKey.Substring(0, separator);
+                entry = entries.FirstOrDefault(candidate =>
+                    DerivedAssetPrefabScenePreview.GetPartKey(
+                        candidate.PrefabSiblingIndex,
+                        candidate.SiblingPath) == partKey);
+            }
+            if (entry == null)
+            {
+                return;
+            }
+
+            if (_shapePartsSection == ShapePartsSection.Shape)
+            {
+                EndBodyScaleDrag();
+            }
+            _shapePartsSection = ShapePartsSection.Parts;
+            if (_selectedBodyPart.HasValue &&
+                !FilterPrefabObjectsByBodyPart(
+                    entries, _selectedBodyPart.Value).Contains(entry))
+            {
+                _selectedBodyPart = null;
+            }
+            var selectedKey = DerivedAssetPrefabScenePreview.GetPartKey(
+                entry.PrefabSiblingIndex, entry.SiblingPath);
+            if (entry.PrefabSiblingIndex >= 0)
+            {
+                _expandedPartPrefabGroups.Add(entry.PrefabSiblingIndex);
+            }
+            var separatorIndex = selectedKey.IndexOf('/');
+            while (separatorIndex >= 0)
+            {
+                _expandedObjectGroups.Add(
+                    selectedKey.Substring(0, separatorIndex));
+                separatorIndex = selectedKey.IndexOf('/', separatorIndex + 1);
+            }
+            _selectedPartKey = selectedKey;
+            InvalidateAppearanceControls(AppearancePanel.Parts);
+            ShowCategory(WorkflowCategory.ShapeParts, false);
+            ScrollToSelectedPart();
+        }
+
+        private void OnPreviewSelectionCleared()
+        {
+            if (_mode == ModificationEditorMode.Composition ||
+                _controlsHost == null)
+            {
+                return;
+            }
+            if (_currentCategory == WorkflowCategory.Material)
+            {
+                _selectedMaterial = null;
+                _materialSelectionExplicitlyCleared = true;
+                InvalidateAppearanceControls(AppearancePanel.Material);
+                ShowCategory(WorkflowCategory.Material, false);
+                return;
+            }
+
+            _selectedPartKey = null;
+            foreach (var row in _objectRows.Values)
+            {
+                row.Row.EnableInClassList(
+                    "ee4v-modification-workflow__object-row--selected",
+                    false);
+            }
+            SyncPreviewSelection();
+        }
+
+        private int GetPreviewPrefabSiblingIndex(string partKey)
+        {
+            var separator = partKey.IndexOf('/');
+            var first = separator < 0
+                ? partKey
+                : partKey.Substring(0, separator);
+            return int.TryParse(first, out var index) &&
+                   _prefabSiblingIndices.Contains(index)
+                ? index
+                : -1;
+        }
+
+        private void SelectPartRow(string key)
+        {
+            _selectedPartKey = key;
+            foreach (var pair in _objectRows)
+            {
+                pair.Value.Row.EnableInClassList(
+                    "ee4v-modification-workflow__object-row--selected",
+                    DerivedAssetPrefabScenePreview.GetPartKey(
+                        pair.Key.PrefabSiblingIndex,
+                        pair.Key.SiblingPath) == key);
+            }
+            SyncPreviewSelection();
+        }
+
+        private void ScrollToSelectedPart()
+        {
+            var row = _objectRows.FirstOrDefault(pair =>
+                DerivedAssetPrefabScenePreview.GetPartKey(
+                    pair.Key.PrefabSiblingIndex,
+                    pair.Key.SiblingPath) == _selectedPartKey).Value?.Row;
+            if (row != null)
+            {
+                _controlsHost.schedule.Execute(() =>
+                {
+                    if (row.panel != null)
+                    {
+                        _controlsHost.ScrollTo(row);
+                    }
+                });
+            }
+        }
+
+        private void ScrollToMaterial(
+            Material material,
+            int prefabSiblingIndex)
+        {
+            var row = _controlsHost.Query<NavigationItem>(
+                    className: "ee4v-modification-workflow__material-item")
+                .ToList()
+                .FirstOrDefault(item =>
+                    item.userData is KeyValuePair<Material, int> choice &&
+                    choice.Key == material &&
+                    choice.Value == prefabSiblingIndex);
+            if (row != null)
+            {
+                _controlsHost.schedule.Execute(() =>
+                {
+                    if (row.panel != null)
+                    {
+                        _controlsHost.ScrollTo(row);
+                    }
+                });
+            }
         }
 
         private void ShowActiveSelfContextMenu(
@@ -3798,6 +4022,7 @@ namespace Ee4v.AssetManager.UI
             _baseAvatarViewPosition = null;
             _avatarDescriptor = null;
             _selectedMaterial = null;
+            _materialSelectionExplicitlyCleared = false;
             _hiddenMaterials.Clear();
             _hiddenPreviewParts.Clear();
             _expandedPartPrefabGroups.Clear();
@@ -3860,9 +4085,14 @@ namespace Ee4v.AssetManager.UI
                 return panel;
             }
 
-            if (_selectedMaterial == null ||
+            if (_selectedMaterial != null &&
                 !filteredMaterials.Any(entry =>
                     entry.Material == _selectedMaterial))
+            {
+                _selectedMaterial = null;
+            }
+            if (_selectedMaterial == null &&
+                !_materialSelectionExplicitlyCleared)
             {
                 _selectedMaterial = GetDisplayedPrefabScopes()
                     .SelectMany(prefabSiblingIndex =>
@@ -3965,10 +4195,13 @@ namespace Ee4v.AssetManager.UI
                 () =>
                 {
                     _selectedMaterial = material;
+                    _materialSelectionExplicitlyCleared = false;
                     ShowCategory(WorkflowCategory.Material, false);
                 });
             choice.AddToClassList(
                 "ee4v-modification-workflow__material-item");
+            choice.userData = new KeyValuePair<Material, int>(
+                material, entry.Usages[0].PrefabSiblingIndex);
             choice.tooltip = FormatMaterialUsageTooltip(entry);
             var materialField = UiTextFactory.CreateObjectField(
                 string.Empty,
@@ -4055,6 +4288,7 @@ namespace Ee4v.AssetManager.UI
                     EndBodyScaleDrag();
                     _selectedBodyPart = part;
                     _selectedMaterial = null;
+                    _materialSelectionExplicitlyCleared = false;
                     ShowCategory(_currentCategory, false);
                     _scenePreview?.FocusBodyPart(part);
                 },
@@ -6776,7 +7010,9 @@ namespace Ee4v.AssetManager.UI
             ApplyEditorMode();
             _shapePartsSection = ShapePartsSection.Parts;
             _selectedBodyPart = null;
+            _selectedPartKey = null;
             _selectedMaterial = null;
+            _materialSelectionExplicitlyCleared = false;
             _hiddenMaterials.Clear();
             _feedback = string.Empty;
             _assetFeedback = string.Empty;
@@ -6808,7 +7044,9 @@ namespace Ee4v.AssetManager.UI
             _selectedPrefabSiblingIndex = null;
             _selectedPrefabName = string.Empty;
             _selectedBodyPart = null;
+            _selectedPartKey = null;
             _selectedMaterial = null;
+            _materialSelectionExplicitlyCleared = false;
             _hiddenMaterials.Clear();
             _feedback = string.Empty;
             _assetFeedback = string.Empty;

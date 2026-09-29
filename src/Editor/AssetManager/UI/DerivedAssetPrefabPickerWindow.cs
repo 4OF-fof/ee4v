@@ -6,6 +6,7 @@ using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
@@ -350,6 +351,12 @@ namespace Ee4v.AssetManager.UI
         private readonly VisualElement _viewToggle;
         private readonly UiButton _primaryViewButton;
         private readonly UiButton _secondaryViewButton;
+        private readonly UiTextElement _selectionLabel;
+        private Material _outlineMaterial;
+        private Material _invisiblePreviewMaterial;
+        private RenderTexture _outlineTexture;
+        private Vector2 _outlineTextureSize;
+        private bool _outlineDirty = true;
         private readonly Dictionary<Transform, Vector3>
             _pendingTransformScales =
                 new Dictionary<Transform, Vector3>();
@@ -410,6 +417,17 @@ namespace Ee4v.AssetManager.UI
         private bool _headBackView;
         private bool _waistBackView;
         private int? _scopeSiblingIndex;
+        private Vector2? _pendingPickPosition;
+        private Renderer _pickedRenderer;
+        private Material _pickedMaterial;
+        private string _requestedPartKey;
+        private Material _requestedMaterial;
+        private readonly HashSet<Renderer> _outlinedRenderers =
+            new HashSet<Renderer>();
+        private Material _outlinedMaterial;
+
+        internal event Action<string, Material> PreviewObjectClicked;
+        internal event Action PreviewSelectionCleared;
 
         internal DerivedAssetPrefabScenePreview()
         {
@@ -444,6 +462,12 @@ namespace Ee4v.AssetManager.UI
             _viewToggle.Add(_primaryViewButton);
             _viewToggle.Add(_secondaryViewButton);
             _viewport.FeatureOverlay.Add(_viewToggle);
+            _selectionLabel = UiTextFactory.Create(
+                string.Empty,
+                "ee4v-asset-manager__preview-selection-label");
+            _selectionLabel.pickingMode = PickingMode.Ignore;
+            _selectionLabel.style.display = DisplayStyle.None;
+            _viewport.FeatureOverlay.Add(_selectionLabel);
             Add(_viewport);
             SetPreviewAvailable(false);
 
@@ -467,6 +491,94 @@ namespace Ee4v.AssetManager.UI
 
             _prefab = prefab;
             RebuildPreview();
+        }
+
+        internal void SetListSelection(string partKey, Material material)
+        {
+            if (_requestedPartKey == partKey &&
+                _requestedMaterial == material)
+            {
+                return;
+            }
+            _requestedPartKey = partKey;
+            _requestedMaterial = material;
+            ApplyRequestedSelection();
+        }
+
+        private void ApplyRequestedSelection()
+        {
+            ClearPickedSelection();
+            if (_instance == null)
+            {
+                return;
+            }
+
+            if (_requestedMaterial != null)
+            {
+                ForEachVisibleMaterialSlot((renderer, material, slot) =>
+                {
+                    if (material == _requestedMaterial)
+                    {
+                        _outlinedRenderers.Add(renderer);
+                        if (_pickedRenderer == null)
+                        {
+                            _pickedRenderer = renderer;
+                        }
+                    }
+                });
+                if (_outlinedRenderers.Count > 0)
+                {
+                    _pickedMaterial = _requestedMaterial;
+                    _outlinedMaterial = _requestedMaterial;
+                    _selectionLabel.SetText(_requestedMaterial.name);
+                }
+            }
+            else if (_requestedPartKey != null)
+            {
+                var target = _instance.transform;
+                foreach (var segment in _requestedPartKey.Split('/'))
+                {
+                    if (segment.Length == 0)
+                    {
+                        continue;
+                    }
+                    if (!int.TryParse(segment, out var index) ||
+                        index < 0 || index >= target.childCount)
+                    {
+                        target = null;
+                        break;
+                    }
+                    target = target.GetChild(index);
+                }
+                if (target != null)
+                {
+                    var descendants = new HashSet<Renderer>(
+                        target.GetComponentsInChildren<Renderer>(true));
+                    ForEachVisibleMaterialSlot((renderer, material, slot) =>
+                    {
+                        if (!descendants.Contains(renderer))
+                        {
+                            return;
+                        }
+                        _outlinedRenderers.Add(renderer);
+                        if (_pickedRenderer == null)
+                        {
+                            _pickedRenderer = renderer;
+                            _pickedMaterial = material;
+                        }
+                    });
+                    if (_outlinedRenderers.Count > 0)
+                    {
+                        _selectionLabel.SetText(target.name);
+                    }
+                }
+            }
+            _selectionLabel.style.display =
+                _outlinedRenderers.Count > 0
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+            _outlineDirty = true;
+            _viewport.RequestRepaint();
         }
 
         internal void SetScope(
@@ -500,6 +612,7 @@ namespace Ee4v.AssetManager.UI
             _basePrefabHidden = baseHidden;
             _hiddenPrefabSiblingIndices.Clear();
             _hiddenPrefabSiblingIndices.UnionWith(next);
+            RefreshSelectionAfterVisibilityChange();
             RequestPreviewRepaint();
         }
 
@@ -525,6 +638,7 @@ namespace Ee4v.AssetManager.UI
             _hiddenPartKeys.Clear();
             _hiddenPartKeys.UnionWith(next);
             RebuildHiddenPartRenderers();
+            RefreshSelectionAfterVisibilityChange();
             RefreshBounds();
             RequestPreviewRepaint();
         }
@@ -848,6 +962,7 @@ namespace Ee4v.AssetManager.UI
 
             _hiddenMaterials.Clear();
             _hiddenMaterials.UnionWith(next);
+            RefreshSelectionAfterVisibilityChange();
             RebuildMaterialTargets();
             RequestPreviewRepaint();
         }
@@ -909,6 +1024,7 @@ namespace Ee4v.AssetManager.UI
                 _utility.AddSingleGO(_instance);
                 RefreshBounds();
                 RebuildMaterialTargets();
+                ApplyRequestedSelection();
                 SetPreviewAvailable(true);
                 if (!preserveView)
                 {
@@ -952,6 +1068,16 @@ namespace Ee4v.AssetManager.UI
             }
 
             ApplyPendingUpdates();
+            if (PreviewObjectClicked != null &&
+                current.type == EventType.MouseDown &&
+                current.button == 0 && !current.alt &&
+                rect.Contains(current.mousePosition))
+            {
+                _pendingPickPosition = current.mousePosition;
+                current.Use();
+                RequestPreviewRepaint();
+                return;
+            }
             if (current.type != EventType.Repaint)
             {
                 return;
@@ -975,6 +1101,8 @@ namespace Ee4v.AssetManager.UI
                     _previewTexture,
                     ScaleMode.StretchToFill,
                     true);
+                ProcessPendingPick(rect);
+                DrawPickedOutline(rect);
                 return;
             }
             ConfigureCamera();
@@ -1004,11 +1132,630 @@ namespace Ee4v.AssetManager.UI
             _previewTexture = _utility.EndPreview();
             _previewTextureSize = previewSize;
             _previewDirty = false;
+            _outlineDirty = true;
             GUI.DrawTexture(
                 rect,
                 _previewTexture,
                 ScaleMode.StretchToFill,
                 true);
+            ProcessPendingPick(rect);
+            DrawPickedOutline(rect);
+        }
+
+        private void ProcessPendingPick(Rect rect)
+        {
+            if (!_pendingPickPosition.HasValue)
+            {
+                return;
+            }
+            var position = _pendingPickPosition.Value;
+            _pendingPickPosition = null;
+            if (TryPickPreviewObject(rect, position,
+                    out var renderer, out var material))
+            {
+                ApplyPickedSelection(renderer, material);
+            }
+            else
+            {
+                ClearSelectionFromPreview();
+            }
+        }
+
+        private void ApplyPickedSelection(
+            Renderer renderer,
+            Material material)
+        {
+            _requestedPartKey = null;
+            _requestedMaterial = null;
+            _pickedRenderer = renderer;
+            _pickedMaterial = material;
+            _outlinedRenderers.Clear();
+            _outlinedRenderers.Add(renderer);
+            _outlinedMaterial = null;
+            _outlineDirty = true;
+            _selectionLabel.SetText(renderer.name + " / " + material.name);
+            _selectionLabel.style.display = DisplayStyle.Flex;
+            RequestPreviewRepaint();
+            var partKey = GetPreviewPartKey(renderer.transform);
+            EditorApplication.delayCall += () =>
+                PreviewObjectClicked?.Invoke(partKey, material);
+        }
+
+        private bool TryPickPreviewObject(
+            Rect rect,
+            Vector2 position,
+            out Renderer pickedRenderer,
+            out Material pickedMaterial)
+        {
+            pickedRenderer = null;
+            pickedMaterial = null;
+            var width = Mathf.Max(2, Mathf.CeilToInt(rect.width));
+            var height = Mathf.Max(2, Mathf.CeilToInt(rect.height));
+            var pixelX = Mathf.Clamp(Mathf.FloorToInt(
+                (position.x - rect.x) / rect.width * width),
+                0, width - 1);
+            var pixelY = Mathf.Clamp(Mathf.FloorToInt(
+                (position.y - rect.y) / rect.height * height),
+                0, height - 1);
+            var readback = new Texture2D(
+                1, 1, TextureFormat.RGBA32, false, true);
+            var comparison = CreateComparisonTexture(width, height);
+            var baseline = _previewTexture as RenderTexture;
+            var skipped = new List<MaterialPreviewTarget>();
+            try
+            {
+                if (_hiddenMaterials.Count > 0 || baseline == null)
+                {
+                    RenderPreviewForComparison(comparison);
+                    baseline = comparison;
+                }
+                var visiblePixel = ReadPreviewPixel(
+                    baseline, pixelX, pixelY, readback);
+                for (var attempt = 0; attempt < 16; attempt++)
+                {
+                    if (!TryPickPreviewCandidate(rect, pixelX, pixelY,
+                            skipped, readback, out var candidate))
+                    {
+                        return false;
+                    }
+                    RenderPreviewForComparison(comparison,
+                        candidate.Renderer, candidate.SubMeshIndex);
+                    var withoutCandidate = ReadPreviewPixel(
+                        comparison, pixelX, pixelY, readback);
+                    if (PreviewPixelsDiffer(
+                            visiblePixel, withoutCandidate))
+                    {
+                        pickedRenderer = candidate.Renderer;
+                        pickedMaterial = candidate.Material;
+                        return true;
+                    }
+                    skipped.Add(candidate);
+                }
+                return false;
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(readback);
+                RenderTexture.ReleaseTemporary(comparison);
+            }
+        }
+
+        private bool TryPickPreviewCandidate(
+            Rect rect,
+            int pixelX,
+            int pixelY,
+            List<MaterialPreviewTarget> skipped,
+            Texture2D readback,
+            out MaterialPreviewTarget candidate)
+        {
+            candidate = null;
+            var shader = Shader.Find("Hidden/Internal-Colored");
+            if (shader == null)
+            {
+                return false;
+            }
+
+            var camera = _utility.camera;
+            var width = Mathf.Max(2, Mathf.CeilToInt(rect.width));
+            var height = Mathf.Max(2, Mathf.CeilToInt(rect.height));
+            var texture = RenderTexture.GetTemporary(
+                width, height, 24, RenderTextureFormat.ARGB32,
+                RenderTextureReadWrite.Linear);
+            var command = new CommandBuffer
+            {
+                name = "ee4v Preview Picking"
+            };
+            var pickMaterials = new List<Material>();
+            var targets = new List<MaterialPreviewTarget> { null };
+            var previousTarget = RenderTexture.active;
+            try
+            {
+                command.SetRenderTarget(texture);
+                command.SetViewport(new Rect(0f, 0f, width, height));
+                command.ClearRenderTarget(true, true, Color.black);
+                command.SetViewProjectionMatrices(
+                    camera.worldToCameraMatrix,
+                    GL.GetGPUProjectionMatrix(camera.projectionMatrix, false));
+                ForEachVisibleMaterialSlot((renderer, material, slot) =>
+                {
+                    if (skipped.Any(target =>
+                            target.Renderer == renderer &&
+                            target.SubMeshIndex == slot))
+                    {
+                        return;
+                    }
+                    if (targets.Count >= 0xFFFFFF)
+                    {
+                        return;
+                    }
+                    var id = targets.Count;
+                    var color = new Color(
+                        (id & 255) / 255f,
+                        ((id >> 8) & 255) / 255f,
+                        ((id >> 16) & 255) / 255f,
+                        1f);
+                    var pickMaterial = CreateSolidPreviewMaterial(
+                        shader, color);
+                    pickMaterials.Add(pickMaterial);
+                    targets.Add(new MaterialPreviewTarget
+                    {
+                        Renderer = renderer,
+                        Material = material,
+                        SubMeshIndex = slot
+                    });
+                    command.DrawRenderer(renderer, pickMaterial, slot);
+                });
+                if (targets.Count == 1)
+                {
+                    return false;
+                }
+
+                Graphics.ExecuteCommandBuffer(command);
+                RenderTexture.active = texture;
+                readback.ReadPixels(
+                    new Rect(pixelX, pixelY, 1f, 1f), 0, 0);
+                readback.Apply(false, false);
+                var pixel = readback.GetPixel(0, 0);
+                var selectedId =
+                    Mathf.RoundToInt(pixel.r * 255f) |
+                    Mathf.RoundToInt(pixel.g * 255f) << 8 |
+                    Mathf.RoundToInt(pixel.b * 255f) << 16;
+                if (selectedId <= 0 || selectedId >= targets.Count)
+                {
+                    return false;
+                }
+                candidate = targets[selectedId];
+                return candidate.Renderer != null &&
+                    candidate.Material != null;
+            }
+            finally
+            {
+                RenderTexture.active = previousTarget;
+                command.Dispose();
+                RenderTexture.ReleaseTemporary(texture);
+                foreach (var material in pickMaterials)
+                {
+                    UnityEngine.Object.DestroyImmediate(material);
+                }
+            }
+        }
+
+        private static RenderTexture CreateComparisonTexture(
+            int width,
+            int height)
+        {
+            var texture = RenderTexture.GetTemporary(
+                width, height, 24, RenderTextureFormat.ARGBHalf,
+                RenderTextureReadWrite.Linear);
+            texture.filterMode = FilterMode.Point;
+            texture.wrapMode = TextureWrapMode.Clamp;
+            return texture;
+        }
+
+        private static Color ReadPreviewPixel(
+            RenderTexture texture,
+            int x,
+            int y,
+            Texture2D readback)
+        {
+            var previous = RenderTexture.active;
+            try
+            {
+                RenderTexture.active = texture;
+                readback.ReadPixels(new Rect(x, y, 1f, 1f), 0, 0);
+                readback.Apply(false, false);
+                return readback.GetPixel(0, 0);
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+            }
+        }
+
+        private static bool PreviewPixelsDiffer(Color first, Color second)
+        {
+            const float threshold = 1f / 255f;
+            return Mathf.Abs(first.r - second.r) > threshold ||
+                Mathf.Abs(first.g - second.g) > threshold ||
+                Mathf.Abs(first.b - second.b) > threshold ||
+                Mathf.Abs(first.a - second.a) > threshold;
+        }
+
+        private void RenderPreviewForComparison(
+            RenderTexture target,
+            Renderer omittedRenderer = null,
+            int omittedSlot = -1,
+            IReadOnlyCollection<Renderer> omittedRenderers = null,
+            Material omittedMaterial = null)
+        {
+            if (_invisiblePreviewMaterial == null)
+            {
+                var shader = Shader.Find("Hidden/Internal-Colored");
+                _invisiblePreviewMaterial = new Material(shader)
+                {
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                _invisiblePreviewMaterial.SetColor("_Color", Color.clear);
+                _invisiblePreviewMaterial.SetInt("_SrcBlend",
+                    (int)BlendMode.Zero);
+                _invisiblePreviewMaterial.SetInt("_DstBlend",
+                    (int)BlendMode.One);
+                _invisiblePreviewMaterial.SetInt("_ZWrite", 0);
+                _invisiblePreviewMaterial.SetInt("_ZTest",
+                    (int)CompareFunction.Always);
+                _invisiblePreviewMaterial.SetInt("_ColorMask", 0);
+            }
+
+            var camera = _utility.camera;
+            var previousTarget = camera.targetTexture;
+            var previousActive = RenderTexture.active;
+            var previewTexture = _previewTexture as RenderTexture;
+            RenderTexture savedPreview = null;
+            var originalMaterials =
+                new List<KeyValuePair<Renderer, Material[]>>();
+            var disabledForOutline = new List<Renderer>();
+            var rendererWasEnabled = omittedRenderer != null &&
+                omittedRenderer.enabled;
+            var previewStarted = false;
+            if (previewTexture != null)
+            {
+                savedPreview = RenderTexture.GetTemporary(
+                    previewTexture.width, previewTexture.height, 0,
+                    RenderTextureFormat.ARGBHalf,
+                    RenderTextureReadWrite.Linear);
+                Graphics.Blit(previewTexture, savedPreview);
+            }
+            HideOutOfScopeRenderers();
+            try
+            {
+                foreach (var renderer in _renderers)
+                {
+                    if (renderer == null || !renderer.enabled)
+                    {
+                        continue;
+                    }
+                    var materials = renderer.sharedMaterials;
+                    var changed = false;
+                    for (var slot = 0; slot < materials.Length; slot++)
+                    {
+                        if ((renderer == omittedRenderer &&
+                             slot == omittedSlot) ||
+                            (omittedMaterial != null &&
+                             materials[slot] == omittedMaterial) ||
+                            _hiddenMaterials.Contains(materials[slot]))
+                        {
+                            if (!changed)
+                            {
+                                originalMaterials.Add(
+                                    new KeyValuePair<Renderer, Material[]>(
+                                        renderer, materials));
+                                materials = (Material[])materials.Clone();
+                                changed = true;
+                            }
+                            materials[slot] = _invisiblePreviewMaterial;
+                        }
+                    }
+                    if (changed)
+                    {
+                        renderer.sharedMaterials = materials;
+                    }
+                }
+                if (omittedRenderer != null && omittedSlot < 0)
+                {
+                    omittedRenderer.enabled = false;
+                }
+                if (omittedRenderers != null)
+                {
+                    foreach (var renderer in omittedRenderers)
+                    {
+                        if (renderer != null && renderer.enabled)
+                        {
+                            renderer.enabled = false;
+                            disabledForOutline.Add(renderer);
+                        }
+                    }
+                }
+                _utility.BeginPreview(
+                    new Rect(0f, 0f, target.width, target.height),
+                    GUIStyle.none);
+                previewStarted = true;
+                camera.Render();
+                var rendered = _utility.EndPreview();
+                previewStarted = false;
+                Graphics.Blit(rendered, target);
+            }
+            finally
+            {
+                if (previewStarted)
+                {
+                    _utility.EndPreview();
+                }
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = previousActive;
+                if (omittedRenderer != null)
+                {
+                    omittedRenderer.enabled = rendererWasEnabled;
+                }
+                foreach (var renderer in disabledForOutline)
+                {
+                    if (renderer != null)
+                    {
+                        renderer.enabled = true;
+                    }
+                }
+                foreach (var pair in originalMaterials)
+                {
+                    if (pair.Key != null)
+                    {
+                        pair.Key.sharedMaterials = pair.Value;
+                    }
+                }
+                RestoreOutOfScopeRenderers();
+                if (savedPreview != null)
+                {
+                    Graphics.Blit(savedPreview, previewTexture);
+                    RenderTexture.ReleaseTemporary(savedPreview);
+                }
+            }
+        }
+
+        private void DrawPickedOutline(Rect rect)
+        {
+            if (_outlinedRenderers.Count == 0 ||
+                (_outlinedMaterial != null &&
+                 _hiddenMaterials.Contains(_outlinedMaterial)) ||
+                !_outlinedRenderers.Any(renderer =>
+                    renderer != null && renderer.enabled &&
+                    renderer.gameObject.activeInHierarchy &&
+                    IsInScope(renderer) &&
+                    !_hiddenPartRenderers.Contains(renderer)))
+            {
+                return;
+            }
+
+            if (_outlineDirty || _outlineTexture == null ||
+                !Approximately(_outlineTextureSize, rect.size))
+            {
+                UpdatePickedOutline(rect);
+            }
+            if (_outlineTexture != null)
+            {
+                GUI.DrawTexture(
+                    rect, _outlineTexture, ScaleMode.StretchToFill, true);
+            }
+        }
+
+        private void UpdatePickedOutline(Rect rect)
+        {
+            var outlineShader = Shader.Find(
+                "Hidden/ee4v/PreviewSelectionOutline");
+            if (outlineShader == null)
+            {
+                return;
+            }
+
+            var width = Mathf.Max(2, Mathf.CeilToInt(rect.width));
+            var height = Mathf.Max(2, Mathf.CeilToInt(rect.height));
+            if (_outlineTexture == null ||
+                _outlineTexture.width != width ||
+                _outlineTexture.height != height)
+            {
+                if (_outlineTexture != null)
+                {
+                    _outlineTexture.Release();
+                    UnityEngine.Object.DestroyImmediate(_outlineTexture);
+                }
+                _outlineTexture = new RenderTexture(
+                    width, height, 0, RenderTextureFormat.ARGB32,
+                    RenderTextureReadWrite.Linear)
+                {
+                    hideFlags = HideFlags.HideAndDontSave,
+                    filterMode = FilterMode.Bilinear
+                };
+                _outlineTexture.Create();
+            }
+            if (_outlineMaterial == null)
+            {
+                _outlineMaterial = new Material(outlineShader)
+                {
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+            }
+            var outlineColor = new Color(1f, 0.4f, 0f, 1f);
+            _outlineMaterial.SetColor("_OutlineColor",
+                QualitySettings.activeColorSpace == ColorSpace.Linear
+                    ? outlineColor.gamma : outlineColor);
+
+            var mask = RenderTexture.GetTemporary(
+                width, height, 0, RenderTextureFormat.ARGB32,
+                RenderTextureReadWrite.Linear);
+            mask.wrapMode = TextureWrapMode.Clamp;
+            mask.filterMode = FilterMode.Point;
+            var withoutSelection = CreateComparisonTexture(width, height);
+            RenderTexture baseline = null;
+            var previousTarget = RenderTexture.active;
+            try
+            {
+                Texture source = _previewTexture;
+                if (_hiddenMaterials.Count > 0 || source == null)
+                {
+                    baseline = CreateComparisonTexture(width, height);
+                    RenderPreviewForComparison(baseline);
+                    source = baseline;
+                }
+                RenderPreviewForComparison(
+                    withoutSelection,
+                    omittedRenderers: _outlinedMaterial == null
+                        ? _outlinedRenderers : null,
+                    omittedMaterial: _outlinedMaterial);
+                _outlineMaterial.SetTexture(
+                    "_WithoutSelectionTex", withoutSelection);
+                Graphics.Blit(source, mask, _outlineMaterial, 0);
+                Graphics.Blit(mask, _outlineTexture,
+                    _outlineMaterial, 1);
+                _outlineTextureSize = rect.size;
+                _outlineDirty = false;
+            }
+            finally
+            {
+                RenderTexture.active = previousTarget;
+                _outlineMaterial.SetTexture(
+                    "_WithoutSelectionTex", null);
+                if (baseline != null)
+                {
+                    RenderTexture.ReleaseTemporary(baseline);
+                }
+                RenderTexture.ReleaseTemporary(withoutSelection);
+                RenderTexture.ReleaseTemporary(mask);
+            }
+        }
+
+        private void ForEachVisibleMaterialSlot(
+            Action<Renderer, Material, int> visit)
+        {
+            foreach (var renderer in _renderers)
+            {
+                if (renderer == null || !renderer.enabled ||
+                    !renderer.gameObject.activeInHierarchy ||
+                    !IsInScope(renderer) ||
+                    _hiddenPartRenderers.Contains(renderer))
+                {
+                    continue;
+                }
+                Mesh mesh = null;
+                if (renderer is SkinnedMeshRenderer skinned)
+                {
+                    mesh = skinned.sharedMesh;
+                }
+                else if (renderer is MeshRenderer meshRenderer)
+                {
+                    var filter = meshRenderer.GetComponent<MeshFilter>();
+                    mesh = filter == null ? null : filter.sharedMesh;
+                }
+                if (mesh == null)
+                {
+                    continue;
+                }
+                var materials = renderer.sharedMaterials;
+                var slotCount = Mathf.Min(mesh.subMeshCount,
+                    materials.Length);
+                for (var slot = 0; slot < slotCount; slot++)
+                {
+                    var material = materials[slot];
+                    if (material != null &&
+                        !_hiddenMaterials.Contains(material))
+                    {
+                        visit(renderer, material, slot);
+                    }
+                }
+            }
+        }
+
+        private static Material CreateSolidPreviewMaterial(
+            Shader shader,
+            Color color)
+        {
+            var material = new Material(shader)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            material.SetColor("_Color",
+                QualitySettings.activeColorSpace == ColorSpace.Linear
+                    ? color.gamma : color);
+            material.SetInt("_SrcBlend", (int)BlendMode.One);
+            material.SetInt("_DstBlend", (int)BlendMode.Zero);
+            material.SetInt("_ZWrite", 1);
+            material.SetInt("_ZTest", (int)CompareFunction.LessEqual);
+            material.SetInt("_Cull", (int)CullMode.Off);
+            return material;
+        }
+
+        private void ClearPickedSelection()
+        {
+            _pickedRenderer = null;
+            _pickedMaterial = null;
+            _outlinedRenderers.Clear();
+            _outlinedMaterial = null;
+            _outlineDirty = true;
+            _selectionLabel.SetText(string.Empty);
+            _selectionLabel.style.display = DisplayStyle.None;
+        }
+
+        private void ClearSelectionFromPreview()
+        {
+            _requestedPartKey = null;
+            _requestedMaterial = null;
+            ClearPickedSelection();
+            _viewport.RequestRepaint();
+            EditorApplication.delayCall += () =>
+                PreviewSelectionCleared?.Invoke();
+        }
+
+        private void RefreshSelectionAfterVisibilityChange()
+        {
+            if (_instance == null)
+            {
+                return;
+            }
+            if (_requestedPartKey != null || _requestedMaterial != null)
+            {
+                ApplyRequestedSelection();
+                if (_outlinedRenderers.Count == 0)
+                {
+                    ClearSelectionFromPreview();
+                }
+                return;
+            }
+            if (_pickedRenderer != null &&
+                (!_pickedRenderer.enabled ||
+                 !_pickedRenderer.gameObject.activeInHierarchy ||
+                 !IsInScope(_pickedRenderer) ||
+                 _hiddenPartRenderers.Contains(_pickedRenderer) ||
+                 _pickedMaterial != null &&
+                 _hiddenMaterials.Contains(_pickedMaterial)))
+            {
+                ClearSelectionFromPreview();
+            }
+        }
+
+        private string GetPreviewPartKey(Transform target)
+        {
+            var indices = new List<int>();
+            var current = target;
+            while (current != null && current != _instance.transform)
+            {
+                var parent = current.parent;
+                if (parent == _instance.transform &&
+                    _prefabSiblingIndices.Contains(current.GetSiblingIndex()))
+                {
+                    indices.Reverse();
+                    return GetPartKey(current.GetSiblingIndex(), indices);
+                }
+                indices.Add(current.GetSiblingIndex());
+                current = parent;
+            }
+            indices.Reverse();
+            return GetPartKey(-1, indices);
         }
 
         internal void ResetView()
@@ -2180,6 +2927,26 @@ namespace Ee4v.AssetManager.UI
             _previewTexture = null;
             _previewTextureSize = Vector2.zero;
             _previewDirty = true;
+            _pendingPickPosition = null;
+            if (_outlineTexture != null)
+            {
+                _outlineTexture.Release();
+                UnityEngine.Object.DestroyImmediate(_outlineTexture);
+                _outlineTexture = null;
+            }
+            if (_outlineMaterial != null)
+            {
+                UnityEngine.Object.DestroyImmediate(_outlineMaterial);
+                _outlineMaterial = null;
+            }
+            if (_invisiblePreviewMaterial != null)
+            {
+                UnityEngine.Object.DestroyImmediate(_invisiblePreviewMaterial);
+                _invisiblePreviewMaterial = null;
+            }
+            _outlineTextureSize = Vector2.zero;
+            _outlineDirty = true;
+            ClearPickedSelection();
             _materialTargets.Clear();
             _transformTargets.Clear();
             _blendShapeTargets.Clear();
