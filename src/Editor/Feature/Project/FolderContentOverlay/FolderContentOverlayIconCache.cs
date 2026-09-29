@@ -15,6 +15,8 @@ namespace Ee4v.FolderContentOverlay
                     StringComparer.OrdinalIgnoreCase);
         private readonly AssetIconResolver _assetIconResolver =
             new AssetIconResolver();
+        private Dictionary<string, List<string>> _assetsByFolder;
+        private Dictionary<string, List<string>> _childFoldersByFolder;
 
         public Texture Get(string folderPath)
         {
@@ -28,6 +30,8 @@ namespace Ee4v.FolderContentOverlay
         public bool Invalidate(string folderPath)
         {
             folderPath = NormalizePath(folderPath);
+            _assetsByFolder = null;
+            _childFoldersByFolder = null;
             return !string.IsNullOrEmpty(folderPath) &&
                 _summariesByFolder.Remove(folderPath);
         }
@@ -102,56 +106,84 @@ namespace Ee4v.FolderContentOverlay
                 return IconSummary.Empty;
             }
 
+            EnsurePathIndex();
             var candidates = new List<Texture>();
-            var assetPaths = AssetDatabase.FindAssets(
-                    string.Empty,
-                    new[] { folderPath })
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .Where(path =>
-                    !string.IsNullOrEmpty(path) &&
-                    !AssetDatabase.IsValidFolder(path) &&
-                    IsDirectChild(folderPath, path))
-                .OrderBy(
-                    path => path,
-                    StringComparer.OrdinalIgnoreCase);
-
-            foreach (var assetPath in assetPaths)
+            if (_assetsByFolder.TryGetValue(
+                    folderPath, out var assetPaths))
             {
-                var icon = _assetIconResolver.Resolve(assetPath);
-                if (icon != null)
+                foreach (var assetPath in assetPaths)
                 {
-                    candidates.Add(icon);
+                    var icon = _assetIconResolver.Resolve(assetPath);
+                    if (icon != null)
+                    {
+                        candidates.Add(icon);
+                    }
                 }
             }
 
-            var childFolders = AssetDatabase.GetSubFolders(folderPath)
-                .OrderBy(
-                    path => path,
-                    StringComparer.OrdinalIgnoreCase);
-            foreach (var childFolder in childFolders)
+            if (_childFoldersByFolder.TryGetValue(
+                    folderPath, out var childFolders))
             {
-                var childSummary = GetSummary(
-                    childFolder,
-                    resolvingFolders);
-                if (childSummary?.PropagatedIcon != null)
+                foreach (var childFolder in childFolders)
                 {
-                    candidates.Add(childSummary.PropagatedIcon);
+                    var childSummary = GetSummary(
+                        childFolder,
+                        resolvingFolders);
+                    if (childSummary?.PropagatedIcon != null)
+                    {
+                        candidates.Add(childSummary.PropagatedIcon);
+                    }
                 }
             }
 
             return SummarizeIcons(candidates);
         }
 
-        private static bool IsDirectChild(
-            string folderPath,
-            string assetPath)
+        private void EnsurePathIndex()
         {
-            var parentPath = NormalizePath(
-                Path.GetDirectoryName(assetPath));
-            return string.Equals(
-                parentPath,
-                folderPath,
-                StringComparison.OrdinalIgnoreCase);
+            if (_assetsByFolder != null)
+            {
+                return;
+            }
+
+            var assets = new Dictionary<string, List<string>>(
+                StringComparer.OrdinalIgnoreCase);
+            var folders = new Dictionary<string, List<string>>(
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var path in AssetDatabase.GetAllAssetPaths())
+            {
+                if (!path.StartsWith("Assets/", StringComparison.Ordinal) &&
+                    !path.StartsWith("Packages/", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var parent = NormalizePath(Path.GetDirectoryName(path));
+                if (string.IsNullOrEmpty(parent))
+                {
+                    continue;
+                }
+
+                var index = AssetDatabase.IsValidFolder(path)
+                    ? folders : assets;
+                if (!index.TryGetValue(parent, out var children))
+                {
+                    children = new List<string>();
+                    index.Add(parent, children);
+                }
+                children.Add(path);
+            }
+
+            foreach (var children in assets.Values)
+            {
+                children.Sort(StringComparer.OrdinalIgnoreCase);
+            }
+            foreach (var children in folders.Values)
+            {
+                children.Sort(StringComparer.OrdinalIgnoreCase);
+            }
+            _assetsByFolder = assets;
+            _childFoldersByFolder = folders;
         }
 
         private static string NormalizePath(string path)

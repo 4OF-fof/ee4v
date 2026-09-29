@@ -8,7 +8,7 @@
 
 | module | 所有する振る舞い | 実装 | 契約 |
 |---|---|---|---|
-| FolderContentOverlay | Projectのフォルダーへ配下の代表的なAssetアイコンを重ねる。Asset変更時は対象フォルダーと祖先のcacheを更新する。 | `Feature/Project/FolderContentOverlay` | この表 |
+| FolderContentOverlay | Projectのフォルダーへ配下の代表的なAssetアイコンを重ねる。Assetパスを一度索引化して各フォルダーの直下だけを集計する。Asset変更時は索引と対象フォルダー・祖先の集計cacheを更新する。 | `Feature/Project/FolderContentOverlay` | この表 |
 | ProjectStyle | Projectのフォルダーへ背景色とアイコンを設定する。 | `Feature/Project/ProjectStyle` | [ProjectStyle](./project-style.md) |
 | ProjectTabs | Project Windowへフォルダータブ、移動履歴、固定タブを追加する。 | `Feature/Project/ProjectTabs` | [ProjectTabs](./project-tabs.md) |
 
@@ -17,7 +17,7 @@
 | module | 所有する振る舞い | 実装 | 契約 |
 |---|---|---|---|
 | DepthIndicator | GameObjectの親子関係を示すガイド線を描画する。`HideInHierarchy`の対象は階層計算から除く。 | `Feature/Hierarchy/DepthIndicator` | この表 |
-| HierarchyDecoration | `---`で始まる空のGameObjectを区切り線として描画する。 | `Feature/Hierarchy/HierarchyDecoration` | この表 |
+| HierarchyDecoration | `---`で始まる空のGameObjectを区切り線として描画する。描画時のComponent確認は名前が一致する行に限る。 | `Feature/Hierarchy/HierarchyDecoration` | この表 |
 | HierarchyStyle | GameObjectの背景色とアイコン、Hidden Objectsの非表示と復元を扱う。 | `Feature/Hierarchy/HierarchyStyle` | [HierarchyStyle](./hierarchy-style.md) |
 | SceneSwitcher | HierarchyのScene見出しからSceneを検索し、置換、追加、作成する。 | `Feature/Hierarchy/SceneSwitcher` | この表 |
 

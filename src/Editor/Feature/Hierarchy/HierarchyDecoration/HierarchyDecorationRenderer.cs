@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Ee4v.Core.Injector;
 using Ee4v.UI;
@@ -20,7 +21,10 @@ namespace Ee4v.HierarchyDecoration
                 !context.IsHierarchyGameObject ||
                 !(context.Target is GameObject gameObject) ||
                 Event.current == null ||
-                Event.current.type != EventType.Repaint)
+                Event.current.type != EventType.Repaint ||
+                !gameObject.name.StartsWith(
+                    HierarchyDecoration.DividerTarget.NamePrefix,
+                    StringComparison.Ordinal))
             {
                 return;
             }

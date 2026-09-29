@@ -354,6 +354,9 @@ namespace Ee4v.AssetManager.UI
         private readonly UiTextElement _selectionLabel;
         private Material _outlineMaterial;
         private Material _invisiblePreviewMaterial;
+        private readonly List<Material> _pickMaterialsById =
+            new List<Material>();
+        private Texture2D _pickReadback;
         private RenderTexture _outlineTexture;
         private Vector2 _outlineTextureSize;
         private bool _outlineDirty = true;
@@ -1197,8 +1200,15 @@ namespace Ee4v.AssetManager.UI
             var pixelY = Mathf.Clamp(Mathf.FloorToInt(
                 (position.y - rect.y) / rect.height * height),
                 0, height - 1);
-            var readback = new Texture2D(
-                1, 1, TextureFormat.RGBA32, false, true);
+            if (_pickReadback == null)
+            {
+                _pickReadback = new Texture2D(
+                    1, 1, TextureFormat.RGBA32, false, true)
+                {
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+            }
+            var readback = _pickReadback;
             var comparison = CreateComparisonTexture(width, height);
             var baseline = _previewTexture as RenderTexture;
             var skipped = new List<MaterialPreviewTarget>();
@@ -1235,7 +1245,6 @@ namespace Ee4v.AssetManager.UI
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(readback);
                 RenderTexture.ReleaseTemporary(comparison);
             }
         }
@@ -1265,7 +1274,6 @@ namespace Ee4v.AssetManager.UI
             {
                 name = "ee4v Preview Picking"
             };
-            var pickMaterials = new List<Material>();
             var targets = new List<MaterialPreviewTarget> { null };
             var previousTarget = RenderTexture.active;
             try
@@ -1289,21 +1297,14 @@ namespace Ee4v.AssetManager.UI
                         return;
                     }
                     var id = targets.Count;
-                    var color = new Color(
-                        (id & 255) / 255f,
-                        ((id >> 8) & 255) / 255f,
-                        ((id >> 16) & 255) / 255f,
-                        1f);
-                    var pickMaterial = CreateSolidPreviewMaterial(
-                        shader, color);
-                    pickMaterials.Add(pickMaterial);
                     targets.Add(new MaterialPreviewTarget
                     {
                         Renderer = renderer,
                         Material = material,
                         SubMeshIndex = slot
                     });
-                    command.DrawRenderer(renderer, pickMaterial, slot);
+                    command.DrawRenderer(
+                        renderer, GetPickMaterial(shader, id), slot);
                 });
                 if (targets.Count == 1)
                 {
@@ -1333,11 +1334,23 @@ namespace Ee4v.AssetManager.UI
                 RenderTexture.active = previousTarget;
                 command.Dispose();
                 RenderTexture.ReleaseTemporary(texture);
-                foreach (var material in pickMaterials)
-                {
-                    UnityEngine.Object.DestroyImmediate(material);
-                }
             }
+        }
+
+        private Material GetPickMaterial(Shader shader, int id)
+        {
+            while (_pickMaterialsById.Count < id)
+            {
+                var nextId = _pickMaterialsById.Count + 1;
+                var color = new Color(
+                    (nextId & 255) / 255f,
+                    ((nextId >> 8) & 255) / 255f,
+                    ((nextId >> 16) & 255) / 255f,
+                    1f);
+                _pickMaterialsById.Add(
+                    CreateSolidPreviewMaterial(shader, color));
+            }
+            return _pickMaterialsById[id - 1];
         }
 
         private static RenderTexture CreateComparisonTexture(
@@ -2943,6 +2956,19 @@ namespace Ee4v.AssetManager.UI
             {
                 UnityEngine.Object.DestroyImmediate(_invisiblePreviewMaterial);
                 _invisiblePreviewMaterial = null;
+            }
+            foreach (var material in _pickMaterialsById)
+            {
+                if (material != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(material);
+                }
+            }
+            _pickMaterialsById.Clear();
+            if (_pickReadback != null)
+            {
+                UnityEngine.Object.DestroyImmediate(_pickReadback);
+                _pickReadback = null;
             }
             _outlineTextureSize = Vector2.zero;
             _outlineDirty = true;
