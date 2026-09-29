@@ -154,25 +154,32 @@
     min-width: 0;
     height: var(--ee4v-size-18);
     flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
 }
 
 .ee4v-project-tabs__tab-content .ee4v-ui-item-row__text {
     min-width: 0;
     height: var(--ee4v-size-18);
+    flex-shrink: 1;
+    overflow: hidden;
 }
 
 .ee4v-project-tabs__tab-title {
     height: var(--ee4v-size-18);
     min-width: 0;
     flex-grow: 1;
-    padding-right: var(--ee4v-size-16);
+    flex-shrink: 1;
     overflow: hidden;
     color: var(--ee4v-color-text-primary);
     -unity-text-align: middle-left;
 }
 
-.ee4v-project-tabs__tab--pinned .ee4v-project-tabs__tab-title {
-    padding-right: var(--ee4v-space-none);
+.ee4v-project-tabs__tab-title > .unity-label {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ee4v-project-tabs__pin-icon {
@@ -181,13 +188,14 @@
     flex-shrink: 0;
 }
 
-.ee4v-project-tabs__close {
-    position: absolute;
-    right: var(--ee4v-space-xxs);
-    top: var(--ee4v-size-1);
-    width: var(--ee4v-size-14);
-    height: var(--ee4v-size-14);
-    margin-left: var(--ee4v-space-none);
+.ee4v-project-tabs__close.ee4v-ui-button--icon-only {
+    width: var(--ee4v-size-16);
+    min-width: var(--ee4v-size-16);
+    max-width: var(--ee4v-size-16);
+    height: var(--ee4v-size-16);
+    min-height: var(--ee4v-size-16);
+    max-height: var(--ee4v-size-16);
+    margin-left: var(--ee4v-space-xxs);
     margin-right: var(--ee4v-space-none);
     color: var(--ee4v-color-text-muted);
     border-top-left-radius: var(--ee4v-radius-lg);
@@ -213,7 +221,15 @@
 
 .ee4v-project-tabs__tab:hover .ee4v-project-tabs__close:hover,
 .ee4v-project-tabs__tab--selected .ee4v-project-tabs__close:hover {
-    background-color: var(--ee4v-color-error-surface-soft);
+    border-top-width: var(--ee4v-border-hairline);
+    border-right-width: var(--ee4v-border-hairline);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-error);
+    border-right-color: var(--ee4v-color-error);
+    border-bottom-color: var(--ee4v-color-error);
+    border-left-color: var(--ee4v-color-error);
+    background-color: var(--ee4v-color-status-failed);
     color: var(--ee4v-color-status-failed-text);
     opacity: 1;
 }
