@@ -13,9 +13,61 @@
     },
     "windowTitle": "ee4v",
     "category": {
+      "overview": "総合",
       "shapeParts": "体型・パーツ",
       "material": "マテリアル",
       "expressionAnimation": "表情"
+    },
+    "overview": {
+      "avatar": "アバター情報",
+      "name": "名前",
+      "platform": "対象プラットフォーム",
+      "desktop": "PC",
+      "mobile": "モバイル",
+      "warnings": "警告",
+      "attachmentWarning": "「{0}」にMerge ArmatureもBone Proxyもありません。装着設定が必要な可能性があります。",
+      "openAttachmentSettings": "装着設定を開く",
+      "performance": "アバターパフォーマンス",
+      "performanceEstimate": "作業SceneのアバターをVRChat SDKで集計した推定値です。MAなどのビルド処理後の結果とは異なる場合があります。",
+      "overallRating": "総合評価",
+      "metricsToReview": "{0}項目がGoodの基準を超えています",
+      "metricsWithinBudget": "各項目はGoodの基準内です",
+      "targetBudget": "{0}の目安：{1}",
+      "group": {
+        "rendering": "描画・メモリ",
+        "dynamics": "骨格・追従",
+        "effects": "エフェクト・音声"
+      },
+      "sdkUnavailable": "パフォーマンスを取得するにはVRChat SDKが必要です。",
+      "performanceFailed": "パフォーマンスを取得できませんでした：{0}",
+      "rating": {
+        "Excellent": "Excellent",
+        "Good": "Good",
+        "Medium": "Medium",
+        "Poor": "Poor",
+        "VeryPoor": "Very Poor",
+        "Unknown": "未取得"
+      },
+      "metric": {
+        "PolyCount": "ポリゴン数（三角形）",
+        "SkinnedMeshCount": "Skinned Mesh Renderer数",
+        "MeshCount": "Mesh Renderer数",
+        "MaterialCount": "Materialスロット数",
+        "BoneCount": "ボーン数",
+        "TextureMegabytes": "Textureメモリ",
+        "AnimatorCount": "Animator数",
+        "PhysBoneComponentCount": "PhysBone数",
+        "PhysBoneTransformCount": "PhysBone Transform数",
+        "PhysBoneColliderCount": "PhysBone Collider数",
+        "PhysBoneCollisionCheckCount": "PhysBone衝突判定数",
+        "ContactCount": "非ローカルContact数",
+        "ConstraintsCount": "Constraint数",
+        "ConstraintDepth": "Constraintの深さ",
+        "ParticleSystemCount": "Particle System数",
+        "ParticleTotalCount": "最大Particle数の合計",
+        "LightCount": "Light数",
+        "AudioSourceCount": "Audio Source数"
+      }
     },
     "assets": {
       "add": "アセットを追加",

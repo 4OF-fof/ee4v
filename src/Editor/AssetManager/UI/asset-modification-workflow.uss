@@ -686,6 +686,157 @@
     padding: var(--ee4v-space-2xl);
 }
 
+.ee4v-modification-workflow__overview-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-modification-workflow__overview-section-title {
+    margin-top: var(--ee4v-space-2xl);
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-modification-workflow__overview-note,
+.ee4v-modification-workflow__overview-warning {
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-modification-workflow__overview-warning > .ee4v-ui-button {
+    align-self: flex-end;
+    margin-top: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__overview-fact {
+    min-width: 0;
+    flex-direction: row;
+    align-items: center;
+    padding: var(--ee4v-space-sm) var(--ee4v-space-md);
+}
+
+.ee4v-modification-workflow__overview-fact-label {
+    min-width: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: var(--ee4v-space-lg);
+}
+
+.ee4v-modification-workflow__overview-fact-value {
+    flex-shrink: 1;
+}
+
+.ee4v-modification-workflow__performance-summary,
+.ee4v-modification-workflow__performance-card {
+    min-width: 0;
+    border-width: var(--ee4v-border-hairline);
+    border-left-width: 3px;
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-modification-workflow__performance-summary {
+    padding: var(--ee4v-space-xl);
+    margin-top: var(--ee4v-space-md);
+}
+
+.ee4v-modification-workflow__performance-summary-heading {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--ee4v-space-md);
+}
+
+.ee4v-modification-workflow__performance-platform {
+    padding: var(--ee4v-space-xs) var(--ee4v-space-lg);
+    border-radius: var(--ee4v-radius-xl);
+    background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-modification-workflow__performance-scale {
+    flex-direction: row;
+    margin-top: var(--ee4v-space-lg);
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-modification-workflow__performance-scale-step {
+    height: 6px;
+    flex-grow: 1;
+    margin-right: var(--ee4v-space-xs);
+    border-radius: var(--ee4v-radius-sm);
+    opacity: 0.25;
+}
+
+.ee4v-modification-workflow__performance-scale-step--active {
+    opacity: 1;
+}
+
+.ee4v-modification-workflow__performance-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-left: -4px;
+    margin-right: -4px;
+}
+
+.ee4v-modification-workflow__performance-card {
+    flex-basis: 45%;
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin: 4px;
+    padding: var(--ee4v-space-lg);
+}
+
+.ee4v-modification-workflow__performance-card-label {
+    min-height: 28px;
+    margin-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__performance-card-values {
+    min-width: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: var(--ee4v-space-md);
+}
+
+.ee4v-modification-workflow__performance-card-value {
+    min-width: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__performance-card-rating {
+    padding: var(--ee4v-space-xs) var(--ee4v-space-sm);
+    border-radius: var(--ee4v-radius-md);
+    background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-modification-workflow__performance-budget {
+    height: 5px;
+    overflow: hidden;
+    border-radius: var(--ee4v-radius-sm);
+    background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-modification-workflow__performance-budget-fill {
+    height: 100%;
+    border-radius: var(--ee4v-radius-sm);
+}
+
+.ee4v-modification-workflow__performance-card-budget-label {
+    margin-top: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__performance--warning {
+    background-color: var(--ee4v-color-warning-surface-soft);
+}
+
+.ee4v-modification-workflow__performance--critical {
+    background-color: var(--ee4v-color-error-surface-soft);
+}
+
 .ee4v-modification-workflow__make-material-editable.ee4v-ui-button {
     width: 100%;
     margin-top: var(--ee4v-space-lg);

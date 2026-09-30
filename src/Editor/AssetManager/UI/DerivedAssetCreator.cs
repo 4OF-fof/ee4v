@@ -554,6 +554,8 @@ namespace Ee4v.AssetManager.UI
                     }
                 }
 
+                AddAvatarOptimizer(instance);
+
                 var prefab = PrefabUtility.SaveAsPrefabAsset(
                     instance,
                     destinationPath,
@@ -569,6 +571,28 @@ namespace Ee4v.AssetManager.UI
             finally
             {
                 EditorSceneManager.ClosePreviewScene(scene);
+            }
+        }
+
+        private static void AddAvatarOptimizer(GameObject instance)
+        {
+            const string descriptorTypeName =
+                "VRC.SDK3.Avatars.Components.VRCAvatarDescriptor";
+            if (!instance.GetComponents<Component>().Any(component =>
+                    component != null &&
+                    component.GetType().FullName == descriptorTypeName))
+            {
+                return;
+            }
+
+            var optimizerType = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(assembly => assembly.GetType(
+                    "Anatawa12.AvatarOptimizer.TraceAndOptimize"))
+                .FirstOrDefault(type => type != null);
+            if (optimizerType != null &&
+                instance.GetComponent(optimizerType) == null)
+            {
+                instance.AddComponent(optimizerType);
             }
         }
 

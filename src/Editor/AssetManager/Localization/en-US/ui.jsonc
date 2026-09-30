@@ -13,9 +13,61 @@
     },
     "windowTitle": "ee4v",
     "category": {
+      "overview": "Overview",
       "shapeParts": "Shape & parts",
       "material": "Material",
       "expressionAnimation": "Expressions"
+    },
+    "overview": {
+      "avatar": "Avatar information",
+      "name": "Name",
+      "platform": "Target platform",
+      "desktop": "PC",
+      "mobile": "Mobile",
+      "warnings": "Warnings",
+      "attachmentWarning": "\"{0}\" has neither Merge Armature nor Bone Proxy. Attachment setup may be required.",
+      "openAttachmentSettings": "Open attachment settings",
+      "performance": "Avatar performance",
+      "performanceEstimate": "Estimated by the VRChat SDK from the working scene avatar. Results after MA and other build processing may differ.",
+      "overallRating": "Overall rating",
+      "metricsToReview": "{0} metrics exceed the Good budget",
+      "metricsWithinBudget": "Metrics are within the Good budget",
+      "targetBudget": "{0} budget: {1}",
+      "group": {
+        "rendering": "Rendering & memory",
+        "dynamics": "Bones & dynamics",
+        "effects": "Effects & audio"
+      },
+      "sdkUnavailable": "VRChat SDK is required to read avatar performance.",
+      "performanceFailed": "Could not read avatar performance: {0}",
+      "rating": {
+        "Excellent": "Excellent",
+        "Good": "Good",
+        "Medium": "Medium",
+        "Poor": "Poor",
+        "VeryPoor": "Very Poor",
+        "Unknown": "Unavailable"
+      },
+      "metric": {
+        "PolyCount": "Triangles",
+        "SkinnedMeshCount": "Skinned Mesh Renderers",
+        "MeshCount": "Mesh Renderers",
+        "MaterialCount": "Material slots",
+        "BoneCount": "Bones",
+        "TextureMegabytes": "Texture memory",
+        "AnimatorCount": "Animators",
+        "PhysBoneComponentCount": "PhysBones",
+        "PhysBoneTransformCount": "PhysBone transforms",
+        "PhysBoneColliderCount": "PhysBone colliders",
+        "PhysBoneCollisionCheckCount": "PhysBone collision checks",
+        "ContactCount": "Non-local contacts",
+        "ConstraintsCount": "Constraints",
+        "ConstraintDepth": "Constraint depth",
+        "ParticleSystemCount": "Particle Systems",
+        "ParticleTotalCount": "Combined max particles",
+        "LightCount": "Lights",
+        "AudioSourceCount": "Audio Sources"
+      }
     },
     "assets": {
       "add": "Add asset",

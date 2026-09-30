@@ -88,6 +88,7 @@ namespace Ee4v.AssetManager.UI
 
         private enum WorkflowCategory
         {
+            Overview,
             ShapeParts,
             Material,
             ExpressionAnimation
@@ -861,14 +862,16 @@ namespace Ee4v.AssetManager.UI
         private UiButton _allMaterialsVisibilityButton;
         private EmbeddedMaterialInspector _materialInspector;
         private DerivedAssetPrefabScenePreview _scenePreview;
+        private int? _previewScopeSiblingIndex;
         private FaceExpressionEmbeddedView _faceExpressionEditor;
         private VisualElement _customizerHost;
         private VisualElement _faceExpressionHost;
         private ScrollView _controlsHost;
+        private VisualElement _overviewContent;
         private VisualElement _appearanceHeader;
         private UiTextElement _previewTitle;
         private WorkflowCategory _currentCategory =
-            WorkflowCategory.ShapeParts;
+            WorkflowCategory.Overview;
         private ShapePartsSection _shapePartsSection =
             ShapePartsSection.Parts;
         private BodyPartCategory? _selectedBodyPart;
@@ -2011,6 +2014,11 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-modification-workflow__category-rail");
             AddCategoryButton(
                 rail,
+                WorkflowCategory.Overview,
+                "workflow.category.overview",
+                "info.png");
+            AddCategoryButton(
+                rail,
                 WorkflowCategory.ShapeParts,
                 "workflow.category.shapeParts",
                 "cube.png");
@@ -2044,7 +2052,8 @@ namespace Ee4v.AssetManager.UI
                     UiClassNames.NavigationItemLabel);
             button.AddToClassList(
                 "ee4v-modification-workflow__category-button");
-            button.SetEnabled(category == WorkflowCategory.ShapeParts ||
+            button.SetEnabled(category == WorkflowCategory.Overview ||
+                category == WorkflowCategory.ShapeParts ||
                 category == WorkflowCategory.Material ||
                 !_selectedPrefabSiblingIndex.HasValue);
             _categoryButtons[category] = button;
@@ -2079,9 +2088,10 @@ namespace Ee4v.AssetManager.UI
             _scenePreview.SetFlexibleLayout(true);
             _scenePreview.AddToClassList(
                 "ee4v-modification-workflow__preview");
+            _previewScopeSiblingIndex = _currentCategory == WorkflowCategory.Overview
+                ? null : _selectedPrefabSiblingIndex;
             _scenePreview.SetScope(
-                _selectedPrefabSiblingIndex,
-                _prefabSiblingIndices);
+                _previewScopeSiblingIndex, _prefabSiblingIndices);
             _scenePreview.SetHiddenPrefabs(
                 _basePrefabHidden,
                 _hiddenPrefabSiblingIndices);
@@ -2107,6 +2117,7 @@ namespace Ee4v.AssetManager.UI
                 }
             }
             if (_selectedPrefabSiblingIndex.HasValue &&
+                category != WorkflowCategory.Overview &&
                 category != WorkflowCategory.ShapeParts &&
                 category != WorkflowCategory.Material)
             {
@@ -2181,6 +2192,35 @@ namespace Ee4v.AssetManager.UI
             }
 
             _faceExpressionEditor?.StopPlayback();
+            var previewScope = category == WorkflowCategory.Overview
+                ? null : _selectedPrefabSiblingIndex;
+            if (_previewScopeSiblingIndex != previewScope)
+            {
+                _previewScopeSiblingIndex = previewScope;
+                _scenePreview?.SetScope(previewScope, _prefabSiblingIndices);
+            }
+            _overviewContent?.RemoveFromHierarchy();
+            _overviewContent = null;
+            if (category == WorkflowCategory.Overview)
+            {
+                _appearanceHeader.Clear();
+                _appearanceHeader.style.display = DisplayStyle.None;
+                foreach (var cachedControls in _appearanceControlsCache.Values)
+                {
+                    cachedControls.Content.AddToClassList(
+                        "ee4v-modification-workflow__hidden");
+                }
+                _scenePreview?.FocusBodyPart(null);
+                _scenePreview?.SetListSelection(null, null);
+                _overviewContent = BuildOverviewControls();
+                _controlsHost.Add(_overviewContent);
+                if (categoryChanged)
+                {
+                    _controlsHost.scrollOffset = Vector2.zero;
+                }
+                SetPreviewTitle("workflow.preview.appearanceTitle");
+                return;
+            }
             if (_selectedBodyPart.HasValue &&
                 !HasFocusBone(_selectedBodyPart.Value))
             {
@@ -2250,6 +2290,238 @@ namespace Ee4v.AssetManager.UI
                     ? "workflow.preview.appearanceTitle"
                     : "workflow.preview.sizeTitle");
             SyncPreviewSelection();
+        }
+
+        private VisualElement BuildOverviewControls()
+        {
+            var content = new VisualElement();
+            content.AddToClassList("ee4v-modification-workflow__controls-content");
+            content.AddToClassList("ee4v-modification-workflow__overview");
+            var header = new VisualElement();
+            header.AddToClassList("ee4v-modification-workflow__overview-header");
+            header.Add(UiTextFactory.Create(I18N.Get("workflow.overview.avatar"),
+                UiClassNames.SectionTitle));
+            content.Add(header);
+            AddOverviewFact(content, I18N.Get("workflow.overview.name"),
+                _workingObject.name);
+            var mobile = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ||
+                EditorUserBuildSettings.activeBuildTarget == BuildTarget.iOS;
+            AddOverviewFact(content, I18N.Get("workflow.overview.platform"),
+                I18N.Get(mobile ? "workflow.overview.mobile" : "workflow.overview.desktop"));
+
+            var warnings = AvatarOverviewAnalysis.FindAttachmentWarnings(_workingObject);
+            if (warnings.Count > 0)
+            {
+                content.Add(UiTextFactory.Create(I18N.Get("workflow.overview.warnings"),
+                    UiClassNames.SectionTitle,
+                    "ee4v-modification-workflow__overview-section-title"));
+            }
+            foreach (var prefab in warnings)
+            {
+                var warning = new VisualElement();
+                warning.AddToClassList("ee4v-modification-workflow__overview-warning");
+                warning.Add(UiTextFactory.CreateHelpBox(string.Format(
+                    I18N.Get("workflow.overview.attachmentWarning"), prefab.name),
+                    HelpBoxMessageType.Warning));
+                warning.Add(new UiButton(I18N.Get("workflow.overview.openAttachmentSettings"),
+                    () =>
+                    {
+                        if (prefab == null) { return; }
+                        Selection.activeGameObject = prefab;
+                        EditorGUIUtility.PingObject(prefab);
+                        EditorUtility.OpenPropertyEditor(prefab);
+                    }));
+                content.Add(warning);
+            }
+
+            content.Add(UiTextFactory.Create(I18N.Get("workflow.overview.performance"),
+                UiClassNames.SectionTitle,
+                "ee4v-modification-workflow__overview-section-title"));
+            content.Add(UiTextFactory.Create(I18N.Get("workflow.overview.performanceEstimate"),
+                UiClassNames.SecondaryText,
+                "ee4v-modification-workflow__overview-note"));
+            if (!AvatarOverviewAnalysis.TryReadPerformance(_workingObject, mobile,
+                    out var rating, out var metrics, out var error))
+            {
+                content.Add(UiTextFactory.CreateHelpBox(
+                    error == null ? I18N.Get("workflow.overview.sdkUnavailable")
+                        : string.Format(I18N.Get("workflow.overview.performanceFailed"), error),
+                    HelpBoxMessageType.Warning));
+                return content;
+            }
+            content.Add(BuildPerformanceSummary(rating, metrics, mobile));
+            foreach (var group in new[] { "rendering", "dynamics", "effects" })
+            {
+                AddPerformanceGroup(content, group, metrics.Where(metric =>
+                    GetPerformanceMetricGroup(metric.Category) == group));
+            }
+            return content;
+        }
+
+        private static string GetPerformanceMetricGroup(string category)
+        {
+            switch (category)
+            {
+                case "PolyCount":
+                case "SkinnedMeshCount":
+                case "MeshCount":
+                case "MaterialCount":
+                case "BoneCount":
+                case "TextureMegabytes": return "rendering";
+                case "ParticleSystemCount":
+                case "ParticleTotalCount":
+                case "LightCount":
+                case "AudioSourceCount": return "effects";
+                default: return "dynamics";
+            }
+        }
+
+        private static VisualElement BuildPerformanceSummary(string rating,
+            IReadOnlyList<AvatarOverviewAnalysis.PerformanceMetric> metrics, bool mobile)
+        {
+            var summary = new VisualElement();
+            summary.AddToClassList("ee4v-modification-workflow__performance-summary");
+            ApplyPerformanceRatingStyle(summary, rating);
+            var heading = new VisualElement();
+            heading.AddToClassList("ee4v-modification-workflow__performance-summary-heading");
+            heading.Add(UiTextFactory.Create(I18N.Get("workflow.overview.overallRating"),
+                UiClassNames.SecondaryText));
+            heading.Add(UiTextFactory.Create(
+                I18N.Get(mobile ? "workflow.overview.mobile" : "workflow.overview.desktop"),
+                UiClassNames.Badge, "ee4v-modification-workflow__performance-platform"));
+            summary.Add(heading);
+            var ratingText = UiTextFactory.Create(GetOverviewRatingLabel(rating),
+                UiClassNames.SectionTitle);
+            ratingText.SetFontSize(26);
+            ratingText.SetColor(GetPerformanceRatingColor(rating));
+            summary.Add(ratingText);
+            var scale = new VisualElement();
+            scale.AddToClassList("ee4v-modification-workflow__performance-scale");
+            foreach (var level in new[] { "Excellent", "Good", "Medium", "Poor", "VeryPoor" })
+            {
+                var step = new VisualElement();
+                step.AddToClassList("ee4v-modification-workflow__performance-scale-step");
+                step.tooltip = GetOverviewRatingLabel(level);
+                step.style.backgroundColor = GetPerformanceRatingColor(level);
+                step.EnableInClassList("ee4v-modification-workflow__performance-scale-step--active",
+                    rating == level);
+                scale.Add(step);
+            }
+            summary.Add(scale);
+            var warningCount = metrics.Count(metric => metric.Rating == "Medium" ||
+                metric.Rating == "Poor" || metric.Rating == "VeryPoor");
+            summary.Add(UiTextFactory.Create(warningCount > 0
+                    ? string.Format(I18N.Get("workflow.overview.metricsToReview"), warningCount)
+                    : I18N.Get("workflow.overview.metricsWithinBudget"),
+                UiClassNames.SecondaryText));
+            return summary;
+        }
+
+        private static void AddPerformanceGroup(VisualElement content, string group,
+            IEnumerable<AvatarOverviewAnalysis.PerformanceMetric> metrics)
+        {
+            var entries = metrics.ToArray();
+            if (entries.Length == 0) { return; }
+            content.Add(UiTextFactory.Create(I18N.Get("workflow.overview.group." + group),
+                UiClassNames.SectionTitle,
+                "ee4v-modification-workflow__overview-section-title"));
+            var grid = new VisualElement();
+            grid.AddToClassList("ee4v-modification-workflow__performance-grid");
+            foreach (var metric in entries)
+            {
+                var card = new VisualElement();
+                card.AddToClassList("ee4v-modification-workflow__performance-card");
+                ApplyPerformanceRatingStyle(card, metric.Rating);
+                card.Add(UiTextFactory.Create(
+                    I18N.Get("workflow.overview.metric." + metric.Category),
+                    UiClassNames.SecondaryText,
+                    "ee4v-modification-workflow__performance-card-label"));
+                var valueRow = new VisualElement();
+                valueRow.AddToClassList("ee4v-modification-workflow__performance-card-values");
+                var value = UiTextFactory.Create(metric.Value, UiClassNames.SectionTitle,
+                    "ee4v-modification-workflow__performance-card-value");
+                value.SetFontSize(metric.Value.Length > 9 ? 17 : 21);
+                value.SetWhiteSpace(WhiteSpace.Normal);
+                valueRow.Add(value);
+                var badge = UiTextFactory.Create(GetOverviewRatingLabel(metric.Rating),
+                    UiClassNames.SecondaryText,
+                    "ee4v-modification-workflow__performance-card-rating");
+                badge.SetColor(GetPerformanceRatingColor(metric.Rating));
+                valueRow.Add(badge);
+                card.Add(valueRow);
+                if (metric.Amount.HasValue && metric.TargetLimit.HasValue)
+                {
+                    var track = new VisualElement();
+                    track.AddToClassList("ee4v-modification-workflow__performance-budget");
+                    var fill = new VisualElement();
+                    fill.AddToClassList("ee4v-modification-workflow__performance-budget-fill");
+                    var ratio = metric.TargetLimit.Value > 0
+                        ? metric.Amount.Value / metric.TargetLimit.Value
+                        : metric.Amount.Value > 0 ? 1 : 0;
+                    fill.style.width = Length.Percent(Mathf.Clamp01((float)ratio) * 100f);
+                    fill.style.backgroundColor = GetPerformanceRatingColor(metric.Rating);
+                    track.Add(fill);
+                    card.Add(track);
+                    card.Add(UiTextFactory.Create(string.Format(
+                        I18N.Get("workflow.overview.targetBudget"),
+                        GetOverviewRatingLabel(metric.TargetRating), metric.TargetLimitLabel),
+                        UiClassNames.SecondaryText,
+                        "ee4v-modification-workflow__performance-card-budget-label"));
+                }
+                grid.Add(card);
+            }
+            content.Add(grid);
+        }
+
+        private static Color GetPerformanceRatingColor(string rating)
+        {
+            switch (rating)
+            {
+                case "Excellent": return UiColorTokens.StatusPassedText;
+                case "Good": return UiColorTokens.StatusPassedText;
+                case "Medium": return UiColorTokens.StatusRunningText;
+                case "Poor": return UiColorTokens.StatusFailedText;
+                case "VeryPoor": return UiColorTokens.Error;
+                default: return UiColorTokens.TextMuted;
+            }
+        }
+
+        private static void ApplyPerformanceRatingStyle(VisualElement element, string rating)
+        {
+            element.EnableInClassList("ee4v-modification-workflow__performance--warning",
+                rating == "Medium" || rating == "Poor");
+            element.EnableInClassList("ee4v-modification-workflow__performance--critical",
+                rating == "VeryPoor");
+            element.style.borderLeftColor = GetPerformanceRatingColor(rating);
+        }
+
+        private static string GetOverviewRatingLabel(string rating)
+        {
+            switch (rating)
+            {
+                case "Excellent":
+                case "Good":
+                case "Medium":
+                case "Poor":
+                case "VeryPoor":
+                    return I18N.Get("workflow.overview.rating." + rating);
+                default:
+                    return I18N.Get("workflow.overview.rating.Unknown");
+            }
+        }
+
+        private static void AddOverviewFact(VisualElement content,
+            string label, string value)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("ee4v-modification-workflow__overview-fact");
+            row.Add(UiTextFactory.Create(label, UiClassNames.SecondaryText,
+                "ee4v-modification-workflow__overview-fact-label"));
+            var valueText = UiTextFactory.Create(value, UiClassNames.FormLabel,
+                "ee4v-modification-workflow__overview-fact-value");
+            valueText.SetWhiteSpace(WhiteSpace.Normal);
+            row.Add(valueText);
+            content.Add(row);
         }
 
         private void SyncPreviewSelection()
@@ -2443,6 +2715,7 @@ namespace Ee4v.AssetManager.UI
             _selectedPartKey = null;
             _selectedMaterial = null;
             if (siblingIndex.HasValue &&
+                _currentCategory != WorkflowCategory.Overview &&
                 _currentCategory != WorkflowCategory.Material)
             {
                 _currentCategory = WorkflowCategory.ShapeParts;
@@ -2986,6 +3259,7 @@ namespace Ee4v.AssetManager.UI
         private void OnPreviewObjectClicked(string partKey, Material material)
         {
             if (_mode == ModificationEditorMode.Composition ||
+                _currentCategory == WorkflowCategory.Overview ||
                 _controlsHost == null)
             {
                 return;
@@ -3912,7 +4186,8 @@ namespace Ee4v.AssetManager.UI
                     _selectedPrefabSiblingIndex = null;
                     _selectedPrefabName = string.Empty;
                     _selectedBodyPart = null;
-                    _currentCategory = WorkflowCategory.ShapeParts;
+                    _currentCategory = _mode == ModificationEditorMode.All
+                        ? WorkflowCategory.Overview : WorkflowCategory.ShapeParts;
                     _shapePartsSection = ShapePartsSection.Parts;
                     _hiddenPrefabSiblingIndices.Clear();
                     _prefabPreviewVisibilityInitialized = false;
@@ -3970,10 +4245,9 @@ namespace Ee4v.AssetManager.UI
                     Undo.DestroyObjectImmediate(child);
                     _selectedPrefabSiblingIndex = null;
                     _selectedPrefabName = string.Empty;
-                    _currentCategory = previousCategory ==
-                                       WorkflowCategory.Material
-                        ? WorkflowCategory.Material
-                        : WorkflowCategory.ShapeParts;
+                    _currentCategory = previousCategory == WorkflowCategory.Overview ||
+                        previousCategory == WorkflowCategory.Material
+                            ? previousCategory : WorkflowCategory.ShapeParts;
                     _hiddenPrefabSiblingIndices.Clear();
                     _prefabPreviewVisibilityInitialized = false;
                 });
@@ -7068,7 +7342,7 @@ namespace Ee4v.AssetManager.UI
             _selectedPrefabSiblingIndex = null;
             _selectedPrefabName = string.Empty;
             _creatingDerivedAsset = false;
-            _currentCategory = WorkflowCategory.ShapeParts;
+            _currentCategory = WorkflowCategory.Overview;
             ApplyEditorMode();
             _shapePartsSection = ShapePartsSection.Parts;
             _selectedBodyPart = null;
