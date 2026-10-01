@@ -1033,7 +1033,28 @@ namespace Ee4v.AssetManager.UI
 
             try
             {
-                _instance = UnityEngine.Object.Instantiate(_prefab);
+                _utility = new PreviewRenderUtility();
+                if (EditorApplication.isPlaying)
+                {
+                    var staging = new GameObject("Derived Asset Preview Staging");
+                    staging.SetActive(false);
+                    _utility.AddSingleGO(staging);
+                    _instance = UnityEngine.Object.Instantiate(_prefab, staging.transform, false);
+                    foreach (var behaviour in _instance.GetComponentsInChildren<MonoBehaviour>(true))
+                    {
+                        if (behaviour != null) { UnityEngine.Object.DestroyImmediate(behaviour); }
+                    }
+                    foreach (var animator in _instance.GetComponentsInChildren<Animator>(true))
+                    {
+                        animator.enabled = false;
+                    }
+                    _instance.transform.SetParent(null, false);
+                    UnityEngine.Object.DestroyImmediate(staging);
+                }
+                else
+                {
+                    _instance = UnityEngine.Object.Instantiate(_prefab);
+                }
                 _instance.name =
                     _prefab.name + " (Derived Asset Preview)";
                 _instance.SetActive(true);
@@ -1057,7 +1078,6 @@ namespace Ee4v.AssetManager.UI
                 SetSkinningRecalculation(true);
                 RebuildPreviewTargets();
 
-                _utility = new PreviewRenderUtility();
                 _utility.cameraFieldOfView = 30f;
                 _utility.camera.clearFlags = CameraClearFlags.Color;
                 _utility.camera.backgroundColor = Color.clear;

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using nadena.dev.modular_avatar.core;
+using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,14 +12,29 @@ namespace Ee4v.AssetManager.UI
 {
     internal static class AvatarOverviewAnalysis
     {
+        internal sealed class PerformanceReport
+        {
+            [JsonProperty]
+            internal string Rating { get; set; }
+            [JsonProperty]
+            internal IReadOnlyList<PerformanceMetric> Metrics { get; set; }
+        }
+
         internal sealed class PerformanceMetric
         {
+            [JsonProperty]
             internal string Category { get; set; }
+            [JsonProperty]
             internal string Value { get; set; }
+            [JsonProperty]
             internal string Rating { get; set; }
+            [JsonProperty]
             internal double? Amount { get; set; }
+            [JsonProperty]
             internal string TargetRating { get; set; }
+            [JsonProperty]
             internal double? TargetLimit { get; set; }
+            [JsonProperty]
             internal string TargetLimitLabel { get; set; }
         }
 
@@ -158,6 +174,11 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
+        internal static bool HasAaoComponents(GameObject avatar)
+        {
+            var componentType = FindSdkType("Anatawa12.AvatarOptimizer.AvatarTagComponent");
+            return componentType != null && avatar.GetComponentInChildren(componentType, true) != null;
+        }
         private static Type FindSdkType(string name)
         {
             return AppDomain.CurrentDomain.GetAssemblies()

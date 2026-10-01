@@ -868,6 +868,9 @@ namespace Ee4v.AssetManager.UI
         private VisualElement _faceExpressionHost;
         private ScrollView _controlsHost;
         private VisualElement _overviewContent;
+        private bool _overviewMobile = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ||
+            EditorUserBuildSettings.activeBuildTarget == BuildTarget.iOS;
+        private bool _playModeTransition;
         private VisualElement _appearanceHeader;
         private UiTextElement _previewTitle;
         private WorkflowCategory _currentCategory =
@@ -1028,6 +1031,8 @@ namespace Ee4v.AssetManager.UI
             AssetManagerSettings.PartListExclusionsChanged +=
                 OnPartListExclusionsChanged;
             EditorApplication.projectChanged += OnProjectChanged;
+            AvatarPlayModePerformanceCache.Changed += OnPlayModePerformanceChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorSceneManager.sceneClosed += OnWorkingSceneClosed;
             _settings = CoreSettings.Current;
             _settings.Changed += OnSettingChanged;
@@ -1054,11 +1059,67 @@ namespace Ee4v.AssetManager.UI
             AssetManagerSettings.PartListExclusionsChanged -=
                 OnPartListExclusionsChanged;
             EditorApplication.projectChanged -= OnProjectChanged;
+            AvatarPlayModePerformanceCache.Changed -= OnPlayModePerformanceChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorSceneManager.sceneClosed -= OnWorkingSceneClosed;
             _settings.Changed -= OnSettingChanged;
             ReleaseVariantStatusManager();
             DisposeEditors();
             ClearAppearanceCaches();
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                _playModeTransition = true;
+                DisposePreview();
+                return;
+            }
+            if (state == PlayModeStateChange.ExitingPlayMode)
+            {
+                _playModeTransition = true;
+                return;
+            }
+            if (state == PlayModeStateChange.EnteredPlayMode)
+            {
+                _playModeTransition = false;
+                schedule.Execute(() =>
+                {
+                    if (!_disposed && _workingObject != null) { BuildWindow(); }
+                });
+                return;
+            }
+            if (state != PlayModeStateChange.EnteredEditMode) { return; }
+            if (_workingAsset?.Prefab == null)
+            {
+                _playModeTransition = false;
+                return;
+            }
+            schedule.Execute(() =>
+            {
+                if (_disposed || EditorApplication.isPlaying || _workingAsset?.Prefab == null) { return; }
+                ReleaseWorkingScene();
+                _workingPrefabAsset = _workingAsset.Prefab;
+                _workingObject = AcquireWorkingScene(_workingPrefabAsset);
+                ClearAppearanceCaches();
+                _playModeTransition = false;
+                BuildWindow();
+            });
+        }
+
+        private void OnPlayModePerformanceChanged()
+        {
+            if (!_disposed && _workingObject != null && _currentCategory == WorkflowCategory.Overview)
+            {
+                schedule.Execute(() =>
+                {
+                    if (!_disposed && _workingObject != null && _currentCategory == WorkflowCategory.Overview)
+                    {
+                        ShowCategory(WorkflowCategory.Overview, false);
+                    }
+                });
+            }
         }
 
         private void OnProjectChanged()
@@ -1069,6 +1130,7 @@ namespace Ee4v.AssetManager.UI
 
         private void OnWorkingSceneClosed(Scene scene)
         {
+            if (_playModeTransition || EditorApplication.isPlayingOrWillChangePlaymode) { return; }
             if (_workingSceneSession == null ||
                 _workingSceneSession.Scene != scene)
             {
@@ -2304,10 +2366,6 @@ namespace Ee4v.AssetManager.UI
             content.Add(header);
             AddOverviewFact(content, I18N.Get("workflow.overview.name"),
                 _workingObject.name);
-            var mobile = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ||
-                EditorUserBuildSettings.activeBuildTarget == BuildTarget.iOS;
-            AddOverviewFact(content, I18N.Get("workflow.overview.platform"),
-                I18N.Get(mobile ? "workflow.overview.mobile" : "workflow.overview.desktop"));
 
             var warnings = AvatarOverviewAnalysis.FindAttachmentWarnings(_workingObject);
             if (warnings.Count > 0)
@@ -2337,25 +2395,52 @@ namespace Ee4v.AssetManager.UI
             content.Add(UiTextFactory.Create(I18N.Get("workflow.overview.performance"),
                 UiClassNames.SectionTitle,
                 "ee4v-modification-workflow__overview-section-title"));
-            content.Add(UiTextFactory.Create(I18N.Get("workflow.overview.performanceEstimate"),
-                UiClassNames.SecondaryText,
-                "ee4v-modification-workflow__overview-note"));
-            if (!AvatarOverviewAnalysis.TryReadPerformance(_workingObject, mobile,
-                    out var rating, out var metrics, out var error))
+            var record = AvatarPlayModePerformanceCache.Get(_workingObject);
+            var report = _overviewMobile ? record?.Mobile : record?.Desktop;
+            var metrics = report?.Metrics ?? Array.Empty<AvatarOverviewAnalysis.PerformanceMetric>();
+            content.Add(BuildPerformanceSummary(report?.Rating, metrics, record));
+            if (report == null)
             {
                 content.Add(UiTextFactory.CreateHelpBox(
-                    error == null ? I18N.Get("workflow.overview.sdkUnavailable")
-                        : string.Format(I18N.Get("workflow.overview.performanceFailed"), error),
-                    HelpBoxMessageType.Warning));
+                    record?.Error != null
+                        ? string.Format(I18N.Get("workflow.overview.performanceFailed"), record.Error)
+                        : I18N.Get(record == null ? "workflow.overview.playModeRequired"
+                            : "workflow.overview.playModeNotCaptured"), HelpBoxMessageType.Info));
                 return content;
             }
-            content.Add(BuildPerformanceSummary(rating, metrics, mobile));
+            content.Add(UiTextFactory.Create(string.Format(
+                    I18N.Get("workflow.overview.playModeCapturedAt"),
+                    record.CapturedAt?.ToString("HH:mm:ss")),
+                UiClassNames.SecondaryText, "ee4v-modification-workflow__overview-note"));
             foreach (var group in new[] { "rendering", "dynamics", "effects" })
             {
                 AddPerformanceGroup(content, group, metrics.Where(metric =>
                     GetPerformanceMetricGroup(metric.Category) == group));
             }
             return content;
+        }
+
+        private VisualElement BuildPerformancePlatformSwitch()
+        {
+            var tabs = new VisualElement();
+            tabs.AddToClassList("ee4v-modification-workflow__performance-platform-switch");
+            tabs.tooltip = I18N.Get("workflow.overview.platform");
+            foreach (var mobile in new[] { false, true })
+            {
+                var button = new UiButton(I18N.Get(mobile
+                    ? "workflow.overview.mobile" : "workflow.overview.desktop"), () =>
+                {
+                    if (_overviewMobile == mobile) { return; }
+                    _overviewMobile = mobile;
+                    ShowCategory(WorkflowCategory.Overview, false);
+                }, variant: UiButtonVariant.Ghost);
+                button.name = mobile ? "overviewQuest" : "overviewPc";
+                button.AddToClassList("ee4v-modification-workflow__performance-platform-button");
+                button.EnableInClassList("ee4v-modification-workflow__performance-platform-button--active",
+                    _overviewMobile == mobile);
+                tabs.Add(button);
+            }
+            return tabs;
         }
 
         private static string GetPerformanceMetricGroup(string category)
@@ -2376,19 +2461,29 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private static VisualElement BuildPerformanceSummary(string rating,
-            IReadOnlyList<AvatarOverviewAnalysis.PerformanceMetric> metrics, bool mobile)
+        private VisualElement BuildPerformanceSummary(string rating,
+            IReadOnlyList<AvatarOverviewAnalysis.PerformanceMetric> metrics,
+            AvatarPlayModePerformanceCache.Record record)
         {
             var summary = new VisualElement();
             summary.AddToClassList("ee4v-modification-workflow__performance-summary");
             ApplyPerformanceRatingStyle(summary, rating);
             var heading = new VisualElement();
             heading.AddToClassList("ee4v-modification-workflow__performance-summary-heading");
-            heading.Add(UiTextFactory.Create(I18N.Get("workflow.overview.overallRating"),
+            var title = new VisualElement();
+            title.AddToClassList("ee4v-modification-workflow__performance-summary-title");
+            title.Add(UiTextFactory.Create(I18N.Get("workflow.overview.overallRating"),
                 UiClassNames.SecondaryText));
-            heading.Add(UiTextFactory.Create(
-                I18N.Get(mobile ? "workflow.overview.mobile" : "workflow.overview.desktop"),
-                UiClassNames.Badge, "ee4v-modification-workflow__performance-platform"));
+            if (AvatarOverviewAnalysis.HasAaoComponents(_workingObject) || record?.AaoAttached == true)
+            {
+                var aao = UiTextFactory.Create(I18N.Get("workflow.overview.aaoAttached"),
+                    UiClassNames.Badge, "ee4v-modification-workflow__performance-aao");
+                aao.tooltip = I18N.Get(record?.AaoAttached == true
+                    ? "workflow.overview.aaoBuildTooltip" : "workflow.overview.aaoCurrentTooltip");
+                title.Add(aao);
+            }
+            heading.Add(title);
+            heading.Add(BuildPerformancePlatformSwitch());
             summary.Add(heading);
             var ratingText = UiTextFactory.Create(GetOverviewRatingLabel(rating),
                 UiClassNames.SectionTitle);
@@ -2410,10 +2505,13 @@ namespace Ee4v.AssetManager.UI
             summary.Add(scale);
             var warningCount = metrics.Count(metric => metric.Rating == "Medium" ||
                 metric.Rating == "Poor" || metric.Rating == "VeryPoor");
-            summary.Add(UiTextFactory.Create(warningCount > 0
+            if (metrics.Count > 0)
+            {
+                summary.Add(UiTextFactory.Create(warningCount > 0
                     ? string.Format(I18N.Get("workflow.overview.metricsToReview"), warningCount)
                     : I18N.Get("workflow.overview.metricsWithinBudget"),
-                UiClassNames.SecondaryText));
+                    UiClassNames.SecondaryText));
+            }
             return summary;
         }
 
@@ -2462,11 +2560,14 @@ namespace Ee4v.AssetManager.UI
                     fill.style.backgroundColor = GetPerformanceRatingColor(metric.Rating);
                     track.Add(fill);
                     card.Add(track);
-                    card.Add(UiTextFactory.Create(string.Format(
-                        I18N.Get("workflow.overview.targetBudget"),
-                        GetOverviewRatingLabel(metric.TargetRating), metric.TargetLimitLabel),
-                        UiClassNames.SecondaryText,
-                        "ee4v-modification-workflow__performance-card-budget-label"));
+                    if (metric.Rating != "Excellent")
+                    {
+                        card.Add(UiTextFactory.Create(string.Format(
+                            I18N.Get("workflow.overview.targetBudget"),
+                            GetOverviewRatingLabel(metric.TargetRating), metric.TargetLimitLabel),
+                            UiClassNames.SecondaryText,
+                            "ee4v-modification-workflow__performance-card-budget-label"));
+                    }
                 }
                 grid.Add(card);
             }
@@ -6890,7 +6991,7 @@ namespace Ee4v.AssetManager.UI
 
         private bool IsEditableWorkflowPrefab()
         {
-            if (_workingObject == null || _workingPrefabAsset == null)
+            if (EditorApplication.isPlaying || _workingObject == null || _workingPrefabAsset == null)
             {
                 return false;
             }
@@ -6939,8 +7040,8 @@ namespace Ee4v.AssetManager.UI
                         Root = root,
                         PrefabPath = path,
                         Scene = root.scene,
-                        Dirty = PrefabUtility.HasPrefabInstanceAnyOverrides(
-                            root, false)
+                        Dirty = PrefabUtility.IsPartOfPrefabInstance(root) &&
+                            PrefabUtility.HasPrefabInstanceAnyOverrides(root, false)
                     };
                 }
                 WorkingScenes[path] = session;

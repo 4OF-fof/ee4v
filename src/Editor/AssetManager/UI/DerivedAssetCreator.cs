@@ -389,6 +389,10 @@ namespace Ee4v.AssetManager.UI
             var root = scene.GetRootGameObjects().FirstOrDefault(candidate =>
                 PrefabUtility.GetCorrespondingObjectFromSource(candidate) ==
                 prefab);
+            if (root == null && EditorApplication.isPlaying)
+            {
+                root = AvatarPlayModePerformanceCache.FindPlayModeAvatar(prefabPath);
+            }
             if (root == null)
             {
                 throw new InvalidOperationException(
