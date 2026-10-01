@@ -26,7 +26,6 @@
       "mobile": "Quest",
       "playModeRequired": "Enter Play Mode to display the avatar's performance after building.",
       "playModeNotCaptured": "No build result was captured during the last Play Mode session. Check NDMF Apply on Play and build errors.",
-      "playModeCapturedAt": "Last Play Mode: {0} · Enter Play Mode again to update after editing.",
       "aaoAttached": "AAO attached",
       "aaoBuildTooltip": "AAO components were attached when the last Play Mode build started.",
       "aaoCurrentTooltip": "AAO components are attached to the current avatar.",

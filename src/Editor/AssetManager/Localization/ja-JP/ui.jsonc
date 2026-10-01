@@ -26,7 +26,6 @@
       "mobile": "Quest",
       "playModeRequired": "Play Modeに入ると、ビルド後のアバターパフォーマンスを表示します。",
       "playModeNotCaptured": "最後のPlay Modeでビルド結果を取得できませんでした。NDMFのApply on Play設定とビルドエラーを確認してください。",
-      "playModeCapturedAt": "最後のPlay Mode：{0} · 編集後の評価は次のPlay Modeで更新されます。",
       "aaoAttached": "AAOあり",
       "aaoBuildTooltip": "最後のPlay Mode開始時にAAOコンポーネントが付いていたアバターの評価です。",
       "aaoCurrentTooltip": "現在のアバターにAAOコンポーネントが付いています。",

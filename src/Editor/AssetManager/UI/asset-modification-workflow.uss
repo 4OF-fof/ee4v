@@ -698,7 +698,6 @@
     margin-bottom: var(--ee4v-space-lg);
 }
 
-.ee4v-modification-workflow__overview-note,
 .ee4v-modification-workflow__overview-warning {
     margin-bottom: var(--ee4v-space-lg);
 }

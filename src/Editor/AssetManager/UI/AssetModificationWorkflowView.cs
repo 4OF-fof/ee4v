@@ -2408,10 +2408,6 @@ namespace Ee4v.AssetManager.UI
                             : "workflow.overview.playModeNotCaptured"), HelpBoxMessageType.Info));
                 return content;
             }
-            content.Add(UiTextFactory.Create(string.Format(
-                    I18N.Get("workflow.overview.playModeCapturedAt"),
-                    record.CapturedAt?.ToString("HH:mm:ss")),
-                UiClassNames.SecondaryText, "ee4v-modification-workflow__overview-note"));
             foreach (var group in new[] { "rendering", "dynamics", "effects" })
             {
                 AddPerformanceGroup(content, group, metrics.Where(metric =>
