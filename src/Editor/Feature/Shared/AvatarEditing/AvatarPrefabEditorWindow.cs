@@ -1,48 +1,52 @@
 using System;
-using System.Collections.Generic;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AvatarEditing
 {
-    /// <summary>Standalone Prefab session. Feature windows supply only their editor controls.</summary>
+    /// <summary>Edits an existing Prefab instance without owning its Scene or lifetime.</summary>
     public abstract class AvatarPrefabEditorWindow : EditorWindow
     {
-        [SerializeField] private GameObject _prefab;
-        [SerializeField] private GameObject _contents;
-        [SerializeField] private bool _dirty;
-        private bool _reloading;
+        [SerializeField] private GameObject _instance;
+        private GameObject _prefab;
         private ObjectField _prefabField;
         private UiButton _save;
+        private UiButton _revert;
         private HelpBox _feedback;
         private VisualElement _body;
         protected AvatarEditingContext Context { get; private set; }
         protected VisualElement FeatureHeader { get; private set; }
         protected abstract string TitleKey { get; }
         protected virtual bool UsesBodyPartSelector => true;
+        protected virtual bool ShowsRevertButton => true;
+        protected virtual bool HasPendingFeatureChanges => false;
         protected abstract void CreateFeature();
         protected abstract void RenderFeature();
         protected abstract void ClearFeatureData();
         protected abstract void DisposeFeature();
         protected virtual bool FlushFeatureChanges() => true;
-        protected virtual void SaveAdditionalAssets() { }
+        protected virtual void CancelFeatureChanges() { }
         protected virtual void CreateMaterialVariant(Material material) { }
         protected virtual void SelectPreview(string partKey, Material material) { }
         protected virtual void ClearPreviewSelection() { }
 
         protected void OnEnable()
         {
-            _reloading = false;
             I18N.Reloaded += Rebuild;
             Undo.undoRedoPerformed += OnUndoRedo;
             Undo.postprocessModifications += OnModifications;
             AssemblyReloadEvents.beforeAssemblyReload += BeforeReload;
             AvatarShapeNaming.Changed += OnNamingChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
+            EditorApplication.projectChanged += OnTargetChanged;
+            EditorApplication.hierarchyChanged += OnHierarchyChanged;
+            if (_instance == null) _instance = GetInstanceRoot(Selection.activeGameObject);
             ConfigureWindow();
         }
 
@@ -50,13 +54,13 @@ namespace Ee4v.AvatarEditing
         {
             titleContent = UiTextFactory.CreateGuiContent(I18N.Get(TitleKey));
             minSize = new Vector2(800f, 560f);
-            saveChangesMessage = I18N.Get("avatarEditor.unsaved");
-            hasUnsavedChanges = _dirty;
+            hasUnsavedChanges = false;
         }
 
         protected void CreateGUI()
         {
             DisposeView();
+            _prefab = GetSourcePrefab(_instance);
             rootVisualElement.Clear();
             UiComposition.Prepare(rootVisualElement,
                 "Editor/Feature/Shared/AvatarEditing/avatar-prefab-editor.uss");
@@ -66,10 +70,17 @@ namespace Ee4v.AvatarEditing
             _prefabField = UiTextFactory.CreateObjectField(I18N.Get("avatarEditor.prefab"));
             _prefabField.name = "avatarPrefab";
             _prefabField.objectType = typeof(GameObject);
-            _prefabField.allowSceneObjects = false;
-            _prefabField.SetValueWithoutNotify(_prefab);
+            _prefabField.allowSceneObjects = true;
+            _prefabField.SetValueWithoutNotify(_instance);
             _prefabField.RegisterValueChangedCallback(evt => ChangePrefab(evt.newValue as GameObject));
             toolbar.Add(_prefabField);
+            _revert = null;
+            if (ShowsRevertButton)
+            {
+                _revert = new UiButton(I18N.Get("avatarEditor.revert"), ConfirmDiscardChanges,
+                    variant: UiButtonVariant.Ghost) { name = "revertPrefab" };
+                toolbar.Add(_revert);
+            }
             _save = new UiButton(I18N.Get("avatarEditor.save"), SaveChanges) { name = "savePrefab" };
             toolbar.Add(_save);
             rootVisualElement.Add(toolbar);
@@ -97,13 +108,17 @@ namespace Ee4v.AvatarEditing
             Context = new AvatarEditingContext
             {
                 UiRoot = rootVisualElement, ControlsHost = controls, Preview = preview,
-                Root = _contents, PrefabAsset = _prefab,
+                Root = _instance, PrefabAsset = _prefab,
                 CanEditPrefab = CanEditPrefab, CanEditMaterial = CanEditMaterial,
                 FlushChanges = FlushFeatureChanges,
                 GetAssetPath = () => AssetDatabase.GetAssetPath(_prefab),
                 GetExcludedPartPrefixes = () => Array.Empty<string>(),
                 CreateShapeNaming = AvatarShapeNaming.Create,
-                WorkingSceneDirtyChanged = value => { if (value) MarkChanged(); },
+                WorkingSceneDirtyChanged = value =>
+                {
+                    if (value && _instance != null) EditorSceneManager.MarkSceneDirty(_instance.scene);
+                    MarkChanged();
+                },
                 Changed = MarkChanged, Refresh = Render, ShowParts = Render, ShowMaterials = Render,
                 Rebuild = Rebuild, ClearCaches = ClearFeatureData,
                 InvalidateControls = _ => { }, InvalidateMaterialData = () => { },
@@ -117,53 +132,40 @@ namespace Ee4v.AvatarEditing
             preview.PreviewObjectClicked += SelectPreview;
             preview.PreviewSelectionCleared += ClearPreviewSelection;
             CreateFeature();
-            LoadContents();
+            preview.SetPrefab(_instance);
             Render();
+            toolbar.schedule.Execute(RefreshSaveButtons).Every(500);
         }
 
-        private void LoadContents()
+        private static GameObject GetInstanceRoot(GameObject target)
         {
-            if (_prefab == null) return;
-            try
-            {
-                if (_contents == null)
-                    _contents = PrefabUtility.LoadPrefabContents(AssetDatabase.GetAssetPath(_prefab));
-                Context.Root = _contents;
-                Context.PrefabAsset = _prefab;
-                Context.Preview.SetPrefab(_contents);
-            }
-            catch (Exception exception) { ShowError(exception.Message); }
+            if (target == null || EditorUtility.IsPersistent(target) ||
+                !target.scene.IsValid() || EditorSceneManager.IsPreviewScene(target.scene) ||
+                PrefabUtility.GetPrefabInstanceStatus(target) != PrefabInstanceStatus.Connected) return null;
+            return PrefabUtility.GetNearestPrefabInstanceRoot(target);
         }
 
-        private void ChangePrefab(GameObject prefab)
+        private static GameObject GetSourcePrefab(GameObject instance) => GetInstanceRoot(instance) == null
+            ? null : AssetDatabase.LoadAssetAtPath<GameObject>(
+                PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(instance));
+
+        private void ChangePrefab(GameObject target)
         {
-            if (prefab == _prefab) return;
-            if (prefab != null && (!PrefabUtility.IsPartOfPrefabAsset(prefab) ||
-                string.IsNullOrEmpty(AssetDatabase.GetAssetPath(prefab))))
+            var instance = GetInstanceRoot(target);
+            if (target != null && instance == null)
             {
-                _prefabField.SetValueWithoutNotify(_prefab);
+                _prefabField.SetValueWithoutNotify(_instance);
                 ShowError(I18N.Get("avatarEditor.invalidPrefab"));
                 return;
             }
-            if (!FlushFeatureChanges()) { _prefabField.SetValueWithoutNotify(_prefab); return; }
-            if (_dirty)
-            {
-                var answer = EditorUtility.DisplayDialogComplex(titleContent.text,
-                    saveChangesMessage, I18N.Get("avatarEditor.save"),
-                    I18N.Get("avatarEditor.cancel"), I18N.Get("avatarEditor.discard"));
-                if (answer == 0) SaveChanges();
-                if (answer == 1 || (answer == 0 && _dirty))
-                { _prefabField.SetValueWithoutNotify(_prefab); return; }
-            }
+            if (instance == _instance) { _prefabField.SetValueWithoutNotify(_instance); return; }
+            if (!FlushFeatureChanges()) { _prefabField.SetValueWithoutNotify(_instance); return; }
             DisposeView();
-            ReleaseContents();
-            _prefab = prefab;
-            _dirty = false;
-            hasUnsavedChanges = false;
+            _instance = instance;
             CreateGUI();
         }
 
-        private bool CanEditPrefab() => _contents != null && _prefab != null &&
+        private bool CanEditPrefab() => GetInstanceRoot(_instance) == _instance && _instance != null && _prefab != null &&
             !EditorApplication.isPlayingOrWillChangePlaymode &&
             PrefabUtility.GetPrefabAssetType(_prefab) != PrefabAssetType.Model &&
             (_prefab.hideFlags & HideFlags.NotEditable) == 0 &&
@@ -177,10 +179,7 @@ namespace Ee4v.AvatarEditing
 
         protected void MarkChanged()
         {
-            if (_contents == null) return;
-            _dirty = true;
-            hasUnsavedChanges = true;
-            _save?.SetEnabled(CanEditPrefab());
+            RefreshSaveButtons();
             Repaint();
         }
 
@@ -190,7 +189,7 @@ namespace Ee4v.AvatarEditing
             FeatureHeader.Clear();
             Context.ControlsHost.Clear();
             _body.style.display = Context.Root == null ? DisplayStyle.None : DisplayStyle.Flex;
-            _save.SetEnabled(_dirty && CanEditPrefab());
+            RefreshSaveButtons();
             if (Context.Root == null)
             {
                 if (_prefab == null) ShowMessage(I18N.Get("avatarEditor.selectPrefab"), HelpBoxMessageType.Info);
@@ -222,6 +221,23 @@ namespace Ee4v.AvatarEditing
         protected void SyncPreviewSelection() => Context?.Preview.SetListSelection(
             Context.SelectedPartKey, Context.SelectedMaterial);
 
+        private void RefreshSaveButtons()
+        {
+            var enabled = CanEditPrefab() &&
+                (HasPendingFeatureChanges || PrefabEditingChanges.HasContentOverrides(_instance));
+            _save?.SetPrimaryActionEnabled(enabled);
+            _revert?.SetEnabled(enabled);
+        }
+
+        private void ConfirmDiscardChanges()
+        {
+            if (!CanEditPrefab() ||
+                !HasPendingFeatureChanges && !PrefabEditingChanges.HasContentOverrides(_instance)) return;
+            if (EditorUtility.DisplayDialog(I18N.Get("avatarEditor.revert"),
+                I18N.Get("avatarEditor.revertConfirm"), I18N.Get("avatarEditor.revert"),
+                I18N.Get("avatarEditor.cancel"))) DiscardChanges();
+        }
+
         public override void SaveChanges()
         {
             if (!CanEditPrefab() || !FlushFeatureChanges()) return;
@@ -229,11 +245,8 @@ namespace Ee4v.AvatarEditing
             {
                 // Commit delayed Undo records before clearing the saved state.
                 Undo.FlushUndoRecordObjects();
-                SaveAdditionalAssets();
-                PrefabUtility.SaveAsPrefabAsset(_contents, AssetDatabase.GetAssetPath(_prefab), out var success);
-                if (!success) { ShowError(I18N.Get("avatarEditor.saveFailed")); return; }
+                PrefabUtility.ApplyPrefabInstance(_instance, InteractionMode.AutomatedAction);
                 Undo.FlushUndoRecordObjects();
-                _dirty = false;
                 base.SaveChanges();
                 RefreshTarget();
             }
@@ -242,12 +255,16 @@ namespace Ee4v.AvatarEditing
 
         public override void DiscardChanges()
         {
-            // Prefab changes live only in the isolated contents scene.
-            DisposeView();
-            ReleaseContents();
-            _dirty = false;
-            base.DiscardChanges();
-            CreateGUI();
+            if (!CanEditPrefab()) return;
+            try
+            {
+                CancelFeatureChanges();
+                Undo.FlushUndoRecordObjects();
+                PrefabUtility.RevertPrefabInstance(_instance, InteractionMode.UserAction);
+                base.DiscardChanges();
+                CreateGUI();
+            }
+            catch (Exception exception) { ShowError(exception.Message); }
         }
 
         protected void ShowError(string message) => ShowMessage(message, HelpBoxMessageType.Error);
@@ -268,25 +285,42 @@ namespace Ee4v.AvatarEditing
 
         private UndoPropertyModification[] OnModifications(UndoPropertyModification[] changes)
         {
-            if (_contents != null)
+            if (_instance != null)
                 foreach (var change in changes)
                 {
                     var target = change.currentValue.target;
                     var transform = target is GameObject go ? go.transform : (target as Component)?.transform;
-                    if (transform != null && transform.IsChildOf(_contents.transform)) { MarkChanged(); break; }
+                    if (transform != null && transform.IsChildOf(_instance.transform)) { MarkChanged(); break; }
                 }
             return changes;
         }
 
         private void Rebuild() { ConfigureWindow(); CreateGUI(); }
-        private void OnPlayModeChanged(PlayModeStateChange state) => Render();
+        private void OnPlayModeChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.EnteredEditMode) OnTargetChanged();
+            else Render();
+        }
         private void OnNamingChanged()
         {
             if (Context?.Root == null || !FlushFeatureChanges()) return;
             ClearFeatureData();
             Render();
         }
-        private void BeforeReload() { FlushFeatureChanges(); _reloading = true; }
+        private void BeforeReload() => FlushFeatureChanges();
+        private void OnTargetChanged()
+        {
+            if (Context == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
+            _prefab = GetSourcePrefab(_instance);
+            Context.Root = _instance;
+            Context.PrefabAsset = _prefab;
+            RefreshTarget();
+        }
+        private void OnHierarchyChanged()
+        {
+            if (Context != null && _instance == null && Context.ControlsHost.childCount > 0)
+                OnTargetChanged();
+        }
         private void DisposeView()
         {
             if (Context == null) return;
@@ -294,11 +328,6 @@ namespace Ee4v.AvatarEditing
             DisposeFeature();
             Context.Preview.Dispose();
             Context = null;
-        }
-        private void ReleaseContents()
-        {
-            if (_contents != null) PrefabUtility.UnloadPrefabContents(_contents);
-            _contents = null;
         }
         protected void OnDisable()
         {
@@ -308,8 +337,9 @@ namespace Ee4v.AvatarEditing
             AssemblyReloadEvents.beforeAssemblyReload -= BeforeReload;
             AvatarShapeNaming.Changed -= OnNamingChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            EditorApplication.projectChanged -= OnTargetChanged;
+            EditorApplication.hierarchyChanged -= OnHierarchyChanged;
             DisposeView();
-            if (!_reloading) ReleaseContents();
         }
     }
 }

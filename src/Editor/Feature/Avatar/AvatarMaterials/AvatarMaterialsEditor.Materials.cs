@@ -682,6 +682,7 @@ namespace Ee4v.AvatarMaterials
 
         public void RefreshMaterialPreview()
         {
+            _context.MaterialChanged?.Invoke(_context.SelectedMaterial);
             _context.Changed();
             _context.Preview?.RefreshPreview();
         }

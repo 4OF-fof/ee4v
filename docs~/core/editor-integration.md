@@ -8,6 +8,12 @@ backend は公開状態型を直接生成します。公開 API と backend の�
 
 `Try` で始まる API は操作できない場合に `false` を返します。公開 signature に内部 backend 型は含まれません。
 
+## `PrefabEditingChanges`
+
+`HasContentOverrides(instance)`はPrefabインスタンスの追加・削除と、元Prefabの現在値と異なるserialized propertyを判定します。Sceneのdirtyフラグや、値を元に戻したまま残るoverrideだけでは変更扱いにしません。配置に使うUnityのdefault overrideは除外します。AssetManagerの保存・変更を戻すボタンが使用します。
+
+`SerializedValuesEqual(current, saved, include)`は表示用hideFlagsを除いたserialized値を比較します。任意のproperty filterを指定でき、インスタンス内の参照は対応するPrefab側の参照へ揃えて比較します。Materials Windowが編集したMaterialの復元前に使用します。serialized propertyの操作は`PrefabEditingChangesBackend`へ隔離し、どちらのAPIも比較対象を保存・変更しません。
+
 ## `ProjectBrowserApi`
 
 ### 状態型

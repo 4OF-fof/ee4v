@@ -57,6 +57,21 @@
     opacity: 0.5;
 }
 
+.ee4v-ui-button.ee4v-ui-button--primary-action {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-focus);
+}
+
+.ee4v-ui-button.ee4v-ui-button--primary-action:enabled:focus,
+.ee4v-ui-button.ee4v-ui-button--primary-action:enabled:hover {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection);
+}
+
+.ee4v-ui-button.ee4v-ui-button--primary-action:enabled:active {
+    background-color: var(--ee4v-color-selection-pressed);
+}
+
 .ee4v-ui-button__content {
     min-width: 0;
     flex-grow: 1;

@@ -30,7 +30,7 @@ AssetManager内はContracts、Domain、Application、Infrastructure、UI、Asset
 
 ## 単独機能とee4vウィンドウ
 
-各機能は単独で操作できる入口を持ち、ee4vウィンドウでも同じview／controllerを組み合わせます。体型・パーツ、MaterialとPrefab構成の単独Windowは各Feature内に置き、共有の`AvatarPrefabEditorWindow`でPrefab入力・独立した編集領域・保存を管理します。AssetManagerや他のWindowの起動・選択には依存しません。
+各機能は単独で操作できる入口を持ち、ee4vウィンドウでも同じview／controllerを組み合わせます。体型・パーツ、MaterialとPrefab構成の単独Windowは各Feature内に置き、共有の`AvatarPrefabEditorWindow`でHierarchy上のPrefabインスタンス入力・Preview・元Prefabへの保存を管理します。単独WindowはSceneの保存やGitへの版保存を行わず、AssetManagerや他のWindowの起動・選択には依存しません。
 
 `Feature/Avatar/AvatarParts`、`AvatarMaterials`、`AvatarInfo`がそれぞれパーツ・体型、Material、詳細を所有し、同階層のFaceExpressionとPlayModeComponentSuppressionも独立した機能として維持します。機能間のassembly参照は作りません。AvatarInfoのNDMF連携は専用assemblyに分けます。
 

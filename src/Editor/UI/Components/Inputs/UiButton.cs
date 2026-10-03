@@ -82,6 +82,13 @@ namespace Ee4v.UI
             _label.SetColor(color);
         }
 
+        public void SetPrimaryActionEnabled(bool enabled)
+        {
+            SetEnabled(enabled);
+            EnableInClassList("ee4v-ui-button--primary-action", enabled);
+            SetLabelColor(enabled ? UiColorTokens.TextOnState : UiColorTokens.TextPrimary);
+        }
+
         public VisualElement Content
         {
             get { return _content; }

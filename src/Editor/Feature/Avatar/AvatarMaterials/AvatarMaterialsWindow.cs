@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
 using Ee4v.AvatarEditing;
 using UnityEditor;
 using UnityEngine;
@@ -11,12 +10,17 @@ namespace Ee4v.AvatarMaterials
     {
         private AvatarMaterialsEditor _editor;
         protected override string TitleKey => "avatarEditor.materialsTitle";
+        protected override bool ShowsRevertButton => false;
         [MenuItem("ee4v/Window/Avatar/Materials", false, 201)]
         private static void ShowWindow() => GetWindow<AvatarMaterialsWindow>().Show();
         protected override void CreateFeature()
         {
             _editor = new AvatarMaterialsEditor(Context);
             Context.InvalidateMaterialData = _editor.ClearData;
+            Context.MaterialChanged = material =>
+            {
+                if (CanEditMaterial(material)) AssetDatabase.SaveAssetIfDirty(material);
+            };
         }
         protected override void RenderFeature() => Context.ControlsHost.Add(_editor.BuildControls());
         protected override void ClearFeatureData() => _editor?.ClearData();
@@ -24,12 +28,6 @@ namespace Ee4v.AvatarMaterials
         protected override void SelectPreview(string key, Material material) => _editor.SelectPreviewMaterial(material, -1);
         protected override void ClearPreviewSelection()
         { Context.SelectedMaterial = null; Render(); }
-        protected override void SaveAdditionalAssets()
-        {
-            foreach (var material in Context.Root.GetComponentsInChildren<Renderer>(true)
-                .SelectMany(renderer => renderer.sharedMaterials).Where(CanEditMaterial).Distinct())
-                AssetDatabase.SaveAssetIfDirty(material);
-        }
         protected override void CreateMaterialVariant(Material material)
         {
             if (!Context.CanEditPrefab() || material == null || !FlushFeatureChanges()) return;

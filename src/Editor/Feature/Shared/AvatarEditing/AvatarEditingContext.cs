@@ -40,6 +40,7 @@ namespace Ee4v.AvatarEditing
         public Action<bool> WorkingSceneDirtyChanged { get; set; }
         public bool WorkingSceneDirty { set => WorkingSceneDirtyChanged(value); }
         public Action Changed { get; set; }
+        public Action<Material> MaterialChanged { get; set; }
         public Action Refresh { get; set; }
         public Action ShowParts { get; set; }
         public Action ShowMaterials { get; set; }

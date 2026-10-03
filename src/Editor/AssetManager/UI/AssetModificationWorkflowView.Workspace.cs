@@ -366,20 +366,18 @@ namespace Ee4v.AssetManager.UI
 
         private void RefreshVariantSaveButton(UiButton save)
         {
-            if (_disposed || _savingVariant || _avatarContext.Root == null)
+            if (_disposed || _savingVariant || _avatarContext.Root == null ||
+                EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 SetVariantSaveButtonEnabled(save, false);
                 return;
             }
-            var pending = _workingSceneDirty ||
-                _parts.HasPendingPartVisibility || _parts.BodyScaleDirty ||
-                _parts.HasPendingBodySizeChange;
-            if (!pending && _variantSaveStatusDirty)
+            var pending = PrefabEditingChanges.HasContentOverrides(_avatarContext.Root) ||
+                _parts.HasPendingPartVisibility || _parts.HasPendingBodySizeChange;
+            // Always compare Project contents with the Git revision. A standalone
+            // Prefab save does not create a revision or clear this difference.
+            if (!_variantSaveStatusDirty || EditorApplication.timeSinceStartup >= _variantSaveStatusDueAt)
             {
-                if (EditorApplication.timeSinceStartup < _variantSaveStatusDueAt)
-                {
-                    return;
-                }
                 try
                 {
                     _manager = _manager ?? AssetManagerWindowSession.GetManager();
@@ -403,22 +401,23 @@ namespace Ee4v.AssetManager.UI
                 }
                 catch (Exception exception)
                 {
-                    _variantHasChanges = true;
+                    _variantHasChanges = false;
                     _variantHasDiscardableChanges = false;
                     _variantSaveStatusError = exception.Message;
                 }
                 _variantSaveStatusDirty = false;
             }
             var hasChanges = pending || _variantHasChanges;
-            save.tooltip = pending ? string.Empty : _variantSaveStatusError ??
+            save.tooltip = _variantSaveStatusError ??
                 (hasChanges ? string.Empty : I18N.Get("variant.noChanges"));
-            SetVariantSaveButtonEnabled(save, hasChanges);
+            SetVariantSaveButtonEnabled(save, hasChanges && _variantSaveStatusError == null);
         }
 
         private void RefreshVariantDiscardButton(UiButton discard)
         {
             if (_disposed || _savingVariant || _avatarContext.Root == null ||
                 string.IsNullOrEmpty(_workingAsset?.VariantId) ||
+                EditorApplication.isPlayingOrWillChangePlaymode ||
                 _variantSaveStatusError != null)
             {
                 discard.SetEnabled(false);
@@ -432,10 +431,8 @@ namespace Ee4v.AssetManager.UI
                     _manager);
                 var revisionId = variants?.GetCurrentRevisionId(
                     _workingAsset.VariantId);
-                var pending = _workingSceneDirty ||
-                    _parts.HasPendingPartVisibility ||
-                    _parts.BodyScaleDirty ||
-                    _parts.HasPendingBodySizeChange;
+                var pending = PrefabEditingChanges.HasContentOverrides(_avatarContext.Root) ||
+                    _parts.HasPendingPartVisibility || _parts.HasPendingBodySizeChange;
                 discard.SetEnabled(!string.IsNullOrEmpty(revisionId) &&
                                    (pending || _variantHasDiscardableChanges));
                 discard.tooltip = string.IsNullOrEmpty(revisionId)
@@ -453,10 +450,7 @@ namespace Ee4v.AssetManager.UI
 
         private static void SetVariantSaveButtonEnabled(UiButton save, bool enabled)
         {
-            save.SetEnabled(enabled);
-            save.EnableInClassList(
-                "ee4v-asset-manager__primary-action", enabled);
-            save.SetLabelColor(enabled ? UiColorTokens.TextOnState : UiColorTokens.TextPrimary);
+            save.SetPrimaryActionEnabled(enabled);
         }
 
         private void InvalidateVariantSaveStatus()

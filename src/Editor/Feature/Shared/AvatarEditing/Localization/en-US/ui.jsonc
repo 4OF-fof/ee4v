@@ -66,16 +66,15 @@
     }
   },
   "avatarEditor": {
-    "prefab": "Prefab",
-    "save": "Save",
+    "prefab": "Prefab instance",
+    "save": "Save to Prefab",
+    "revert": "Revert Changes",
+    "revertConfirm": "Discard this instance’s overrides and revert to the contents currently saved in its source Prefab?",
     "preview": "Preview",
-    "unsaved": "Save changes to this Prefab?",
     "cancel": "Cancel",
-    "discard": "Discard",
-    "invalidPrefab": "Select a Prefab asset from the Project.",
-    "selectPrefab": "Assign the Prefab to edit in the input field.",
+    "invalidPrefab": "Select a Prefab instance from the Hierarchy.",
+    "selectPrefab": "Assign a Prefab instance from the Hierarchy to edit.",
     "readOnly": "This Prefab is read-only. Select a writable Prefab to edit.",
-    "saveFailed": "Could not save the Prefab.",
     "shapePartsTitle": "Shape and Parts",
     "materialsTitle": "Materials",
     "compositionTitle": "Prefab Composition"

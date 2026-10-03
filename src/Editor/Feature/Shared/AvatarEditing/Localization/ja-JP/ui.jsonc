@@ -66,16 +66,15 @@
     }
   },
   "avatarEditor": {
-    "prefab": "Prefab",
-    "save": "保存",
+    "prefab": "Prefabインスタンス",
+    "save": "Prefabに保存",
+    "revert": "変更を戻す",
+    "revertConfirm": "このインスタンスの変更を破棄して、現在の元Prefabに保存されている内容へ戻しますか？",
     "preview": "プレビュー",
-    "unsaved": "Prefabの変更を保存しますか？",
     "cancel": "キャンセル",
-    "discard": "破棄",
-    "invalidPrefab": "ProjectのPrefabを選択してください。",
-    "selectPrefab": "編集するPrefabを入力欄へ設定してください。",
+    "invalidPrefab": "Hierarchy上のPrefabインスタンスを選択してください。",
+    "selectPrefab": "編集するPrefabインスタンスをHierarchyから入力欄へ設定してください。",
     "readOnly": "このPrefabは読み取り専用です。編集には書き込み可能なPrefabを選択してください。",
-    "saveFailed": "Prefabを保存できませんでした。",
     "shapePartsTitle": "体型・パーツ",
     "materialsTitle": "マテリアル",
     "compositionTitle": "Prefab構成"
