@@ -218,7 +218,7 @@ namespace Ee4v.AssetManager.UI
             _avatarContext.SelectedMaterial = null;
             if (siblingIndex.HasValue &&
                 _currentCategory != WorkflowCategory.Overview &&
-                _currentCategory != WorkflowCategory.Execution &&
+                _currentCategory != WorkflowCategory.MenuAndGestures &&
                 _currentCategory != WorkflowCategory.Material)
             {
                 _currentCategory = WorkflowCategory.ShapeParts;

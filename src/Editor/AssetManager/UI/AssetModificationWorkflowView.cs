@@ -130,6 +130,8 @@ namespace Ee4v.AssetManager.UI
         private WorkflowCategory _currentCategory =
             WorkflowCategory.Overview;
 
+        private WorkflowCategory _editingCategory = WorkflowCategory.Overview;
+
         private bool _creatingDerivedAsset;
 
         private string _creationItemId = string.Empty;
@@ -177,9 +179,15 @@ namespace Ee4v.AssetManager.UI
 
         private AvatarExecutionView _executionView;
 
-        internal bool ExecutionSelected => _currentCategory == WorkflowCategory.Execution;
+        internal WorkflowCategory EditingCategory => _currentCategory == WorkflowCategory.MenuAndGestures
+            ? _editingCategory : _currentCategory;
 
-        internal void ShowExecutionConfirmation() => ShowCategory(WorkflowCategory.Execution, false);
+        internal void RestoreEditingCategory(WorkflowCategory category)
+        {
+            _editingCategory = category == WorkflowCategory.MenuAndGestures
+                ? WorkflowCategory.Overview : category;
+            if (!EditorApplication.isPlaying) { ShowCategory(_editingCategory, false); }
+        }
 
         private AssetManagerWorkspaceView _assetManagerView;
 
@@ -240,6 +248,22 @@ namespace Ee4v.AssetManager.UI
 
         private void ApplyEditorMode()
         {
+            if (_mode == ModificationEditorMode.All)
+            {
+                if (EditorApplication.isPlaying)
+                {
+                    if (_currentCategory != WorkflowCategory.MenuAndGestures)
+                    {
+                        _editingCategory = _currentCategory;
+                    }
+                    _currentCategory = WorkflowCategory.MenuAndGestures;
+                }
+                else if (_currentCategory == WorkflowCategory.MenuAndGestures)
+                {
+                    _currentCategory = _editingCategory;
+                }
+                return;
+            }
             if (_mode == ModificationEditorMode.Materials)
             {
                 _currentCategory = WorkflowCategory.Material;
@@ -320,17 +344,25 @@ namespace Ee4v.AssetManager.UI
             if (state == PlayModeStateChange.ExitingEditMode)
             {
                 _playModeTransition = true;
-                DisposePreview();
+                _editingCategory = EditingCategory;
+                _parts.EndBodyScaleDrag();
+                _parts.SaveBodyScalePrefab();
+                _parts.FlushPendingPartVisibility();
+                DisposeEditors();
+                SetEnabled(false);
                 return;
             }
             if (state == PlayModeStateChange.ExitingPlayMode)
             {
                 _playModeTransition = true;
+                DisposeEditors();
+                SetEnabled(false);
                 return;
             }
             if (state == PlayModeStateChange.EnteredPlayMode)
             {
                 _playModeTransition = false;
+                SetEnabled(true);
                 schedule.Execute(() =>
                 {
                     if (!_disposed && _avatarContext.Root != null) { BuildWindow(); }
@@ -338,6 +370,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             if (state != PlayModeStateChange.EnteredEditMode) { return; }
+            SetEnabled(true);
             if (_workingAsset?.Prefab == null)
             {
                 _playModeTransition = false;

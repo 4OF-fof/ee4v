@@ -12,18 +12,20 @@ namespace Ee4v.AssetManager.UI
             new Dictionary<WorkflowCategory, UiButton>();
         private readonly Action<WorkflowCategory> _selected;
 
-        internal WorkflowCategoryRail(Action<WorkflowCategory> selected)
+        internal WorkflowCategoryRail(Action<WorkflowCategory> selected, bool playMode = false)
         {
             _selected = selected;
             AddToClassList("ee4v-modification-workflow__category-rail");
+            if (playMode)
+            {
+                AddCategoryButton(WorkflowCategory.MenuAndGestures,
+                    "workflow.category.menuAndGestures", "arrow_clockwise.png");
+                return;
+            }
             AddCategoryButton(
                 WorkflowCategory.Overview,
                 "workflow.category.overview",
                 "info.png");
-            AddCategoryButton(
-                WorkflowCategory.Execution,
-                "workflow.category.execution",
-                "arrow_clockwise.png");
             AddCategoryButton(
                 WorkflowCategory.ShapeParts,
                 "workflow.category.shapeParts",
@@ -70,7 +72,10 @@ namespace Ee4v.AssetManager.UI
 
         internal void SetPrefabScope(bool selected)
         {
-            _buttons[WorkflowCategory.ExpressionAnimation].SetEnabled(!selected);
+            if (_buttons.TryGetValue(WorkflowCategory.ExpressionAnimation, out var expression))
+            {
+                expression.SetEnabled(!selected);
+            }
         }
     }
 }

@@ -12,22 +12,20 @@
     },
     "windowTitle": "ee4v",
     "category": {
-      "execution": "実行確認",
+      "menuAndGestures": "操作確認",
       "overview": "総合",
       "shapeParts": "体型・パーツ",
       "material": "マテリアル",
       "expressionAnimation": "表情"
     },
     "execution": {
-      "title": "実行確認",
-      "start": "実行開始",
-      "stop": "実行停止",
+      "title": "操作確認",
       "resetView": "表示リセット",
-      "ready": "実行開始でアバターを動かせます。",
+      "ready": "PlayModeでアバターの操作を確認できます。",
       "running": "実行中",
       "missing": "作業SceneにGestureManagerを配置してください。",
       "avatarUnavailable": "対象アバターが見つかりません。",
-      "failed": "実行確認を開始できませんでした：{0}",
+      "failed": "GestureManagerに接続できませんでした：{0}",
       "leftHand": "左手",
       "rightHand": "右手",
       "weight": "強さ"

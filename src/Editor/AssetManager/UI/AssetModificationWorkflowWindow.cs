@@ -10,7 +10,7 @@ namespace Ee4v.AssetManager.UI
     internal sealed class AssetModificationWorkflowWindow : EditorWindow
     {
         [SerializeField] private string _derivedAssetGuid;
-        [SerializeField] private bool _executionSelected;
+        [SerializeField] private WorkflowCategory _editingCategory;
         private AssetModificationWorkflowView _view;
 
         [MenuItem("ee4v/ee4v", false, 0)]
@@ -64,7 +64,7 @@ namespace Ee4v.AssetManager.UI
             if (asset != null)
             {
                 _view.SelectDerivedAsset(asset);
-                if (_executionSelected) { _view.ShowExecutionConfirmation(); }
+                _view.RestoreEditingCategory(_editingCategory);
             }
         }
 
@@ -76,7 +76,7 @@ namespace Ee4v.AssetManager.UI
 
         private void OnDisable()
         {
-            _executionSelected = _view?.ExecutionSelected ?? _executionSelected;
+            _editingCategory = _view?.EditingCategory ?? _editingCategory;
             I18N.Reloaded -= ConfigureWindow;
             _view?.Dispose();
             _view = null;

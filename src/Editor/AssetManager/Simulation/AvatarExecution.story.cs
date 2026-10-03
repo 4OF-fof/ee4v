@@ -13,7 +13,7 @@ namespace Ee4v.AssetManager.Simulation
             return new[]
             {
                 new UiStory("avatar-execution-view", "Domain/AssetManager/Containers",
-                    "AvatarExecutionView", "実行アバターの描画とGestureManagerの入力をまとめます。",
+                    "AvatarExecutionView", "PlayModeの操作確認用にアバター描画とGestureManagerの入力をまとめます。",
                     "対象がない状態の実Viewを表示します。StoryからPlay ModeやSceneを変更しないよう操作を無効にします。",
                     Build, dependencies: new[] { "PreviewPane", "GestureManager" },
                     usageLocations: new[]

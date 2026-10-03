@@ -11,7 +11,7 @@ namespace Ee4v.AssetManager.UI
     internal enum WorkflowCategory
     {
         Overview,
-        Execution,
+        MenuAndGestures,
         ShapeParts,
         Material,
         ExpressionAnimation

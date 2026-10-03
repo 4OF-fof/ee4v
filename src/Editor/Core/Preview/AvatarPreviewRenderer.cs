@@ -105,7 +105,15 @@ namespace Ee4v.Core.Preview
             if (renderer == null) return new Bounds();
             var bounds = renderer.bounds;
             if (bounds.size.sqrMagnitude > 0.000001f) return bounds;
-            var mesh = renderer is SkinnedMeshRenderer skinned ? skinned.sharedMesh : renderer.GetComponent<MeshFilter>()?.sharedMesh;
+            Mesh mesh = null;
+            if (renderer is SkinnedMeshRenderer skinned)
+            {
+                mesh = skinned.sharedMesh;
+            }
+            else if (renderer is MeshRenderer && renderer.TryGetComponent<MeshFilter>(out var filter))
+            {
+                mesh = filter.sharedMesh;
+            }
             if (mesh == null) return bounds;
             var matrix = renderer.localToWorldMatrix;
             var local = mesh.bounds;

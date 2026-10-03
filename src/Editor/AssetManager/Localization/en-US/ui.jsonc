@@ -12,22 +12,20 @@
     },
     "windowTitle": "ee4v",
     "category": {
-      "execution": "Simulation",
+      "menuAndGestures": "Controls",
       "overview": "Overview",
       "shapeParts": "Shape & parts",
       "material": "Material",
       "expressionAnimation": "Expressions"
     },
     "execution": {
-      "title": "Simulation",
-      "start": "Start",
-      "stop": "Stop",
+      "title": "Controls",
       "resetView": "Reset view",
-      "ready": "Start to simulate the avatar.",
+      "ready": "Enter PlayMode to try the avatar controls.",
       "running": "Running",
       "missing": "Place GestureManager in the working scene.",
       "avatarUnavailable": "The target avatar is unavailable.",
-      "failed": "Could not start simulation: {0}",
+      "failed": "Could not connect to GestureManager: {0}",
       "leftHand": "Left hand",
       "rightHand": "Right hand",
       "weight": "Weight"

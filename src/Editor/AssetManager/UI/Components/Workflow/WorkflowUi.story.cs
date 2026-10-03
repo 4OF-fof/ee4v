@@ -30,7 +30,7 @@ namespace Ee4v.AssetManager.UI
                     "改変画面のカテゴリ、プレビュー、編集ペインと専用画面の配置を管理します。",
                     BuildLayout, "AssetModificationWorkflowView.Workspace.cs"),
                 Story("workflow-category-rail", "Inputs", "WorkflowCategoryRail",
-                    "カテゴリの選択表示とPrefab選択中の操作可否を管理します。",
+                    "編集時とPlayMode時のカテゴリ、選択表示とPrefab選択中の操作可否を管理します。",
                     BuildCategoryRail, "AssetModificationWorkflowView.Workspace.cs"),
 
             };
@@ -69,7 +69,7 @@ namespace Ee4v.AssetManager.UI
             layout.AppearanceHeader.Add(new BodyPartSelector(null, _ => true, _ => { }));
             layout.Controls.Add(UiTextFactory.Create("編集コントロール領域"));
             layout.FaceExpressionHost.Add(new EmptyState(new EmptyStateState("表情・アニメーション", "専用Viewの領域です。")));
-            layout.ExecutionHost.Add(new EmptyState(new EmptyStateState("実行確認", "専用Viewの領域です。")));
+            layout.ExecutionHost.Add(new EmptyState(new EmptyStateState("操作確認", "PlayMode専用Viewの領域です。")));
             parent.Add(layout);
         }
 
@@ -82,6 +82,12 @@ namespace Ee4v.AssetManager.UI
             parent.Add(new UiButton("Prefab選択状態を切り替え",
                 () => rail.SetPrefabScope(scopeSelected = !scopeSelected)));
             parent.Add(rail);
+            parent.Add(UiTextFactory.Create("PlayMode"));
+            WorkflowCategoryRail playRail = null;
+            playRail = new WorkflowCategoryRail(category => playRail.SetSelected(category), true);
+            playRail.SetSelected(WorkflowCategory.MenuAndGestures);
+            playRail.SetPrefabScope(true);
+            parent.Add(playRail);
         }
 
     }

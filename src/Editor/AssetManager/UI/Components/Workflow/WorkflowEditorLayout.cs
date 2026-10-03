@@ -53,11 +53,11 @@ namespace Ee4v.AssetManager.UI
         {
             if (AppearanceHost == null) { return; }
             AppearanceHost.EnableInClassList("ee4v-modification-workflow__hidden",
-                category == WorkflowCategory.ExpressionAnimation || category == WorkflowCategory.Execution);
+                category == WorkflowCategory.ExpressionAnimation || category == WorkflowCategory.MenuAndGestures);
             FaceExpressionHost.EnableInClassList("ee4v-modification-workflow__hidden",
                 category != WorkflowCategory.ExpressionAnimation);
             ExecutionHost.EnableInClassList("ee4v-modification-workflow__hidden",
-                category != WorkflowCategory.Execution);
+                category != WorkflowCategory.MenuAndGestures);
         }
     }
 }

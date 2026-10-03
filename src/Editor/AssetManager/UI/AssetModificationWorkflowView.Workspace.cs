@@ -66,7 +66,8 @@ namespace Ee4v.AssetManager.UI
             }
 
             root.Add(BuildWorkspaceHeader());
-            var preview = BuildPreviewPane();
+            var preview = EditorApplication.isPlaying && _mode == ModificationEditorMode.All
+                ? new VisualElement() : BuildPreviewPane();
             _editorLayout = new WorkflowEditorLayout(
                 _mode == ModificationEditorMode.All ? BuildCategoryRail() : null,
                 preview,
@@ -113,6 +114,13 @@ namespace Ee4v.AssetManager.UI
             combined.Add(changeSeparator);
             combined.Add(change);
             header.SetLeadingTab(combined);
+
+            if (EditorApplication.isPlaying)
+            {
+                combined.SetSelected(true);
+                change.SetEnabled(false);
+                return header;
+            }
 
             var strip = header.Tabs;
             VisualElement selectedCard = null;
@@ -516,7 +524,7 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement BuildCategoryRail()
         {
-            _categoryRail = new WorkflowCategoryRail(category => ShowCategory(category));
+            _categoryRail = new WorkflowCategoryRail(category => ShowCategory(category), EditorApplication.isPlaying);
             _categoryRail.SetPrefabScope(_avatarContext.SelectedPrefabSiblingIndex.HasValue);
             _categoryRail.SetSelected(_currentCategory);
             return _categoryRail;
@@ -556,6 +564,11 @@ namespace Ee4v.AssetManager.UI
             WorkflowCategory category,
             bool clearFeedback = true)
         {
+            if (_mode == ModificationEditorMode.All)
+            {
+                if (EditorApplication.isPlaying) { category = WorkflowCategory.MenuAndGestures; }
+                else if (category == WorkflowCategory.MenuAndGestures) { category = _editingCategory; }
+            }
             if (category != WorkflowCategory.ShapeParts ||
                 _parts.Section != ShapePartsSection.Parts)
             {
@@ -567,7 +580,7 @@ namespace Ee4v.AssetManager.UI
             }
             if (_avatarContext.SelectedPrefabSiblingIndex.HasValue &&
                 category != WorkflowCategory.Overview &&
-                category != WorkflowCategory.Execution &&
+                category != WorkflowCategory.MenuAndGestures &&
                 category != WorkflowCategory.ShapeParts &&
                 category != WorkflowCategory.Material)
             {
@@ -610,7 +623,7 @@ namespace Ee4v.AssetManager.UI
 
             var faceExpression =
                 category == WorkflowCategory.ExpressionAnimation;
-            var execution = category == WorkflowCategory.Execution;
+            var execution = category == WorkflowCategory.MenuAndGestures;
             _editorLayout.ShowCategory(category);
             if (execution)
             {

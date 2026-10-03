@@ -16,7 +16,6 @@ namespace Ee4v.AssetManager.Simulation
         private readonly Action _repaint;
         private readonly GestureManager _manager;
         private readonly AvatarExecutionViewport _viewport;
-        private readonly UiButton _play;
         private readonly UiTextElement _status;
         private readonly VisualElement _inputs;
         private readonly VisualElement _radialHost;
@@ -47,9 +46,6 @@ namespace Ee4v.AssetManager.Simulation
             controls.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             controls.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
             controls.AddToClassList("ee4v-execution__controls");
-            _play = new UiButton(Text(EditorApplication.isPlaying ? "stop" : "start"), TogglePlayMode);
-            _play.name = "executionPlay";
-            controls.Add(_play);
             _status = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
             _status.AddToClassList("ee4v-execution__status");
             controls.Add(_status);
@@ -95,21 +91,9 @@ namespace Ee4v.AssetManager.Simulation
             Refresh();
         }
 
-        private void TogglePlayMode()
-        {
-            if (EditorApplication.isPlayingOrWillChangePlaymode != EditorApplication.isPlaying) { return; }
-            if (EditorApplication.isPlaying) { EditorApplication.ExitPlaymode(); }
-            else { EditorApplication.EnterPlaymode(); }
-        }
-
         private void Refresh()
         {
             if (_disposed) { return; }
-            _play.SetLabel(Text(EditorApplication.isPlaying ? "stop" : "start"));
-            _play.SetEnabled((EditorApplication.isPlaying || _avatar != null && _manager != null && _manager.isActiveAndEnabled &&
-                _avatar.activeInHierarchy && _avatar.GetComponent<Animator>() != null &&
-                _manager.settings?.favourite != null) &&
-                EditorApplication.isPlayingOrWillChangePlaymode == EditorApplication.isPlaying);
             if (_manager == null)
             {
                 _status.SetText(Text("missing"));
@@ -126,6 +110,8 @@ namespace Ee4v.AssetManager.Simulation
             {
                 try
                 {
+                    _radial?.RemoveFromHierarchy();
+                    if (_editor != null) { UnityEngine.Object.DestroyImmediate(_editor); }
                     _module = GestureManagerIntegration.Connect(_avatar, _manager);
                     _editor = UnityEditor.Editor.CreateEditor(_manager, typeof(GestureManagerEditor));
                     _radial = _module.GetOrCreateRadial(_editor);

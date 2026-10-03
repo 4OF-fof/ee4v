@@ -2,11 +2,11 @@
 
 AssetManager は Item、File、Import Target、依存関係、Tag、Collection、取り込み済み Asset GUID と派生アセットを管理します。MCP の公開操作と入力境界は [mcp.md](./mcp.md) を参照してください。
 
-## 実行確認
+## PlayModeの操作確認
 
-統合ee4vの「実行確認」は構成Prefabタブの選択にかかわらず作業Scene内のアバター全体を対象とします。GestureManagerはVPMの必須外部依存（`>=3.9.9 <4.0.0-a`）とし、接続を`AssetManager/Simulation`のEditor assemblyへまとめます。AssetManager UIはこの内部モジュールの公開APIを使用します。エミュレーション、PlayableGraph、パラメーター伝播、メニューの動作と円形描画は導入済みGestureManagerが担当します。ee4vはソースやアセットを取り込まず、`SetModule`、`GetOrCreateRadial`、`GetParam`などの公開APIを使用します。依存先とライセンスの記載は`ThirdParty~/THIRD_PARTY_NOTICES.md`に置きます。
+統合ee4vはUnityのモードに合わせてカテゴリ一覧を切り替えます。Edit Modeは「総合」「体型・パーツ」「マテリアル」「表情」、Play Modeは「操作確認」を表示します。「操作確認」は作業Scene内のアバター全体を対象とします。GestureManagerはVPMの必須外部依存（`>=3.9.9 <4.0.0-a`）とし、接続を`AssetManager/Simulation`のEditor assemblyへまとめます。AssetManager UIはこの内部モジュールの公開APIを使用します。エミュレーション、PlayableGraph、パラメーター伝播、メニューの動作と円形描画は導入済みGestureManagerが担当します。ee4vはソースやアセットを取り込まず、`SetModule`、`GetOrCreateRadial`、`GetParam`などの公開APIを使用します。依存先とライセンスの記載は`ThirdParty~/THIRD_PARTY_NOTICES.md`に置きます。
 
-「実行開始」でUnityのPlay Modeへ入り、NDMFのビルド後に作業SceneのGestureManagerを対象へ接続します。「実行停止」はUnityのPlay Modeを終了します。実行確認タブの選択はdomain reloadを跨いで保持します。Scene内のGestureManagerは保存された構成として維持し、タブやWindowを閉じても実行中のModuleを切断しません。同じアバターを制御中の別GestureManagerがあれば開始に失敗します。ee4vは既存エミュレーターを削除しません。SceneにGestureManagerがない場合は配置の案内を表示します。
+UnityのToolbarでPlay Modeを開始すると「操作確認」へ切り替え、NDMFのビルド後に作業SceneのGestureManagerを対象へ接続します。停止すると元の編集カテゴリへ戻します。編集カテゴリはdomain reloadを跨いで保持します。Play Mode中はPrefab構成・保存・破棄の操作を表示せず、Variantの切り替えを無効にします。Play Modeへ入る前に体型のドラッグと保留中のパーツ変更を確定して編集用Previewを解放します。操作確認では編集用Previewを併設せず実行用viewportのみを使用します。Scene内のGestureManagerは保存された構成として維持し、タブやWindowを閉じても実行中のModuleを切断しません。同じアバターを制御中の別GestureManagerがあれば接続に失敗します。ee4vは既存エミュレーターを削除しません。SceneにGestureManagerがない場合は配置の案内を表示します。
 
 右ペインに外部GestureManagerの300pxラジアルUI、左右0〜7のジェスチャーと強さを表示します。GestureManagerのOptionsもそのまま利用し、入力はPlay Mode内のModuleへ渡します。外部のラジアルUIの文字とアイコンはパッケージ側が生成します。ee4v自身の文字はUiTextFactoryを使用します。ラジアルは固定の高さに配置し、選択要素の文字をee4v側で追加表示しません。
 
@@ -25,23 +25,23 @@ AssetManager は Item、File、Import Target、依存関係、Tag、Collection�
 | `PrefabSelector` | 共通UI / Inputs | 利用側が渡した候補Prefabの選択、Pickerとドラッグへの接続 |
 | `PrefabThumbnail` | 共通UI / Displays | UnityのAssetPreviewを取得するPrefabサムネイル |
 | `PrefabScenePreview` | 共通UI / Displays | 編集用3Dプレビュー、対象の複製、選択判定とカメラ操作 |
-| `WorkflowEditorLayout` | AssetManager / Domain/AssetManager/Containers | カテゴリ、プレビュー、編集ペインと表情・実行確認の専用領域の切り替え |
-| `WorkflowCategoryRail` | AssetManager / Domain/AssetManager/Inputs | 固定カテゴリ操作、選択表示とPrefab選択中の操作可否 |
+| `WorkflowEditorLayout` | AssetManager / Domain/AssetManager/Containers | カテゴリ、プレビュー、編集ペインと表情・操作確認の専用領域の切り替え |
+| `WorkflowCategoryRail` | AssetManager / Domain/AssetManager/Inputs | モードに応じたカテゴリ一覧、選択表示とPrefab選択中の操作可否 |
 | `AvatarPartsEditor` | Feature/Avatar/AvatarParts / Domain/AvatarParts/Containers | パーツ階層・体型編集、保留変更と機能内キャッシュ |
 | `AvatarMaterialsEditor` | Feature/Avatar/AvatarMaterials / Domain/AvatarMaterials/Containers | Material使用箇所、表示切り替えと割り当ての編集 |
 | `EmbeddedMaterialInspector` | Feature/Avatar/AvatarMaterials / Domain/AvatarMaterials/Inputs | MaterialEditorの埋め込み、変更通知と解放 |
 | `AvatarInfoView` | Feature/Avatar/AvatarInfo / Domain/AvatarInfo/Displays | 装着警告と性能結果の表示。解析・ビルド結果cacheもAvatarInfoが所有する |
-| `AvatarExecutionView` | AssetManager/Simulation / Domain/AssetManager/Containers | 実行確認の入力、GestureManager接続と実行用viewportの構成 |
+| `AvatarExecutionView` | AssetManager/Simulation / Domain/AssetManager/Containers | PlayModeの操作確認の入力、GestureManager接続と実行用viewportの構成 |
 
 共通UI部品は`src/Editor/UI/Components`の公開APIです。AssetManagerのDB、Window session、改変カテゴリや翻訳に依存せず、他の編集補助ツールも同じAPIを使用できます。部位を表す`BodyPartCategory`とPrefab内の範囲判定・名前分割を行う`PrefabHierarchyUtility`はCoreの公開APIを使用します。固定の改変画面切り替えはAssetManager、詳細はAvatarInfo、GestureManager接続はSimulationへ置きます。
 
-編集用と実行用の外枠には`PreviewPane`を、編集用の描画面には`ScenePreviewViewport`を使用します。`PrefabScenePreview`は本体、`Rendering`、`Selection`、`Camera`のpartialに分けます。共通部品のスタイルは`UiComposition.Prepare`で読み込みます。統合配置は`asset-modification-workflow.uss`と`UI/Components/Workflow`、パーツ・体型とMaterialのスタイルは各Feature、共有編集スタイルは`Feature/Shared/AvatarEditing`、詳細は`AvatarInfo/UI`が所有します。実行確認のスタイルは`Simulation/avatar-execution.uss`に置きます。
+編集用と実行用の外枠には`PreviewPane`を、編集用の描画面には`ScenePreviewViewport`を使用します。`PrefabScenePreview`は本体、`Rendering`、`Selection`、`Camera`のpartialに分けます。共通部品のスタイルは`UiComposition.Prepare`で読み込みます。統合配置は`asset-modification-workflow.uss`と`UI/Components/Workflow`、パーツ・体型とMaterialのスタイルは各Feature、共有編集スタイルは`Feature/Shared/AvatarEditing`、詳細は`AvatarInfo/UI`が所有します。操作確認のスタイルは`Simulation/avatar-execution.uss`に置きます。
 
 統合ホストのpartialは`Workspace`（配置、カテゴリと版保存）、`Selection`（Variant選択・作成）、`Composition`（構成Prefabと共通グループ操作）、`EditingSession`（作業Sceneと共通選択）、`MaterialAssets`（Materialの編集保護・Variant作成と機能呼び出し）に分けます。機能間の更新はホストが調整し、体型・パーツとMaterialの編集実装をホストのpartialへ置きません。単独のShape and PartsとMaterialsは各FeatureのWindowが共有の`AvatarPrefabEditorWindow`でHierarchy上のPrefabインスタンスを直接編集し、元Prefabへ保存します。AssetManagerのDBや統合ホストへ依存せず、PartsとMaterialsの編集コンポーネントを統合版と共有します。
 
 Storyは実部品を使用し、編集・保存やPlay Modeの切り替えを行いません。共通部品のStoryと表示サイズは`UI/Catalog/Stories/EditorTools`と`UI/Catalog/editor-tools-story.uss`に置きます。サムネイルは320×220px、3Dプレビューは高さ440pxで表示します。3Dプレビューは独立したPreview Sceneでサンプル全体が収まるCameraを使用し、終了時に複製、サンプルとSceneを破棄します。Prefab選択とサムネイルはProjectのPrefabを読み取り専用で使用します。
 
-統合配置・カテゴリと実行確認のStoryは`Domain/AssetManager`へ登録し、表示サイズは`workflow-story.uss`で指定します。各Avatar機能のStoryはそれぞれ`Domain/AvatarParts`、`Domain/AvatarMaterials`、`Domain/AvatarInfo`に登録します。画面配置と実行確認は最小幅1120px・高さ620pxで表示します。実行確認は対象がない実Viewを操作不可で表示します。Storyの使用箇所には、Story以外で部品を生成する実際のファイルを記載します。
+統合配置・カテゴリと操作確認のStoryは`Domain/AssetManager`へ登録し、表示サイズは`workflow-story.uss`で指定します。各Avatar機能のStoryはそれぞれ`Domain/AvatarParts`、`Domain/AvatarMaterials`、`Domain/AvatarInfo`に登録します。画面配置と操作確認は最小幅1120px・高さ620pxで表示します。操作確認は対象がない実Viewを操作不可で表示します。Storyの使用箇所には、Story以外で部品を生成する実際のファイルを記載します。
 
 ## UI契約
 
