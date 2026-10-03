@@ -1,8 +1,0 @@
-{
-  "composition": {
-    "addPrefab": "Prefab to add",
-    "add": "Add",
-    "remove": "Remove",
-    "invalidAddition": "Select another Prefab. Circular Prefab references cannot be added."
-  }
-}

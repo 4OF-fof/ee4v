@@ -5,5 +5,3 @@
 .ee4v-avatar-prefab-editor__preview { flex-grow: 1; flex-basis: 0; min-width: 320px; margin-right: 8px; }
 .ee4v-avatar-prefab-editor__sidebar { width: 380px; min-width: 300px; flex-shrink: 0; min-height: 0; }
 .ee4v-avatar-prefab-editor__controls { flex-grow: 1; min-height: 0; }
-.ee4v-avatar-prefab-editor__row { flex-direction: row; align-items: center; margin-bottom: 4px; }
-.ee4v-avatar-prefab-editor__row > .ee4v-ui-standard-input { flex-grow: 1; }

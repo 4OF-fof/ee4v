@@ -8,8 +8,7 @@
   "workflow": {
     "standalone": {
       "shapePartsTitle": "Shape and Parts",
-      "materialsTitle": "Materials",
-      "compositionTitle": "Prefab Composition"
+      "materialsTitle": "Materials"
     },
     "windowTitle": "ee4v",
     "category": {

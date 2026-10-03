@@ -77,7 +77,6 @@
     "readOnly": "This Prefab is read-only. Select a writable Prefab to edit.",
     "shapePartsTitle": "Shape and Parts",
     "materialsTitle": "Materials",
-    "infoTitle": "Avatar Info",
-    "compositionTitle": "Prefab Composition"
+    "infoTitle": "Avatar Info"
   }
 }

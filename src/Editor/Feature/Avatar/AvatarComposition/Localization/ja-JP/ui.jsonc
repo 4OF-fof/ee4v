@@ -1,8 +1,0 @@
-{
-  "composition": {
-    "addPrefab": "追加するPrefab",
-    "add": "追加",
-    "remove": "削除",
-    "invalidAddition": "別のPrefabを指定してください。循環するPrefab参照は追加できません。"
-  }
-}

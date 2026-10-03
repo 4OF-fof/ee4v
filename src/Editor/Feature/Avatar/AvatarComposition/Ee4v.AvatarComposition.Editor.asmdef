@@ -1,7 +1,0 @@
-{
-  "name": "Ee4v.AvatarComposition.Editor",
-  "rootNamespace": "Ee4v.AvatarComposition",
-  "references": ["Ee4v.Core.Presentation.Editor", "Ee4v.UI.Editor", "Ee4v.AvatarEditing.Editor"],
-  "includePlatforms": ["Editor"],
-  "autoReferenced": true
-}

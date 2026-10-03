@@ -37,7 +37,7 @@ AssetManager は Item、File、Import Target、依存関係、Tag、Collection�
 
 編集用と実行用の外枠には`PreviewPane`を、編集用の描画面には`ScenePreviewViewport`を使用します。`PrefabScenePreview`は本体、`Rendering`、`Selection`、`Camera`のpartialに分けます。共通部品のスタイルは`UiComposition.Prepare`で読み込みます。統合配置は`asset-modification-workflow.uss`と`UI/Components/Workflow`、パーツ・体型とMaterialのスタイルは各Feature、共有編集スタイルは`Feature/Shared/AvatarEditing`、詳細は`AvatarInfo/UI`が所有します。実行確認のスタイルは`Simulation/avatar-execution.uss`に置きます。
 
-統合ホストのpartialは`Workspace`（配置、カテゴリと版保存）、`Selection`（Variant選択・作成）、`Composition`（構成Prefabと共通グループ操作）、`EditingSession`（作業Sceneと共通選択）、`MaterialAssets`（Materialの編集保護・Variant作成と機能呼び出し）に分けます。機能間の更新はホストが調整し、体型・パーツとMaterialの編集実装をホストのpartialへ置きません。単独のShape and Parts、Materials、Prefab Compositionは各FeatureのWindowが共有の`AvatarPrefabEditorWindow`でHierarchy上のPrefabインスタンスを直接編集し、元Prefabへ保存します。AssetManagerのDBや統合ホストへ依存せず、PartsとMaterialsの編集コンポーネントを統合版と共有します。
+統合ホストのpartialは`Workspace`（配置、カテゴリと版保存）、`Selection`（Variant選択・作成）、`Composition`（構成Prefabと共通グループ操作）、`EditingSession`（作業Sceneと共通選択）、`MaterialAssets`（Materialの編集保護・Variant作成と機能呼び出し）に分けます。機能間の更新はホストが調整し、体型・パーツとMaterialの編集実装をホストのpartialへ置きません。単独のShape and PartsとMaterialsは各FeatureのWindowが共有の`AvatarPrefabEditorWindow`でHierarchy上のPrefabインスタンスを直接編集し、元Prefabへ保存します。AssetManagerのDBや統合ホストへ依存せず、PartsとMaterialsの編集コンポーネントを統合版と共有します。
 
 Storyは実部品を使用し、編集・保存やPlay Modeの切り替えを行いません。共通部品のStoryと表示サイズは`UI/Catalog/Stories/EditorTools`と`UI/Catalog/editor-tools-story.uss`に置きます。サムネイルは320×220px、3Dプレビューは高さ440pxで表示します。3Dプレビューは独立したPreview Sceneでサンプル全体が収まるCameraを使用し、終了時に複製、サンプルとSceneを破棄します。Prefab選択とサムネイルはProjectのPrefabを読み取り専用で使用します。
 
@@ -123,15 +123,15 @@ Variant詳細の「この版を復元」は、有効時に琥珀色の文字・�
 
 ### 改変機能の単独版
 
-`AssetModificationWorkflowView`が派生Asset選択・作成、Prefab構成、Preview、保存、体型／パーツ、Material編集を所有し、Windowは表示モードとlayout復元だけを所有します。次の単独Windowは統合Windowを開かずに派生Assetを選択・作成して編集できます。
+各Featureの単独Windowは共有の`AvatarPrefabEditorWindow`でHierarchy上のPrefabインスタンスを入力し、統合WindowやAssetManagerの選択に依存せず使用できます。パーツとMaterialの割り当ては元Prefabへ保存し、AvatarInfoは情報だけを表示します。Scene保存とGitの版保存は行いません。Prefabの追加・削除を含む統合版の構成操作は`AssetModificationWorkflowView`が所有します。
 
 | Menu | 範囲 |
 | --- | --- |
 | `ee4v/Window/Avatar/Shape and Parts` | 身長、骨格scale、BlendShape、パーツ表示 |
 | `ee4v/Window/Avatar/Materials` | 部位ごとのMaterial一覧、Preview visibility、Material Variant作成とShader GUI |
-| `ee4v/Window/Avatar/Prefab Composition` | 派生Asset選択／作成、nested Prefab追加・削除、構成Preview |
+| `ee4v/Window/Avatar/Avatar Info` | Preview、装着警告、NDMFビルド後のPC／Quest性能結果 |
 
-表情には既存の単独Windowを使用します。単独版も派生Prefab／Materialへ保存する同じ規則を共有します。AssetManagerの管理ペインはee4vウィンドウの選択画面と単独Libraryに置きます。
+表情には既存の単独Windowを使用します。単独PartsとMaterialsは入力インスタンスの元Prefab／Materialへ保存します。AssetManagerの管理ペインはee4vウィンドウの選択画面と単独Libraryに置きます。
 
 ### Information Window
 

@@ -8,8 +8,7 @@
   "workflow": {
     "standalone": {
       "shapePartsTitle": "体型・パーツ",
-      "materialsTitle": "マテリアル",
-      "compositionTitle": "Prefab構成"
+      "materialsTitle": "マテリアル"
     },
     "windowTitle": "ee4v",
     "category": {
