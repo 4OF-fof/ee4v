@@ -19,6 +19,8 @@ namespace Ee4v.AssetManager.Infrastructure
         private readonly string _projectRoot;
         private readonly Dictionary<string, (long Length, long ModifiedAt, string Hash)> _fileHashes =
             new Dictionary<string, (long, long, string)>(StringComparer.Ordinal);
+        private readonly Dictionary<string, (Hash128 Hash, (string Path, string Guid)[] Paths)> _directDependencies =
+            new Dictionary<string, (Hash128, (string, string)[])>(StringComparer.Ordinal);
 
         internal UnityAssetVariantWorkspace(IAssetManager manager, GitAssetVariantRepository repository)
         {
@@ -206,7 +208,10 @@ namespace Ee4v.AssetManager.Infrastructure
                 throw new InvalidOperationException("The Variant's source Prefab is missing.");
             }
             var rootFolder = Path.GetDirectoryName(request.RootAssetPath).Replace('\\', '/');
-            var paths = AssetDatabase.GetDependencies(request.RootAssetPath, true)
+            var dependenciesOfRoot = saveVersion
+                ? AssetDatabase.GetDependencies(request.RootAssetPath, true)
+                : GetCachedDependencies(request.RootAssetPath);
+            var paths = dependenciesOfRoot
                 .Append(sourcePath)
                 .Concat(AssetDatabase.FindAssets(string.Empty, new[] { rootFolder })
                     .Select(AssetDatabase.GUIDToAssetPath))
@@ -306,6 +311,35 @@ namespace Ee4v.AssetManager.Infrastructure
             }
         }
 
+        private string[] GetCachedDependencies(string rootAssetPath)
+        {
+            var visited = new HashSet<string>(StringComparer.Ordinal);
+            var pending = new Stack<string>();
+            pending.Push(rootAssetPath);
+            while (pending.Count > 0)
+            {
+                var path = pending.Pop();
+                if (!visited.Add(path)) { continue; }
+                var hash = AssetDatabase.GetAssetDependencyHash(path);
+                var dirty = AssetDatabase.IsMainAssetAtPathLoaded(path) &&
+                    EditorUtility.IsDirty(AssetDatabase.LoadMainAssetAtPath(path));
+                if (!_directDependencies.TryGetValue(path, out var cached) ||
+                    cached.Hash != hash || dirty)
+                {
+                    cached = (hash, AssetDatabase.GetDependencies(path, false)
+                        .Select(dependency => (dependency, AssetDatabase.AssetPathToGUID(dependency))).ToArray());
+                    _directDependencies[path] = cached;
+                }
+                foreach (var dependency in cached.Paths)
+                {
+                    var currentPath = string.IsNullOrEmpty(dependency.Guid)
+                        ? dependency.Path : AssetDatabase.GUIDToAssetPath(dependency.Guid);
+                    if (!string.IsNullOrEmpty(currentPath)) { pending.Push(currentPath); }
+                }
+            }
+            return visited.ToArray();
+        }
+
         private AssetVariantOwnedAsset ReadOwnedAsset(string path, string staging)
         {
             var source = ProjectAssetPath(path);
@@ -353,13 +387,6 @@ namespace Ee4v.AssetManager.Infrastructure
 
         public void ValidateRestore(AssetVariantSnapshot snapshot, string rootAssetPath)
         {
-            if (snapshot.UnityVersion != UnityEngine.Application.unityVersion ||
-                snapshot.PackagesManifest != ReadProjectFile("Packages/manifest.json") ||
-                snapshot.PackagesLock != ReadProjectFile("Packages/packages-lock.json"))
-            {
-                throw new InvalidOperationException(
-                    "The saved Variant requires the same Unity version and package configuration.");
-            }
             var imported = new HashSet<string>(_manager.GetImportedAssetAssociations()
                 .Select(association => association.AssetGuid), StringComparer.Ordinal);
             var restorePath = RestorePaths(snapshot, rootAssetPath);
@@ -409,6 +436,20 @@ namespace Ee4v.AssetManager.Infrastructure
                 {
                     throw new InvalidDataException("The saved Asset does not match its manifest: " + asset.Path);
                 }
+            }
+            if (snapshot.UnityVersion != UnityEngine.Application.unityVersion)
+            {
+                Debug.LogWarning(
+                    "The saved Variant uses Unity " + snapshot.UnityVersion + ". " +
+                    "Restoring assets using the current Unity " + UnityEngine.Application.unityVersion + ".");
+            }
+            if (snapshot.PackagesManifest != ReadProjectFile("Packages/manifest.json") ||
+                snapshot.PackagesLock != ReadProjectFile("Packages/packages-lock.json"))
+            {
+                Debug.LogWarning(
+                    "The saved Variant has a different package configuration. " +
+                    "Restoring assets using the current project packages; " +
+                    "Packages/manifest.json and Packages/packages-lock.json will not be changed.");
             }
             var restorePath = RestorePaths(snapshot, rootAssetPath);
             var writes = snapshot.Assets.SelectMany(asset => asset.IsFolder

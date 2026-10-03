@@ -96,11 +96,15 @@ namespace Ee4v.AssetManager.UI
 
         private bool _variantHasDiscardableChanges;
 
+        private bool _variantHasPrefabOverrides;
+
         private string _variantSaveStatusError;
 
         private double _variantSaveStatusDueAt;
 
         private bool _savingVariant;
+
+        private bool _discardingVariant;
 
         private DerivedAssetInfo _workingAsset;
 
@@ -275,6 +279,7 @@ namespace Ee4v.AssetManager.UI
             AvatarPlayModePerformanceCache.Changed += OnPlayModePerformanceChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorSceneManager.sceneClosed += OnWorkingSceneClosed;
+            EditorSceneManager.sceneSaved += OnWorkingSceneSaved;
             _settings = CoreSettings.Current;
             _settings.Changed += OnSettingChanged;
         }
@@ -303,6 +308,7 @@ namespace Ee4v.AssetManager.UI
             AvatarPlayModePerformanceCache.Changed -= OnPlayModePerformanceChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorSceneManager.sceneClosed -= OnWorkingSceneClosed;
+            EditorSceneManager.sceneSaved -= OnWorkingSceneSaved;
             _settings.Changed -= OnSettingChanged;
             ReleaseVariantStatusManager();
             DisposeEditors();
@@ -383,6 +389,14 @@ namespace Ee4v.AssetManager.UI
             if (!_disposed && this.panel != null)
             {
                 this.schedule.Execute(BuildWindow);
+            }
+        }
+
+        private void OnWorkingSceneSaved(Scene scene)
+        {
+            if (_workingSceneSession != null && _workingSceneSession.Scene == scene)
+            {
+                InvalidateVariantSaveStatus();
             }
         }
 

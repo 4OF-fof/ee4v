@@ -27,7 +27,8 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildStatusOverlayStory(parent),
                     new[]
                     {
-                        "Editor/Core/Presentation/Background/BackgroundStatusOverlayHost.cs"
+                        "Editor/Core/Presentation/Background/BackgroundStatusOverlayHost.cs",
+                        "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs"
                     }));
             }
         }

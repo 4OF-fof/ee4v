@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
+using Ee4v.Core.Preview;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -16,7 +17,6 @@ namespace Ee4v.UI
         private sealed class MaterialPreviewTarget
         {
             internal Renderer Renderer { get; set; }
-            internal Mesh Mesh { get; set; }
             internal int SubMeshIndex { get; set; }
             internal Material Material { get; set; }
         }
@@ -44,8 +44,6 @@ namespace Ee4v.UI
         private const float CameraTransitionDuration = 0.45f;
         private const float MinimumPreviewSize = 320f;
         private const float MaximumPreviewSize = 560f;
-        private const string ShapeChangerTypeName =
-            "nadena.dev.modular_avatar.core.ModularAvatarShapeChanger";
 
         private readonly ScenePreviewViewport _viewport;
         private readonly PreviewOrbitController _orbit;
@@ -56,7 +54,6 @@ namespace Ee4v.UI
         private readonly UiTextElement _selectionLabel;
         private readonly UiButton _selectionHighlightButton;
         private Material _outlineMaterial;
-        private Material _invisiblePreviewMaterial;
         private readonly List<Material> _pickMaterialsById =
             new List<Material>();
         private Texture2D _pickReadback;
@@ -70,25 +67,10 @@ namespace Ee4v.UI
         private readonly Dictionary<BlendShapePreviewTarget, float>
             _pendingBlendShapeWeights =
                 new Dictionary<BlendShapePreviewTarget, float>();
-        private readonly List<MaterialPreviewTarget> _materialTargets =
-            new List<MaterialPreviewTarget>();
         private readonly Dictionary<string, Transform> _transformTargets =
             new Dictionary<string, Transform>(StringComparer.Ordinal);
-        private readonly Dictionary<string,
-            Dictionary<string, BlendShapePreviewTarget>>
-            _blendShapeTargets =
-                new Dictionary<string,
-                    Dictionary<string, BlendShapePreviewTarget>>(
-                        StringComparer.Ordinal);
-        private readonly List<Renderer> _filteredRenderers =
-            new List<Renderer>();
-        private readonly Dictionary<SkinnedMeshRenderer, Mesh>
-            _bakedMeshes =
-                new Dictionary<SkinnedMeshRenderer, Mesh>();
-        private readonly List<Renderer> _temporarilyHiddenRenderers =
-            new List<Renderer>();
-        private readonly List<Renderer> _temporarilyScopedRenderers =
-            new List<Renderer>();
+        private readonly Dictionary<string, Dictionary<string, BlendShapePreviewTarget>> _blendShapeTargets =
+            new Dictionary<string, Dictionary<string, BlendShapePreviewTarget>>(StringComparer.Ordinal);
         private readonly HashSet<int> _prefabSiblingIndices =
             new HashSet<int>();
         private readonly HashSet<int> _hiddenPrefabSiblingIndices =
@@ -100,20 +82,16 @@ namespace Ee4v.UI
         private readonly HashSet<Transform> _temporarilyEnabledEditorOnlyParts =
             new HashSet<Transform>();
         private bool _basePrefabHidden;
-        private PreviewRenderUtility _utility;
+        private AvatarPreviewRenderer _utility;
         private GameObject _prefab;
         private GameObject _instance;
         private Texture _previewTexture;
         private Vector2 _previewTextureSize;
         private Renderer[] _renderers = Array.Empty<Renderer>();
-        private SkinnedMeshRenderer[] _skinnedRenderers =
-            Array.Empty<SkinnedMeshRenderer>();
         private readonly HashSet<Material> _hiddenMaterials =
             new HashSet<Material>();
         private Bounds _bounds;
         private bool _pendingBoundsRefresh;
-        private bool _bakedMeshesDirty;
-        private bool _forceSkinningRecalculation;
         private bool _previewDirty = true;
         private bool _cameraAnimationSubscribed;
         private bool _flexibleLayout;
@@ -203,6 +181,10 @@ namespace Ee4v.UI
                 CleanupPreview();
             });
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            schedule.Execute(() =>
+            {
+                if (_utility != null && _instance != null) RequestPreviewRepaint();
+            }).Every(33);
         }
 
         public void SetPrefab(GameObject prefab)
@@ -337,10 +319,9 @@ namespace Ee4v.UI
             {
                 _prefabSiblingIndices.UnionWith(prefabSiblingIndices);
             }
-            if (_instance != null)
-            {
-                RebuildPreview();
-            }
+            RefreshBounds();
+            ApplyRequestedSelection();
+            RequestPreviewRepaint();
         }
 
         public void SetHiddenPrefabs(
@@ -501,7 +482,7 @@ namespace Ee4v.UI
                 return;
             }
 
-            current.gameObject.SetActive(activeSelf);
+            _utility.SetPartActive(current.gameObject, activeSelf);
             var hiddenRenderersChanged = included &&
                 string.Equals(current.tag, "EditorOnly",
                     StringComparison.Ordinal)
@@ -511,12 +492,6 @@ namespace Ee4v.UI
             {
                 RebuildHiddenPartRenderers();
             }
-            if (activeSelf)
-            {
-                _forceSkinningRecalculation = true;
-                SetSkinningRecalculation(true);
-            }
-            _bakedMeshesDirty = true;
             _pendingBoundsRefresh = true;
             RequestPreviewRepaint();
         }
@@ -709,7 +684,6 @@ namespace Ee4v.UI
             _hiddenMaterials.Clear();
             _hiddenMaterials.UnionWith(next);
             RefreshSelectionAfterVisibilityChange();
-            RebuildMaterialTargets();
             RequestPreviewRepaint();
         }
 
@@ -733,6 +707,20 @@ namespace Ee4v.UI
 
         private void RebuildPreview(bool preserveView = false)
         {
+            if (preserveView && _utility != null && _instance != null && _instance == _prefab)
+            {
+                _utility.ClearOverrides();
+                _utility.RefreshHierarchy();
+                _pendingTransformScales.Clear();
+                _pendingBlendShapeWeights.Clear();
+                _renderers = _instance.GetComponentsInChildren<Renderer>(true);
+                RebuildPreviewTargets();
+                RebuildHiddenPartRenderers();
+                RefreshBounds();
+                ApplyRequestedSelection();
+                RequestPreviewRepaint();
+                return;
+            }
             CleanupPreview();
             if (_prefab == null || panel == null)
             {
@@ -741,61 +729,14 @@ namespace Ee4v.UI
 
             try
             {
-                _utility = new PreviewRenderUtility();
-                if (EditorApplication.isPlaying)
-                {
-                    var staging = new GameObject("Derived Asset Preview Staging");
-                    staging.SetActive(false);
-                    _utility.AddSingleGO(staging);
-                    _instance = UnityEngine.Object.Instantiate(_prefab, staging.transform, false);
-                    foreach (var behaviour in _instance.GetComponentsInChildren<MonoBehaviour>(true))
-                    {
-                        if (behaviour != null) { UnityEngine.Object.DestroyImmediate(behaviour); }
-                    }
-                    foreach (var animator in _instance.GetComponentsInChildren<Animator>(true))
-                    {
-                        animator.enabled = false;
-                    }
-                    _instance.transform.SetParent(null, false);
-                    UnityEngine.Object.DestroyImmediate(staging);
-                }
-                else
-                {
-                    _instance = UnityEngine.Object.Instantiate(_prefab);
-                }
-                _instance.name =
-                    _prefab.name + " (Derived Asset Preview)";
-                _instance.SetActive(true);
-                foreach (var index in _prefabSiblingIndices)
-                {
-                    if (index >= 0 && index < _instance.transform.childCount)
-                    {
-                        _instance.transform.GetChild(index).gameObject
-                            .SetActive(true);
-                    }
-                }
-                EditorSceneApi.HidePreviewHierarchy(_instance.transform);
-                ApplyInitialShapeChanges();
-                _renderers = _instance
-                    .GetComponentsInChildren<Renderer>(true);
+                _utility = new AvatarPreviewRenderer(_prefab);
+                _instance = _utility.Root;
+                _utility.IsVisible = renderer => IsInScope(renderer) && !_hiddenPartRenderers.Contains(renderer);
+                _utility.IsMaterialVisible = material => !_hiddenMaterials.Contains(material);
+                _renderers = _instance.GetComponentsInChildren<Renderer>(true);
                 RebuildHiddenPartRenderers();
-                _skinnedRenderers = _renderers
-                    .OfType<SkinnedMeshRenderer>()
-                    .ToArray();
-                _forceSkinningRecalculation = true;
-                SetSkinningRecalculation(true);
                 RebuildPreviewTargets();
-
-                _utility.cameraFieldOfView = 30f;
-                _utility.camera.clearFlags = CameraClearFlags.Color;
-                _utility.camera.backgroundColor = Color.clear;
-                _utility.lights[0].intensity = 1.1f;
-                _utility.lights[0].transform.rotation =
-                    Quaternion.Euler(35f, 35f, 0f);
-                _utility.lights[1].intensity = 0.7f;
-                _utility.AddSingleGO(_instance);
                 RefreshBounds();
-                RebuildMaterialTargets();
                 ApplyRequestedSelection();
                 SetPreviewAvailable(true);
                 if (!preserveView)

@@ -133,7 +133,7 @@ namespace Ee4v.UI
                 return false;
             }
 
-            var camera = _utility.camera;
+            var camera = _utility.Camera;
             var width = Mathf.Max(2, Mathf.CeilToInt(rect.width));
             var height = Mathf.Max(2, Mathf.CeilToInt(rect.height));
             var texture = RenderTexture.GetTemporary(
@@ -173,7 +173,7 @@ namespace Ee4v.UI
                         SubMeshIndex = slot
                     });
                     command.DrawRenderer(
-                        renderer, GetPickMaterial(shader, id), slot,
+                        _utility.ResolveRenderer(renderer), GetPickMaterial(shader, id), slot,
                         pickPass);
                 });
                 if (targets.Count == 1)
@@ -276,133 +276,28 @@ namespace Ee4v.UI
             IReadOnlyCollection<Renderer> omittedRenderers = null,
             Material omittedMaterial = null)
         {
-            if (_invisiblePreviewMaterial == null)
-            {
-                var shader = Shader.Find("Hidden/Internal-Colored");
-                _invisiblePreviewMaterial = new Material(shader)
-                {
-                    hideFlags = HideFlags.HideAndDontSave
-                };
-                _invisiblePreviewMaterial.SetColor("_Color", Color.clear);
-                _invisiblePreviewMaterial.SetInt("_SrcBlend",
-                    (int)BlendMode.Zero);
-                _invisiblePreviewMaterial.SetInt("_DstBlend",
-                    (int)BlendMode.One);
-                _invisiblePreviewMaterial.SetInt("_ZWrite", 0);
-                _invisiblePreviewMaterial.SetInt("_ZTest",
-                    (int)CompareFunction.Always);
-                _invisiblePreviewMaterial.SetInt("_ColorMask", 0);
-            }
-
-            var camera = _utility.camera;
-            var previousTarget = camera.targetTexture;
-            var previousActive = RenderTexture.active;
             var previewTexture = _previewTexture as RenderTexture;
-            RenderTexture savedPreview = null;
-            var originalMaterials =
-                new List<KeyValuePair<Renderer, Material[]>>();
-            var disabledForOutline = new List<Renderer>();
-            var rendererWasEnabled = omittedRenderer != null &&
-                omittedRenderer.enabled;
-            var previewStarted = false;
+            RenderTexture saved = null;
             if (previewTexture != null)
             {
-                savedPreview = RenderTexture.GetTemporary(
-                    previewTexture.width, previewTexture.height, 0,
-                    RenderTextureFormat.ARGBHalf,
-                    RenderTextureReadWrite.Linear);
-                Graphics.Blit(previewTexture, savedPreview);
+                saved = RenderTexture.GetTemporary(previewTexture.descriptor);
+                Graphics.Blit(previewTexture, saved);
             }
-            HideOutOfScopeRenderers();
             try
             {
-                foreach (var renderer in _renderers)
-                {
-                    if (renderer == null || !renderer.enabled)
-                    {
-                        continue;
-                    }
-                    var materials = renderer.sharedMaterials;
-                    var changed = false;
-                    for (var slot = 0; slot < materials.Length; slot++)
-                    {
-                        if ((renderer == omittedRenderer &&
-                             slot == omittedSlot) ||
-                            (omittedMaterial != null &&
-                             materials[slot] == omittedMaterial) ||
-                            _hiddenMaterials.Contains(materials[slot]))
-                        {
-                            if (!changed)
-                            {
-                                originalMaterials.Add(
-                                    new KeyValuePair<Renderer, Material[]>(
-                                        renderer, materials));
-                                materials = (Material[])materials.Clone();
-                                changed = true;
-                            }
-                            materials[slot] = _invisiblePreviewMaterial;
-                        }
-                    }
-                    if (changed)
-                    {
-                        renderer.sharedMaterials = materials;
-                    }
-                }
-                if (omittedRenderer != null && omittedSlot < 0)
-                {
-                    omittedRenderer.enabled = false;
-                }
-                if (omittedRenderers != null)
-                {
-                    foreach (var renderer in omittedRenderers)
-                    {
-                        if (renderer != null && renderer.enabled)
-                        {
-                            renderer.enabled = false;
-                            disabledForOutline.Add(renderer);
-                        }
-                    }
-                }
-                _utility.BeginPreview(
-                    new Rect(0f, 0f, target.width, target.height),
-                    GUIStyle.none);
-                previewStarted = true;
-                camera.Render();
-                var rendered = _utility.EndPreview();
-                previewStarted = false;
-                Graphics.Blit(rendered, target);
+                var texture = _utility.Render(new Rect(0f, 0f, target.width, target.height),
+                    (renderer, material, slot) =>
+                        !(renderer == omittedRenderer && (omittedSlot < 0 || slot == omittedSlot)) &&
+                        (omittedRenderers == null || !omittedRenderers.Contains(renderer)) &&
+                        (omittedMaterial == null || material != omittedMaterial));
+                Graphics.Blit(texture, target);
             }
             finally
             {
-                if (previewStarted)
+                if (saved != null)
                 {
-                    _utility.EndPreview();
-                }
-                camera.targetTexture = previousTarget;
-                RenderTexture.active = previousActive;
-                if (omittedRenderer != null)
-                {
-                    omittedRenderer.enabled = rendererWasEnabled;
-                }
-                foreach (var renderer in disabledForOutline)
-                {
-                    if (renderer != null)
-                    {
-                        renderer.enabled = true;
-                    }
-                }
-                foreach (var pair in originalMaterials)
-                {
-                    if (pair.Key != null)
-                    {
-                        pair.Key.sharedMaterials = pair.Value;
-                    }
-                }
-                RestoreOutOfScopeRenderers();
-                if (savedPreview != null)
-                {
-                    Graphics.Blit(savedPreview, previewTexture);
-                    RenderTexture.ReleaseTemporary(savedPreview);
+                    Graphics.Blit(saved, previewTexture);
+                    RenderTexture.ReleaseTemporary(saved);
                 }
             }
         }
@@ -414,8 +309,7 @@ namespace Ee4v.UI
                 (_outlinedMaterial != null &&
                  _hiddenMaterials.Contains(_outlinedMaterial)) ||
                 !_outlinedRenderers.Any(renderer =>
-                    renderer != null && renderer.enabled &&
-                    renderer.gameObject.activeInHierarchy &&
+                    renderer != null && _utility.IsRendererVisible(renderer) &&
                     IsInScope(renderer) &&
                     !_hiddenPartRenderers.Contains(renderer)))
             {
@@ -524,19 +418,20 @@ namespace Ee4v.UI
         {
             foreach (var renderer in _renderers)
             {
-                if (renderer == null || !renderer.enabled ||
-                    !renderer.gameObject.activeInHierarchy ||
+                if (renderer == null || !_utility.IsRendererVisible(renderer) ||
                     !IsInScope(renderer) ||
                     _hiddenPartRenderers.Contains(renderer))
                 {
                     continue;
                 }
                 Mesh mesh = null;
-                if (renderer is SkinnedMeshRenderer skinned)
+                var resolved = _utility.ResolveRenderer(renderer);
+                if (!resolved.enabled) continue;
+                if (resolved is SkinnedMeshRenderer skinned)
                 {
                     mesh = skinned.sharedMesh;
                 }
-                else if (renderer is MeshRenderer meshRenderer)
+                else if (resolved is MeshRenderer meshRenderer)
                 {
                     var filter = meshRenderer.GetComponent<MeshFilter>();
                     mesh = filter == null ? null : filter.sharedMesh;
@@ -597,8 +492,7 @@ namespace Ee4v.UI
                 return;
             }
             if (_pickedRenderer != null &&
-                (!_pickedRenderer.enabled ||
-                 !_pickedRenderer.gameObject.activeInHierarchy ||
+                (!_utility.IsRendererVisible(_pickedRenderer) ||
                  !IsInScope(_pickedRenderer) ||
                  _hiddenPartRenderers.Contains(_pickedRenderer) ||
                  _pickedMaterial != null &&

@@ -12,7 +12,7 @@ backend は公開状態型を直接生成します。公開 API と backend の�
 
 `HasContentOverrides(instance)`はPrefabインスタンスの追加・削除と、元Prefabの現在値と異なるserialized propertyを判定します。Sceneのdirtyフラグや、値を元に戻したまま残るoverrideだけでは変更扱いにしません。配置に使うUnityのdefault overrideは除外します。AssetManagerの保存・変更を戻すボタンが使用します。
 
-`SerializedValuesEqual(current, saved, include)`は表示用hideFlagsを除いたserialized値を比較します。任意のproperty filterを指定でき、インスタンス内の参照は対応するPrefab側の参照へ揃えて比較します。Materials Windowが編集したMaterialの復元前に使用します。serialized propertyの操作は`PrefabEditingChangesBackend`へ隔離し、どちらのAPIも比較対象を保存・変更しません。
+`SerializedValuesEqual(current, saved, include)`は表示用hideFlagsを除いたserialized値を比較します。任意のproperty filterを指定でき、インスタンス内の参照は対応するPrefab側の参照へ揃えて比較します。serialized propertyの操作は`PrefabEditingChangesBackend`へ隔離し、どちらのAPIも比較対象を保存・変更しません。
 
 ## `ProjectBrowserApi`
 
@@ -126,10 +126,13 @@ instance ID が `0`、内部 API が非対応、対象項目がない場合は `
 
 | メンバー | 戻り値・動作 | 副作用 |
 |---|---|---|
+| `TryCreateEmptySceneAsset(scenePath)` | 新しい空のScene Assetを生成できれば`true` | 指定の`Assets/`内pathへSceneを作成し、同期Importする。開いているSceneは変更しない |
 | `TryClearDirtiness(scene)` | シーンの dirty 状態を解除できれば `true` | シーンの保存要求を解除する |
 | `HidePreviewHierarchy(root)` | Preview用の複製階層を再帰的に非表示・非保存へ設定する | rootと全子GameObjectの`hideFlags`を`HideAndDontSave`へ変更する |
 
-無効なシーン、Unity内部APIが非対応、reflectionが失敗した場合は`false`です。シーン内容は変更しません。
+`TryCreateEmptySceneAsset`は既存ファイルへ上書きしません。pathは`Assets/`内の`.unity`とし、親folderが存在する必要があります。無名Sceneを開いている状態でも、別のScene Assetを生成できます。Unityの内部`CreateSceneAsset`への接続はbackendに隔離し、内部APIが非対応または生成・Importに失敗した場合は`false`です。
+
+`TryClearDirtiness`は無効なシーン、Unity内部APIが非対応、reflectionが失敗した場合に`false`を返します。シーン内容は変更しません。
 
 ## `EditorTextFieldApi`
 

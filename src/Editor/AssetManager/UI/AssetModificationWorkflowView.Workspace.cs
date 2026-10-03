@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -39,6 +40,18 @@ namespace Ee4v.AssetManager.UI
             root.Clear();
             AssetManagerWindowSession.PrepareWorkflowRoot(root);
             root.AddToClassList("ee4v-modification-workflow");
+
+            if (_discardingVariant)
+            {
+                DisposePreview();
+                var processing = new VisualElement();
+                processing.AddToClassList("ee4v-modification-workflow__processing");
+                processing.Add(new StatusOverlay(new StatusOverlayState(
+                    true, I18N.Get("variant.discarding"))));
+                root.Add(processing);
+                RequestRepaint();
+                return;
+            }
 
             if (_avatarContext.Root == null ||
                 string.IsNullOrEmpty(GetWorkingAssetPath()))
@@ -302,12 +315,17 @@ namespace Ee4v.AssetManager.UI
                 }
 
                 _savingVariant = true;
+                _discardingVariant = true;
                 rebuild = true;
                 _parts.ClearPendingPartVisibility();
                 _parts.CancelBodySizeChange();
                 _parts.BodyScaleDirty = false;
                 _parts.ClearPendingBodySizeChange();
                 BuildWindow();
+
+                // Let the processing view paint before closing the working Scene.
+                await Task.Yield();
+                if (_disposed) { return; }
 
                 var scene = _avatarContext.Root.scene;
                 ReleaseWorkingScene(true);
@@ -347,14 +365,26 @@ namespace Ee4v.AssetManager.UI
                         assetPath);
                     if (prefab != null && _workingAsset != null)
                     {
-                        _avatarContext.PrefabAsset = prefab;
-                        _avatarContext.Root = AcquireWorkingScene(prefab);
-                        _workingAsset.Prefab = prefab;
+                        try
+                        {
+                            var root = AcquireWorkingScene(prefab);
+                            _avatarContext.PrefabAsset = prefab;
+                            _avatarContext.Root = root;
+                            _workingAsset.Prefab = prefab;
+                        }
+                        catch (Exception recoveryException)
+                        {
+                            Debug.LogException(recoveryException);
+                            ReleaseWorkingScene();
+                            _avatarContext.AssetFeedback = exception.Message +
+                                Environment.NewLine + recoveryException.Message;
+                        }
                     }
                 }
             }
             finally
             {
+                _discardingVariant = false;
                 _savingVariant = false;
                 if (!_disposed && rebuild)
                 {
@@ -372,11 +402,12 @@ namespace Ee4v.AssetManager.UI
                 SetVariantSaveButtonEnabled(save, false);
                 return;
             }
-            var pending = PrefabEditingChanges.HasContentOverrides(_avatarContext.Root) ||
+            _variantHasPrefabOverrides = PrefabEditingChanges.HasContentOverrides(_avatarContext.Root);
+            var pending = _variantHasPrefabOverrides ||
                 _parts.HasPendingPartVisibility || _parts.HasPendingBodySizeChange;
-            // Always compare Project contents with the Git revision. A standalone
-            // Prefab save does not create a revision or clear this difference.
-            if (!_variantSaveStatusDirty || EditorApplication.timeSinceStartup >= _variantSaveStatusDueAt)
+            // Keep the Git comparison until a change notification invalidates it.
+            // A standalone Prefab save still requires a new Variant revision.
+            if (_variantSaveStatusDirty && EditorApplication.timeSinceStartup >= _variantSaveStatusDueAt)
             {
                 try
                 {
@@ -431,7 +462,7 @@ namespace Ee4v.AssetManager.UI
                     _manager);
                 var revisionId = variants?.GetCurrentRevisionId(
                     _workingAsset.VariantId);
-                var pending = PrefabEditingChanges.HasContentOverrides(_avatarContext.Root) ||
+                var pending = _variantHasPrefabOverrides ||
                     _parts.HasPendingPartVisibility || _parts.HasPendingBodySizeChange;
                 discard.SetEnabled(!string.IsNullOrEmpty(revisionId) &&
                                    (pending || _variantHasDiscardableChanges));

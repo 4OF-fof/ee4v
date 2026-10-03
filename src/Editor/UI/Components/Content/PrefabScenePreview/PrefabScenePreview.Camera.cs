@@ -162,7 +162,7 @@ namespace Ee4v.UI
                 bounds.extents.x / Mathf.Max(0.01f, aspect));
             var distance = bounds.extents.z +
                 Mathf.Max(0.05f, halfViewSize) /
-                Mathf.Tan(_utility.cameraFieldOfView * 0.5f *
+                Mathf.Tan(_utility.FieldOfView * 0.5f *
                           Mathf.Deg2Rad) * PreviewFitPadding *
                 distanceScale;
             if (animate)
@@ -322,7 +322,7 @@ namespace Ee4v.UI
             var bestMax = 0f;
             var bestLeft = 0f;
             var bestRight = 0f;
-            foreach (var renderer in _skinnedRenderers)
+            foreach (var renderer in _renderers.OfType<SkinnedMeshRenderer>())
             {
                 if (renderer == null || !renderer.enabled ||
                     !renderer.gameObject.activeInHierarchy ||

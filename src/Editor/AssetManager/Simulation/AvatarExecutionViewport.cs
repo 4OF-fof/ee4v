@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
 using Ee4v.UI;
+using Ee4v.Core.Preview;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.Simulation
@@ -14,8 +14,7 @@ namespace Ee4v.AssetManager.Simulation
         private readonly Action _repaint;
         private readonly PreviewOrbitController _orbit;
         private readonly IMGUIContainer _canvas;
-        private Camera _camera;
-        private RenderTexture _texture;
+        private AvatarPreviewRenderer _preview;
         private bool _disposed;
 
         internal AvatarExecutionViewport(GameObject avatar, Action repaint)
@@ -27,7 +26,7 @@ namespace Ee4v.AssetManager.Simulation
             _canvas = new IMGUIContainer(Draw);
             _canvas.AddToClassList("ee4v-execution__canvas");
             Add(_canvas);
-            RegisterCallback<DetachFromPanelEvent>(_ => ReleaseCamera());
+            RegisterCallback<DetachFromPanelEvent>(_ => ReleasePreview());
             schedule.Execute(() =>
             {
                 if (!_disposed && EditorApplication.isPlaying) { Repaint(); }
@@ -64,80 +63,31 @@ namespace Ee4v.AssetManager.Simulation
             var rect = _canvas.contentRect;
             if (_disposed || _avatar == null || !EditorApplication.isPlaying ||
                 rect.width < 1 || rect.height < 1) { return; }
-            if (_camera == null)
+            if (_preview == null)
             {
-                var cameraObject = new GameObject("ee4v Execution Camera")
-                {
-                    hideFlags = HideFlags.HideAndDontSave
-                };
-                SceneManager.MoveGameObjectToScene(cameraObject, _avatar.scene);
-                _camera = cameraObject.AddComponent<Camera>();
-                _camera.enabled = false;
-                _camera.scene = _avatar.scene;
-                _camera.clearFlags = CameraClearFlags.SolidColor;
-                _camera.backgroundColor = new Color(0.12f, 0.12f, 0.12f, 1f);
-                _camera.fieldOfView = 30f;
-                AddLight("ee4v Execution Key Light", 1.2f, Quaternion.Euler(25f, -30f, 0f));
-                AddLight("ee4v Execution Fill Light", 0.4f, Quaternion.Euler(-15f, 150f, 0f));
+                _preview = new AvatarPreviewRenderer(_avatar);
+                _preview.Camera.backgroundColor = new Color(0.12f, 0.12f, 0.12f, 1f);
             }
-            _orbit.HandleInput(rect, _camera, _camera.fieldOfView);
-            _orbit.ConfigureCamera(_camera, _avatar.transform.rotation);
+            _orbit.HandleInput(rect, _preview.Camera, _preview.FieldOfView);
+            _orbit.ConfigureCamera(_preview.Camera, _avatar.transform.rotation);
             if (Event.current.type != EventType.Repaint) { return; }
-            var width = Mathf.Clamp(Mathf.CeilToInt(rect.width * EditorGUIUtility.pixelsPerPoint), 1, 2048);
-            var height = Mathf.Clamp(Mathf.CeilToInt(rect.height * EditorGUIUtility.pixelsPerPoint), 1, 2048);
-            if (_texture == null || _texture.width != width || _texture.height != height)
-            {
-                ReleaseTexture();
-                _texture = new RenderTexture(width, height, 24)
-                {
-                    hideFlags = HideFlags.HideAndDontSave,
-                    antiAliasing = 4
-                };
-                _texture.Create();
-            }
-            _camera.targetTexture = _texture;
-            _camera.aspect = (float)width / height;
-            var previous = RenderTexture.active;
-            try
-            {
-                _camera.Render();
-                GUI.DrawTexture(rect, _texture, ScaleMode.StretchToFill, false);
-            }
-            finally { RenderTexture.active = previous; }
+            var maxSize = 2048f / Mathf.Max(1f, EditorGUIUtility.pixelsPerPoint);
+            var scale = Mathf.Min(1f, maxSize / Mathf.Max(rect.width, rect.height));
+            var texture = _preview.Render(new Rect(0f, 0f, rect.width * scale, rect.height * scale));
+            GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, false);
         }
 
-        private void ReleaseTexture()
-        {
-            if (_camera != null) { _camera.targetTexture = null; }
-            if (_texture == null) { return; }
-            _texture.Release();
-            UnityEngine.Object.DestroyImmediate(_texture);
-            _texture = null;
-        }
-
-        private void AddLight(string name, float intensity, Quaternion rotation)
-        {
-            var lightObject = new GameObject(name) { hideFlags = HideFlags.HideAndDontSave };
-            lightObject.transform.SetParent(_camera.transform, false);
-            lightObject.transform.localRotation = rotation;
-            var light = lightObject.AddComponent<Light>();
-            light.type = LightType.Directional;
-            light.intensity = intensity;
-            light.shadows = LightShadows.None;
-        }
-
-        private void ReleaseCamera()
+        private void ReleasePreview()
         {
             _orbit.CancelInteraction();
-            ReleaseTexture();
-            if (_camera != null) { UnityEngine.Object.DestroyImmediate(_camera.gameObject); }
-            _camera = null;
+            _preview?.Dispose();
+            _preview = null;
         }
 
         public void Dispose()
         {
             _disposed = true;
-            ReleaseCamera();
+            ReleasePreview();
         }
     }
 }

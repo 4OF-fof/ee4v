@@ -319,6 +319,7 @@
   "variant": {
     "save": "Save",
     "discardChanges": "Discard changes",
+    "discarding": "Discarding changes and reloading…",
     "discardConfirm": "Return to the previously saved version? Changes made since that save will be lost.",
     "noSavedRevision": "There is no saved version to return to.",
     "saveMessage": "Message (optional)",

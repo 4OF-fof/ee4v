@@ -6,6 +6,11 @@ namespace Ee4v.Core.EditorIntegration
 {
     public static class EditorSceneApi
     {
+        public static bool TryCreateEmptySceneAsset(string scenePath)
+        {
+            return EditorSceneBackend.TryCreateEmptySceneAsset(scenePath);
+        }
+
         public static bool TryClearDirtiness(Scene scene)
         {
             return EditorSceneBackend.TryClearDirtiness(scene);

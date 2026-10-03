@@ -23,6 +23,21 @@
     background-color: var(--ee4v-color-panel);
 }
 
+.ee4v-modification-workflow__processing {
+    min-width: 0;
+    min-height: 0;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    padding: var(--ee4v-space-3xl);
+}
+
+.ee4v-modification-workflow__processing > .ee4v-ui-status-overlay {
+    min-width: 0;
+    max-width: 100%;
+    flex-shrink: 1;
+}
+
 .ee4v-modification-workflow__primary-action.ee4v-ui-button {
     border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-tool-active);

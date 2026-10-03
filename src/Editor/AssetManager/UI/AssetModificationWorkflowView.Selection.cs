@@ -33,6 +33,11 @@ namespace Ee4v.AssetManager.UI
             var page = new VisualElement();
             page.AddToClassList(
                 "ee4v-modification-workflow__selection-page");
+            if (!string.IsNullOrEmpty(_avatarContext.AssetFeedback))
+            {
+                page.Add(UiTextFactory.CreateHelpBox(
+                    _avatarContext.AssetFeedback, HelpBoxMessageType.Error));
+            }
             if (_mode == ModificationEditorMode.All)
             {
                 try
@@ -441,9 +446,24 @@ namespace Ee4v.AssetManager.UI
             ReleaseWorkingScene();
             _parts.ResetEditingState();
             _materials.ResetEditingState();
+            GameObject root;
+            try
+            {
+                root = AcquireWorkingScene(asset.Prefab);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                ReleaseWorkingScene();
+                _workingAsset = null;
+                _avatarContext.AssetFeedback = exception.Message;
+                DerivedAssetChanged?.Invoke(null);
+                BuildWindow();
+                return;
+            }
             _workingAsset = asset;
             _avatarContext.PrefabAsset = asset.Prefab;
-            _avatarContext.Root = AcquireWorkingScene(_avatarContext.PrefabAsset);
+            _avatarContext.Root = root;
             _avatarContext.BasePrefabHidden = false;
             _avatarContext.HiddenPrefabSiblingIndices.Clear();
             _avatarContext.HiddenPreviewParts.Clear();

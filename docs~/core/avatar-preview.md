@@ -1,0 +1,26 @@
+# Avatarのプレビュー描画
+
+`Core/Preview`の`Ee4v.Core.Preview.Editor`は、NDMF 1.14.8以降のPreview APIとCamera描画を共有する基盤です。`AvatarPreviewRenderer`をUIの`PrefabScenePreview`、FaceExpressionとAssetManagerの`AvatarExecutionViewport`が使用します。保存、Undo、Sceneの保存、GestureManagerの生成・操作、Play Modeの開始・停止は扱いません。
+
+## 対象と描画
+
+- 通常SceneのAvatarはそのまま参照し、表示用Avatarを複製しません。
+- Edit Modeでは`PreviewSession.Current.Fork`へ最終段の`IRenderFilter`を登録し、専用Cameraへ接続します。親sessionがまだなければ空のsessionから開始し、親が利用可能になった時点で接続し直します。NDMFの加工結果と元Rendererの対応は公開フィルターAPIの`OnFrame`から取得します。
+- 親sessionのフィルターと表示設定を継承し、NDMF Preview対応のMA・Avatar Optimizerなどの加工結果を表示します。親sessionの差し替え時はforkを更新します。forkは独自のProxy資源を持ち、Scene ViewとProxyを共有する保証はありません。
+- Play ModeではNDMF Previewを接続せず、渡された実際のAvatarを描画します。GestureManager、AnimatorやPhysBoneが変更した姿勢をそのまま表示し、追加のAvatarや実行用コントローラーを生成しません。
+- ProjectのPrefabアセットは、作成フォーム・情報表示・表情のサムネイル用に隔離した表示用コピーを一つ生成します。スクリプトとAnimatorの実行を止め、NDMFのScene用Preview加工は適用しません。`Dispose`で所有するコピーを破棄します。Scene入力は破棄しません。
+- `isolatedSnapshot: true`は同期的なサムネイル・PNG生成用です。Scene入力も表示用コピーへ固定し、NDMFの非同期構築を待たずに指定ポーズを描画できます。通常の編集Previewには使用しません。表情のサムネイル描画では対象変更まで同じスナップショットを再利用します。
+
+CameraはPreview Sceneの描画資源と照明を使用し、NDMFのProxy Sceneも描画対象に含めます。対象外のRendererはCameraの描画中だけ`forceRenderingOff`へ変更します。Materialの非表示と選択比較は該当slotへ描画中だけ透明Materialを割り当てます。描画後・例外時に元のRenderer状態とMaterialを復元し、保存対象に表示設定を残しません。対象外Rendererの検索結果はHierarchy変更まで再利用します。
+
+## 編集用override
+
+`SetTransformScale`、`SetBlendShapeWeight`、`SetPartActive`はEdit Modeの描画用overrideです。Sceneの編集対象へ書き込みません。NDMFの加工後Rendererにポーズ値を適用し、骨格スケールでは必要なTransformだけを保持した描画用骨を使用します。Material表示切替にMeshの複製やBakeMeshは使用しません。`ClearOverrides`で破棄し、Prefab構造の更新は`RefreshHierarchy`で反映します。
+
+`ResolveRenderer`は元Rendererから直近の描画に使った加工後Rendererを取得します。`GetBounds`は描画対象のboundsを返し、未初期化のSkinnedMeshRendererではMeshとTransformから範囲を求めます。クリック選択には加工後Meshを使い、通知には元のHierarchyとMaterialの識別情報を返します。NDMFが非同期で構築中の場合は元Rendererを表示し、準備が整った後の描画からProxyを使用します。
+
+## ライフサイクルと制約
+
+同じ対象の構造更新とscope・目アイコンの変更ではsessionを再生成しません。UIから離れたとき、対象の変更時、Play Mode移行時に`Dispose`し、Camera override・event購読・Proxy session・描画資源を解放します。表示中の再描画頻度はUIが所有します。
+
+NDMFのビルド専用処理、Scene Viewだけに描く拡張の独自表示、Prefab Mode中のNDMF Previewには対応しません。NDMF Preview自体が無効な加工は適用されません。通常の編集と保存はEdit Modeに限定し、Play Modeを維持したまま編集を永続化する仕組みは提供しません。

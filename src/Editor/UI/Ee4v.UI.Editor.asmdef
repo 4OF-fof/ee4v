@@ -3,6 +3,7 @@
   "rootNamespace": "Ee4v.UI",
   "references": [
     "Ee4v.Core.Editor",
+    "Ee4v.Core.Preview.Editor",
     "Ee4v.Core.Contracts.Editor"
   ],
   "includePlatforms": [

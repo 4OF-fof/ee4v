@@ -319,6 +319,7 @@
   "variant": {
     "save": "保存",
     "discardChanges": "変更を破棄",
+    "discarding": "変更を破棄して再読み込み中…",
     "discardConfirm": "前に保存した状態へ戻します。保存後に行った変更は失われます。続けますか？",
     "noSavedRevision": "戻せる保存済みの版がありません。",
     "saveMessage": "メッセージ（任意）",

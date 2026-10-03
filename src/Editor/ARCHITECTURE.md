@@ -24,6 +24,8 @@ AssetManagerは例外として、他の機能モジュールへ依存できま�
 - asmdefにはコンパイルで実際に使用するassemblyだけを記載します
 - NDMFなど外部Pluginとの接続は専用asmdefへ分離します
 
+`Core/Preview`の`Ee4v.Core.Preview.Editor`はNDMF Previewとの接続、描画用overrideとCamera資源を所有します。NDMF依存はこの専用assemblyへ分離し、UIのPrefabScenePreviewとFaceExpressionが公開APIを使用します。SceneのAvatarを全体複製せず、Play Modeでは既存の実行対象を描画します。
+
 AssetManager内はContracts、Domain、Application、Infrastructure、UI、AssetProtectionに分割します。この層分割は一つの機能モジュール内の依存として扱います。
 
 `Ee4v.Mcp.Editor`は外部クライアントから複数機能を呼び分けるintegration／composition rootです。MCP protocolとtransport、tool registry、JSON変換だけを所有し、Face ExpressionとAssetManagerの公開境界へ依存できます。この例外から機能module同士への依存は追加せず、domain処理は所有moduleの公開APIへ置きます。詳細は[`docs~/mcp.md`](../../docs~/mcp.md)を参照します。

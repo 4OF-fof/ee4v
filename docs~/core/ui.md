@@ -35,10 +35,10 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 
 - `Badge`は件数や短い分類値を中立表示し、任意の`UiStatusTone`で処理状態も表示します。
 - `EmptyState`は薄い枠面で空領域を示し、対象がない理由と次の操作を中央へ表示します。操作要素自体は利用側が`Actions`へ追加します。
-- `StatusOverlay`は浮いた小型パネルとして、バックグラウンド処理の進捗をウィンドウ右下へ重ねて表示します。
+- `StatusOverlay`はspinnerと状態メッセージを表示する小型パネルです。バックグラウンド処理ではウィンドウ右下へ重ね、統合ee4vの変更破棄では再読み込み完了まで画面中央へ表示します。配置と操作の抑止は使用側が制御します。
 - `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンと`InputGroup`の開閉chevronにはFluent UI System Iconsを使用します。組み込みアイコンはUnityのFolder、Scene、GameObject、Model FileとHierarchyの非表示操作に限定します。Fluent画像が読み込めない場合は組み込みアイコンへ代替せず非表示にします。
 - `PrefabThumbnail`はUnityのAssetPreviewを表示し、読み込み中はMiniThumbnailを表示します。取得の再試行は表示中だけ行います。
-- `PrefabScenePreview`はPrefabまたはScene上のGameObjectを独立したPreview Sceneへ複製して描画します。対象、描画、部位・Material選択、Cameraと破棄を担当します。`SetFlexibleLayout`で親のサイズへ追従し、`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。
+- `PrefabScenePreview`はCoreの[`AvatarPreviewRenderer`](./avatar-preview.md)へ描画を委ねます。Scene上の対象は複製せず、Edit ModeではNDMF Previewの加工後Renderer、Play Modeでは実際の対象を描画します。Prefabアセットの表示は隔離された表示用コピーを使用します。対象、部位・Material選択、Cameraと破棄を担当し、`SetFlexibleLayout`で親のサイズへ追従し、`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。表示中は約30fpsで再描画し、NDMFの更新、時間依存Shaderと実行中の姿勢を表示します。
 - `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
 
 ### Containers

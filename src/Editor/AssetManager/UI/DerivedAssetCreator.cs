@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Ee4v.AssetManager.Infrastructure;
 using Ee4v.AssetManager.Simulation;
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -354,10 +355,19 @@ namespace Ee4v.AssetManager.UI
                 return scenePath;
             }
 
-            var scene = EditorSceneManager.NewScene(
-                NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            // Create a named asset first: NewScene(Additive) rejects an open
+            // untitled Scene, even when that Scene has no unsaved changes.
+            if (!EditorSceneApi.TryCreateEmptySceneAsset(scenePath))
+            {
+                throw new InvalidOperationException(
+                    "The Variant working Scene asset could not be created.");
+            }
+            var previousActiveScene = SceneManager.GetActiveScene();
+            var scene = default(Scene);
+            var saved = false;
             try
             {
+                scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
                 if (!(PrefabUtility.InstantiatePrefab(prefab, scene)
                       is GameObject avatar))
@@ -371,11 +381,23 @@ namespace Ee4v.AssetManager.UI
                     throw new InvalidOperationException(
                         "The Variant working Scene could not be saved.");
                 }
+                saved = true;
                 return scenePath;
             }
             finally
             {
-                EditorSceneManager.CloseScene(scene, true);
+                if (scene.IsValid() && scene.isLoaded)
+                {
+                    EditorSceneManager.CloseScene(scene, true);
+                }
+                if (previousActiveScene.IsValid() && previousActiveScene.isLoaded)
+                {
+                    SceneManager.SetActiveScene(previousActiveScene);
+                }
+                if (!saved)
+                {
+                    AssetDatabase.DeleteAsset(scenePath);
+                }
             }
         }
 

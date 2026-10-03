@@ -1,0 +1,7 @@
+{
+  "name": "Ee4v.Core.Preview.Editor",
+  "rootNamespace": "Ee4v.Core.Preview",
+  "references": ["nadena.dev.ndmf"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

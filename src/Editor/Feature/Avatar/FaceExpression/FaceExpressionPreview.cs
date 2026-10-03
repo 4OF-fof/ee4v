@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ee4v.Core.EditorIntegration;
+using Ee4v.Core.Preview;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -14,11 +15,15 @@ namespace Ee4v.FaceExpression
 
         private readonly Action _repaint;
         private readonly PreviewOrbitController _orbit;
-        private PreviewRenderUtility _utility;
-        private GameObject _clone;
+        private AvatarPreviewRenderer _utility;
+        private AvatarPreviewRenderer _thumbnailUtility;
+        private GameObject _sourceAvatar;
+        private GameObject _avatar;
         private SkinnedMeshRenderer _bodyRenderer;
-        private readonly Dictionary<string, RendererPreviewState> _renderers =
-            new Dictionary<string, RendererPreviewState>(StringComparer.Ordinal);
+        private readonly Dictionary<string, SkinnedMeshRenderer> _renderers =
+            new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
+        private readonly Dictionary<string, SkinnedMeshRenderer> _thumbnailRenderers =
+            new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
         public FaceExpressionPreview(Action repaint)
         {
             _repaint = repaint;
@@ -35,29 +40,15 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            _utility = new PreviewRenderUtility();
-            _utility.cameraFieldOfView = 30f;
-            _utility.lights[0].intensity = 1.1f;
-            _utility.lights[0].transform.rotation = Quaternion.Euler(35f, 35f, 0f);
-            _utility.lights[1].intensity = 0.7f;
-            _clone = UnityEngine.Object.Instantiate(avatar);
-            _clone.name = avatar.name + " (Face Preview)";
-            EditorSceneApi.HidePreviewHierarchy(_clone.transform);
-            _utility.AddSingleGO(_clone);
-
-            _bodyRenderer = FaceExpressionClipEditor.FindBodyRenderer(_clone);
-            foreach (var renderer in _clone.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            _utility = new AvatarPreviewRenderer(avatar);
+            _sourceAvatar = avatar;
+            _avatar = _utility.Root;
+            _bodyRenderer = FaceExpressionClipEditor.FindBodyRenderer(_avatar);
+            foreach (var renderer in _avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
-                if (renderer.sharedMesh == null)
-                {
-                    continue;
-                }
-
-                renderer.forceMatrixRecalculationPerRender = true;
-                var path = AnimationUtility.CalculateTransformPath(
-                    renderer.transform,
-                    _clone.transform);
-                _renderers[path] = new RendererPreviewState(renderer);
+                if (renderer.sharedMesh == null) continue;
+                var path = AnimationUtility.CalculateTransformPath(renderer.transform, _avatar.transform);
+                _renderers[path] = renderer;
             }
 
             ResetView();
@@ -67,15 +58,19 @@ namespace Ee4v.FaceExpression
             IReadOnlyList<BlendShapeChannel> channels,
             bool repaint = true)
         {
-            if (_clone == null)
+            if (_avatar == null)
             {
                 return;
             }
 
-            foreach (var renderer in _renderers.Values)
-            {
-                renderer.Reset();
-            }
+            ApplyChannels(_utility, _renderers, channels);
+            if (repaint) _repaint?.Invoke();
+        }
+
+        private static void ApplyChannels(AvatarPreviewRenderer utility,
+            IReadOnlyDictionary<string, SkinnedMeshRenderer> renderers, IReadOnlyList<BlendShapeChannel> channels)
+        {
+            utility.ClearOverrides();
 
             if (channels != null)
             {
@@ -88,36 +83,30 @@ namespace Ee4v.FaceExpression
                         continue;
                     }
 
-                    if (!_renderers.TryGetValue(channel.RendererPath, out var renderer))
+                    if (!renderers.TryGetValue(channel.RendererPath, out var renderer))
                     {
                         continue;
                     }
 
-                    var shapeIndex = renderer.Renderer.sharedMesh
+                    var shapeIndex = renderer.sharedMesh
                         .GetBlendShapeIndex(channel.Name);
                     if (shapeIndex >= 0)
                     {
-                        renderer.Renderer.SetBlendShapeWeight(
-                            shapeIndex,
-                            channel.Value);
+                        utility.SetBlendShapeWeight(renderer, channel.Name, channel.Value);
                     }
                 }
             }
 
-            if (repaint)
-            {
-                _repaint?.Invoke();
-            }
         }
 
         public void ResetView()
         {
-            if (_clone == null)
+            if (_avatar == null)
             {
                 return;
             }
 
-            var animator = _clone.GetComponentInChildren<Animator>();
+            var animator = _avatar.GetComponentInChildren<Animator>();
             if (animator != null && animator.isHuman)
             {
                 var head = animator.GetBoneTransform(HumanBodyBones.Head);
@@ -135,7 +124,7 @@ namespace Ee4v.FaceExpression
 
             if (_bodyRenderer != null)
             {
-                SetUpperView(_bodyRenderer.bounds);
+                SetUpperView(_utility.GetBounds(_bodyRenderer));
                 return;
             }
 
@@ -144,7 +133,7 @@ namespace Ee4v.FaceExpression
 
         public void Draw(Rect rect)
         {
-            if (_utility == null || _clone == null || rect.width < 2f || rect.height < 2f)
+            if (_utility == null || _avatar == null || rect.width < 2f || rect.height < 2f)
             {
                 EditorGUI.DrawRect(rect, new Color(0.1f, 0.1f, 0.1f, 1f));
                 return;
@@ -152,12 +141,10 @@ namespace Ee4v.FaceExpression
 
             _orbit.HandleInput(
                 rect,
-                _utility.camera,
-                _utility.cameraFieldOfView);
+                _utility.Camera,
+                _utility.FieldOfView);
             ConfigureCamera();
-            _utility.BeginPreview(rect, GUIStyle.none);
-            _utility.camera.Render();
-            var texture = _utility.EndPreview();
+            var texture = _utility.Render(rect);
             GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, false);
         }
 
@@ -167,7 +154,7 @@ namespace Ee4v.FaceExpression
             int height)
         {
             if (_utility == null ||
-                _clone == null ||
+                _avatar == null ||
                 _renderers.Count == 0 ||
                 width < 2 ||
                 height < 2)
@@ -175,11 +162,36 @@ namespace Ee4v.FaceExpression
                 return null;
             }
 
-            SetChannels(channels, false);
             ConfigureCamera();
-            _utility.BeginStaticPreview(new Rect(0f, 0f, width, height));
-            _utility.camera.Render();
-            return _utility.EndStaticPreview();
+            if (_thumbnailUtility == null)
+            {
+                _thumbnailUtility = new AvatarPreviewRenderer(_sourceAvatar, isolatedSnapshot: true);
+                foreach (var renderer in _thumbnailUtility.Root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    if (renderer.sharedMesh == null) continue;
+                    _thumbnailRenderers[AnimationUtility.CalculateTransformPath(renderer.transform, _thumbnailUtility.Root.transform)] = renderer;
+                }
+            }
+            _thumbnailUtility.Camera.transform.SetPositionAndRotation(_utility.Camera.transform.position, _utility.Camera.transform.rotation);
+            _thumbnailUtility.Camera.nearClipPlane = _utility.Camera.nearClipPlane;
+            _thumbnailUtility.Camera.farClipPlane = _utility.Camera.farClipPlane;
+            ApplyChannels(_thumbnailUtility, _thumbnailRenderers, channels);
+            var texture = _thumbnailUtility.Render(new Rect(0f, 0f, width, height));
+            var previous = RenderTexture.active;
+            var result = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            try
+            {
+                RenderTexture.active = texture as RenderTexture;
+                result.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
+                result.Apply(false, false);
+                return result;
+            }
+            catch
+            {
+                UnityEngine.Object.DestroyImmediate(result);
+                throw;
+            }
+            finally { RenderTexture.active = previous; }
         }
 
         public void Dispose()
@@ -208,24 +220,24 @@ namespace Ee4v.FaceExpression
         private void ConfigureCamera()
         {
             _orbit.ConfigureCamera(
-                _utility.camera,
-                _clone.transform.rotation);
+                _utility.Camera,
+                _avatar.transform.rotation);
         }
 
         private Bounds CalculateBounds()
         {
             var hasBounds = false;
-            var bounds = new Bounds(_clone.transform.position, Vector3.one * 0.2f);
-            foreach (var renderer in _clone.GetComponentsInChildren<Renderer>(true))
+            var bounds = new Bounds(_avatar.transform.position, Vector3.one * 0.2f);
+            foreach (var renderer in _avatar.GetComponentsInChildren<Renderer>(true))
             {
                 if (!hasBounds)
                 {
-                    bounds = renderer.bounds;
+                    bounds = _utility.GetBounds(renderer);
                     hasBounds = true;
                 }
                 else
                 {
-                    bounds.Encapsulate(renderer.bounds);
+                    bounds.Encapsulate(_utility.GetBounds(renderer));
                 }
             }
 
@@ -237,44 +249,21 @@ namespace Ee4v.FaceExpression
             _orbit.CancelInteraction();
             _bodyRenderer = null;
             _renderers.Clear();
+            _thumbnailUtility?.Dispose();
+            _thumbnailUtility = null;
+            _thumbnailRenderers.Clear();
+            _sourceAvatar = null;
             if (_utility != null)
             {
-                _utility.Cleanup();
+                _utility.Dispose();
                 _utility = null;
             }
 
-            if (_clone != null)
+            if (_avatar != null)
             {
-                UnityEngine.Object.DestroyImmediate(_clone);
-                _clone = null;
+                _avatar = null;
             }
         }
 
-        private sealed class RendererPreviewState
-        {
-            private readonly float[] _defaultWeights;
-
-            internal RendererPreviewState(SkinnedMeshRenderer renderer)
-            {
-                Renderer = renderer;
-                _defaultWeights = new float[renderer.sharedMesh.blendShapeCount];
-                for (var index = 0; index < _defaultWeights.Length; index++)
-                {
-                    _defaultWeights[index] = renderer.GetBlendShapeWeight(index);
-                }
-            }
-
-            internal SkinnedMeshRenderer Renderer { get; }
-
-            internal void Reset()
-            {
-                for (var index = 0; index < _defaultWeights.Length; index++)
-                {
-                    Renderer.SetBlendShapeWeight(
-                        index,
-                        _defaultWeights[index]);
-                }
-            }
-        }
     }
 }

@@ -14,6 +14,7 @@ Core は機能横断の契約、共通実装、Unity Editor との接続部を�
 | Project Browser への表示追加 | [Project](./project.md) | `InjectorApi`、`ItemInjectionRegistration` |
 | Hierarchy への表示追加 | [Hierarchy](./hierarchy.md) | `InjectorApi`、`ItemInjectionRegistration` |
 | Unity Editor の操作 | [EditorIntegration](./editor-integration.md) | `Ee4v.Core.EditorIntegration` |
+| AvatarのPreview描画 | [Avatar Preview](./avatar-preview.md) | `AvatarPreviewRenderer` |
 
 各ページでは公開型とメンバーに加え、既定実装が変更する状態、永続化、イベント登録などの副作用を記載します。
 
@@ -25,6 +26,7 @@ Core は機能横断の契約、共通実装、Unity Editor との接続部を�
 | `Ee4v.Core.Services.Editor` | 契約の標準実装 | なし |
 | `Ee4v.Core.Unity.Editor` | Settings の保存と JSON 変換 | あり |
 | `Ee4v.Core.Editor` | Unity Editor 操作と内部 API の隔離 | あり |
+| `Ee4v.Core.Preview.Editor` | NDMF Previewとの接続、描画用overrideとCamera資源 | あり |
 | `Ee4v.Core.Presentation.Editor` | Settings 画面、表示注入、状態表示 | あり |
 | `Ee4v.UI.Editor` | 機能横断のUI Toolkitコンポーネント | あり |
 
