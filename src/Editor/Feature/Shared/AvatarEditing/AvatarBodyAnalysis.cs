@@ -175,6 +175,94 @@ namespace Ee4v.AvatarEditing
                 category == BodyPartCategory.Arms;
         }
 
+        public static IReadOnlyCollection<BodyPartCategory> GetMeshBodyPartCategories(
+            GameObject root, Func<Transform, bool> isInScope)
+        {
+            var result = new HashSet<BodyPartCategory>();
+            if (root == null) { return result; }
+            var humanoidBones = new Dictionary<Transform, BodyPartCategory>();
+            foreach (var animator in root.GetComponentsInChildren<Animator>(true))
+            {
+                if (animator.avatar == null || !animator.avatar.isValid || !animator.isHuman)
+                {
+                    continue;
+                }
+                foreach (var pair in GetHumanoidMaterialBoneCategories(animator))
+                {
+                    humanoidBones[pair.Key] = pair.Value;
+                }
+            }
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!isInScope(renderer.transform)) { continue; }
+                var skinned = renderer as SkinnedMeshRenderer;
+                var mesh = skinned != null ? skinned.sharedMesh
+                    : renderer is MeshRenderer ? renderer.GetComponent<MeshFilter>()?.sharedMesh : null;
+                if (mesh == null || mesh.vertexCount == 0 ||
+                    !Enumerable.Range(0, mesh.subMeshCount).Any(slot => mesh.GetIndexCount(slot) > 0))
+                {
+                    continue;
+                }
+                if (skinned != null && TryGetWeightedMeshParts(skinned, humanoidBones, out var parts))
+                {
+                    result.UnionWith(parts);
+                    continue;
+                }
+                var category = ClassifyBodyPart(renderer.name, mesh.name);
+                if (category == BodyPartCategory.Other)
+                {
+                    category = GetMaterialBoneCategory(renderer.transform, humanoidBones);
+                }
+                if (category != BodyPartCategory.Other) { result.Add(category); }
+            }
+            return result;
+        }
+
+        private static bool TryGetWeightedMeshParts(SkinnedMeshRenderer renderer,
+            IReadOnlyDictionary<Transform, BodyPartCategory> humanoidBones,
+            out IReadOnlyCollection<BodyPartCategory> parts)
+        {
+            var result = new HashSet<BodyPartCategory>();
+            parts = result;
+            var mesh = renderer.sharedMesh;
+            var bones = renderer.bones;
+            if (bones == null || bones.Length == 0) { return false; }
+            try
+            {
+                var weights = mesh.boneWeights;
+                if (weights.Length != mesh.vertexCount) { return false; }
+                var categories = bones.Select(bone => GetMaterialBoneCategory(bone, humanoidBones)).ToArray();
+                var usedVertices = new HashSet<int>();
+                for (var slot = 0; slot < mesh.subMeshCount; slot++)
+                {
+                    foreach (var vertex in mesh.GetIndices(slot))
+                    {
+                        if (vertex < 0 || vertex >= weights.Length || !usedVertices.Add(vertex)) { continue; }
+                        var weight = weights[vertex];
+                        var strongest = 0f;
+                        var category = BodyPartCategory.Other;
+                        Consider(weight.boneIndex0, weight.weight0);
+                        Consider(weight.boneIndex1, weight.weight1);
+                        Consider(weight.boneIndex2, weight.weight2);
+                        Consider(weight.boneIndex3, weight.weight3);
+                        if (category != BodyPartCategory.Other) { result.Add(category); }
+
+                        void Consider(int index, float amount)
+                        {
+                            if (amount <= strongest || index < 0 || index >= categories.Length) { return; }
+                            strongest = amount;
+                            category = categories[index];
+                        }
+                    }
+                }
+                return result.Count > 0;
+            }
+            catch (UnityException)
+            {
+                return false;
+            }
+        }
+
         private static readonly string[] HeadBlendShapeTerms =
         {
             "head", "neck", "face", "facial", "hair", "ear",

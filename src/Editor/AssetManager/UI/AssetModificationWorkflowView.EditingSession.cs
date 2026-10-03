@@ -30,7 +30,7 @@ namespace Ee4v.AssetManager.UI
     {
         private VisualElement BuildBodyPartSelector()
         {
-            return new BodyPartSelector(_avatarContext.SelectedBodyPart, HasFocusBone, part =>
+            return new BodyPartSelector(_avatarContext.SelectedBodyPart, HasAvailableBodyPart, part =>
             {
                 if (_avatarContext.SelectedBodyPart == part)
                 {
@@ -46,15 +46,21 @@ namespace Ee4v.AssetManager.UI
             });
         }
 
-        private bool HasFocusBone(BodyPartCategory part)
+        private bool HasAvailableBodyPart(BodyPartCategory part)
         {
-            if (_focusBoneCache.TryGetValue(part, out var available))
+            if (_bodyPartAvailabilityCache.TryGetValue(part, out var available))
             {
                 return available;
             }
             available = PrefabScenePreview.HasFocusBone(
                 _avatarContext.Root, part, IsInSelectedPrefabScope);
-            _focusBoneCache[part] = available;
+            if (available)
+            {
+                _meshBodyPartCategoriesCache = _meshBodyPartCategoriesCache ??
+                    GetMeshBodyPartCategories(_avatarContext.Root, IsInSelectedPrefabScope);
+                available = _meshBodyPartCategoriesCache.Any(category => MatchesBodyPartGroup(part, category));
+            }
+            _bodyPartAvailabilityCache[part] = available;
             return available;
         }
 

@@ -686,7 +686,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             if (_avatarContext.SelectedBodyPart.HasValue &&
-                !HasFocusBone(_avatarContext.SelectedBodyPart.Value))
+                !HasAvailableBodyPart(_avatarContext.SelectedBodyPart.Value))
             {
                 _avatarContext.SelectedBodyPart = null;
                 _avatarContext.Preview?.FocusBodyPart(null, preservePreviewCamera);

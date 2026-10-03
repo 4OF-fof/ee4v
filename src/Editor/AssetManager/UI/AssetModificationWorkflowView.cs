@@ -79,8 +79,10 @@ namespace Ee4v.AssetManager.UI
             _appearanceControlsCache =
                 new Dictionary<AppearancePanel, CachedAppearanceControls>();
 
-        private readonly Dictionary<BodyPartCategory, bool> _focusBoneCache =
+        private readonly Dictionary<BodyPartCategory, bool> _bodyPartAvailabilityCache =
             new Dictionary<BodyPartCategory, bool>();
+
+        private IReadOnlyCollection<BodyPartCategory> _meshBodyPartCategoriesCache;
 
         private ISettingsService _settings;
 
@@ -481,7 +483,8 @@ namespace Ee4v.AssetManager.UI
             _appearanceControlsCache.Clear();
             _parts.ClearData();
             _materials.ClearData();
-            _focusBoneCache.Clear();
+            _bodyPartAvailabilityCache.Clear();
+            _meshBodyPartCategoriesCache = null;
             _appearanceDataDirty = false;
         }
 

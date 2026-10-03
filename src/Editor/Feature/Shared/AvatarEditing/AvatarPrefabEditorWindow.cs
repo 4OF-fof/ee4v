@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -201,8 +202,20 @@ namespace Ee4v.AvatarEditing
                 return;
             }
             if (UsesBodyPartSelector)
+            {
+                var meshParts = AvatarBodyAnalysis.GetMeshBodyPartCategories(Context.Root, _ => true);
+                bool IsAvailable(BodyPartCategory part) =>
+                    PrefabScenePreview.HasFocusBone(Context.Root, part, _ => true) &&
+                    meshParts.Any(category => AvatarBodyAnalysis.MatchesBodyPartGroup(part, category));
+                if (Context.SelectedBodyPart.HasValue && !IsAvailable(Context.SelectedBodyPart.Value))
+                {
+                    Context.SelectedBodyPart = null;
+                    Context.SelectedPartKey = null;
+                    Context.SelectedMaterial = null;
+                    Context.Preview.FocusBodyPart(null, true);
+                }
                 FeatureHeader.Add(new BodyPartSelector(Context.SelectedBodyPart,
-                    part => PrefabScenePreview.HasFocusBone(Context.Root, part, _ => true), part =>
+                    IsAvailable, part =>
                     {
                         if (!FlushFeatureChanges()) return;
                         Context.SelectedBodyPart = part;
@@ -210,6 +223,7 @@ namespace Ee4v.AvatarEditing
                         Context.Preview.FocusBodyPart(part);
                         Render();
                     }));
+            }
             if (ShowsSaveButton && !CanEditPrefab()) ShowMessage(I18N.Get("avatarEditor.readOnly"), HelpBoxMessageType.Info);
             else _feedback.style.display = DisplayStyle.None;
             RenderFeature();
