@@ -280,9 +280,7 @@ namespace Ee4v.UI
         private void RenderPreviewForComparison(
             RenderTexture target,
             Renderer omittedRenderer = null,
-            int omittedSlot = -1,
-            IReadOnlyCollection<Renderer> omittedRenderers = null,
-            Material omittedMaterial = null)
+            int omittedSlot = -1)
         {
             var previewTexture = _previewTexture as RenderTexture;
             RenderTexture saved = null;
@@ -295,9 +293,8 @@ namespace Ee4v.UI
             {
                 var texture = _utility.Render(new Rect(0f, 0f, target.width, target.height),
                     (renderer, material, slot) =>
-                        !(renderer == omittedRenderer && (omittedSlot < 0 || slot == omittedSlot)) &&
-                        (omittedRenderers == null || !omittedRenderers.Contains(renderer)) &&
-                        (omittedMaterial == null || material != omittedMaterial));
+                        !(renderer == omittedRenderer &&
+                          (omittedSlot < 0 || slot == omittedSlot)));
                 Graphics.Blit(texture, target);
             }
             finally
@@ -382,42 +379,56 @@ namespace Ee4v.UI
                 RenderTextureReadWrite.Linear);
             mask.wrapMode = TextureWrapMode.Clamp;
             mask.filterMode = FilterMode.Point;
-            var withoutSelection = CreateComparisonTexture(width, height);
-            RenderTexture baseline = null;
             var previousTarget = RenderTexture.active;
             try
             {
-                Texture source = _previewTexture;
-                if (_hiddenMaterials.Count > 0 || source == null)
-                {
-                    baseline = CreateComparisonTexture(width, height);
-                    RenderPreviewForComparison(baseline);
-                    source = baseline;
-                }
-                RenderPreviewForComparison(
-                    withoutSelection,
-                    omittedRenderers: _outlinedMaterial == null
-                        ? _outlinedRenderers : null,
-                    omittedMaterial: _outlinedMaterial);
-                _outlineMaterial.SetTexture(
-                    "_WithoutSelectionTex", withoutSelection);
-                Graphics.Blit(source, mask, _outlineMaterial, 0);
+                RenderSelectionGeometry(mask);
                 Graphics.Blit(mask, _outlineTexture,
-                    _outlineMaterial, 1);
+                    _outlineMaterial, _outlineMaterial.FindPass("Outline"));
                 _outlineTextureSize = rect.size;
                 _outlineDirty = false;
             }
             finally
             {
                 RenderTexture.active = previousTarget;
-                _outlineMaterial.SetTexture(
-                    "_WithoutSelectionTex", null);
-                if (baseline != null)
-                {
-                    RenderTexture.ReleaseTemporary(baseline);
-                }
-                RenderTexture.ReleaseTemporary(withoutSelection);
                 RenderTexture.ReleaseTemporary(mask);
+            }
+        }
+
+        private void RenderSelectionGeometry(RenderTexture target)
+        {
+            var camera = _utility.Camera;
+            var command = new CommandBuffer
+            {
+                name = "ee4v Preview Selection Geometry"
+            };
+            try
+            {
+                command.SetRenderTarget(target);
+                command.SetViewport(new Rect(
+                    0f, 0f, target.width, target.height));
+                command.ClearRenderTarget(false, true, Color.black);
+                command.SetViewProjectionMatrices(
+                    camera.worldToCameraMatrix,
+                    GL.GetGPUProjectionMatrix(camera.projectionMatrix, false));
+                var pass = _outlineMaterial.FindPass("SelectionGeometry");
+                ForEachVisibleMaterialSlot((renderer, material, slot) =>
+                {
+                    if (!_outlinedRenderers.Contains(renderer) ||
+                        (_outlinedMaterial != null &&
+                         material != _outlinedMaterial))
+                    {
+                        return;
+                    }
+                    // Draw only selected submeshes, including occluded geometry.
+                    command.DrawRenderer(_utility.ResolveRenderer(renderer),
+                        _outlineMaterial, slot, pass);
+                });
+                Graphics.ExecuteCommandBuffer(command);
+            }
+            finally
+            {
+                command.Dispose();
             }
         }
 

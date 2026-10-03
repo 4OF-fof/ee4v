@@ -3,7 +3,6 @@ Shader "Hidden/ee4v/PreviewSelectionOutline"
     Properties
     {
         _MainTex ("Preview", 2D) = "black" {}
-        _WithoutSelectionTex ("Preview Without Selection", 2D) = "black" {}
         _OutlineColor ("Outline Color", Color) = (1, 0.4, 0, 1)
         _PickColor ("Pick Color", Vector) = (0, 0, 0, 1)
     }
@@ -16,30 +15,7 @@ Shader "Hidden/ee4v/PreviewSelectionOutline"
 
         Pass
         {
-            CGPROGRAM
-            #pragma vertex vert_img
-            #pragma fragment fragDifference
-            #include "UnityCG.cginc"
-
-            sampler2D _MainTex;
-            sampler2D _WithoutSelectionTex;
-
-            fixed4 fragDifference(v2f_img input) : SV_Target
-            {
-                float4 preview = tex2D(_MainTex, input.uv);
-                float4 withoutSelection =
-                    tex2D(_WithoutSelectionTex, input.uv);
-                float4 difference = abs(preview - withoutSelection);
-                float changed = step(1.0 / 255.0,
-                    max(max(difference.r, difference.g),
-                        max(difference.b, difference.a)));
-                return fixed4(changed, changed, changed, 1);
-            }
-            ENDCG
-        }
-
-        Pass
-        {
+            Name "Outline"
             CGPROGRAM
             #pragma vertex vert_img
             #pragma fragment fragOutline
@@ -69,6 +45,31 @@ Shader "Hidden/ee4v/PreviewSelectionOutline"
 
                 float edge = (1 - step(0.5, center)) * step(0.5, neighbor);
                 return fixed4(_OutlineColor.rgb, _OutlineColor.a * edge);
+            }
+            ENDCG
+        }
+
+        Pass
+        {
+            Name "SelectionGeometry"
+            Cull Off
+            ZWrite Off
+            ZTest Always
+            Blend One Zero
+
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #include "UnityCG.cginc"
+
+            float4 vert(float4 vertex : POSITION) : SV_POSITION
+            {
+                return UnityObjectToClipPos(vertex);
+            }
+
+            fixed4 frag() : SV_Target
+            {
+                return fixed4(1, 1, 1, 1);
             }
             ENDCG
         }
