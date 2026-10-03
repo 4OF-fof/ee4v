@@ -1,0 +1,61 @@
+.ee4v-ui-message-panel {
+    flex-direction: row;
+    flex-shrink: 0;
+    min-width: 0;
+    padding: var(--ee4v-space-xl);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-left-width: var(--ee4v-border-strong);
+    border-radius: var(--ee4v-radius-2xl);
+}
+
+.ee4v-ui-message-panel--error {
+    background-color: var(--ee4v-color-error-surface-soft);
+    border-left-color: var(--ee4v-color-error);
+}
+
+.ee4v-ui-message-panel--warning {
+    background-color: var(--ee4v-color-warning-surface-soft);
+    border-left-color: var(--ee4v-color-warning);
+}
+
+.ee4v-ui-message-panel--info {
+    background-color: var(--ee4v-color-info-surface-soft);
+    border-left-color: var(--ee4v-color-info);
+}
+
+.ee4v-ui-message-panel__icon {
+    margin-top: var(--ee4v-space-xxs);
+    margin-right: var(--ee4v-space-md);
+    flex-shrink: 0;
+}
+
+.ee4v-ui-message-panel__content {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.ee4v-ui-message-panel__title,
+.ee4v-ui-message-panel__message,
+.ee4v-ui-message-panel__detail {
+    white-space: normal;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.ee4v-ui-message-panel__title {
+    margin-bottom: var(--ee4v-space-xs);
+}
+
+.ee4v-ui-message-panel__details {
+    max-height: 144px;
+    min-width: 0;
+    margin-top: var(--ee4v-space-md);
+    padding-top: var(--ee4v-space-sm);
+    border-top-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-subtle);
+}
+
+.ee4v-ui-message-panel__detail {
+    margin-bottom: var(--ee4v-space-xs);
+}

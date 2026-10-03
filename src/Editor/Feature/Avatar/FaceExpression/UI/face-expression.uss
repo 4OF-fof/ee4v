@@ -151,7 +151,7 @@
 
 .ee4v-face-expression__validation {
     flex-shrink: 0;
-    margin-bottom: var(--ee4v-space-lg);
+    margin-top: var(--ee4v-space-md);
 }
 
 .ee4v-face-expression-row:hover {
@@ -274,6 +274,8 @@
     margin-left: var(--ee4v-space-xs);
     margin-right: var(--ee4v-space-xs);
     padding: var(--ee4v-space-xs);
+    padding-left: var(--ee4v-space-xl);
+    padding-right: var(--ee4v-space-xl);
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
     border-radius: var(--ee4v-radius-xl);

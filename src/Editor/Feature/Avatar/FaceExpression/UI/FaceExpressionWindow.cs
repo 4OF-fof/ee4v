@@ -711,14 +711,14 @@ namespace Ee4v.FaceExpression
 
             if (_avatar == null || _clip == null)
             {
-                _view.SetValidation(string.Empty, HelpBoxMessageType.Info);
+                _view.SetValidation(null);
                 return;
             }
 
             var findings = FaceExpressionApi.ValidateClip(_avatar, _clip);
             if (findings.Count == 0)
             {
-                _view.SetValidation(string.Empty, HelpBoxMessageType.Info);
+                _view.SetValidation(null);
                 return;
             }
 
@@ -726,24 +726,26 @@ namespace Ee4v.FaceExpression
                 finding.Severity,
                 "error",
                 StringComparison.OrdinalIgnoreCase))
-                ? HelpBoxMessageType.Error
-                : HelpBoxMessageType.Warning;
-            _view.SetValidation(
-                string.Join("\n", findings.Select(FormatValidationFinding)),
-                type);
+                ? MessageSeverity.Error
+                : MessageSeverity.Warning;
+            var reasons = findings.Select(finding => I18N.Get("validation." + finding.Code)).Distinct().ToArray();
+            _view.SetValidation(new MessagePanelState(
+                I18N.Get("validation.title", findings.Count),
+                string.Join("\n", reasons),
+                type,
+                findings.Select(finding => FormatValidationFinding(finding, reasons.Length > 1)).Distinct().ToArray()));
         }
 
         private static string FormatValidationFinding(
-            FaceExpressionValidationFinding finding)
+            FaceExpressionValidationFinding finding, bool includeReason)
         {
             var message = I18N.Get("validation." + finding.Code);
             var location = string.Join(
                 " / ",
                 new[] { finding.RendererPath, finding.ShapeName }
                     .Where(value => !string.IsNullOrWhiteSpace(value)));
-            return string.IsNullOrEmpty(location)
-                ? "• " + message
-                : "• " + message + " (" + location + ")";
+            if (string.IsNullOrEmpty(location)) { return string.Empty; }
+            return includeReason ? message + " (" + location + ")" : location;
         }
 
         private void CreateClip()

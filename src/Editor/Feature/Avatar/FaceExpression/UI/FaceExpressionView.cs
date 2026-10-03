@@ -54,7 +54,7 @@ namespace Ee4v.FaceExpression
 
         private readonly ObjectField _avatarField;
         private readonly ObjectField _clipField;
-        private readonly HelpBox _validation;
+        private readonly MessagePanel _validation;
         private readonly SearchField _search;
         private readonly SectionHeader _sectionHeader;
         private readonly UiButton _backToLibrary;
@@ -158,13 +158,6 @@ namespace Ee4v.FaceExpression
                 Add(toolbar);
             }
 
-            _validation = UiTextFactory.CreateHelpBox(
-                string.Empty,
-                HelpBoxMessageType.Info,
-                "ee4v-face-expression__validation");
-            _validation.style.display = DisplayStyle.None;
-            Add(_validation);
-
             var content = new VisualElement();
             content.AddToClassList("ee4v-face-expression__content");
             var previewPane = new PreviewContainer();
@@ -234,6 +227,10 @@ namespace Ee4v.FaceExpression
                 }
             });
             editorPane.Add(_clipField);
+
+            _validation = new MessagePanel();
+            _validation.AddToClassList("ee4v-face-expression__validation");
+            editorPane.Add(_validation);
 
             _animationControls = new VisualElement();
             _animationControls.AddToClassList(
@@ -783,15 +780,9 @@ namespace Ee4v.FaceExpression
             RefreshFilter();
         }
 
-        public void SetValidation(
-            string message,
-            HelpBoxMessageType messageType)
+        public void SetValidation(MessagePanelState state)
         {
-            UiTextFactory.SetText(_validation, message);
-            _validation.messageType = messageType;
-            _validation.style.display = string.IsNullOrWhiteSpace(message)
-                ? DisplayStyle.None
-                : DisplayStyle.Flex;
+            _validation.SetState(state);
         }
 
         public void SetLibrary(

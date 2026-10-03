@@ -161,6 +161,7 @@
     "applyFailed": "The gesture assignments could not be applied."
   },
   "validation": {
+    "title": "Expression clip findings ({0})",
     "non_blendshape_curve": "The clip contains a curve outside the face-expression editor scope.",
     "binding_not_found": "The target Renderer or BlendShape does not exist on the avatar.",
     "value_out_of_range": "The clip contains a BlendShape value outside 0-100.",
