@@ -10,6 +10,7 @@ namespace Ee4v.AssetManager.UI
     internal sealed class AssetModificationWorkflowWindow : EditorWindow
     {
         [SerializeField] private string _derivedAssetGuid;
+        [SerializeField] private bool _executionSelected;
         private AssetModificationWorkflowView _view;
 
         [MenuItem("ee4v/ee4v", false, 0)]
@@ -43,6 +44,7 @@ namespace Ee4v.AssetManager.UI
 
         private void ConfigureWindow()
         {
+            wantsMouseMove = true;
             titleContent = UiTextFactory.CreateGuiContent(I18N.Get("workflow.windowTitle"));
             minSize = new Vector2(1180f, 720f);
         }
@@ -62,6 +64,7 @@ namespace Ee4v.AssetManager.UI
             if (asset != null)
             {
                 _view.SelectDerivedAsset(asset);
+                if (_executionSelected) { _view.ShowExecutionConfirmation(); }
             }
         }
 
@@ -73,6 +76,7 @@ namespace Ee4v.AssetManager.UI
 
         private void OnDisable()
         {
+            _executionSelected = _view?.ExecutionSelected ?? _executionSelected;
             I18N.Reloaded -= ConfigureWindow;
             _view?.Dispose();
             _view = null;

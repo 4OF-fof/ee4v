@@ -13,10 +13,25 @@
     },
     "windowTitle": "ee4v",
     "category": {
+      "execution": "Simulation",
       "overview": "Overview",
       "shapeParts": "Shape & parts",
       "material": "Material",
       "expressionAnimation": "Expressions"
+    },
+    "execution": {
+      "title": "Simulation",
+      "start": "Start",
+      "stop": "Stop",
+      "resetView": "Reset view",
+      "ready": "Start to simulate the avatar.",
+      "running": "Running",
+      "missing": "Place GestureManager in the working scene.",
+      "avatarUnavailable": "The target avatar is unavailable.",
+      "failed": "Could not start simulation: {0}",
+      "leftHand": "Left hand",
+      "rightHand": "Right hand",
+      "weight": "Weight"
     },
     "overview": {
       "avatar": "Avatar information",

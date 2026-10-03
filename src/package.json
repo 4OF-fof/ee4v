@@ -9,6 +9,7 @@
     "com.unity.nuget.newtonsoft-json": "3.0.2"
   },
   "vpmDependencies": {
+    "vrchat.blackstartx.gesture-manager": ">=3.9.9 <4.0.0-a",
     "nadena.dev.modular-avatar": ">=1.18.2 <2.0.0-a",
     "nadena.dev.ndmf": ">=1.8.0 <2.0.0-a"
   }

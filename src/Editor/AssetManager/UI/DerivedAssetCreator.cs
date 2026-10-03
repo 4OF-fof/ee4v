@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Ee4v.AssetManager.Infrastructure;
+using Ee4v.AssetManager.Simulation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -358,11 +359,12 @@ namespace Ee4v.AssetManager.UI
             {
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
                 if (!(PrefabUtility.InstantiatePrefab(prefab, scene)
-                      is GameObject))
+                      is GameObject avatar))
                 {
                     throw new InvalidOperationException(
                         "The Variant Prefab could not be placed in the Scene.");
                 }
+                GestureManagerIntegration.PlaceInScene(scene, avatar);
                 if (!EditorSceneManager.SaveScene(scene, scenePath))
                 {
                     throw new InvalidOperationException(

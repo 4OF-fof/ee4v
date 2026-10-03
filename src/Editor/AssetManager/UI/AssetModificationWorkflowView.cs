@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Ee4v.AssetProtection;
 using Ee4v.AssetManager.Contracts;
+using Ee4v.AssetManager.Simulation;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.FaceExpression;
@@ -89,6 +90,7 @@ namespace Ee4v.AssetManager.UI
         private enum WorkflowCategory
         {
             Overview,
+            Execution,
             ShapeParts,
             Material,
             ExpressionAnimation
@@ -966,6 +968,11 @@ namespace Ee4v.AssetManager.UI
         private readonly Action _repaint;
         private readonly Action _openAssetManager;
         private bool _disposed;
+        private VisualElement _executionHost;
+        private AvatarExecutionView _executionView;
+        internal bool ExecutionSelected => _currentCategory == WorkflowCategory.Execution;
+
+        internal void ShowExecutionConfirmation() => ShowCategory(WorkflowCategory.Execution, false);
         private AssetManagerWorkspaceView _assetManagerView;
         private AssetManagerViewState _assetManagerViewState = new AssetManagerViewState();
 
@@ -1329,6 +1336,11 @@ namespace Ee4v.AssetManager.UI
             _faceExpressionHost.AddToClassList(
                 "ee4v-modification-workflow__hidden");
             body.Add(_faceExpressionHost);
+
+            _executionHost = new VisualElement();
+            _executionHost.AddToClassList("ee4v-execution-host");
+            _executionHost.AddToClassList("ee4v-modification-workflow__hidden");
+            body.Add(_executionHost);
 
             body.Add(_customizerHost);
             root.Add(body);
@@ -2081,6 +2093,11 @@ namespace Ee4v.AssetManager.UI
                 "info.png");
             AddCategoryButton(
                 rail,
+                WorkflowCategory.Execution,
+                "workflow.category.execution",
+                "arrow_clockwise.png");
+            AddCategoryButton(
+                rail,
                 WorkflowCategory.ShapeParts,
                 "workflow.category.shapeParts",
                 "cube.png");
@@ -2115,6 +2132,7 @@ namespace Ee4v.AssetManager.UI
             button.AddToClassList(
                 "ee4v-modification-workflow__category-button");
             button.SetEnabled(category == WorkflowCategory.Overview ||
+                category == WorkflowCategory.Execution ||
                 category == WorkflowCategory.ShapeParts ||
                 category == WorkflowCategory.Material ||
                 !_selectedPrefabSiblingIndex.HasValue);
@@ -2180,6 +2198,7 @@ namespace Ee4v.AssetManager.UI
             }
             if (_selectedPrefabSiblingIndex.HasValue &&
                 category != WorkflowCategory.Overview &&
+                category != WorkflowCategory.Execution &&
                 category != WorkflowCategory.ShapeParts &&
                 category != WorkflowCategory.Material)
             {
@@ -2227,12 +2246,24 @@ namespace Ee4v.AssetManager.UI
 
             var faceExpression =
                 category == WorkflowCategory.ExpressionAnimation;
+            var execution = category == WorkflowCategory.Execution;
             _customizerHost.EnableInClassList(
                 "ee4v-modification-workflow__hidden",
-                faceExpression);
+                faceExpression || execution);
             _faceExpressionHost.EnableInClassList(
                 "ee4v-modification-workflow__hidden",
                 !faceExpression);
+            _executionHost.EnableInClassList("ee4v-modification-workflow__hidden", !execution);
+            if (execution)
+            {
+                _faceExpressionEditor?.StopPlayback();
+                if (_executionView == null)
+                {
+                    _executionView = new AvatarExecutionView(_workingObject, RequestRepaint);
+                    _executionHost.Add(_executionView);
+                }
+                return;
+            }
             if (faceExpression)
             {
                 if (_faceExpressionEditor == null)
@@ -2813,6 +2844,7 @@ namespace Ee4v.AssetManager.UI
             _selectedMaterial = null;
             if (siblingIndex.HasValue &&
                 _currentCategory != WorkflowCategory.Overview &&
+                _currentCategory != WorkflowCategory.Execution &&
                 _currentCategory != WorkflowCategory.Material)
             {
                 _currentCategory = WorkflowCategory.ShapeParts;
@@ -8183,6 +8215,8 @@ namespace Ee4v.AssetManager.UI
 
         private void DisposeEditors()
         {
+            _executionView?.Dispose();
+            _executionView = null;
             _assetManagerView?.Dispose();
             _assetManagerView = null;
             DisposeMaterialEditor();

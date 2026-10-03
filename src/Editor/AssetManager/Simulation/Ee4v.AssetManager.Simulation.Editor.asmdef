@@ -1,0 +1,14 @@
+{
+  "name": "Ee4v.AssetManager.Simulation.Editor",
+  "rootNamespace": "Ee4v.AssetManager.Simulation",
+  "references": [
+    "Ee4v.Core.Presentation.Editor",
+    "Ee4v.UI.Editor",
+    "vrchat.blackstartx.gesture-manager",
+    "vrchat.blackstartx.gesture-manager.editor",
+    "VRC.SDK3A",
+    "VRC.SDKBase"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

@@ -36,6 +36,18 @@
 - ライセンス表示: [LICENSE.txt](../src/Editor/ThirdParty/SQLite/licenses/sourcegear-sqlite/LICENSE.txt)
 - パッケージ情報: [README.md](../src/Editor/ThirdParty/SQLite/licenses/sourcegear-sqlite/README.md)
 
+## External dependencies
+
+### GestureManager
+
+- 配布元: [BlackStartx/VRC-Gesture-Manager](https://github.com/BlackStartx/VRC-Gesture-Manager)
+- パッケージ: `vrchat.blackstartx.gesture-manager`（`>=3.9.9 <4.0.0-a`）
+- ライセンス: MIT License
+- 権利表示: Copyright © 2019-2023 BlackStartx
+- ライセンス全文: [配布元のLICENSE.md](https://github.com/BlackStartx/VRC-Gesture-Manager/blob/master/LICENSE.md)
+
+VPMの外部依存として使用します。ee4vの実行確認画面は導入済みパッケージの公開APIとラジアルUIを使用し、GestureManagerのソースやアセットをee4vへ複製しません。
+
 ## Inspiration
 
 ### FaceEmo

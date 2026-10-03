@@ -2,6 +2,7 @@
   "name": "Ee4v.AssetManager.UI.Editor",
   "rootNamespace": "Ee4v.AssetManager.UI",
   "references": [
+    "Ee4v.AssetManager.Simulation.Editor",
     "Ee4v.AssetManager.Contracts.Editor",
     "Ee4v.AssetManager.Infrastructure.Editor",
     "Ee4v.AssetManager.AssetProtection.Editor",
