@@ -14,8 +14,6 @@ namespace Ee4v.AvatarComposition
         private GameObject _addition;
         protected override string TitleKey => "avatarEditor.compositionTitle";
         protected override bool UsesBodyPartSelector => false;
-        [MenuItem("ee4v/Window/Avatar/Prefab Composition", false, 202)]
-        private static void ShowWindow() => GetWindow<AvatarCompositionWindow>().Show();
         protected override void CreateFeature() { }
         protected override void ClearFeatureData() { }
         protected override void DisposeFeature() { _addition = null; }

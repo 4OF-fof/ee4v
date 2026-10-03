@@ -6,6 +6,8 @@
 
 `AvatarInfoView`は名前、装着警告、性能結果とプラットフォーム選択を表示します。プラットフォーム変更と装着設定を開く操作はホストへ通知し、View自身はSelectionやInspectorを操作しません。スタイルは`UI/avatar-info.uss`を自身で読み込みます。
 
+単独Windowのメニューは`ee4v/Window/Avatar/Avatar Info`です。`AvatarInfoWindow`は共有の`AvatarPrefabEditorWindow`でHierarchy上のPrefabインスタンス入力とPreviewを使用し、統合版と同じ`AvatarInfoView`で名前・装着警告・最後のNDMFビルドの性能結果を表示します。PC／Questの評価基準を切り替えられ、ビルド結果の更新通知で表示を更新します。情報表示専用なので部位選択、Prefab保存と変更を戻すボタンは表示しません。装着設定を開く操作はWindowがInspectorへ接続します。Scene保存とGit保存を行わず、AssetManagerへの依存はありません。
+
 `FindPlayModeAvatar(scenePath, prefabPath)`は呼び出し側から渡されたScene内でビルド前の記録に対応するアバターを検索します。AssetManager固有の作業Sceneパスを生成せず、AssetManagerへの参照はありません。他のAvatar機能にも依存しません。
 
 Catalogは`Domain/AvatarInfo/Displays/AvatarInfoView`へ登録します。Storyはサンプルの性能情報を使用し、ビルドやPlay Mode切り替えを実行しません。

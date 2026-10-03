@@ -77,6 +77,7 @@
     "readOnly": "このPrefabは読み取り専用です。編集には書き込み可能なPrefabを選択してください。",
     "shapePartsTitle": "体型・パーツ",
     "materialsTitle": "マテリアル",
+    "infoTitle": "アバター詳細",
     "compositionTitle": "Prefab構成"
   }
 }

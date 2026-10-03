@@ -14,7 +14,8 @@ namespace Ee4v.AvatarInfo
             return new[] { new UiStory("avatar-info", "Domain/AvatarInfo/Displays", "AvatarInfoView",
                 "装着警告とビルド結果を表示します。PC／Questの切り替えを確認できます。",
                 "AvatarInfoの詳細表示です。", BuildOverview,
-                usageLocations: new[] { "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs" },
+                usageLocations: new[] { "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",
+                    "Editor/Feature/Avatar/AvatarInfo/UI/AvatarInfoWindow.cs" },
                 styleSheetPaths: new[] { "Editor/Feature/Avatar/AvatarInfo/UI/avatar-info.uss" }) };
         }
         private static void BuildOverview(VisualElement parent)

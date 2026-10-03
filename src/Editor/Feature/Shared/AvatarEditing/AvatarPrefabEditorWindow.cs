@@ -24,6 +24,7 @@ namespace Ee4v.AvatarEditing
         protected VisualElement FeatureHeader { get; private set; }
         protected abstract string TitleKey { get; }
         protected virtual bool UsesBodyPartSelector => true;
+        protected virtual bool ShowsSaveButton => true;
         protected virtual bool ShowsRevertButton => true;
         protected virtual bool HasPendingFeatureChanges => false;
         protected abstract void CreateFeature();
@@ -81,8 +82,12 @@ namespace Ee4v.AvatarEditing
                     variant: UiButtonVariant.Ghost) { name = "revertPrefab" };
                 toolbar.Add(_revert);
             }
-            _save = new UiButton(I18N.Get("avatarEditor.save"), SaveChanges) { name = "savePrefab" };
-            toolbar.Add(_save);
+            _save = null;
+            if (ShowsSaveButton)
+            {
+                _save = new UiButton(I18N.Get("avatarEditor.save"), SaveChanges) { name = "savePrefab" };
+                toolbar.Add(_save);
+            }
             rootVisualElement.Add(toolbar);
             _feedback = UiTextFactory.CreateHelpBox(string.Empty, HelpBoxMessageType.Info);
             _feedback.style.display = DisplayStyle.None;
@@ -205,7 +210,7 @@ namespace Ee4v.AvatarEditing
                         Context.Preview.FocusBodyPart(part);
                         Render();
                     }));
-            if (!CanEditPrefab()) ShowMessage(I18N.Get("avatarEditor.readOnly"), HelpBoxMessageType.Info);
+            if (ShowsSaveButton && !CanEditPrefab()) ShowMessage(I18N.Get("avatarEditor.readOnly"), HelpBoxMessageType.Info);
             else _feedback.style.display = DisplayStyle.None;
             RenderFeature();
             SyncPreviewSelection();
@@ -223,6 +228,7 @@ namespace Ee4v.AvatarEditing
 
         private void RefreshSaveButtons()
         {
+            if (_save == null && _revert == null) return;
             var enabled = CanEditPrefab() &&
                 (HasPendingFeatureChanges || PrefabEditingChanges.HasContentOverrides(_instance));
             _save?.SetPrimaryActionEnabled(enabled);
@@ -240,7 +246,7 @@ namespace Ee4v.AvatarEditing
 
         public override void SaveChanges()
         {
-            if (!CanEditPrefab() || !FlushFeatureChanges()) return;
+            if (!ShowsSaveButton || !CanEditPrefab() || !FlushFeatureChanges()) return;
             try
             {
                 // Commit delayed Undo records before clearing the saved state.
