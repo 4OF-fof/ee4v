@@ -642,6 +642,10 @@
     max-height: 0;
 }
 
+.ee4v-ui .unity-scroller > .unity-scroller__slider {
+    margin: var(--ee4v-space-none);
+}
+
 .ee4v-ui .unity-scroller > .unity-scroller__slider,
 .ee4v-ui .unity-scroller > .unity-scroller__slider .unity-base-slider__tracker {
     flex-grow: 1;

@@ -15,7 +15,7 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 ### Reference
 
 - `Color Palette`はUIとIMGUIで共有するUnity Dark・Lightの役割別カラートークンの参照です。独自の表示部品ではありません。
-- `Default Scrollbars`は`UiComposition.Prepare`配下へ適用される既定のスクロールバー表示です。独自の`ScrollView`型は提供しません。
+- `Default Scrollbars`は`UiComposition.Prepare`配下へ適用される既定のスクロールバー表示です。スクロール方向の内部Sliderの端の余白をなくし、最小・最大位置のつまみをバーの端へ合わせます。縦横のバーに共通で適用します。独自の`ScrollView`型は提供しません。
 
 ### Inputs
 
