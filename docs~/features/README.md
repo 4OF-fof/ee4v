@@ -26,6 +26,10 @@
 | module | 所有する振る舞い | 実装 | 契約 |
 |---|---|---|---|
 | Face Expression | BlendShape表情の作成、表情Group、preset、Gesture割り当てを扱う。 | `Feature/Avatar/FaceExpression` | [Face Expression](./face-expression.md) |
+| AvatarParts | パーツ階層、表示と体型・BlendShapeを編集する。 | `Feature/Avatar/AvatarParts` | [AvatarParts](./avatar-parts.md) |
+| AvatarMaterials | Materialの使用箇所、表示、割り当てとInspectorを扱う。 | `Feature/Avatar/AvatarMaterials` | [AvatarMaterials](./avatar-materials.md) |
+| AvatarComposition | 単独Prefab構成WindowでPrefabの追加、子の表示切り替えと削除を扱う。 | `Feature/Avatar/AvatarComposition` | [AvatarComposition](./avatar-composition.md) |
+| AvatarInfo | 詳細、装着警告とNDMFビルド後の性能結果を扱う。 | `Feature/Avatar/AvatarInfo` | [AvatarInfo](./avatar-info.md) |
 | Play Mode Component Suppression | Play Mode向けNDMF処理で指定componentをbuild対象Avatarから除く。 | `Feature/Avatar/PlayModeComponentSuppression` | [Play Mode Component Suppression](./play-mode-component-suppression.md) |
 
 ## Editor
@@ -39,9 +43,10 @@
 | assembly | 使用する機能 | 共有理由 | 実装 |
 |---|---|---|---|
 | `Ee4v.ItemStyle.Editor` | ProjectStyle、HierarchyStyle | 背景色とアイコンの値、保存処理、編集Windowが同じ契約を持つため | `Feature/Shared/ItemStyle` |
+| `Ee4v.AvatarEditing.Editor` | AvatarParts、AvatarMaterials、AvatarComposition、FaceExpression、AssetManager統合ホスト | 編集対象・選択・Preview・通知と単独Prefab編集ホストを共有し、FaceExpressionから名前分類を提供するため | `Feature/Shared/AvatarEditing`、[契約](./avatar-editing.md) |
 
-外部コードから各機能を操作する場合は、共有実装を直接参照せず`ProjectStyleApi`または`HierarchyStyleApi`を使用します。
+外部コードからItemStyleを操作する場合は、共有実装を直接参照せず`ProjectStyleApi`または`HierarchyStyleApi`を使用します。Avatar編集ホストは共有の`AvatarEditingContext`で各機能の公開エディターAPIを接続します。
 
 `src/Editor/Mcp`は機能moduleではなく外部integration層です。Face Expressionの公開APIとAssetManager Contractsを組み合わせますが、機能module間の参照は作りません。MCP固有の契約は[`../mcp.md`](../mcp.md)で管理します。
 
-AssetManager UIは例外として、取り込み先フォルダーの初期アイコン設定に`ProjectStyleApi`、改変画面の埋め込み表情エディターとBlendShape分類にFace Expressionの公開APIを使用します。`ItemStyle`の直接参照は不要です。ProjectStyleとFace ExpressionからAssetManagerへの逆方向参照はありません。
+AssetManager UIは例外として、取り込み先フォルダーの初期アイコン設定に`ProjectStyleApi`、改変画面にAvatarParts・AvatarMaterials・AvatarInfo・FaceExpressionの公開APIを使用します。BlendShape分類は`WorkflowShapeNaming`でFaceExpressionから共有契約へ変換します。これらの機能からAssetManagerへの逆方向参照と、機能同士の参照はありません。

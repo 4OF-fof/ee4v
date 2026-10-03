@@ -8,6 +8,8 @@
 
 ## 対象範囲
 
+`AvatarShapeNamingProvider`は共有の`Ee4v.AvatarEditing.Editor`へBlendShapeプリセットの分類器を登録し、単独Shape and Parts Windowへ保存済みの部位・グループ分類を提供します。AvatarPartsやAssetManagerには依存せず、プリセットの変更は共有の変更通知へ伝えます。
+
 - 名前が`Body`の`SkinnedMeshRenderer`を既定メッシュとしてBlendShapeを列挙する
 - グループウィンドウから追加した`SkinnedMeshRenderer`のBlendShapeも同じ表情クリップで編集する
 - 有効にしたBlendShapeだけを選択中の表情ポーズとして`AnimationClip`へ保存する

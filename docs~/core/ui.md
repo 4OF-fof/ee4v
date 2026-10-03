@@ -125,5 +125,8 @@ Catalog上の分類とコード上の分割は別に扱います。コードで�
 | Scene Switcher | `Domain/SceneSwitcher/SceneSwitcherView`、`Domain/SceneSwitcher/Inputs/SceneSwitcherRow` |
 | Project Tabs | `Domain/ProjectTabs/Inputs/Project Tabs` |
 | Face Expressionの各画面と設定画面 | `Domain/FaceExpression/*` |
+| パーツ・体型編集 | `Domain/AvatarParts/Containers/AvatarPartsEditor` |
+| Material編集と埋め込みInspector | `Domain/AvatarMaterials/Containers/AvatarMaterialsEditor`、`Domain/AvatarMaterials/Inputs/EmbeddedMaterialInspector` |
+| アバター詳細と性能結果 | `Domain/AvatarInfo/Displays/AvatarInfoView` |
 | Face Expressionの編集CellとRow | `Domain/FaceExpression/Inputs/*` |
 | Window Groups | `Domain/WindowGroup/Window Groups` |

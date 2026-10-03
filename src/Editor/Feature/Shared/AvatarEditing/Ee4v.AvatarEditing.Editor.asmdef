@@ -1,0 +1,13 @@
+{
+  "name": "Ee4v.AvatarEditing.Editor",
+  "rootNamespace": "Ee4v.AvatarEditing",
+  "references": [
+    "Ee4v.Core.Editor",
+    "Ee4v.Core.Presentation.Editor",
+    "Ee4v.UI.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true
+}

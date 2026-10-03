@@ -1,0 +1,15 @@
+{
+  "name": "Ee4v.AvatarParts.Editor",
+  "rootNamespace": "Ee4v.AvatarParts",
+  "references": [
+    "Ee4v.Core.Editor",
+    "Ee4v.Core.Presentation.Editor",
+    "Ee4v.UI.Editor",
+    "Ee4v.AvatarEditing.Editor",
+    "nadena.dev.modular-avatar.core"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true
+}

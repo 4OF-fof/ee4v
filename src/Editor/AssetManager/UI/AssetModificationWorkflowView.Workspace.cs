@@ -1,19 +1,28 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.AssetProtection;
-using Ee4v.AssetManager.Contracts;
-using Ee4v.AssetManager.Simulation;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
-using Ee4v.Core.Settings;
-using Ee4v.FaceExpression;
 using Ee4v.UI;
+using Ee4v.AvatarEditing;
+using static Ee4v.AvatarEditing.AvatarBodyAnalysis;
+using static Ee4v.AvatarEditing.AvatarEditingUi;
 using nadena.dev.modular_avatar.core;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using Ee4v.AssetProtection;
+using Ee4v.AssetManager.Contracts;
+using Ee4v.AssetManager.Simulation;
+using Ee4v.Core.Settings;
+using Ee4v.FaceExpression;
+using Ee4v.AvatarParts;
+using Ee4v.AvatarMaterials;
+using Ee4v.AvatarInfo;
+using static Ee4v.AvatarParts.AvatarPartsEditor;
+using AppearancePanel = Ee4v.AvatarEditing.AvatarEditorPanel;
 
 namespace Ee4v.AssetManager.UI
 {
@@ -23,7 +32,7 @@ namespace Ee4v.AssetManager.UI
         {
             InvalidateVariantSaveStatus();
             ApplyEditorMode();
-            FlushPendingPartVisibility();
+            _parts.FlushPendingPartVisibility();
             DisposeEditors();
             ClearAppearanceCaches();
             var root = this;
@@ -31,7 +40,7 @@ namespace Ee4v.AssetManager.UI
             AssetManagerWindowSession.PrepareWorkflowRoot(root);
             root.AddToClassList("ee4v-modification-workflow");
 
-            if (_workingObject == null ||
+            if (_avatarContext.Root == null ||
                 string.IsNullOrEmpty(GetWorkingAssetPath()))
             {
                 DisposePreview();
@@ -57,7 +66,7 @@ namespace Ee4v.AssetManager.UI
             }
             _customizerHost = _editorLayout.AppearanceHost;
             _appearanceHeader = _editorLayout.AppearanceHeader;
-            _controlsHost = _editorLayout.Controls;
+            _avatarContext.ControlsHost = _editorLayout.Controls;
             _faceExpressionHost = _editorLayout.FaceExpressionHost;
             _executionHost = _editorLayout.ExecutionHost;
             ShowCategory(_currentCategory, false);
@@ -65,16 +74,16 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement BuildWorkspaceHeader()
         {
-            _prefabSiblingIndices = Array.Empty<int>();
+            _avatarContext.PrefabSiblingIndices = Array.Empty<int>();
             var header = new SelectionTabBar();
             var cards = header.Items;
             var combined = CreateHeaderPrefabCard(
-                _workingObject.name,
+                _avatarContext.Root.name,
                 SelectionTabVariant.Primary);
-            combined.tooltip = _workingObject.name;
+            combined.tooltip = _avatarContext.Root.name;
             combined.RegisterCallback<ClickEvent>(
                 _ => SelectPrefabCard(null, string.Empty));
-            combined.SetSelected(!_selectedPrefabSiblingIndex.HasValue);
+            combined.SetSelected(!_avatarContext.SelectedPrefabSiblingIndex.HasValue);
             var changeLabel = I18N.Get("workflow.asset.change");
             var change = new UiButton(
                 changeLabel,
@@ -95,16 +104,16 @@ namespace Ee4v.AssetManager.UI
             var strip = header.Tabs;
             VisualElement selectedCard = null;
             var basePrefab = PrefabUtility.GetCorrespondingObjectFromSource(
-                _workingObject) as GameObject;
+                _avatarContext.Root) as GameObject;
             var baseCard = CreateHeaderPrefabCard(
-                basePrefab != null ? basePrefab.name : _workingObject.name,
+                basePrefab != null ? basePrefab.name : _avatarContext.Root.name,
                 SelectionTabVariant.Default);
             baseCard.tooltip = I18N.Get("workflow.assets.base");
             if (HasMeshInPrefabScope(-1))
             {
                 var baseVisibility = CreatePrefabVisibilityButton(
-                    !_basePrefabHidden,
-                    I18N.Get(_basePrefabHidden
+                    !_avatarContext.BasePrefabHidden,
+                    I18N.Get(_avatarContext.BasePrefabHidden
                         ? "workflow.assets.clickToShow"
                         : "workflow.assets.clickToHide"),
                     () => TogglePrefabPreviewVisibility(-1),
@@ -116,11 +125,11 @@ namespace Ee4v.AssetManager.UI
                     evt => evt.StopPropagation());
                 baseCard.Add(baseVisibility);
             }
-            baseCard.SetSelected(_selectedPrefabSiblingIndex == -1);
+            baseCard.SetSelected(_avatarContext.SelectedPrefabSiblingIndex == -1);
             baseCard.RegisterCallback<ClickEvent>(
-                _ => SelectPrefabCard(-1, _workingObject.name));
+                _ => SelectPrefabCard(-1, _avatarContext.Root.name));
             strip.Add(baseCard);
-            if (_selectedPrefabSiblingIndex == -1)
+            if (_avatarContext.SelectedPrefabSiblingIndex == -1)
             {
                 selectedCard = baseCard;
             }
@@ -132,24 +141,24 @@ namespace Ee4v.AssetManager.UI
                     var children = ReadAssetChildren();
                     if (!_prefabPreviewVisibilityInitialized)
                     {
-                        _hiddenPrefabSiblingIndices.Clear();
+                        _avatarContext.HiddenPrefabSiblingIndices.Clear();
                         foreach (var child in children)
                         {
                             if (!child.IsVisible)
                             {
-                                _hiddenPrefabSiblingIndices.Add(
+                                _avatarContext.HiddenPrefabSiblingIndices.Add(
                                     child.SiblingIndex);
                             }
                         }
                         _prefabPreviewVisibilityInitialized = true;
                     }
-                    _prefabSiblingIndices = children
+                    _avatarContext.PrefabSiblingIndices = children
                         .Select(child => child.SiblingIndex).ToArray();
                     foreach (var child in children)
                     {
                         var card = BuildAssetChildCard(child);
                         strip.Add(card);
-                        if (_selectedPrefabSiblingIndex ==
+                        if (_avatarContext.SelectedPrefabSiblingIndex ==
                             child.SiblingIndex)
                         {
                             selectedCard = card;
@@ -158,7 +167,7 @@ namespace Ee4v.AssetManager.UI
                 }
                 catch (Exception exception)
                 {
-                    _prefabSiblingIndices = Array.Empty<int>();
+                    _avatarContext.PrefabSiblingIndices = Array.Empty<int>();
                     Debug.LogException(exception);
                     header.Add(UiTextFactory.CreateHelpBox(
                         I18N.Get("workflow.assets.readFailed"),
@@ -208,10 +217,10 @@ namespace Ee4v.AssetManager.UI
             }).Every(750);
             cards.Add(save);
 
-            if (!string.IsNullOrEmpty(_assetFeedback))
+            if (!string.IsNullOrEmpty(_avatarContext.AssetFeedback))
             {
                 header.Add(UiTextFactory.CreateHelpBox(
-                    _assetFeedback,
+                    _avatarContext.AssetFeedback,
                     HelpBoxMessageType.Error));
             }
             return header;
@@ -219,11 +228,11 @@ namespace Ee4v.AssetManager.UI
 
         private async void SaveVariantRevision(string message)
         {
-            if (_disposed || _savingVariant || _workingObject == null) { return; }
-            EndBodyScaleDrag();
-            SaveBodyScalePrefab();
-            if (_bodyScaleDirty) { return; }
-            if (!FlushPendingPartVisibility()) { return; }
+            if (_disposed || _savingVariant || _avatarContext.Root == null) { return; }
+            _parts.EndBodyScaleDrag();
+            _parts.SaveBodyScalePrefab();
+            if (_parts.BodyScaleDirty) { return; }
+            if (!_parts.FlushPendingPartVisibility()) { return; }
             if (!CommitWorkingScene()) { return; }
             _savingVariant = true;
             var assetPath = GetWorkingAssetPath();
@@ -240,13 +249,13 @@ namespace Ee4v.AssetManager.UI
                 });
                 if (!_disposed)
                 {
-                    _assetFeedback = string.Empty;
+                    _avatarContext.AssetFeedback = string.Empty;
                 }
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                if (!_disposed) { _assetFeedback = exception.Message; }
+                if (!_disposed) { _avatarContext.AssetFeedback = exception.Message; }
             }
             finally
             {
@@ -257,7 +266,7 @@ namespace Ee4v.AssetManager.UI
 
         private async void DiscardVariantChanges()
         {
-            if (_disposed || _savingVariant || _workingObject == null ||
+            if (_disposed || _savingVariant || _avatarContext.Root == null ||
                 string.IsNullOrEmpty(_workingAsset?.VariantId))
             {
                 return;
@@ -266,7 +275,7 @@ namespace Ee4v.AssetManager.UI
             var assetPath = GetWorkingAssetPath();
             var variantId = _workingAsset.VariantId;
             var category = _currentCategory;
-            var shapePartsSection = _shapePartsSection;
+            var shapePartsSection = _parts.Section;
             var rebuild = false;
             try
             {
@@ -275,10 +284,10 @@ namespace Ee4v.AssetManager.UI
                     _manager);
                 var revisionId = variants?.GetCurrentRevisionId(variantId);
                 if (string.IsNullOrEmpty(revisionId) ||
-                    _pendingPartVisibility.Count == 0 &&
+                    !_parts.HasPendingPartVisibility &&
                     !_workingSceneDirty &&
-                    !_bodyScaleDirty &&
-                    _pendingBodySizeChange == PendingBodySizeChange.None &&
+                    !_parts.BodyScaleDirty &&
+                    !_parts.HasPendingBodySizeChange &&
                     !variants.HasChangesFromCurrentRevision(assetPath))
                 {
                     return;
@@ -294,14 +303,13 @@ namespace Ee4v.AssetManager.UI
 
                 _savingVariant = true;
                 rebuild = true;
-                _pendingPartVisibility.Clear();
-                _pendingPartAssetPath = null;
-                _bodyScaleDragging = false;
-                _bodyScaleDirty = false;
-                ClearPendingBodySizeChange();
+                _parts.ClearPendingPartVisibility();
+                _parts.CancelBodySizeChange();
+                _parts.BodyScaleDirty = false;
+                _parts.ClearPendingBodySizeChange();
                 BuildWindow();
 
-                var scene = _workingObject.scene;
+                var scene = _avatarContext.Root.scene;
                 ReleaseWorkingScene(true);
                 if (scene.IsValid() && scene.isLoaded &&
                     !EditorSceneManager.CloseScene(scene, true))
@@ -326,7 +334,7 @@ namespace Ee4v.AssetManager.UI
                 }
                 SelectDerivedAsset(restored);
                 _currentCategory = category;
-                _shapePartsSection = shapePartsSection;
+                _parts.Section = shapePartsSection;
             }
             catch (Exception exception)
             {
@@ -334,13 +342,13 @@ namespace Ee4v.AssetManager.UI
                 if (!_disposed)
                 {
                     rebuild = true;
-                    _assetFeedback = exception.Message;
+                    _avatarContext.AssetFeedback = exception.Message;
                     var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                         assetPath);
                     if (prefab != null && _workingAsset != null)
                     {
-                        _workingPrefabAsset = prefab;
-                        _workingObject = AcquireWorkingScene(prefab);
+                        _avatarContext.PrefabAsset = prefab;
+                        _avatarContext.Root = AcquireWorkingScene(prefab);
                         _workingAsset.Prefab = prefab;
                     }
                 }
@@ -358,14 +366,14 @@ namespace Ee4v.AssetManager.UI
 
         private void RefreshVariantSaveButton(UiButton save)
         {
-            if (_disposed || _savingVariant || _workingObject == null)
+            if (_disposed || _savingVariant || _avatarContext.Root == null)
             {
                 SetVariantSaveButtonEnabled(save, false);
                 return;
             }
             var pending = _workingSceneDirty ||
-                _pendingPartVisibility.Count > 0 || _bodyScaleDirty ||
-                _pendingBodySizeChange != PendingBodySizeChange.None;
+                _parts.HasPendingPartVisibility || _parts.BodyScaleDirty ||
+                _parts.HasPendingBodySizeChange;
             if (!pending && _variantSaveStatusDirty)
             {
                 if (EditorApplication.timeSinceStartup < _variantSaveStatusDueAt)
@@ -409,7 +417,7 @@ namespace Ee4v.AssetManager.UI
 
         private void RefreshVariantDiscardButton(UiButton discard)
         {
-            if (_disposed || _savingVariant || _workingObject == null ||
+            if (_disposed || _savingVariant || _avatarContext.Root == null ||
                 string.IsNullOrEmpty(_workingAsset?.VariantId) ||
                 _variantSaveStatusError != null)
             {
@@ -425,9 +433,9 @@ namespace Ee4v.AssetManager.UI
                 var revisionId = variants?.GetCurrentRevisionId(
                     _workingAsset.VariantId);
                 var pending = _workingSceneDirty ||
-                    _pendingPartVisibility.Count > 0 ||
-                    _bodyScaleDirty ||
-                    _pendingBodySizeChange != PendingBodySizeChange.None;
+                    _parts.HasPendingPartVisibility ||
+                    _parts.BodyScaleDirty ||
+                    _parts.HasPendingBodySizeChange;
                 discard.SetEnabled(!string.IsNullOrEmpty(revisionId) &&
                                    (pending || _variantHasDiscardableChanges));
                 discard.tooltip = string.IsNullOrEmpty(revisionId)
@@ -481,31 +489,10 @@ namespace Ee4v.AssetManager.UI
             return new SelectionTab(name, variant);
         }
 
-        private static UiButton CreatePrefabVisibilityButton(
-            bool isVisible,
-            string tooltip,
-            Action onClick,
-            string className)
-        {
-            var button = new UiButton(
-                string.Empty,
-                onClick,
-                variant: UiButtonVariant.Ghost);
-            button.AddToClassList(className);
-            button.tooltip = tooltip;
-            button.SetIcon(FluentUiIcons.CreateState(
-                isVisible
-                    ? "eye.png"
-                    : "eye_off.png",
-                UiSizeTokens.Size18,
-                tooltip));
-            return button;
-        }
-
         private VisualElement BuildCategoryRail()
         {
             _categoryRail = new WorkflowCategoryRail(category => ShowCategory(category));
-            _categoryRail.SetPrefabScope(_selectedPrefabSiblingIndex.HasValue);
+            _categoryRail.SetPrefabScope(_avatarContext.SelectedPrefabSiblingIndex.HasValue);
             _categoryRail.SetSelected(_currentCategory);
             return _categoryRail;
         }
@@ -515,28 +502,28 @@ namespace Ee4v.AssetManager.UI
             _previewPane = new PreviewPane(string.Empty);
             _previewPane.AddToClassList("ee4v-modification-workflow__preview-pane");
             _previewPane.Content.AddToClassList("ee4v-modification-workflow__preview-viewport");
-            _scenePreview = new PrefabScenePreview();
+            _avatarContext.Preview = new PrefabScenePreview();
             if (_mode != ModificationEditorMode.Composition)
             {
-                _scenePreview.PreviewObjectClicked += OnPreviewObjectClicked;
-                _scenePreview.PreviewSelectionCleared +=
+                _avatarContext.Preview.PreviewObjectClicked += OnPreviewObjectClicked;
+                _avatarContext.Preview.PreviewSelectionCleared +=
                     OnPreviewSelectionCleared;
             }
-            _scenePreview.SetFlexibleLayout(true);
-            _scenePreview.SetFullBodyFraming(false);
-            _scenePreview.AddToClassList(
+            _avatarContext.Preview.SetFlexibleLayout(true);
+            _avatarContext.Preview.SetFullBodyFraming(false);
+            _avatarContext.Preview.AddToClassList(
                 "ee4v-modification-workflow__preview");
             _previewScopeSiblingIndex = _currentCategory == WorkflowCategory.Overview
-                ? null : _selectedPrefabSiblingIndex;
-            _scenePreview.SetScope(
-                _previewScopeSiblingIndex, _prefabSiblingIndices);
-            _scenePreview.SetHiddenPrefabs(
-                _basePrefabHidden,
-                _hiddenPrefabSiblingIndices);
-            _scenePreview.SetHiddenParts(_hiddenPreviewParts);
-            _scenePreview.SetPrefab(_workingObject);
+                ? null : _avatarContext.SelectedPrefabSiblingIndex;
+            _avatarContext.Preview.SetScope(
+                _previewScopeSiblingIndex, _avatarContext.PrefabSiblingIndices);
+            _avatarContext.Preview.SetHiddenPrefabs(
+                _avatarContext.BasePrefabHidden,
+                _avatarContext.HiddenPrefabSiblingIndices);
+            _avatarContext.Preview.SetHiddenParts(_avatarContext.HiddenPreviewParts);
+            _avatarContext.Preview.SetPrefab(_avatarContext.Root);
             SyncPreviewSelection();
-            _previewPane.Content.Add(_scenePreview);
+            _previewPane.Content.Add(_avatarContext.Preview);
             return _previewPane;
         }
 
@@ -545,15 +532,15 @@ namespace Ee4v.AssetManager.UI
             bool clearFeedback = true)
         {
             if (category != WorkflowCategory.ShapeParts ||
-                _shapePartsSection != ShapePartsSection.Parts)
+                _parts.Section != ShapePartsSection.Parts)
             {
-                if (!FlushPendingPartVisibility())
+                if (!_parts.FlushPendingPartVisibility())
                 {
                     BuildWindow();
                     return;
                 }
             }
-            if (_selectedPrefabSiblingIndex.HasValue &&
+            if (_avatarContext.SelectedPrefabSiblingIndex.HasValue &&
                 category != WorkflowCategory.Overview &&
                 category != WorkflowCategory.Execution &&
                 category != WorkflowCategory.ShapeParts &&
@@ -562,12 +549,12 @@ namespace Ee4v.AssetManager.UI
                 category = WorkflowCategory.ShapeParts;
             }
             if (_currentCategory == WorkflowCategory.ShapeParts &&
-                _shapePartsSection == ShapePartsSection.Shape &&
+                _parts.Section == ShapePartsSection.Shape &&
                 category != WorkflowCategory.ShapeParts)
             {
-                EndBodyScaleDrag();
-                SaveBodyScalePrefab();
-                if (_bodyScaleDirty) { return; }
+                _parts.EndBodyScaleDrag();
+                _parts.SaveBodyScalePrefab();
+                if (_parts.BodyScaleDirty) { return; }
             }
             if (_customizerHost == null ||
                 _faceExpressionHost == null)
@@ -578,21 +565,21 @@ namespace Ee4v.AssetManager.UI
             var categoryChanged = _currentCategory != category;
             if (categoryChanged && clearFeedback)
             {
-                _feedback = string.Empty;
+                _avatarContext.Feedback = string.Empty;
             }
             _currentCategory = category;
             if (_appearanceDataDirty)
             {
-                if (!FlushPendingPartVisibility())
+                if (!_parts.FlushPendingPartVisibility())
                 {
                     BuildWindow();
                     return;
                 }
                 ClearAppearanceCaches();
             }
-            _scenePreview?.SetHiddenMaterials(
+            _avatarContext.Preview?.SetHiddenMaterials(
                 category == WorkflowCategory.Material
-                    ? _hiddenMaterials
+                    ? _materials.HiddenMaterials
                     : null);
             _categoryRail?.SetSelected(category);
 
@@ -605,7 +592,7 @@ namespace Ee4v.AssetManager.UI
                 _faceExpressionEditor?.StopPlayback();
                 if (_executionView == null)
                 {
-                    _executionView = new AvatarExecutionView(_workingObject, RequestRepaint);
+                    _executionView = new AvatarExecutionView(_avatarContext.Root, RequestRepaint);
                     _executionHost.Add(_executionView);
                 }
                 return;
@@ -618,7 +605,7 @@ namespace Ee4v.AssetManager.UI
                         _faceExpressionHost, RequestRepaint);
                     try
                     {
-                        editor.Initialize(_workingPrefabAsset);
+                        editor.Initialize(_avatarContext.PrefabAsset);
                         _faceExpressionEditor = editor;
                     }
                     catch
@@ -632,11 +619,11 @@ namespace Ee4v.AssetManager.UI
 
             _faceExpressionEditor?.StopPlayback();
             var previewScope = category == WorkflowCategory.Overview
-                ? null : _selectedPrefabSiblingIndex;
+                ? null : _avatarContext.SelectedPrefabSiblingIndex;
             if (_previewScopeSiblingIndex != previewScope)
             {
                 _previewScopeSiblingIndex = previewScope;
-                _scenePreview?.SetScope(previewScope, _prefabSiblingIndices);
+                _avatarContext.Preview?.SetScope(previewScope, _avatarContext.PrefabSiblingIndices);
             }
             _overviewContent?.RemoveFromHierarchy();
             _overviewContent = null;
@@ -649,29 +636,29 @@ namespace Ee4v.AssetManager.UI
                     cachedControls.Content.AddToClassList(
                         "ee4v-modification-workflow__hidden");
                 }
-                _scenePreview?.FocusBodyPart(null);
-                _scenePreview?.SetListSelection(null, null);
+                _avatarContext.Preview?.FocusBodyPart(null);
+                _avatarContext.Preview?.SetListSelection(null, null);
                 _overviewContent = BuildOverviewControls();
-                _controlsHost.Add(_overviewContent);
+                _avatarContext.ControlsHost.Add(_overviewContent);
                 if (categoryChanged)
                 {
-                    _controlsHost.scrollOffset = Vector2.zero;
+                    _avatarContext.ControlsHost.scrollOffset = Vector2.zero;
                 }
                 SetPreviewTitle("workflow.preview.appearanceTitle");
                 return;
             }
-            if (_selectedBodyPart.HasValue &&
-                !HasFocusBone(_selectedBodyPart.Value))
+            if (_avatarContext.SelectedBodyPart.HasValue &&
+                !HasFocusBone(_avatarContext.SelectedBodyPart.Value))
             {
-                _selectedBodyPart = null;
-                _scenePreview?.FocusBodyPart(null);
+                _avatarContext.SelectedBodyPart = null;
+                _avatarContext.Preview?.FocusBodyPart(null);
             }
             _appearanceHeader.Clear();
             _appearanceHeader.style.display = DisplayStyle.Flex;
             if (category == WorkflowCategory.ShapeParts)
             {
                 _appearanceHeader.Add(BuildBodyPartSelector());
-                _appearanceHeader.Add(BuildShapePartsTabs());
+                _appearanceHeader.Add(_parts.BuildShapePartsTabs());
             }
             else
             {
@@ -682,37 +669,37 @@ namespace Ee4v.AssetManager.UI
             }
             var appearancePanel = category == WorkflowCategory.Material
                 ? AppearancePanel.Material
-                : _shapePartsSection == ShapePartsSection.Shape
+                : _parts.Section == ShapePartsSection.Shape
                     ? AppearancePanel.Shape
                     : AppearancePanel.Parts;
             if (!_appearanceControlsCache.TryGetValue(appearancePanel,
                     out var cached) ||
-                cached.BodyPart != _selectedBodyPart ||
+                cached.BodyPart != _avatarContext.SelectedBodyPart ||
                 appearancePanel == AppearancePanel.Material &&
-                    cached.Material != _selectedMaterial ||
-                cached.Feedback != _feedback ||
-                cached.FeedbackType != _feedbackType)
+                    cached.Material != _avatarContext.SelectedMaterial ||
+                cached.Feedback != _avatarContext.Feedback ||
+                cached.FeedbackType != _avatarContext.FeedbackType)
             {
                 InvalidateAppearanceControls(appearancePanel);
                 if (appearancePanel == AppearancePanel.Material)
                 {
-                    DisposeMaterialEditor();
+                    _materials.DisposeMaterialEditor();
                 }
                 else if (appearancePanel == AppearancePanel.Parts)
                 {
-                    _objectRows.Clear();
+                    _parts.ClearRows();
                 }
                 var content = BuildAppearanceControls();
                 cached = new CachedAppearanceControls
                 {
                     Content = content,
-                    BodyPart = _selectedBodyPart,
-                    Material = _selectedMaterial,
-                    Feedback = _feedback,
-                    FeedbackType = _feedbackType
+                    BodyPart = _avatarContext.SelectedBodyPart,
+                    Material = _avatarContext.SelectedMaterial,
+                    Feedback = _avatarContext.Feedback,
+                    FeedbackType = _avatarContext.FeedbackType
                 };
                 _appearanceControlsCache[appearancePanel] = cached;
-                _controlsHost.Add(cached.Content);
+                _avatarContext.ControlsHost.Add(cached.Content);
             }
             foreach (var pair in _appearanceControlsCache)
             {
@@ -722,7 +709,7 @@ namespace Ee4v.AssetManager.UI
             }
             if (categoryChanged)
             {
-                _controlsHost.scrollOffset = Vector2.zero;
+                _avatarContext.ControlsHost.scrollOffset = Vector2.zero;
             }
             SetPreviewTitle(
                 category == WorkflowCategory.Material
@@ -733,10 +720,10 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement BuildOverviewControls()
         {
-            return new AvatarOverviewView(_workingObject.name,
-                AvatarOverviewAnalysis.FindAttachmentWarnings(_workingObject),
-                AvatarPlayModePerformanceCache.Get(_workingObject),
-                _overviewMobile, AvatarOverviewAnalysis.HasAaoComponents(_workingObject),
+            return new AvatarInfoView(_avatarContext.Root.name,
+                AvatarInfoAnalysis.FindAttachmentWarnings(_avatarContext.Root),
+                AvatarPlayModePerformanceCache.Get(_avatarContext.Root),
+                _overviewMobile, AvatarInfoAnalysis.HasAaoComponents(_avatarContext.Root),
                 mobile =>
                 {
                     _overviewMobile = mobile;

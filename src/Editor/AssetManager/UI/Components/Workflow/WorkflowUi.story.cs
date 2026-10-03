@@ -32,9 +32,7 @@ namespace Ee4v.AssetManager.UI
                 Story("workflow-category-rail", "Inputs", "WorkflowCategoryRail",
                     "カテゴリの選択表示とPrefab選択中の操作可否を管理します。",
                     BuildCategoryRail, "AssetModificationWorkflowView.Workspace.cs"),
-                Story("workflow-avatar-overview", "Displays", "AvatarOverviewView",
-                    "渡された装着警告とビルド結果を表示します。PC／Questの切り替えを確認できます。",
-                    BuildOverview, "AssetModificationWorkflowView.Workspace.cs"),
+
             };
         }
 
@@ -84,61 +82,6 @@ namespace Ee4v.AssetManager.UI
             parent.Add(new UiButton("Prefab選択状態を切り替え",
                 () => rail.SetPrefabScope(scopeSelected = !scopeSelected)));
             parent.Add(rail);
-        }
-
-        private static void BuildOverview(VisualElement parent)
-        {
-            var record = new AvatarPlayModePerformanceCache.Record
-            {
-                AaoAttached = true,
-                Desktop = SampleReport("Good", "Good", "75,000", 75000, 70000),
-                Mobile = SampleReport("VeryPoor", "VeryPoor", "75,000", 75000, 20000)
-            };
-            var mobile = false;
-            var available = true;
-            var host = new VisualElement();
-            void Render()
-            {
-                host.Clear();
-                host.Add(new AvatarOverviewView("Sample Avatar", Array.Empty<GameObject>(),
-                    available ? record : null, mobile, false,
-                    value => { mobile = value; Render(); }, _ => { }));
-            }
-            parent.Add(new UiButton("ビルド結果の有無を切り替え", () =>
-            {
-                available = !available;
-                Render();
-            }));
-            parent.Add(host);
-            Render();
-        }
-
-        private static AvatarOverviewAnalysis.PerformanceReport SampleReport(
-            string rating, string metricRating, string value, double amount, double limit)
-        {
-            return new AvatarOverviewAnalysis.PerformanceReport
-            {
-                Rating = rating,
-                Metrics = new[]
-                {
-                    new AvatarOverviewAnalysis.PerformanceMetric
-                    {
-                        Category = "PolyCount", Value = value, Rating = metricRating,
-                        Amount = amount, TargetRating = "Good", TargetLimit = limit,
-                        TargetLimitLabel = limit.ToString("N0")
-                    },
-                    new AvatarOverviewAnalysis.PerformanceMetric
-                    {
-                        Category = "PhysBoneComponentCount", Value = "8", Rating = "Medium",
-                        Amount = 8, TargetRating = "Good", TargetLimit = 4, TargetLimitLabel = "4"
-                    },
-                    new AvatarOverviewAnalysis.PerformanceMetric
-                    {
-                        Category = "ParticleSystemCount", Value = "0", Rating = "Excellent",
-                        Amount = 0, TargetRating = "Excellent", TargetLimit = 0, TargetLimitLabel = "0"
-                    }
-                }
-            };
         }
 
     }

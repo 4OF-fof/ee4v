@@ -1,0 +1,83 @@
+{
+  "workflow": {
+    "appearance": {
+      "bodyPart": {
+        "wholeBody": "Whole body"
+      },
+      "sizeHumanoidRequired": "A Humanoid Animator is required for advanced skeleton scaling. Height and appearance BlendShapes remain available.",
+      "heightDescriptorRequired": "A VRC Avatar Descriptor with a valid View Position is required to read the upload-time avatar height.",
+      "sizeProtected": "This Prefab is outside the derived asset. Its size cannot be changed so the source remains protected.",
+      "sizeSaveFailed": "The size could not be saved to the derived Prefab. Check the Console.",
+      "sizeUndo": "Change body size",
+      "sizeSliderTooltip": "Adjust {0} from 50% to 200%. Numeric input accepts values outside this range",
+      "axisScaleSliderTooltip": "Adjust the {1}-axis scale of {0} from 50% to 200%. Numeric input accepts values outside this range",
+      "heightSliderTooltip": "Adjust height from {0} to {1}",
+      "bodyShapeEmpty": "No adjustable appearance BlendShapes were found.",
+      "bodyShapePartEmpty": "No adjustable BlendShapes were found for this part.",
+      "bodyShapeSliderTooltip": "Adjust the {0} BlendShape from 0% to 100%",
+      "bodyShapeExpand": "Show individual settings for {0}",
+      "bodyShapeCollapse": "Hide individual settings for {0}",
+      "bodyShapePart": {
+        "head": "Head & neck",
+        "chest": "Chest",
+        "waist": "Waist & hips",
+        "shoulders": "Shoulders & arms",
+        "arms": "Arms",
+        "hands": "Hands",
+        "legs": "Legs",
+        "feet": "Feet",
+        "other": "Other"
+      },
+      "advancedSizeTitle": "Advanced skeleton scaling",
+      "sizeAxisExpand": "Show X, Y, and Z for {0}",
+      "sizeAxisCollapse": "Hide X, Y, and Z for {0}",
+      "sizeReset": "Reset",
+      "sizeAxis": {
+        "x": "X",
+        "y": "Y",
+        "z": "Z"
+      },
+      "sizePart": {
+        "wholeBody": "Height",
+        "head": "Head",
+        "chest": "Chest",
+        "waist": "Waist",
+        "shoulders": "Shoulders",
+        "arms": "Arms",
+        "hands": "Hands",
+        "legs": "Legs",
+        "feet": "Feet"
+      },
+      "materialUsage": "{0} / slot {1}",
+      "moreUsages": "+{0} more",
+      "allMaterials": "All",
+      "hideMaterial": "Hide this Material",
+      "showMaterial": "Show this Material",
+      "hideAll": "Hide all Materials",
+      "showAll": "Show all Materials",
+      "readOnly": "Read only",
+      "editorUnavailable": "The Material Inspector could not be created.",
+      "makeEditable": "Create Material Variant and edit",
+      "materialReplacementFailed": "The Material could not be replaced. Check the Console.",
+      "materialVariantFailed": "The editable Material Variant could not be created. Check the Console.",
+      "emptyTitle": "No Materials found",
+      "emptyPartDescription": "No Materials were classified under this part. Check Whole body.",
+      "emptyDescription": "Check that the selected derived asset has Materials assigned."
+    }
+  },
+  "avatarEditor": {
+    "prefab": "Prefab",
+    "save": "Save",
+    "preview": "Preview",
+    "unsaved": "Save changes to this Prefab?",
+    "cancel": "Cancel",
+    "discard": "Discard",
+    "invalidPrefab": "Select a Prefab asset from the Project.",
+    "selectPrefab": "Assign the Prefab to edit in the input field.",
+    "readOnly": "This Prefab is read-only. Select a writable Prefab to edit.",
+    "saveFailed": "Could not save the Prefab.",
+    "shapePartsTitle": "Shape and Parts",
+    "materialsTitle": "Materials",
+    "compositionTitle": "Prefab Composition"
+  }
+}

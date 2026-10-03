@@ -1,0 +1,59 @@
+{
+  "workflow": {
+    "overview": {
+      "avatar": "Avatar information",
+      "name": "Name",
+      "platform": "Target platform",
+      "desktop": "PC",
+      "mobile": "Quest",
+      "playModeRequired": "Enter Play Mode to display the avatar's performance after building.",
+      "playModeNotCaptured": "No build result was captured during the last Play Mode session. Check NDMF Apply on Play and build errors.",
+      "aaoAttached": "AAO attached",
+      "aaoBuildTooltip": "AAO components were attached when the last Play Mode build started.",
+      "aaoCurrentTooltip": "AAO components are attached to the current avatar.",
+      "warnings": "Warnings",
+      "attachmentWarning": "\"{0}\" has neither Merge Armature nor Bone Proxy. Attachment setup may be required.",
+      "openAttachmentSettings": "Open attachment settings",
+      "performance": "Avatar performance",
+      "overallRating": "Overall rating",
+      "metricsToReview": "{0} metrics exceed the Good budget",
+      "metricsWithinBudget": "Metrics are within the Good budget",
+      "targetBudget": "{0} budget: {1}",
+      "group": {
+        "rendering": "Rendering & memory",
+        "dynamics": "Bones & dynamics",
+        "effects": "Effects & audio"
+      },
+      "sdkUnavailable": "VRChat SDK is required to read avatar performance.",
+      "performanceFailed": "Could not read avatar performance: {0}",
+      "rating": {
+        "Excellent": "Excellent",
+        "Good": "Good",
+        "Medium": "Medium",
+        "Poor": "Poor",
+        "VeryPoor": "Very Poor",
+        "Unknown": "Unavailable"
+      },
+      "metric": {
+        "PolyCount": "Triangles",
+        "SkinnedMeshCount": "Skinned Mesh Renderers",
+        "MeshCount": "Mesh Renderers",
+        "MaterialCount": "Material slots",
+        "BoneCount": "Bones",
+        "TextureMegabytes": "Texture memory",
+        "AnimatorCount": "Animators",
+        "PhysBoneComponentCount": "PhysBones",
+        "PhysBoneTransformCount": "PhysBone transforms",
+        "PhysBoneColliderCount": "PhysBone colliders",
+        "PhysBoneCollisionCheckCount": "PhysBone collision checks",
+        "ContactCount": "Non-local contacts",
+        "ConstraintsCount": "Constraints",
+        "ConstraintDepth": "Constraint depth",
+        "ParticleSystemCount": "Particle Systems",
+        "ParticleTotalCount": "Combined max particles",
+        "LightCount": "Lights",
+        "AudioSourceCount": "Audio Sources"
+      }
+    }
+  }
+}

@@ -14,7 +14,7 @@ AssetManager は Item、File、Import Target、依存関係、Tag、Collection�
 
 ## 統合画面の部品と責務
 
-統合ee4vと独立版の改変Windowは`AssetModificationWorkflowView`を使用します。Viewは編集対象、選択状態、Undo、作業Scene、保存と外部機能への接続を管理し、表示と配置を部品へ委譲します。部品は保存やPlay Modeの切り替えを直接行わず、渡された状態とコールバックを使用します。
+統合ee4vは`AssetModificationWorkflowView`を統合ホストとして使用します。ホストはVariant選択・作成、Prefab構成、作業Scene、編集保護、保存と外部機能への接続を管理します。パーツ・体型は[AvatarParts](./features/avatar-parts.md)、Materialは[AvatarMaterials](./features/avatar-materials.md)、詳細と性能解析は[AvatarInfo](./features/avatar-info.md)の公開APIへ委譲します。共通の編集対象・選択と通知は[AvatarEditingContext](./features/avatar-editing.md)で接続し、各機能はAssetManagerへ逆依存しません。
 
 | 部品 | 所属・Catalog分類 | 責務 |
 | --- | --- | --- |
@@ -27,18 +27,21 @@ AssetManager は Item、File、Import Target、依存関係、Tag、Collection�
 | `PrefabScenePreview` | 共通UI / Displays | 編集用3Dプレビュー、対象の複製、選択判定とカメラ操作 |
 | `WorkflowEditorLayout` | AssetManager / Domain/AssetManager/Containers | カテゴリ、プレビュー、編集ペインと表情・実行確認の専用領域の切り替え |
 | `WorkflowCategoryRail` | AssetManager / Domain/AssetManager/Inputs | 固定カテゴリ操作、選択表示とPrefab選択中の操作可否 |
-| `AvatarOverviewView` | AssetManager / Domain/AssetManager/Displays | 装着警告とAssetManagerのビルド結果cacheの表示。集計とInspector操作は利用側が行う |
+| `AvatarPartsEditor` | Feature/Avatar/AvatarParts / Domain/AvatarParts/Containers | パーツ階層・体型編集、保留変更と機能内キャッシュ |
+| `AvatarMaterialsEditor` | Feature/Avatar/AvatarMaterials / Domain/AvatarMaterials/Containers | Material使用箇所、表示切り替えと割り当ての編集 |
+| `EmbeddedMaterialInspector` | Feature/Avatar/AvatarMaterials / Domain/AvatarMaterials/Inputs | MaterialEditorの埋め込み、変更通知と解放 |
+| `AvatarInfoView` | Feature/Avatar/AvatarInfo / Domain/AvatarInfo/Displays | 装着警告と性能結果の表示。解析・ビルド結果cacheもAvatarInfoが所有する |
 | `AvatarExecutionView` | AssetManager/Simulation / Domain/AssetManager/Containers | 実行確認の入力、GestureManager接続と実行用viewportの構成 |
 
-共通UI部品は`src/Editor/UI/Components`の公開APIです。AssetManagerのDB、Window session、改変カテゴリや翻訳に依存せず、他の編集補助ツールも同じAPIを使用できます。部位を表す`BodyPartCategory`とPrefab内の範囲判定・名前分割を行う`PrefabHierarchyUtility`はCoreの公開APIを使用します。固定の改変画面切り替え、AssetManagerのビルド結果cacheを読む概要とGestureManager接続は機能側へ置きます。
+共通UI部品は`src/Editor/UI/Components`の公開APIです。AssetManagerのDB、Window session、改変カテゴリや翻訳に依存せず、他の編集補助ツールも同じAPIを使用できます。部位を表す`BodyPartCategory`とPrefab内の範囲判定・名前分割を行う`PrefabHierarchyUtility`はCoreの公開APIを使用します。固定の改変画面切り替えはAssetManager、詳細はAvatarInfo、GestureManager接続はSimulationへ置きます。
 
-編集用と実行用の外枠には`PreviewPane`を、編集用の描画面には`ScenePreviewViewport`を使用します。`PrefabScenePreview`は本体、`Rendering`、`Selection`、`Camera`のpartialに分けます。共通部品のスタイルは`UiComposition.Prepare`で読み込み、機能固有の配置と操作のスタイルだけを`asset-modification-workflow.uss`と`UI/Components/Workflow`に置きます。実行確認のスタイルは`Simulation/avatar-execution.uss`に置きます。
+編集用と実行用の外枠には`PreviewPane`を、編集用の描画面には`ScenePreviewViewport`を使用します。`PrefabScenePreview`は本体、`Rendering`、`Selection`、`Camera`のpartialに分けます。共通部品のスタイルは`UiComposition.Prepare`で読み込みます。統合配置は`asset-modification-workflow.uss`と`UI/Components/Workflow`、パーツ・体型とMaterialのスタイルは各Feature、共有編集スタイルは`Feature/Shared/AvatarEditing`、詳細は`AvatarInfo/UI`が所有します。実行確認のスタイルは`Simulation/avatar-execution.uss`に置きます。
 
-改変Viewのpartialは`Workspace`（部品の構成、カテゴリと保存操作）、`Selection`（Variant選択・作成）、`Parts`（構成Prefab・パーツ）、`Shape`（体型編集と作業Sceneへの反映）、`Materials`（Material一覧・編集・差し替え）に分けます。partialは同じViewの状態を共有する実装分割であり、独立したcomponentとしては扱いません。
+統合ホストのpartialは`Workspace`（配置、カテゴリと版保存）、`Selection`（Variant選択・作成）、`Composition`（構成Prefabと共通グループ操作）、`EditingSession`（作業Sceneと共通選択）、`MaterialAssets`（Materialの編集保護・Variant作成と機能呼び出し）に分けます。機能間の更新はホストが調整し、体型・パーツとMaterialの編集実装をホストのpartialへ置きません。単独のShape and Parts、Materials、Prefab Compositionは各FeatureのWindowが共有の`AvatarPrefabEditorWindow`でPrefabを直接編集します。AssetManagerのDBや統合ホストへ依存せず、PartsとMaterialsの編集コンポーネントを統合版と共有します。
 
 Storyは実部品を使用し、編集・保存やPlay Modeの切り替えを行いません。共通部品のStoryと表示サイズは`UI/Catalog/Stories/EditorTools`と`UI/Catalog/editor-tools-story.uss`に置きます。サムネイルは320×220px、3Dプレビューは高さ440pxで表示します。3Dプレビューは独立したPreview Sceneでサンプル全体が収まるCameraを使用し、終了時に複製、サンプルとSceneを破棄します。Prefab選択とサムネイルはProjectのPrefabを読み取り専用で使用します。
 
-Workflow固有のStoryは`Domain/AssetManager`へ登録し、表示サイズは`workflow-story.uss`で指定します。画面配置と実行確認は最小幅1120px・高さ620pxで表示します。実行確認は対象がない実Viewを操作不可で表示します。Storyの使用箇所には、Story以外で部品を生成する実際のファイルを記載します。
+統合配置・カテゴリと実行確認のStoryは`Domain/AssetManager`へ登録し、表示サイズは`workflow-story.uss`で指定します。各Avatar機能のStoryはそれぞれ`Domain/AvatarParts`、`Domain/AvatarMaterials`、`Domain/AvatarInfo`に登録します。画面配置と実行確認は最小幅1120px・高さ620pxで表示します。実行確認は対象がない実Viewを操作不可で表示します。Storyの使用箇所には、Story以外で部品を生成する実際のファイルを記載します。
 
 ## UI契約
 

@@ -14,7 +14,10 @@
     "Ee4v.ProjectStyle.Editor",
     "Ee4v.FaceExpression.Editor",
     "nadena.dev.modular-avatar.core",
-    "nadena.dev.ndmf"
+    "Ee4v.AvatarEditing.Editor",
+    "Ee4v.AvatarParts.Editor",
+    "Ee4v.AvatarMaterials.Editor",
+    "Ee4v.AvatarInfo.Editor"
   ],
   "includePlatforms": [
     "Editor"

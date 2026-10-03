@@ -1,0 +1,12 @@
+{
+  "name": "Ee4v.AvatarInfo.Ndmf.Editor",
+  "rootNamespace": "Ee4v.AvatarInfo",
+  "references": [
+    "Ee4v.AvatarInfo.Editor",
+    "nadena.dev.ndmf"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true
+}

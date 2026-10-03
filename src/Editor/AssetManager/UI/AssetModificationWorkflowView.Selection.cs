@@ -1,19 +1,28 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.AssetProtection;
-using Ee4v.AssetManager.Contracts;
-using Ee4v.AssetManager.Simulation;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
-using Ee4v.Core.Settings;
-using Ee4v.FaceExpression;
 using Ee4v.UI;
+using Ee4v.AvatarEditing;
+using static Ee4v.AvatarEditing.AvatarBodyAnalysis;
+using static Ee4v.AvatarEditing.AvatarEditingUi;
 using nadena.dev.modular_avatar.core;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using Ee4v.AssetProtection;
+using Ee4v.AssetManager.Contracts;
+using Ee4v.AssetManager.Simulation;
+using Ee4v.Core.Settings;
+using Ee4v.FaceExpression;
+using Ee4v.AvatarParts;
+using Ee4v.AvatarMaterials;
+using Ee4v.AvatarInfo;
+using static Ee4v.AvatarParts.AvatarPartsEditor;
+using AppearancePanel = Ee4v.AvatarEditing.AvatarEditorPanel;
 
 namespace Ee4v.AssetManager.UI
 {
@@ -296,7 +305,7 @@ namespace Ee4v.AssetManager.UI
         private void StartDerivedAssetCreation()
         {
             _creatingDerivedAsset = true;
-            _feedback = string.Empty;
+            _avatarContext.Feedback = string.Empty;
             BuildWindow();
         }
 
@@ -318,7 +327,7 @@ namespace Ee4v.AssetManager.UI
         private void CancelDerivedAssetCreation()
         {
             _creatingDerivedAsset = false;
-            _feedback = string.Empty;
+            _avatarContext.Feedback = string.Empty;
             BuildWindow();
         }
 
@@ -359,7 +368,7 @@ namespace Ee4v.AssetManager.UI
             _creationPrefab = source.Prefabs[0];
             _derivedName = source.Item.Name + " Variant";
             _derivedDescription = string.Empty;
-            _feedback = string.Empty;
+            _avatarContext.Feedback = string.Empty;
             BuildWindow();
         }
 
@@ -415,8 +424,8 @@ namespace Ee4v.AssetManager.UI
             string message,
             HelpBoxMessageType type)
         {
-            _feedback = message ?? string.Empty;
-            _feedbackType = type;
+            _avatarContext.Feedback = message ?? string.Empty;
+            _avatarContext.FeedbackType = type;
             BuildWindow();
         }
 
@@ -426,76 +435,54 @@ namespace Ee4v.AssetManager.UI
             {
                 return;
             }
-            EndBodyScaleDrag();
-            SaveBodyScalePrefab();
-            if (_bodyScaleDirty) { return; }
+            _parts.EndBodyScaleDrag();
+            _parts.SaveBodyScalePrefab();
+            if (_parts.BodyScaleDirty) { return; }
             ReleaseWorkingScene();
-            _bodyScaleDirty = false;
-            _bodyScaleDragging = false;
-            ClearPendingBodySizeChange();
-            _bodyScaleBaseScales.Clear();
-            _advancedBodyScaleExpanded = false;
-            _expandedBodyScaleAxes.Clear();
-            _expandedBodyBlendShapeGroups.Clear();
-            _baseAvatarViewPosition = null;
-            _avatarDescriptor = null;
+            _parts.ResetEditingState();
+            _materials.ResetEditingState();
             _workingAsset = asset;
-            _workingPrefabAsset = asset.Prefab;
-            _workingObject = AcquireWorkingScene(_workingPrefabAsset);
-            _basePrefabHidden = false;
-            _hiddenPrefabSiblingIndices.Clear();
-            _hiddenPreviewParts.Clear();
-            _expandedPartPrefabGroups.Clear();
-            _expandedObjectGroups.Clear();
-            _expandedMaterialPrefabGroups.Clear();
+            _avatarContext.PrefabAsset = asset.Prefab;
+            _avatarContext.Root = AcquireWorkingScene(_avatarContext.PrefabAsset);
+            _avatarContext.BasePrefabHidden = false;
+            _avatarContext.HiddenPrefabSiblingIndices.Clear();
+            _avatarContext.HiddenPreviewParts.Clear();
             _prefabPreviewVisibilityInitialized = false;
-            _selectedPrefabSiblingIndex = null;
-            _selectedPrefabName = string.Empty;
+            _avatarContext.SelectedPrefabSiblingIndex = null;
+            _avatarContext.SelectedPrefabName = string.Empty;
             _creatingDerivedAsset = false;
             _currentCategory = WorkflowCategory.Overview;
             ApplyEditorMode();
-            _shapePartsSection = ShapePartsSection.Parts;
-            _selectedBodyPart = null;
-            _selectedPartKey = null;
-            _selectedMaterial = null;
-            _hiddenMaterials.Clear();
-            _feedback = string.Empty;
-            _assetFeedback = string.Empty;
+            _parts.Section = ShapePartsSection.Parts;
+            _avatarContext.SelectedBodyPart = null;
+            _avatarContext.SelectedPartKey = null;
+            _avatarContext.SelectedMaterial = null;
+            _avatarContext.Feedback = string.Empty;
+            _avatarContext.AssetFeedback = string.Empty;
             DerivedAssetChanged?.Invoke(asset);
             BuildWindow();
         }
 
         private void ClearDerivedAsset()
         {
-            EndBodyScaleDrag();
-            SaveBodyScalePrefab();
-            if (_bodyScaleDirty) { return; }
+            _parts.EndBodyScaleDrag();
+            _parts.SaveBodyScalePrefab();
+            if (_parts.BodyScaleDirty) { return; }
             ReleaseWorkingScene();
-            _bodyScaleDirty = false;
-            _bodyScaleDragging = false;
-            ClearPendingBodySizeChange();
-            _bodyScaleBaseScales.Clear();
-            _advancedBodyScaleExpanded = false;
-            _expandedBodyScaleAxes.Clear();
-            _expandedBodyBlendShapeGroups.Clear();
-            _baseAvatarViewPosition = null;
-            _avatarDescriptor = null;
+            _parts.ResetEditingState();
+            _materials.ResetEditingState();
             _workingAsset = null;
-            _basePrefabHidden = false;
-            _hiddenPrefabSiblingIndices.Clear();
-            _hiddenPreviewParts.Clear();
-            _expandedPartPrefabGroups.Clear();
-            _expandedObjectGroups.Clear();
-            _expandedMaterialPrefabGroups.Clear();
+            _avatarContext.BasePrefabHidden = false;
+            _avatarContext.HiddenPrefabSiblingIndices.Clear();
+            _avatarContext.HiddenPreviewParts.Clear();
             _prefabPreviewVisibilityInitialized = false;
-            _selectedPrefabSiblingIndex = null;
-            _selectedPrefabName = string.Empty;
-            _selectedBodyPart = null;
-            _selectedPartKey = null;
-            _selectedMaterial = null;
-            _hiddenMaterials.Clear();
-            _feedback = string.Empty;
-            _assetFeedback = string.Empty;
+            _avatarContext.SelectedPrefabSiblingIndex = null;
+            _avatarContext.SelectedPrefabName = string.Empty;
+            _avatarContext.SelectedBodyPart = null;
+            _avatarContext.SelectedPartKey = null;
+            _avatarContext.SelectedMaterial = null;
+            _avatarContext.Feedback = string.Empty;
+            _avatarContext.AssetFeedback = string.Empty;
             DerivedAssetChanged?.Invoke(null);
             BuildWindow();
         }

@@ -1,0 +1,23 @@
+# AvatarMaterials
+
+`src/Editor/Feature/Avatar/AvatarMaterials`と`Ee4v.AvatarMaterials.Editor`がMaterialタブの編集処理を所有します。`AvatarMaterialsEditor`は統合ee4vと独立版Materialsの共通実装です。
+
+## 公開境界
+
+`AvatarMaterialsEditor(AvatarEditingContext)`へ対象、選択範囲、Preview、編集可否とホストの通知を渡し、`BuildControls`でUIを生成します。`SelectPreviewMaterial`でPreviewからの選択を受け取ります。Material使用箇所の収集、部位・Prefab範囲の絞り込み、一時的な表示切り替え、割り当ての変更、Inspectorとキャッシュはこの機能が所有します。
+
+`ReplaceMaterialAssignments`は選択範囲のRendererをUndoに記録し、作業対象の割り当てを変更します。`RefreshAfterMaterialReplacement`が選択・表示とUIを更新します。事前にホストの`FlushChanges`を呼び、体型・パーツの保留変更を確定します。範囲外でも共有されるMaterialの直接編集は`IsMaterialSharedOutsideSelectedPrefab`で拒否します。
+
+編集可能なMaterialかどうか、保護された元素材の扱い、Material Variantを保存するフォルダーと作成処理はホストが決めます。AssetManagerのDB、作業Scene、AssetProtectionには依存しません。他のAvatar機能へのassembly参照もありません。
+
+編集対象の変更では`ResetEditingState`、データの変更では`ClearData`、Prefab構成の変更では`ClearExpandedGroups`を呼びます。`ClearData`は自身のキャッシュとInspectorを解放し、ホストの`InvalidateMaterialData`を呼び返しません。`BuildControls`も再生成前に既存のInspectorを解放します。画面の破棄時は`Dispose`でMaterialEditorを解放します。
+
+`AvatarMaterialsWindow`はこの機能が所有し、共有の`AvatarPrefabEditorWindow`を使用します。Prefab入力欄から直接対象を選び、割り当ては独立したPrefab編集領域で変更して保存します。Materialプロパティは割り当て先アセットを直接編集し、Undoで戻せます。保存では使用中の編集可能なMaterialアセットも保存します。読み取り専用Materialを編集可能にする場合は、入力Prefabと同じフォルダーの`<Prefab名>.Materials`へコピーを作成し、作業対象の割り当てを差し替えます。AssetManagerや別Windowを必要としません。
+
+## UI
+
+`EmbeddedMaterialInspector`は同じ機能内の独立した部品です。MaterialEditorの幅・ラベル幅・変更通知と破棄を管理します。部品のスタイルは`avatar-materials.uss`、共有編集部品は`Feature/Shared/AvatarEditing/avatar-editing.uss`に置きます。
+
+Catalogは`Domain/AvatarMaterials/Containers/AvatarMaterialsEditor`と`Domain/AvatarMaterials/Inputs/EmbeddedMaterialInspector`へ登録します。Storyではメモリー上のサンプルのみ使用し、ProjectのMaterialを保存しません。編集UIの翻訳はAvatarMaterials scopeに置きます。
+
+作業SceneとMaterial Variant保存の接続は[AssetManager](../asset-manager.md)で管理します。

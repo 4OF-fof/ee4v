@@ -1,0 +1,7 @@
+# AvatarComposition
+
+`src/Editor/Feature/Avatar/AvatarComposition`と`Ee4v.AvatarComposition.Editor`は単独のPrefab Composition Windowを所有します。メニューは`ee4v/Window/Avatar/Prefab Composition`です。共有の`AvatarPrefabEditorWindow`でPrefab入力、独立した編集領域、Preview、保存と破棄を管理します。
+
+選択したPrefabの直下の子を一覧に表示し、activeSelfの切り替えと削除、別Prefabの追加を行います。追加はPrefab接続を維持し、ローカル位置と回転を初期化して編集対象の直下へ配置します。操作はUndoに記録し、保存時に入力したPrefabへ反映します。対象自身や対象を依存に含むPrefabは、循環参照を防ぐため追加しません。
+
+Core Presentation、UIと共有のAvatarEditingを参照し、AssetManagerや他のAvatar機能へ依存しません。統合版の構成・Variant操作は引き続きAssetManagerの統合ホストが所有します。

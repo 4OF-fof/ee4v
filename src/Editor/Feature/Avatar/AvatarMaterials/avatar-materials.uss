@@ -1,0 +1,103 @@
+.ee4v-modification-workflow__make-material-editable.ee4v-ui-button {
+    width: 100%;
+    margin-top: var(--ee4v-space-lg);
+    margin-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__material-list {
+    min-width: 0;
+    margin-bottom: var(--ee4v-space-xl);
+    padding: var(--ee4v-space-none);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-xl);
+    background-color: var(--ee4v-color-panel);
+    overflow: hidden;
+}
+
+.ee4v-modification-workflow__material-item.ee4v-ui-navigation-item {
+    width: 100%;
+    min-height: 52px;
+    margin-bottom: var(--ee4v-space-none);
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-left-width: 0;
+    border-bottom-color: var(--ee4v-color-border-default);
+    border-radius: 0;
+}
+
+.ee4v-modification-workflow__material-slot.unity-base-field {
+    min-width: 0;
+    margin-top: 0;
+    margin-bottom: var(--ee4v-space-xs);
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.ee4v-modification-workflow__material-visibility-all {
+    min-height: 38px;
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-bottom-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-modification-workflow__material-item.ee4v-ui-navigation-item:hover {
+    border-bottom-color: var(--ee4v-color-border-default);
+}
+
+.ee4v-modification-workflow__material-item.ee4v-ui-navigation-item--selected,
+.ee4v-modification-workflow__material-item.ee4v-ui-navigation-item--selected:hover {
+    background-color: var(--ee4v-color-selection-soft);
+}
+
+.ee4v-modification-workflow__material-visibility.ee4v-ui-button {
+    width: var(--ee4v-size-28);
+    min-width: var(--ee4v-size-28);
+    height: var(--ee4v-size-28);
+    min-height: var(--ee4v-size-28);
+    margin-left: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__material-editor-section {
+    min-width: 0;
+    margin-bottom: var(--ee4v-space-xl);
+}
+
+.ee4v-modification-workflow__material-editor-surface {
+    min-width: 0;
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-xl);
+    background-color: var(--ee4v-color-panel);
+    overflow: hidden;
+}
+
+.ee4v-modification-workflow__material-editor-header {
+    min-width: 0;
+    margin-bottom: var(--ee4v-space-none);
+    padding: var(--ee4v-space-md);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-bottom-color: var(--ee4v-color-border-default);
+}
+
+.ee4v-modification-workflow__material-editor {
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+    border-width: 0;
+    border-radius: 0;
+    background-color: var(--ee4v-color-transparent);
+    padding-top: var(--ee4v-space-sm);
+    padding-left: var(--ee4v-space-2xl);
+    padding-right: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__material-editor-imgui {
+    width: 100%;
+    min-width: 0;
+    flex-grow: 0;
+    flex-shrink: 0;
+}

@@ -26,7 +26,7 @@ namespace Ee4v.UI
                     BuildPrefabTab, "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs"),
                 Story("body-part-selector", "Inputs", "BodyPartSelector",
                     "部位の選択と利用できない部位の無効表示を管理します。",
-                    BuildBodyPartSelector, "Editor/AssetManager/UI/AssetModificationWorkflowView.Shape.cs"),
+                    BuildBodyPartSelector, "Editor/AssetManager/UI/AssetModificationWorkflowView.EditingSession.cs"),
                 Story("prefab-scene-preview", "Displays", "PrefabScenePreview",
                     "共通の3Dプレビューです。独立したPreview Sceneのサンプルでカメラと選択を確認します。",
                     BuildScenePreview, "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",

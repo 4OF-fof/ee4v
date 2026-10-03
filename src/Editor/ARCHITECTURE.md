@@ -12,7 +12,7 @@ Feature ──→ Core
    └──────→ Core.Presentation ──→ UI
 ```
 
-複数機能で共有する実装は`Feature/Shared`へ置きます。共有モジュールを追加または利用するときは、使用する機能と共有理由を`docs~`に記載します。現在はProjectStyleとHierarchyStyleが`Ee4v.ItemStyle.Editor`を共有します。
+複数機能で共有する実装は`Feature/Shared`へ置きます。共有モジュールを追加または利用するときは、使用する機能と共有理由を`docs~`に記載します。ProjectStyleとHierarchyStyleは`Ee4v.ItemStyle.Editor`、AvatarPartsとAvatarMaterialsは`Ee4v.AvatarEditing.Editor`を共有します。AvatarEditingの対象・選択状態とホストサービスの契約は[`docs~/features/avatar-editing.md`](../../docs~/features/avatar-editing.md)を参照します。
 
 AssetManagerは例外として、他の機能モジュールへ依存できます。AssetProtectionは`AssetManager/AssetProtection`に置くAssetManager内部モジュールです。
 
@@ -30,6 +30,10 @@ AssetManager内はContracts、Domain、Application、Infrastructure、UI、Asset
 
 ## 単独機能とee4vウィンドウ
 
-各機能は単独で操作できる入口を持ち、ee4vウィンドウでも同じview／controllerを組み合わせます。ee4vウィンドウ専用だった体型・パーツ、Material、Prefab構成には単独Windowを用意します。
+各機能は単独で操作できる入口を持ち、ee4vウィンドウでも同じview／controllerを組み合わせます。体型・パーツ、MaterialとPrefab構成の単独Windowは各Feature内に置き、共有の`AvatarPrefabEditorWindow`でPrefab入力・独立した編集領域・保存を管理します。AssetManagerや他のWindowの起動・選択には依存しません。
 
-AssetManager内部の`AssetModificationWorkflowView`が改変の共通実装を所有し、各Windowは表示モードとlayout復元を扱います。AssetManagerの検索・一覧・情報は`AssetManagerWorkspaceView`で既存の3つの`AssetManagerView`を共有sessionへ接続します。この3ペインをee4vウィンドウの素材選択と単独Libraryへ組み込みます。ワークフローは専用のAssetManagerViewStateを保持し、通常と同じ派生アセット追加カードから選択Item IDを作成開始callbackへ渡します。AssetManagerの画面構成と追加カードの描画は通常版と共有します。作成元をそのItemに固定してVariantを生成し、作成結果を編集画面へ渡します。改変中のheader、カテゴリ、Preview、編集ペインは既存の構成を維持します。改変画面からFace Expressionへの既存の依存は埋め込み表示とBlendShape分類の公開APIに限定します。機能module間の新しい依存とCoreの機能登録APIは追加しません。
+`Feature/Avatar/AvatarParts`、`AvatarMaterials`、`AvatarInfo`がそれぞれパーツ・体型、Material、詳細を所有し、同階層のFaceExpressionとPlayModeComponentSuppressionも独立した機能として維持します。機能間のassembly参照は作りません。AvatarInfoのNDMF連携は専用assemblyに分けます。
+
+AssetManager内部の`AssetModificationWorkflowView`は統合ホストとしてVariant選択・作成、Prefab構成、作業Scene、編集保護と版保存を扱います。`AvatarEditingContext`で編集対象と選択・通知を渡し、PartsとMaterialsの公開エディターAPIを統合と単独Windowで共有します。FaceExpressionの名前分類は統合版では`WorkflowShapeNaming`、単独版では共有契約へ登録した`AvatarShapeNamingProvider`で提供し、AvatarPartsから直接参照しません。
+
+AssetManagerの検索・一覧・情報は`AssetManagerWorkspaceView`で既存の3つの`AssetManagerView`を共有sessionへ接続します。この3ペインをee4vウィンドウの素材選択と単独Libraryへ組み込みます。ワークフローは専用のAssetManagerViewStateを保持し、通常と同じ派生アセット追加カードから選択Item IDを作成開始callbackへ渡します。AssetManagerの画面構成と追加カードの描画は通常版と共有します。作成元をそのItemに固定してVariantを生成し、作成結果を編集画面へ渡します。

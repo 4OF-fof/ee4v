@@ -1,0 +1,21 @@
+# AvatarParts
+
+`src/Editor/Feature/Avatar/AvatarParts`と`Ee4v.AvatarParts.Editor`がパーツ・体型タブの編集処理を所有します。`AvatarPartsEditor`は統合ee4vと独立版Shape and Partsの共通実装です。
+
+## 公開境界
+
+`AvatarPartsEditor(AvatarEditingContext)`へ編集対象、選択範囲、Preview、編集可否とホストの通知を渡します。`BuildControls`と`BuildShapePartsTabs`が実画面のUIを生成し、`SelectPreviewPart`と`ClearPreviewSelection`がPreviewからの選択を受け取ります。
+
+パーツ階層、部位分類、activeSelfとEditorOnlyの操作、一時的なPreview表示、体型のScale・ViewPosition・BlendShape、Modular Avatarの同期処理、ドラッグ中の保留状態とキャッシュはこの機能に閉じます。パーツ処理は`Parts`、体型処理は`Shape`、階層分類は`Classification`のpartialで管理します。
+
+編集対象の変更では`ResetEditingState`、データの変更では`ClearData`を呼びます。Prefab構成の変更では`InvalidateShapeTargets`と`ClearExpandedGroups`を使用します。保存前に`EndBodyScaleDrag`、`SaveBodyScalePrefab`、`FlushPendingPartVisibility`を呼び、保留中の変更を作業対象へ反映します。これらはVariantの版保存を行いません。
+
+AssetManager、AvatarMaterials、AvatarInfo、FaceExpression、PlayModeComponentSuppressionへのassembly参照はありません。FaceExpressionの名前プリセットは`IAvatarShapeNaming`を通して受け取り、統合版では`WorkflowShapeNaming`、単独版では共有の`AvatarShapeNaming`へ登録された分類器を使用します。除外するパーツ名もホストから渡します。
+
+`AvatarShapePartsWindow`はこの機能が所有し、共有の`AvatarPrefabEditorWindow`を使用します。上部のPrefab入力欄から直接対象を選択し、独立した編集領域のパーツ・体型を編集して同じPrefabへ保存します。AssetManagerや別Windowの選択には依存しません。保存、切り替えと終了前には保留変更を確定します。単独版ではパーツ名の除外リストを使用しません。
+
+## UI
+
+部品のスタイルは`avatar-parts.uss`、共有編集部品は`Feature/Shared/AvatarEditing/avatar-editing.uss`に置きます。`BuildControls`が読み込み、統合画面は同じスタイルを取り込みます。Catalogは`Domain/AvatarParts/Containers/AvatarPartsEditor`へ登録し、Storyの使用箇所には統合と単独Windowの呼び出し元を記載します。編集UIの翻訳はAvatarParts scopeに置きます。
+
+AssetManagerの作業Scene・編集保護・版保存への接続は[AssetManager](../asset-manager.md)で管理します。

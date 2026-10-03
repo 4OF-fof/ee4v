@@ -1,4 +1,5 @@
 using System;
+using Ee4v.AvatarInfo;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -393,7 +394,7 @@ namespace Ee4v.AssetManager.UI
                 prefab);
             if (root == null && EditorApplication.isPlaying)
             {
-                root = AvatarPlayModePerformanceCache.FindPlayModeAvatar(prefabPath);
+                root = AvatarPlayModePerformanceCache.FindPlayModeAvatar(GetWorkingScenePath(prefabPath), prefabPath);
             }
             if (root == null)
             {
