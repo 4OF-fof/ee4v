@@ -1,0 +1,71 @@
+.ee4v-modification-workflow__variant-discard.ee4v-ui-button {
+    flex-shrink: 0;
+    margin-right: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__header-add.ee4v-ui-button {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    flex-shrink: 0;
+    padding: var(--ee4v-space-none);
+    margin-left: var(--ee4v-space-xxs);
+    border-width: var(--ee4v-space-none);
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-modification-workflow__header-add.ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-modification-workflow__header-add.ee4v-ui-button:active {
+    background-color: var(--ee4v-color-surface-pressed);
+}
+
+.ee4v-modification-workflow__header-change-separator {
+    width: var(--ee4v-border-hairline);
+    min-width: var(--ee4v-border-hairline);
+    height: var(--ee4v-size-16);
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-xs);
+    margin-right: var(--ee4v-space-xxs);
+    background-color: var(--ee4v-color-border-active);
+}
+
+.ee4v-modification-workflow__header-change.ee4v-ui-button {
+    min-height: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    padding: var(--ee4v-space-none) var(--ee4v-space-md);
+    border-width: var(--ee4v-space-none);
+    border-radius: var(--ee4v-radius-pill);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-modification-workflow__header-change.ee4v-ui-button:hover,
+.ee4v-modification-workflow__header-change.ee4v-ui-button:focus {
+    background-color: var(--ee4v-color-surface-hover-strong);
+}
+
+.ee4v-modification-workflow__header-change.ee4v-ui-button:active {
+    background-color: var(--ee4v-color-surface-pressed);
+}
+
+.ee4v-modification-workflow__object-preview-visibility.ee4v-ui-button {
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+    min-height: 24px;
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-xxs);
+    padding: var(--ee4v-space-none);
+    border-width: var(--ee4v-space-none);
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-modification-workflow__object-preview-visibility.ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}

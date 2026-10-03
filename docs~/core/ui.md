@@ -8,6 +8,10 @@ Catalogは利用場面ではなく、部品が公開する責務で分類しま�
 
 Catalogのナビゲーションではカテゴリ名も選択できます。カテゴリページには分類の説明と、下位カテゴリを含めて属しているStoryの名称・概要を表示します。一覧から各Storyへ移動できます。
 
+Storyページは詳細カードと実部品の描画領域を分離し、内容の高さを維持してスクロールします。必要な最小幅がウィンドウを超える部品は横スクロールで確認できます。親のサイズに追従するプレビューや画面全体の部品は、Story側で高さを持つ外枠へ配置します。
+
+Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します。共通部品のスタイルはこの入口から読み込み、Storyが別途登録する機能固有スタイルを追加します。
+
 ### Reference
 
 - `Color Palette`はUIとIMGUIで共有するUnity Dark・Lightの役割別カラートークンの参照です。独自の表示部品ではありません。
@@ -22,6 +26,9 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 - `FormInput`は任意ラベル、必須の単一入力コンポーネント、任意ボタンを横一列に配置するフォーム入力です。囲み枠は持ちません。文字入力には`InputField`を使用し、`Toggle`と`ObjectField`には`UiTextFactory`の標準入力スタイルを使用します。`ListField<T>`のように複数の入力要素を持つ場合も一つの入力コンポーネントとして渡します。値の保持と検証は入力コンポーネントが担当します。
 - `InputGroup`はfieldset風の外枠へ開閉可能な必須見出しを重ね、1個以上の`FormInput`をまとめる入力グループです。見出しから内容を開閉し、閉状態は高さとシェブロンで示します。枠の内外と見出し背景は通常色へ揃え、シェブロンと文字の領域だけをホバー対象として外枠の色を変えます。枠内の内容上や子孫入力のフォーカスでは外観を変えません。展開状態の変更を通知し、各`FormInput`のラベルは省略できます。
 - `NavigationItem`は`ItemRow`へクリックと選択状態を加えた操作項目です。
+- `SelectionTab`は名称と選択状態を持つタブです。通常と強調用の`SelectionTabVariant`を持ち、クリック時の操作は利用側が接続します。
+- `BodyPartSelector`はCoreの`BodyPartCategory`を使う部位選択です。選択通知と利用可否の判定は利用側が渡します。
+- `PrefabSelector`は候補Prefabの選択とドラッグの受け入れを行います。`ShowPicker`は同じ候補を検索付きの一覧・Gridから選択する入口で、候補取得や保存は行いません。PickerのWindowは内部実装です。
 - `TagPill`は任意の選択操作と削除操作を持つタグ入力です。pill形と薄い面を保ち、境界線と選択操作にはInputFieldと同じフォーカス色を使用します。
 
 ### Displays
@@ -30,19 +37,25 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 - `EmptyState`は薄い枠面で空領域を示し、対象がない理由と次の操作を中央へ表示します。操作要素自体は利用側が`Actions`へ追加します。
 - `StatusOverlay`は浮いた小型パネルとして、バックグラウンド処理の進捗をウィンドウ右下へ重ねて表示します。
 - `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンと`InputGroup`の開閉chevronにはFluent UI System Iconsを使用します。組み込みアイコンはUnityのFolder、Scene、GameObject、Model FileとHierarchyの非表示操作に限定します。Fluent画像が読み込めない場合は組み込みアイコンへ代替せず非表示にします。
+- `PrefabThumbnail`はUnityのAssetPreviewを表示し、読み込み中はMiniThumbnailを表示します。取得の再試行は表示中だけ行います。
+- `PrefabScenePreview`はPrefabまたはScene上のGameObjectを独立したPreview Sceneへ複製して描画します。対象、描画、部位・Material選択、Cameraと破棄を担当します。`SetFlexibleLayout`で親のサイズへ追従し、`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。
 - `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
 
 ### Containers
 
+- `SelectionTabBar`は固定の先頭タブ、横スクロールする`Tabs`と任意の操作を`Items`に配置します。タブの種類や選択状態は利用側が決めます。
 - `ActionBar`はToolbarやFooterの左、中央、右を配置する枠です。
 - `ItemRow`はアイコン、名称、補足、末尾操作を持つ一覧の1項目です。一覧自体は含みません。
 - `SectionHeader`はセクション名、説明、右側操作を置く見出しです。
 - `InfoCard`は見出しと本文を外枠付きでまとめる情報パネルです。
 - `PreviewContainer`はPreview本体、未表示時のPlaceholder、重ねる操作を置く3層コンテナです。描画処理と一覧は含みません。
+- `PreviewPane`はプレビューの見出し、見出し右側の`Actions`、描画要素を置く`Content`をまとめる外枠です。`SetTitle`で見出しを更新します。描画、対象の保持、Camera、Play Modeの制御と破棄は利用側の責務です。AssetManagerの編集用プレビューと実行確認で共有します。
 - `ScenePreviewViewport`は3D Preview向けにグリッド背景、IMGUI描画領域、背景の明暗切り替え、表示リセット、未表示時のPlaceholderをまとめます。機能固有のColliderやBone表示操作は`FeatureOverlay`へ重ね、3D描画自体とCamera制御は利用側が扱います。`PreviewOrbitController`はtarget・距離・yaw・pitchの即時設定と時間補間を提供し、アニメーション中の再描画スケジュールは利用側が管理します。右ドラッグ、中央ドラッグ、ホイール操作を始めた場合は補間を中断します。
 - `CustomPopup`は細い外枠と面の濃度差でHeader、本文、任意Footerを分けるポップアップです。`CustomPopupWindow`が移動、リサイズ、focus離脱時のCloseを担当します。
 
 `PreviewContainer` Storyはコンテナの範囲を枠で示し、中央のContent、空表示のPlaceholder、右上のOverlay操作を重ねて確認できる構成にします。
+
+`PreviewPane` Storyは実部品へ内容と操作ボタンを配置し、見出しの更新を確認します。共通の3D描画は`Displays/PrefabScenePreview`、機能固有の描画内容はDomain側のStoryで確認します。
 
 `ScenePreviewViewport` Storyは共有グリッド、右上の背景切り替えと表示リセット、左上の機能固有オーバーレイを一つのPreview内で確認できる構成にします。AssetManagerのAppearance Previewはこの部品を使用します。
 
@@ -52,6 +65,7 @@ Catalogのナビゲーションではカテゴリ名も選択できます。カ�
 
 ### Catalog外の基盤
 
+- `UiLocalization`は共通部品の文字をUI scopeから取得する内部基盤です。部品は利用機能の翻訳catalogへ依存しません。
 - `UiComposition.Prepare`は共通USSと機能固有USSを一つの入口で登録します。
 - `UiColorPalette`はUI ToolkitとIMGUIが共有するテーマ別標準色の契約です。`UiColorPalettes`がUnity Dark・Lightのバリエーションを所有し、`UiColorTokens.Current`と`UiComposition.Prepare`が現在のUnity Editorテーマへ接続します。
 - `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。通常の操作、文字入力、検索入力にはそれぞれ`UiButton`、`InputField`、`SearchField`を使用し、低レベルの`TextField`生成は共有入力コンポーネント内部に限定します。Factoryが生成する型付き入力には基盤となる共通クラスを付与します。数値入力とドロップダウンは透明背景の下線型、`Toggle`は標準入力と境界線、操作色、状態遷移を共有する小型チェックボックス型、`ObjectField`は右端の操作領域を分けた選択欄として`FormInput`の内外で共有します。複合入力内の埋め込みフィールドは共通クラスを外し、親コンポーネントが外観を担当します。

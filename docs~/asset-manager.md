@@ -12,6 +12,34 @@ AssetManager は Item、File、Import Target、依存関係、Tag、Collection�
 
 中央は実行中の作業Sceneを専用CameraとRenderTextureで描画します。表示用の2灯を実行中だけ配置します。実アバターのAnimator、揺れ物、Particleなどの状態を表示し、編集用Previewの複製へ同期しません。右ドラッグで回転、中ドラッグで移動、ホイールで拡大縮小し、「表示リセット」で対象を収めます。表示用Camera、LightとRenderTextureは保存せず、タブの画面再構築・Window終了時に解放します。総合タブのパフォーマンスは既存のNDMFビルド記録を使用します。
 
+## 統合画面の部品と責務
+
+統合ee4vと独立版の改変Windowは`AssetModificationWorkflowView`を使用します。Viewは編集対象、選択状態、Undo、作業Scene、保存と外部機能への接続を管理し、表示と配置を部品へ委譲します。部品は保存やPlay Modeの切り替えを直接行わず、渡された状態とコールバックを使用します。
+
+| 部品 | 所属・Catalog分類 | 責務 |
+| --- | --- | --- |
+| `PreviewPane` | 共通UI / Containers | プレビューの見出し、操作と描画要素の配置 |
+| `SelectionTabBar` | 共通UI / Containers | 固定タブ、横スクロールするタブと操作の配置 |
+| `SelectionTab` | 共通UI / Inputs | タブの名前と選択表示。クリック、表示切り替えとcontext menuは利用側が接続する |
+| `BodyPartSelector` | 共通UI / Inputs | 部位の選択表示と、利用側が判定した部位の操作可否 |
+| `PrefabSelector` | 共通UI / Inputs | 利用側が渡した候補Prefabの選択、Pickerとドラッグへの接続 |
+| `PrefabThumbnail` | 共通UI / Displays | UnityのAssetPreviewを取得するPrefabサムネイル |
+| `PrefabScenePreview` | 共通UI / Displays | 編集用3Dプレビュー、対象の複製、選択判定とカメラ操作 |
+| `WorkflowEditorLayout` | AssetManager / Domain/AssetManager/Containers | カテゴリ、プレビュー、編集ペインと表情・実行確認の専用領域の切り替え |
+| `WorkflowCategoryRail` | AssetManager / Domain/AssetManager/Inputs | 固定カテゴリ操作、選択表示とPrefab選択中の操作可否 |
+| `AvatarOverviewView` | AssetManager / Domain/AssetManager/Displays | 装着警告とAssetManagerのビルド結果cacheの表示。集計とInspector操作は利用側が行う |
+| `AvatarExecutionView` | AssetManager/Simulation / Domain/AssetManager/Containers | 実行確認の入力、GestureManager接続と実行用viewportの構成 |
+
+共通UI部品は`src/Editor/UI/Components`の公開APIです。AssetManagerのDB、Window session、改変カテゴリや翻訳に依存せず、他の編集補助ツールも同じAPIを使用できます。部位を表す`BodyPartCategory`とPrefab内の範囲判定・名前分割を行う`PrefabHierarchyUtility`はCoreの公開APIを使用します。固定の改変画面切り替え、AssetManagerのビルド結果cacheを読む概要とGestureManager接続は機能側へ置きます。
+
+編集用と実行用の外枠には`PreviewPane`を、編集用の描画面には`ScenePreviewViewport`を使用します。`PrefabScenePreview`は本体、`Rendering`、`Selection`、`Camera`のpartialに分けます。共通部品のスタイルは`UiComposition.Prepare`で読み込み、機能固有の配置と操作のスタイルだけを`asset-modification-workflow.uss`と`UI/Components/Workflow`に置きます。実行確認のスタイルは`Simulation/avatar-execution.uss`に置きます。
+
+改変Viewのpartialは`Workspace`（部品の構成、カテゴリと保存操作）、`Selection`（Variant選択・作成）、`Parts`（構成Prefab・パーツ）、`Shape`（体型編集と作業Sceneへの反映）、`Materials`（Material一覧・編集・差し替え）に分けます。partialは同じViewの状態を共有する実装分割であり、独立したcomponentとしては扱いません。
+
+Storyは実部品を使用し、編集・保存やPlay Modeの切り替えを行いません。共通部品のStoryと表示サイズは`UI/Catalog/Stories/EditorTools`と`UI/Catalog/editor-tools-story.uss`に置きます。サムネイルは320×220px、3Dプレビューは高さ440pxで表示します。3Dプレビューは独立したPreview Sceneでサンプル全体が収まるCameraを使用し、終了時に複製、サンプルとSceneを破棄します。Prefab選択とサムネイルはProjectのPrefabを読み取り専用で使用します。
+
+Workflow固有のStoryは`Domain/AssetManager`へ登録し、表示サイズは`workflow-story.uss`で指定します。画面配置と実行確認は最小幅1120px・高さ620pxで表示します。実行確認は対象がない実Viewを操作不可で表示します。Storyの使用箇所には、Story以外で部品を生成する実際のファイルを記載します。
+
 ## UI契約
 
 Previewのクリック判定で使用する識別色のMaterialと画素読取用TextureはPreviewごとに再利用し、Previewの破棄時に解放します。判定方法と選択結果は後述のPreview操作に従います。
@@ -55,7 +83,7 @@ Variant作成時は同じVariantフォルダーに`<Variant名>.prefab`と`<Vari
 
 共通のFBX別`BlendShape Presets`の各Mappingは役割名、左右、口形状に加えて見た目の部位とグループ名を保持します。体型タブを開いたとき、表示対象のBlendShapeが属するFBXにプリセットがなければ、FBX別プリセットを自動分類して共通data rootへ保存します。既存プリセットは上書きしません。体型タブにプリセット編集ボタンは置きません。保存済みの自動生成プリセットはFace Expressionのプリセット画面またはee4v MCPの部分更新toolから整えます。部位は「自動」「表情のみ」「頭・首」「胸」「腰・胴」「肩・腕」「腕」「手」「脚」「足」「全身のみ」から選び、空欄の既存JSONは「自動」として扱います。「自動」はBody meshを表情専用として除外し、その他をBlendShape名とRenderer名から部位推定します。明示した部位は推定より優先し、「表情のみ」は見た目から除外します。Body meshのBlendShapeでも明示した見た目部位があれば表示します。見た目のグループ名があればそれを、なければ保存済みの役割名を使い、同じ名前のBlendShapeを部位内でまとめて表示します。縮小用BlendShapeはプリセットの役割名と見た目グループ名に`Shrink`を指定し、各部位内でまとめます。プリセット保存時は開いている見た目一覧を更新し、BlendShape値は派生Prefab Variantのoverrideとして保存します。
 
-統合画面の体型・マテリアルは同じ`DerivedAssetPrefabScenePreview`インスタンスを使用します。Play Mode中は非アクティブなPreview Scene内に複製し、複製側のMonoBehaviourを除去してAnimatorを無効化してから表示します。ビルド済みアバターの描画状態を使い、Previewの複製でSDKやNDMFの実行処理を再起動しません。Preview側のスクリプトやAnimatorを実行せず、カメラ位置は保持します。Play Mode移行前に編集用Previewを破棄し、開始・停止後にそれぞれの対象から再生成します。グリッド背景、背景の明暗切り替え、表示リセット、未表示時のPlaceholderと上部アセットタブの表示・非表示はこの共通Previewが担当します。AssetManagerのPrefab Previewは、複製したAvatarにある有効なMA Shape Changerの初期状態から`Set`型のBlendShape値を適用してから描画します。MAのEdit Mode Previewが加工したScene View像を直接取得する方式ではなく、Preview用Prefab複製の表示値を一致させます。
+統合画面の体型・マテリアルは同じ`PrefabScenePreview`インスタンスを使用します。Play Mode中は非アクティブなPreview Scene内に複製し、複製側のMonoBehaviourを除去してAnimatorを無効化してから表示します。ビルド済みアバターの描画状態を使い、Previewの複製でSDKやNDMFの実行処理を再起動しません。Preview側のスクリプトやAnimatorを実行せず、カメラ位置は保持します。Play Mode移行前に編集用Previewを破棄し、開始・停止後にそれぞれの対象から再生成します。グリッド背景、背景の明暗切り替え、表示リセット、未表示時のPlaceholderと上部アセットタブの表示・非表示はこの共通Previewが担当します。AssetManagerのPrefab Previewは、複製したAvatarにある有効なMA Shape Changerの初期状態から`Set`型のBlendShape値を適用してから描画します。MAのEdit Mode Previewが加工したScene View像を直接取得する方式ではなく、Preview用Prefab複製の表示値を一致させます。
 
 カテゴリの並びは「体型・パーツ」「マテリアル」「表情」です。上部アセットタブの非表示設定はカテゴリ間で維持します。
 

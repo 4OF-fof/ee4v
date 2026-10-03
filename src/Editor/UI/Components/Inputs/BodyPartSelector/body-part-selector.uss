@@ -1,0 +1,27 @@
+.ee4v-ui-body-part-selector {
+    min-width: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: var(--ee4v-space-lg);
+}
+
+.ee4v-ui-body-part-selector--standalone {
+    margin-bottom: var(--ee4v-space-none);
+}
+
+.ee4v-ui-body-part-selector__button.ee4v-ui-button {
+    min-width: 88px;
+    min-height: 32px;
+    flex-basis: 88px;
+    flex-grow: 1;
+    margin-right: var(--ee4v-space-xs);
+    margin-bottom: var(--ee4v-space-xs);
+    border-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-panel);
+}
+
+.ee4v-ui-body-part-selector__button--active.ee4v-ui-button,
+.ee4v-ui-body-part-selector__button--active.ee4v-ui-button:hover {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
+}

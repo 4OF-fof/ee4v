@@ -1,0 +1,74 @@
+.ee4v-ui-prefab-scene-preview {
+    flex-shrink: 0;
+    width: 100%;
+    min-height: 320px;
+    margin-bottom: var(--ee4v-space-lg);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
+    overflow: hidden;
+}
+
+.ee4v-ui-prefab-scene-preview__side-toggle {
+    position: absolute;
+    top: var(--ee4v-space-lg);
+    left: var(--ee4v-space-lg);
+    flex-direction: row;
+    padding: var(--ee4v-space-xxs);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-xl);
+    background-color: var(--ee4v-color-panel);
+}
+
+.ee4v-ui-prefab-scene-preview__selection {
+    position: absolute;
+    bottom: var(--ee4v-space-lg);
+    left: var(--ee4v-space-lg);
+    max-width: 70%;
+    padding-left: var(--ee4v-space-sm);
+    border-width: var(--ee4v-border-hairline);
+    border-color: #ff6600;
+    border-radius: var(--ee4v-radius-xl);
+    background-color: var(--ee4v-color-panel);
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-ui-prefab-scene-preview__selection--highlight-hidden {
+    border-color: var(--ee4v-color-border-default);
+}
+
+.ee4v-ui-prefab-scene-preview__selection-label {
+    min-width: 0;
+    flex-shrink: 1;
+    color: var(--ee4v-color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ee4v-ui-prefab-scene-preview__selection-toggle.ee4v-ui-button {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    margin-left: var(--ee4v-space-xs);
+    border-width: 0;
+    border-radius: var(--ee4v-radius-lg);
+}
+
+.ee4v-ui-prefab-scene-preview__side-button.ee4v-ui-button {
+    min-width: 44px;
+    min-height: 28px;
+    padding-left: var(--ee4v-space-sm);
+    padding-right: var(--ee4v-space-sm);
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-prefab-scene-preview__side-button--active.ee4v-ui-button,
+.ee4v-ui-prefab-scene-preview__side-button--active.ee4v-ui-button:hover {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
+}

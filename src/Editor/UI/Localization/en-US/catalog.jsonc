@@ -9,6 +9,35 @@
     },
     "dismiss": {
       "tooltip": "Dismiss"
+    },
+    "prefabPicker": {
+      "title": "Select Prefab",
+      "select": "Select Prefab",
+      "close": "Close Prefab selection",
+      "search": "Search Prefab name or path",
+      "noMatch": "No matching Prefabs"
+    },
+    "prefabPreview": {
+      "reset": "Reset preview view",
+      "background": "Toggle preview background",
+      "hideHighlight": "Hide selection highlight",
+      "showHighlight": "Show selection highlight",
+      "left": "Left",
+      "right": "Right",
+      "front": "Front",
+      "back": "Back"
+    },
+    "bodyPart": {
+      "wholeBody": "Whole body",
+      "head": "Head & neck",
+      "chest": "Chest",
+      "waist": "Waist & hips",
+      "shoulders": "Shoulders & arms",
+      "arms": "Arms",
+      "hands": "Hands",
+      "legs": "Legs",
+      "feet": "Feet",
+      "other": "Other"
     }
   },
   "catalog": {

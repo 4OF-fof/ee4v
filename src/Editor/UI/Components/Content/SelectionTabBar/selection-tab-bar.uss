@@ -1,0 +1,33 @@
+.ee4v-ui-selection-tab-bar {
+    min-width: 0;
+    flex-shrink: 0;
+    padding: var(--ee4v-space-xs) var(--ee4v-space-md);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-bottom-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-ui-selection-tab-bar__strip {
+    min-width: 0;
+    flex-grow: 1;
+    height: 34px;
+    margin-left: var(--ee4v-space-xxs);
+    position: relative;
+    top: var(--ee4v-space-xxs);
+}
+
+.ee4v-ui-selection-tab-bar__strip > .unity-scroll-view__content-and-vertical-scroll-container {
+    height: 34px;
+}
+
+.ee4v-ui-selection-tab-bar__strip > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container {
+    height: 34px;
+    flex-direction: row;
+    align-items: center;
+}
+.ee4v-ui-selection-tab-bar__items {
+    min-width: 0;
+    height: 34px;
+    flex-direction: row;
+    align-items: center;
+}

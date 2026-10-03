@@ -35,17 +35,12 @@ namespace Ee4v.AssetManager.Simulation
             _repaint = repaint;
             _manager = GestureManagerIntegration.FindManager(avatar);
             AddToClassList("ee4v-execution");
-            var preview = new VisualElement();
+            var preview = new PreviewPane(Text("title"));
             preview.AddToClassList("ee4v-modification-workflow__preview-pane");
-            var toolbar = new VisualElement();
-            toolbar.AddToClassList("ee4v-modification-workflow__preview-toolbar");
-            toolbar.Add(UiTextFactory.Create(Text("title"), UiClassNames.SectionTitle,
-                "ee4v-modification-workflow__preview-title"));
-            toolbar.Add(new UiButton(Text("resetView"), () => _viewport.ResetView(),
+            preview.Actions.Add(new UiButton(Text("resetView"), () => _viewport.ResetView(),
                 variant: UiButtonVariant.Ghost));
-            preview.Add(toolbar);
             _viewport = new AvatarExecutionViewport(avatar, repaint);
-            preview.Add(_viewport);
+            preview.Content.Add(_viewport);
             Add(preview);
 
             var controls = new ScrollView(ScrollViewMode.Vertical);

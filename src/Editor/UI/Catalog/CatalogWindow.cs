@@ -85,7 +85,7 @@ namespace Ee4v.UI
             var root = rootVisualElement;
             root.Clear();
             root.AddToClassList(RootClassName);
-            UiComposition.ApplyTheme(root);
+            UiComposition.Prepare(root);
             AddCatalogStyleSheets(root);
 
             var shell = new VisualElement();
@@ -211,9 +211,20 @@ namespace Ee4v.UI
             _contentHost.Clear();
             ScrollView body;
             var page = CreatePage(story.Title, story.Description, out body);
+            body.mode = ScrollViewMode.VerticalAndHorizontal;
 
-            body.contentContainer.Add(CreateDetailsSection(story));
-            story.Build(body.contentContainer);
+            var details = CreateDetailsSection(story);
+            body.contentContainer.Add(details);
+            var storyContent = new VisualElement();
+            storyContent.AddToClassList("ee4v-ui-catalog-story-content");
+            // Keep the available width independent of the scrollable children's intrinsic sizes.
+            body.contentViewport.RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                details.style.width = evt.newRect.width;
+                storyContent.style.width = evt.newRect.width;
+            });
+            story.Build(storyContent);
+            body.contentContainer.Add(storyContent);
 
             _contentHost.Add(page);
         }
@@ -459,6 +470,7 @@ namespace Ee4v.UI
             var card = new InfoCard(new InfoCardState(
                 I18N.Get("catalog.common.details"),
                 story.Details));
+            card.AddToClassList("ee4v-ui-catalog-details");
 
             card.Body.Add(CreateDetailItem(I18N.Get("catalog.common.implementation"), GetImplementationLabel(story.Implementation)));
             card.Body.Add(CreateDetailItem(

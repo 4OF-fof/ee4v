@@ -158,3 +158,9 @@ package root を解決できなかった場合はキャッシュせず、次回�
 - `TextFieldMultilineScrollBackend`
 
 Unity version の差異は公開 API の利用側ではなく、これらの backend で吸収します。詳細は [Unity 6 移行メモ](../unity6.md)を参照してください。
+
+## Prefabと部位の共通型
+
+`BodyPartCategory`は編集補助ツールとプレビューが共有する部位の分類です。Head、Chest、Waist、Shoulders、Arms、Hands、Legs、Feet、Otherを持ち、機能固有の改変カテゴリやUI状態は含みません。
+
+`PrefabHierarchyUtility.SplitName`は区切り文字とcamel caseで名前を小文字の語へ分割します。`IsInScope`は指定Transformが対象root内の選択範囲へ含まれるかを判定します。選択indexがnullならroot全体、0以上ならその子階層、負なら構成Prefabのindex集合を除いたroot側を対象とします。共通のPrefabScenePreviewとAssetManagerの部位・Material分類が使用し、SceneやPrefabを変更しません。

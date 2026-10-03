@@ -1,0 +1,42 @@
+.ee4v-ui-editor-tools-story {
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.ee4v-ui-editor-tools-story--selection-tab-bar {
+    min-width: 640px;
+    min-height: 60px;
+}
+
+.ee4v-ui-editor-tools-story--selection-tab {
+    min-height: 60px;
+    align-items: flex-start;
+}
+
+.ee4v-ui-editor-tools-story--body-part-selector {
+    min-height: 60px;
+}
+
+.ee4v-ui-editor-tools-story--prefab-scene-preview {
+    height: 440px;
+    min-height: 440px;
+}
+
+.ee4v-ui-editor-tools-story--prefab-selector {
+    min-height: 64px;
+}
+
+.ee4v-ui-editor-tools-story--prefab-thumbnail {
+    height: 240px;
+    min-height: 240px;
+    align-items: center;
+}
+
+.ee4v-ui-editor-tools-story__prefab-thumbnail.ee4v-ui-prefab-thumbnail {
+    width: 320px;
+    min-width: 320px;
+    height: 220px;
+    min-height: 220px;
+    flex-grow: 0;
+    margin-right: 0;
+}

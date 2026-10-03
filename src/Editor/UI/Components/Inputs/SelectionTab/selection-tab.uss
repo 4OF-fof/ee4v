@@ -1,0 +1,74 @@
+.ee4v-ui-selection-tab {
+    min-width: var(--ee4v-size-24);
+    max-width: 160px;
+    height: 30px;
+    min-height: 30px;
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+    margin-right: var(--ee4v-space-sm);
+    padding-left: var(--ee4v-space-sm);
+    padding-right: var(--ee4v-space-xxs);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-active);
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-surface-soft);
+    overflow: hidden;
+    transition-property: background-color, border-bottom-color;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out;
+}
+
+.ee4v-ui-selection-tab:hover {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-surface-hover-strong);
+}
+
+.ee4v-ui-selection-tab--primary {
+    min-width: 56px;
+    max-width: 260px;
+    margin-right: var(--ee4v-space-sm);
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
+    border-radius: var(--ee4v-radius-pill);
+}
+
+.ee4v-ui-selection-tab--selected,
+.ee4v-ui-selection-tab--selected:hover {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
+}
+
+.ee4v-ui-selection-tab-name {
+    min-width: 0;
+    flex-grow: 1;
+    height: 24px;
+    justify-content: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ee4v-ui-selection-tab-name > .unity-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ee4v-ui-selection-tab-visibility.ee4v-ui-button {
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+    min-height: 24px;
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-xxs);
+    padding: var(--ee4v-space-none);
+    border-width: var(--ee4v-space-none);
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-selection-tab-visibility.ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}

@@ -23,7 +23,7 @@ namespace Ee4v.UI
                         window.BuildScenePreviewViewportStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs"
+                        "Editor/UI/Components/Content/PrefabScenePreview/PrefabScenePreview.cs"
                     }));
             }
         }

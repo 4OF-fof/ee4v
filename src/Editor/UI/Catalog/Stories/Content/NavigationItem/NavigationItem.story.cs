@@ -21,7 +21,7 @@ namespace Ee4v.UI
                     {
                         "Editor/AssetManager/UI/AssetManagerControls.cs",
                         "Editor/AssetManager/UI/AssetManagerView.cs",
-                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs",
+                        "Editor/UI/Components/Inputs/PrefabSelector/PrefabSelector.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs"
                     }));

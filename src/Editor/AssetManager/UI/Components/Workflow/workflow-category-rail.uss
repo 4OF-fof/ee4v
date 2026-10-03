@@ -1,0 +1,35 @@
+.ee4v-modification-workflow__category-rail {
+    width: 176px;
+    min-width: 176px;
+    flex-shrink: 0;
+    padding: var(--ee4v-space-xl) var(--ee4v-space-md);
+    border-right-width: var(--ee4v-border-hairline);
+    border-right-color: var(--ee4v-color-border-default);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-modification-workflow__category-button.ee4v-ui-button {
+    width: 100%;
+    min-height: 34px;
+    flex-shrink: 0;
+    justify-content: flex-start;
+    margin-bottom: var(--ee4v-space-xxs);
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-modification-workflow__category-button.ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-modification-workflow__category-button--active.ee4v-ui-button,
+.ee4v-modification-workflow__category-button--active.ee4v-ui-button:hover {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
+}
+
+.ee4v-modification-workflow__category-button .ee4v-ui-button__content {
+    justify-content: flex-start;
+}

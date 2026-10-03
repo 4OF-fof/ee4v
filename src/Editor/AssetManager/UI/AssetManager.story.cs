@@ -24,7 +24,7 @@ namespace Ee4v.AssetManager.UI
                     BuildWorkspace,
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetModificationWorkflowView.cs",
+                        "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs",
                         "Editor/AssetManager/UI/AssetManagerLibraryWindow.cs"
                     },
                     styleSheetPaths: new[]

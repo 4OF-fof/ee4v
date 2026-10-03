@@ -68,6 +68,18 @@
     padding-right: var(--ee4v-space-sm);
 }
 
+.ee4v-ui-catalog-details,
+.ee4v-ui-catalog-story-content {
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.ee4v-ui-catalog-preview-pane-story {
+    height: 280px;
+    min-height: 280px;
+    flex-shrink: 0;
+}
+
 .ee4v-ui-catalog-control {
     margin-bottom: var(--ee4v-space-md);
 }

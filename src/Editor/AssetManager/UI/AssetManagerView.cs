@@ -2873,7 +2873,7 @@ namespace Ee4v.AssetManager.UI
             var previewColumn = new VisualElement();
             previewColumn.AddToClassList(
                 "ee4v-asset-manager__derived-assets-preview-column");
-            var prefabPreview = new DerivedAssetPrefabScenePreview();
+            var prefabPreview = new PrefabScenePreview();
             previewColumn.Add(prefabPreview);
 
             var prefabContainer = new VisualElement();
@@ -2887,7 +2887,7 @@ namespace Ee4v.AssetManager.UI
                 .FindPrefabCandidates(_manager.GetItemImportedAssetGuids(
                     _viewState.DetailItemId))
                 .ToList();
-            var prefab = new DerivedAssetPrefabSelector(
+            var prefab = new PrefabSelector(
                 prefabCandidates);
             prefab.AddToClassList(
                 "ee4v-asset-manager__derived-assets-prefab-field");

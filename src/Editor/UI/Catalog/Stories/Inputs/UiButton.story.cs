@@ -29,7 +29,7 @@ namespace Ee4v.UI
                         "Editor/AssetManager/UI/AssetManagerControls.cs",
                         "Editor/AssetManager/UI/AssetManagerView.cs",
                         "Editor/AssetManager/UI/AssetTagField.cs",
-                        "Editor/AssetManager/UI/DerivedAssetPrefabPickerWindow.cs",
+                        "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
                         "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",
                         "Editor/Feature/Project/ProjectTabs/UI/ProjectTabsView.cs",

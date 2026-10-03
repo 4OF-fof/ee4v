@@ -1,0 +1,20 @@
+.ee4v-ui-prefab-thumbnail {
+    flex-shrink: 0;
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    min-height: 48px;
+    margin-right: var(--ee4v-space-md);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
+    overflow: hidden;
+}
+
+.ee4v-ui-prefab-thumbnail > .ee4v-ui-preview-container__content,
+.ee4v-ui-prefab-thumbnail__image {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+}
