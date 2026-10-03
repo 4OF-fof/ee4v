@@ -60,6 +60,15 @@ namespace Ee4v.AvatarInfo
             ("AudioSourceCount", "audioSourceCount")
         };
 
+        public static string GetBlueprintId(GameObject avatar)
+        {
+            if (avatar == null) { return null; }
+            var pipelineType = FindSdkType("VRC.Core.PipelineManager");
+            var pipeline = pipelineType == null ? null : avatar.GetComponent(pipelineType);
+            var id = ReadFieldPath(pipeline, "blueprintId") as string;
+            return string.IsNullOrWhiteSpace(id) ? null : id.Trim();
+        }
+
         public static IReadOnlyList<GameObject> FindAttachmentWarnings(
             GameObject avatar)
         {

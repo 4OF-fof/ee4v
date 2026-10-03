@@ -49,6 +49,7 @@ namespace Ee4v.UI
             TitleText.SetWhiteSpace(WhiteSpace.Normal);
             MessageText = UiTextFactory.Create(string.Empty, RootClassName + "__message");
             MessageText.SetWhiteSpace(WhiteSpace.Normal);
+            MessageText.SetTextAlign(TextAnchor.MiddleLeft);
             _details = new ScrollView(ScrollViewMode.Vertical)
             {
                 horizontalScrollerVisibility = ScrollerVisibility.Hidden,
@@ -71,6 +72,7 @@ namespace Ee4v.UI
             state = state ?? new MessagePanelState(string.Empty);
             var hasTitle = !string.IsNullOrWhiteSpace(state.Title);
             var hasMessage = !string.IsNullOrWhiteSpace(state.Message);
+            EnableInClassList(RootClassName + "--message-only", !hasTitle && state.Details.Count == 0 && hasMessage);
             EnableInClassList(RootClassName + "--info", state.Severity == MessageSeverity.Info);
             EnableInClassList(RootClassName + "--warning", state.Severity == MessageSeverity.Warning);
             EnableInClassList(RootClassName + "--error", state.Severity == MessageSeverity.Error);

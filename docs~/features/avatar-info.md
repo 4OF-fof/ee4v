@@ -1,13 +1,37 @@
 # AvatarInfo
 
-`src/Editor/Feature/Avatar/AvatarInfo`がアバターの詳細タブを所有します。表示と解析は`Ee4v.AvatarInfo.Editor`、NDMFとの接続は`Ee4v.AvatarInfo.Ndmf.Editor`に分けます。
+`src/Editor/Feature/Avatar/AvatarInfo`がアバターの詳細タブを所有します。表示と解析は`Ee4v.AvatarInfo.Editor`、NDMFとの接続は`Ee4v.AvatarInfo.Ndmf.Editor`、VRChat SDKとの接続は`Ee4v.AvatarInfo.Sdk.Editor`です。SDK接続はAvatars SDKがある場合だけコンパイルされ、`IAvatarInfoSdk`を登録します。AssetManager以外の機能モジュールへ依存しません。
 
-`AvatarInfoAnalysis`は装着警告、AAOの有無とVRChatの性能情報を取得します。`AvatarPlayModePerformanceCache`はPlay Modeへ入る前のアバターを記録し、NDMFビルド後のPC／Quest性能結果をSessionStateへ保持します。`Get`と`Changed`を通して結果を読む・更新を受け取ることができます。ビルドの成功と最終対象は遅延評価し、Play Modeへ入った後に集計します。
+## 名前とアップロード先
 
-`AvatarInfoView`は名前、装着警告、性能結果とプラットフォーム選択を表示します。プラットフォーム変更と装着設定を開く操作はホストへ通知し、View自身はSelectionやInspectorを操作しません。スタイルは`UI/avatar-info.uss`を自身で読み込みます。
+`AvatarInfoView`は「名前」、名前で選択するアップロード先、同期パラメーター使用量、装着警告と性能情報を表示します。Blueprint IDの入力・表示欄は提供せず、選択した項目のIDを内部的にPipelineManagerへ設定します。`AvatarInfoEditing.CreateOptions`がホストの`AvatarEditingContext`を編集操作へ接続します。編集可否はホストのPrefab編集条件に従い、Play Mode中は編集しません。
 
-単独Windowのメニューは`ee4v/Window/Avatar/Avatar Info`です。`AvatarInfoWindow`は共有の`AvatarPrefabEditorWindow`でHierarchy上のPrefabインスタンス入力とPreviewを使用し、統合版と同じ`AvatarInfoView`で名前・装着警告・最後のNDMFビルドの性能結果を表示します。PC／Questの評価基準を切り替えられ、ビルド結果の更新通知で表示を更新します。情報表示専用なので部位選択、Prefab保存と変更を戻すボタンは表示しません。装着設定を開く操作はWindowがInspectorへ接続します。Scene保存とGit保存を行わず、AssetManagerへの依存はありません。
+名前は対象ルートGameObjectの名前です。空白だけの名前は受け付けず、変更をUndoへ記録してSceneをdirtyにします。Prefabアセットのファイル名とVRChat上の登録名は変更しません。UnityのPrefab root名はdefault overrideなので「Prefabに保存」の対象にならず、インスタンス名はScene保存で保持します。
 
-`FindPlayModeAvatar(scenePath, prefabPath)`は呼び出し側から渡されたScene内でビルド前の記録に対応するアバターを検索します。AssetManager固有の作業Sceneパスを生成せず、AssetManagerへの参照はありません。他のAvatar機能にも依存しません。
+Blueprint IDは`AvatarInfoAnalysis.GetBlueprintId`で対象ルートの`VRC.Core.PipelineManager.blueprintId`から読みます。子や元PrefabのIDへフォールバックしません。「新規アバター」または取得した自分の登録済みアバター名から、階層のない一覧で選択します。名前中の`/`はメニュー上だけ全角`／`へ置き換え、同名項目には番号を付けて区別します。取得前の設定済みIDは「設定済みアバター（一覧未取得）」として表示します。ドロップダウンは初期状態、取得中、取得失敗時に無効で、一覧取得が成功した場合だけ選択可能になります。空の一覧を正常取得した場合も「新規アバター」は選択できます。
 
-Catalogは`Domain/AvatarInfo/Displays/AvatarInfoView`へ登録します。Storyはサンプルの性能情報を使用し、ビルドやPlay Mode切り替えを実行しません。
+「一覧取得」を明示的に押したときだけ、SDKのログイン状態を確認し、ログイン中のアカウントについてSDK標準の`ApiAvatar.FetchList`を呼びます。未ログインなら取得せず、ユーザーがControl Panelで手動ログインしてから再度取得します。拡張はControl Panelを開きません。アップロード先の下に補足や進捗テキストは表示せず、取得中はボタンのラベルを変更し、ログイン案内、取得結果とエラーは取得ボタンのtooltipへ表示します。
+
+認証情報は要求・取得・保存せずSDKへ任せ、独自HTTPクライアントやSDKの認証・User-Agent設定変更は行いません。20件ずつ取得し、ページ間隔を置き、成功した一覧はアカウント単位で5分間共有します。定期取得や自動再試行はせず、失敗後は1分間追加取得を抑制します。取得途中のアカウント変更は破棄し、Viewのdetachで残りのページ取得を取り消します。発行済みのSDKリクエスト自体は中断できません。
+
+選択するとローカルのPipelineManagerへIDを設定します。必要なPipelineManagerの追加も含めUndoに対応します。既存IDの割り当ては同じログインアカウントで取得した自分の一覧に限定します。「新規」はローカルIDを空にする操作です。サーバー上のアバター作成は、ユーザーが公式SDKで手動アップロードした時に行われます。拡張はログイン、ビルド、テスト、アップロード、サーバー上の登録内容変更のAPIを呼びません。
+
+公式[Creator GuidelinesのAPI Usage / Bots](https://hello.vrchat.com/creator-guidelines#api-usage-bots)はAPI利用を条件付きで認め、代理アップロード、認証情報の要求・保管、無制限の反復要求などを禁止しています。この機能はSDK内のユーザー操作による読み取りとローカル入力補助に限定する設計判断です。特定の拡張への公式な承認を意味しません。[Public SDK API](https://creators.vrchat.com/sdk/public-sdk-api/)に公開されているビルドイベントを使用し、SDKのボタンや内部UIを操作しません。
+
+## 取得する情報
+
+`AvatarInfoAnalysis`は装着警告、AAOの有無とVRChatの性能情報を取得します。`AvatarPlayModePerformanceCache`はPlay Mode直前の対象を記録し、NDMFビルド後のPC／Quest性能結果、同期パラメーター使用量、取得日時をSessionStateへ保持します。ビルド成功と最終対象は遅延評価し、Play Modeへ入った後に集計します。パラメーターは最終DescriptorのExpression ParametersをSDKの`CalcTotalCost`で計算し、上限もSDK定数から取得します。ビルド結果の値がなければ現在のDescriptorを使い、表示ラベルで区別します。標準Expressionsの場合はSDK標準パラメーターを使用し、取得不能な値をゼロ扱いしません。
+
+`AvatarBuildSizeCache`はユーザーが公式SDKで開始したビルドの公開イベントを受け、成功時だけ出力AssetBundleのファイル長をダウンロードサイズとして記録します。展開後サイズはSDKの検証ヘルパーから取得し、不明なら未取得とします。SDKパネルが開いている場合だけビルダーへ接続し、ビルドやアップロードを呼びません。PC／Quest別に最後の成功値と取得日時をSessionStateへ保持します。Play ModeのNDMFビルドだけではサイズは取得しません。性能とサイズの日時は別々に表示し、異なるビルドの結果を同時刻の結果として扱いません。表示サイズは1024² bytesをMBとして表記します。
+
+両キャッシュの`Get`と`Changed`を通して結果を読み、更新通知を受け取ります。対象のScene・階層位置・Prefab GUIDを識別キーに使い、名前変更で結果を見失わないようにします。`FindPlayModeAvatar(scenePath, prefabPath)`は呼び出し側が指定したScene内でビルド前の記録に対応する対象を検索します。AssetManager固有の作業Sceneパスは生成しません。
+
+## ホストとCatalog
+
+同期パラメーター、ダウンロードサイズ、展開後サイズと各取得日時は共通`InfoCard`を使い、既存の性能カードと同じ枠、面、余白へ揃えます。パラメーターは総合評価カードの直下の幅いっぱいのカードに使用量と上限、使用率バーを表示し、上限超過はエラー色にします。サイズと日時は2列のカードで表示し、狭い領域では折り返します。日時は日付と時刻の2行に分けます。これらの追加カードは値が取得できた項目だけを表示し、全項目未取得なら空のグリッドも追加しません。
+
+Play Modeでの性能取得案内は総合評価カード内の「未取得」の直下に折り返し可能な本文として表示します。別の案内カードは表示しません。性能取得失敗と装着警告は、表情機能と同じ共通`MessagePanel`で表示します。取得失敗はError、装着警告はWarningを使い、説明文を折り返します。装着設定を開くボタンは警告の下に表示します。
+
+単独Windowのメニューは`ee4v/Window/Avatar/Avatar Info`です。`AvatarInfoWindow`は共有`AvatarPrefabEditorWindow`のHierarchy入力とPreviewを使い、AssetManagerと同じView、編集補助、PC／Quest切替を提供します。部位選択と変更を戻すボタンは表示せず、Blueprint ID等のPrefab overrideに対して「Prefabに保存」を表示します。Scene保存とGit保存は行いません。装着設定を開く操作はホストがSelectionとInspectorへ接続します。Viewはそれらを操作せず、`UI/avatar-info.uss`を自身で読み込みます。
+
+Catalogは`Domain/AvatarInfo/Displays/AvatarInfoView`へ登録します。Storyでは名前編集、一覧取得前の選択不可、サンプル一覧取得後のID選択と新規選択、ID設定有無、結果の有無、PC／Quest切替を確認できます。StoryはScene編集、SDKへの通信、ビルド、Play Mode切替を実行しません。

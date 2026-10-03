@@ -35,6 +35,19 @@
     min-width: 0;
 }
 
+.ee4v-ui-message-panel--message-only {
+    align-items: center;
+}
+
+.ee4v-ui-message-panel--message-only .ee4v-ui-message-panel__icon {
+    margin-top: 0;
+}
+
+.ee4v-ui-message-panel--message-only .ee4v-ui-message-panel__message {
+    min-height: var(--ee4v-size-18);
+    justify-content: center;
+}
+
 .ee4v-ui-message-panel__title,
 .ee4v-ui-message-panel__message,
 .ee4v-ui-message-panel__detail {

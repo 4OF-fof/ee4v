@@ -24,22 +24,12 @@
     margin-top: var(--ee4v-space-sm);
 }
 
-.ee4v-avatar-info__overview-fact {
-    min-width: 0;
-    flex-direction: row;
-    align-items: center;
-    padding: var(--ee4v-space-sm) var(--ee4v-space-md);
+.ee4v-avatar-info__overview > .ee4v-ui-form-input {
+    margin-bottom: var(--ee4v-space-md);
 }
 
-.ee4v-avatar-info__overview-fact-label {
-    min-width: 0;
-    flex-grow: 1;
-    flex-shrink: 1;
-    margin-right: var(--ee4v-space-lg);
-}
-
-.ee4v-avatar-info__overview-fact-value {
-    flex-shrink: 1;
+.ee4v-avatar-info__overview .ee4v-ui-form-input__label {
+    width: 100px;
 }
 
 .ee4v-avatar-info__performance-summary,
@@ -71,6 +61,11 @@
     flex-direction: row;
     align-items: center;
     margin-right: var(--ee4v-space-md);
+}
+
+.ee4v-avatar-info__performance-summary-help {
+    min-width: 0;
+    margin-top: var(--ee4v-space-md);
 }
 
 .ee4v-avatar-info__performance-aao {
@@ -132,6 +127,19 @@
     flex-shrink: 1;
     margin: 4px;
     padding: var(--ee4v-space-lg);
+}
+
+.ee4v-avatar-info__information-grid {
+    margin-top: var(--ee4v-space-md);
+    margin-bottom: var(--ee4v-space-md);
+}
+
+.ee4v-avatar-info__information-card {
+    min-width: 145px;
+}
+
+.ee4v-avatar-info__parameter-card {
+    flex-basis: 100%;
 }
 
 .ee4v-avatar-info__performance-card-label {

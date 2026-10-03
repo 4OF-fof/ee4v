@@ -759,6 +759,7 @@ namespace Ee4v.AssetManager.UI
         private VisualElement BuildOverviewControls()
         {
             return new AvatarInfoView(_avatarContext.Root.name,
+                AvatarInfoAnalysis.GetBlueprintId(_avatarContext.Root),
                 AvatarInfoAnalysis.FindAttachmentWarnings(_avatarContext.Root),
                 AvatarPlayModePerformanceCache.Get(_avatarContext.Root),
                 _overviewMobile, AvatarInfoAnalysis.HasAaoComponents(_avatarContext.Root),
@@ -773,7 +774,9 @@ namespace Ee4v.AssetManager.UI
                     Selection.activeGameObject = prefab;
                     EditorGUIUtility.PingObject(prefab);
                     EditorUtility.OpenPropertyEditor(prefab);
-                });
+                }, AvatarInfoEditing.CreateOptions(_avatarContext),
+                AvatarInfoSdk.Provider?.ReadParameterMemory(_avatarContext.Root),
+                AvatarBuildSizeCache.Get(_avatarContext.Root, _overviewMobile));
         }
     }
 }

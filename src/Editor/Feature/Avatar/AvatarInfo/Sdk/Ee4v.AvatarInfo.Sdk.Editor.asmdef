@@ -1,0 +1,15 @@
+{
+  "name": "Ee4v.AvatarInfo.Sdk.Editor",
+  "rootNamespace": "Ee4v.AvatarInfo",
+  "references": [
+    "Ee4v.AvatarInfo.Editor",
+    "VRC.SDKBase.Editor",
+    "VRC.SDK3A.Editor"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true,
+  "defineConstraints": ["EE4V_VRC_AVATARS"],
+  "versionDefines": [
+    { "name": "com.vrchat.avatars", "expression": "3.0.0", "define": "EE4V_VRC_AVATARS" }
+  ]
+}

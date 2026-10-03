@@ -18,7 +18,8 @@ namespace Ee4v.UI
                     "共通の色・文字・余白とFluentアイコンを使用し、多数の対象は一覧内でスクロールします。",
                     new string[0], ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildMessagePanelStory(parent),
-                    new[] { "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs" }));
+                    new[] { "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                        "Editor/Feature/Avatar/AvatarInfo/UI/AvatarInfoView.cs" }));
             }
         }
 

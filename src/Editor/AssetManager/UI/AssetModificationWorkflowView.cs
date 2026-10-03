@@ -301,6 +301,7 @@ namespace Ee4v.AssetManager.UI
                 OnPartListExclusionsChanged;
             EditorApplication.projectChanged += OnProjectChanged;
             AvatarPlayModePerformanceCache.Changed += OnPlayModePerformanceChanged;
+            AvatarBuildSizeCache.Changed += OnPlayModePerformanceChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorSceneManager.sceneClosed += OnWorkingSceneClosed;
             EditorSceneManager.sceneSaved += OnWorkingSceneSaved;
@@ -330,6 +331,7 @@ namespace Ee4v.AssetManager.UI
                 OnPartListExclusionsChanged;
             EditorApplication.projectChanged -= OnProjectChanged;
             AvatarPlayModePerformanceCache.Changed -= OnPlayModePerformanceChanged;
+            AvatarBuildSizeCache.Changed -= OnPlayModePerformanceChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorSceneManager.sceneClosed -= OnWorkingSceneClosed;
             EditorSceneManager.sceneSaved -= OnWorkingSceneSaved;

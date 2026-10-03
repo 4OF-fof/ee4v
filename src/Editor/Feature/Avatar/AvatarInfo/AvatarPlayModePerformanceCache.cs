@@ -22,6 +22,7 @@ namespace Ee4v.AvatarInfo
             public string Name;
             public bool AaoAttached;
             public DateTime? CapturedAt;
+            public AvatarInfoParameterMemory ParameterMemory;
             public AvatarInfoAnalysis.PerformanceReport Desktop;
             public AvatarInfoAnalysis.PerformanceReport Mobile;
             public string Error;
@@ -160,6 +161,7 @@ namespace Ee4v.AvatarInfo
                     record.Mobile = new AvatarInfoAnalysis.PerformanceReport
                         { Rating = mobileRating, Metrics = mobileMetrics };
                     record.CapturedAt = DateTime.Now;
+                    record.ParameterMemory = AvatarInfoSdk.Provider?.ReadParameterMemory(avatar);
                     record.Error = null;
                 }
                 else { record.Error = error; }
@@ -170,10 +172,14 @@ namespace Ee4v.AvatarInfo
             Changed?.Invoke();
         }
 
-        private static string GetKey(GameObject avatar)
+        internal static string GetKey(GameObject avatar)
         {
             var sourcePath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(avatar);
-            return GetSceneKey(avatar) + "|" + GetHierarchy(avatar) + "|" +
+            var indices = new List<int>();
+            for (var current = avatar.transform; current != null; current = current.parent)
+                indices.Add(current.GetSiblingIndex());
+            indices.Reverse();
+            return GetSceneKey(avatar) + "|" + string.Join("/", indices) + "|" +
                 AssetDatabase.AssetPathToGUID(sourcePath);
         }
 
