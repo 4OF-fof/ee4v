@@ -7,6 +7,7 @@
 | Core の公開契約 | [core/README.md](./core/README.md) |
 | Editor 機能 | [features/README.md](./features/README.md) |
 | AssetManager と派生アセット | [asset-manager.md](./asset-manager.md) |
+| アバター改変用Sceneと照明 | [avatar-editing-scene.md](./avatar-editing-scene.md) |
 | Asset Protection | [asset-protection.md](./asset-protection.md) |
 | ee4v MCP | [mcp.md](./mcp.md) |
 | BOOTH・Eagle 連携 | [eagle.md](./eagle.md)、[scriptcat.md](./scriptcat.md) |

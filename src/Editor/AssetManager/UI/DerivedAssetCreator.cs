@@ -38,6 +38,8 @@ namespace Ee4v.AssetManager.UI
     {
         internal const string VariantRoot = DerivedAssetCatalog.VariantRoot;
         private const string MaterialsFolderName = "Materials";
+        private const string WorkingSceneTemplatePath =
+            "Editor/Template/AvatarEditing.unity";
 
         private readonly struct AssetObjectKey : IEquatable<AssetObjectKey>
         {
@@ -355,18 +357,35 @@ namespace Ee4v.AssetManager.UI
                 return scenePath;
             }
 
-            // Create a named asset first: NewScene(Additive) rejects an open
-            // untitled Scene, even when that Scene has no unsaved changes.
-            if (!EditorSceneApi.TryCreateEmptySceneAsset(scenePath))
+            if (!scenePath.StartsWith("Assets/", StringComparison.Ordinal) ||
+                scenePath.Contains("\\") ||
+                Array.Exists(scenePath.Split('/'), part => part == "." || part == "..") ||
+                File.Exists(scenePath))
             {
                 throw new InvalidOperationException(
-                    "The Variant working Scene asset could not be created.");
+                    "The Variant working Scene requires an unused path under Assets.");
+            }
+            var packageRoot = PackageAssetApi.GetPackageRootAssetPath();
+            var templatePath = packageRoot + "/" + WorkingSceneTemplatePath;
+            if (string.IsNullOrEmpty(packageRoot) ||
+                AssetDatabase.LoadAssetAtPath<SceneAsset>(templatePath) == null)
+            {
+                throw new InvalidOperationException(
+                    "The bundled avatar editing Scene template is unavailable.");
             }
             var previousActiveScene = SceneManager.GetActiveScene();
             var scene = default(Scene);
             var saved = false;
             try
             {
+                // Copy a named asset before opening it so an untitled Scene
+                // can remain open, including its unsaved changes.
+                if (!AssetDatabase.CopyAsset(templatePath, scenePath))
+                {
+                    throw new InvalidOperationException(
+                        "The Variant working Scene template could not be copied.");
+                }
+                AssetDatabase.ImportAsset(scenePath, ImportAssetOptions.ForceSynchronousImport);
                 scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
                 if (!(PrefabUtility.InstantiatePrefab(prefab, scene)
