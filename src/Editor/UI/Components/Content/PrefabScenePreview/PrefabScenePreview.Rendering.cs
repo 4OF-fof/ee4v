@@ -98,13 +98,18 @@ namespace Ee4v.UI
 
         private bool IsInScope(Renderer renderer)
         {
+            return IsInScope(renderer, _scopeSiblingIndex);
+        }
+
+        private bool IsInScope(Renderer renderer, int? scopeSiblingIndex)
+        {
             if (renderer == null || _instance == null)
             {
                 return true;
             }
-            if (_scopeSiblingIndex >= 0)
+            if (scopeSiblingIndex >= 0)
             {
-                var index = _scopeSiblingIndex.Value;
+                var index = scopeSiblingIndex.Value;
                 return index < _instance.transform.childCount &&
                     renderer.transform.IsChildOf(
                         _instance.transform.GetChild(index));
@@ -119,7 +124,7 @@ namespace Ee4v.UI
             var isChildPrefab = current.parent == _instance.transform &&
                                 _prefabSiblingIndices.Contains(
                                     current.GetSiblingIndex());
-            if (_scopeSiblingIndex == -1)
+            if (scopeSiblingIndex == -1)
             {
                 return !isChildPrefab;
             }

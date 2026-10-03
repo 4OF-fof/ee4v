@@ -40,7 +40,7 @@ namespace Ee4v.UI
             var part = _focusedBodyPart.Value;
             var avatarHeight = part == BodyPartCategory.Head ||
                 part == BodyPartCategory.Legs
-                    ? Mathf.Max(0.2f, _bounds.size.y)
+                    ? Mathf.Max(0.2f, GetAvatarFocusBounds().size.y)
                     : GetAvatarReferenceHeight();
             var leftSide = IsLeftSide(part);
             if (!TryGetBoneFocusBounds(part, avatarHeight, leftSide,
@@ -94,9 +94,9 @@ namespace Ee4v.UI
 
         private void FrameWholeAvatar(bool animate)
         {
-            var bounds = _bounds;
+            var bounds = GetAvatarFocusBounds();
             var appearanceFraming = _flexibleLayout && !_fitWholeAvatar;
-            if (appearanceFraming && !_scopeSiblingIndex.HasValue)
+            if (appearanceFraming)
             {
                 bounds.center -= _instance.transform.up *
                     bounds.size.y * AppearanceFullBodyVerticalOffsetScale;
@@ -137,7 +137,37 @@ namespace Ee4v.UI
                 }
             }
 
-            return Mathf.Max(0.2f, _bounds.size.y);
+            return Mathf.Max(0.2f, GetAvatarFocusBounds().size.y);
+        }
+
+        private Bounds GetAvatarFocusBounds()
+        {
+            return CalculateBounds(_instance.transform.position,
+                _renderers.Where(renderer => renderer != null && IsInAvatarFocusScope(renderer))
+                    .Select(renderer => _utility.ResolveRenderer(renderer)).ToArray());
+        }
+
+        private bool IsInAvatarFocusScope(Renderer renderer)
+        {
+            if (!IsInScope(renderer, null)) { return false; }
+            for (var current = renderer.transform; current != null; current = current.parent)
+            {
+                if (current.CompareTag("EditorOnly") && !_temporarilyEnabledEditorOnlyParts.Contains(current))
+                {
+                    return false;
+                }
+                if (current == _instance.transform) { break; }
+            }
+            if (_hiddenPartKeys.Count == 0) { return true; }
+            var path = new Stack<int>();
+            for (var current = renderer.transform; current != null && current != _instance.transform;
+                 current = current.parent)
+            {
+                path.Push(current.GetSiblingIndex());
+            }
+            var key = string.Join("/", path);
+            return !_hiddenPartKeys.Any(hidden => key == hidden ||
+                key.StartsWith(hidden + "/", StringComparison.Ordinal));
         }
 
         private void FrameBounds(
@@ -326,8 +356,7 @@ namespace Ee4v.UI
             {
                 if (renderer == null || !renderer.enabled ||
                     !renderer.gameObject.activeInHierarchy ||
-                    !IsInScope(renderer) ||
-                    _hiddenPartRenderers.Contains(renderer) ||
+                    !IsInAvatarFocusScope(renderer) ||
                     renderer.sharedMesh == null ||
                     !renderer.sharedMesh.isReadable)
                 {
@@ -550,11 +579,8 @@ namespace Ee4v.UI
 
         private bool IsInFocusScope(Transform target)
         {
-            return PrefabHierarchyUtility.IsInScope(
-                target,
-                _instance == null ? null : _instance.transform,
-                _scopeSiblingIndex,
-                _prefabSiblingIndices);
+            return _instance != null && target != null &&
+                (target == _instance.transform || target.IsChildOf(_instance.transform));
         }
 
         private static HumanBodyBones[] GetFocusBones(
