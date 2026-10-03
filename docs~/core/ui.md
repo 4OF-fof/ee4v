@@ -69,7 +69,7 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 - `UiLocalization`は共通部品の文字をUI scopeから取得する内部基盤です。部品は利用機能の翻訳catalogへ依存しません。
 - `UiComposition.Prepare`は共通USSと機能固有USSを一つの入口で登録します。
 - `UiColorPalette`はUI ToolkitとIMGUIが共有するテーマ別標準色の契約です。`UiColorPalettes`がUnity Dark・Lightのバリエーションを所有し、`UiColorTokens.Current`と`UiComposition.Prepare`が現在のUnity Editorテーマへ接続します。
-- `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。通常の操作、文字入力、検索入力にはそれぞれ`UiButton`、`InputField`、`SearchField`を使用し、低レベルの`TextField`生成は共有入力コンポーネント内部に限定します。Factoryが生成する型付き入力には基盤となる共通クラスを付与します。数値入力とドロップダウンは透明背景の下線型、`Toggle`は標準入力と境界線、操作色、状態遷移を共有する小型チェックボックス型、`ObjectField`は右端の操作領域を分けた選択欄として`FormInput`の内外で共有します。複合入力内の埋め込みフィールドは共通クラスを外し、親コンポーネントが外観を担当します。
+- `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。通常の操作、文字入力、検索入力にはそれぞれ`UiButton`、`InputField`、`SearchField`を使用し、低レベルの`TextField`生成は共有入力コンポーネント内部に限定します。FactoryのIMGUI文字は実際の描画時にも寸法を計測し、フォントの初期化後の寸法を反映します。折り返し時は配置済みのContent幅を上限に描画幅を再計測し、必要な高さを縮めません。文字・フォントサイズ・折り返しの変更と表示幅の変更を反映し、寸法が変わらない場合はレイアウトを更新しません。Factoryが生成する型付き入力には基盤となる共通クラスを付与します。数値入力とドロップダウンは透明背景の下線型、`Toggle`は標準入力と境界線、操作色、状態遷移を共有する小型チェックボックス型、`ObjectField`は右端の操作領域を分けた選択欄として`FormInput`の内外で共有します。複合入力内の埋め込みフィールドは共通クラスを外し、親コンポーネントが外観を担当します。
 - `UiDragAndDrop`は型付きpayloadによるドラッグ開始とMove操作の受け入れを共通化します。
 - `PreviewOrbitController`は3D Previewの回転、移動、拡縮とCamera配置を共通化します。Bounds計算と描画内容は利用側が扱います。
 

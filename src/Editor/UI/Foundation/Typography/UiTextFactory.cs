@@ -266,7 +266,7 @@ namespace Ee4v.UI
                 {
                     pickingMode = PickingMode.Ignore
                 };
-                _container.style.flexShrink = 1f;
+                _container.style.flexShrink = 0f;
                 Add(_container);
                 RegisterCallback<GeometryChangedEvent>(_ => UpdateMeasure());
                 SetText(text);
@@ -316,6 +316,7 @@ namespace Ee4v.UI
                     return;
                 }
 
+                UpdateMeasure();
                 GUI.Label(_container.contentRect, Text, _guiStyle);
             }
 
@@ -329,20 +330,35 @@ namespace Ee4v.UI
                 var content = new GUIContent(Text);
                 if (_whiteSpace == WhiteSpace.Normal)
                 {
-                    var width = resolvedStyle.width;
+                    var width = contentRect.width;
                     if (float.IsNaN(width) || width <= 0f)
                     {
                         return;
                     }
 
+                    width = Mathf.Max(1f, Mathf.Min(Mathf.Floor(width),
+                        Mathf.Ceil(_guiStyle.CalcSize(content).x)));
                     var height = Mathf.Max(18f, Mathf.Ceil(_guiStyle.CalcHeight(content, width)));
-                    _container.style.height = height;
+                    SetMeasuredSize(width, height);
                     return;
                 }
 
                 var size = _guiStyle.CalcSize(content);
-                _container.style.width = Mathf.Ceil(size.x);
-                _container.style.height = Mathf.Max(18f, Mathf.Ceil(size.y));
+                SetMeasuredSize(Mathf.Ceil(size.x), Mathf.Max(18f, Mathf.Ceil(size.y)));
+            }
+
+            private void SetMeasuredSize(float width, float height)
+            {
+                if (_container.style.width.keyword != StyleKeyword.Undefined ||
+                    !Mathf.Approximately(_container.style.width.value.value, width))
+                {
+                    _container.style.width = width;
+                }
+                if (_container.style.height.keyword != StyleKeyword.Undefined ||
+                    !Mathf.Approximately(_container.style.height.value.value, height))
+                {
+                    _container.style.height = height;
+                }
             }
         }
     }
