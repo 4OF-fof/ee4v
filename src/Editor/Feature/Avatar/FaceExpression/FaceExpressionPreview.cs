@@ -135,7 +135,6 @@ namespace Ee4v.FaceExpression
         {
             if (_utility == null || _avatar == null || rect.width < 2f || rect.height < 2f)
             {
-                EditorGUI.DrawRect(rect, new Color(0.1f, 0.1f, 0.1f, 1f));
                 return;
             }
 
@@ -145,7 +144,7 @@ namespace Ee4v.FaceExpression
                 _utility.FieldOfView);
             ConfigureCamera();
             var texture = _utility.Render(rect);
-            GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, false);
+            GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, true);
         }
 
         public Texture2D RenderThumbnail(

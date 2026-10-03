@@ -95,6 +95,7 @@ namespace Ee4v.UI
         private bool _previewDirty = true;
         private bool _cameraAnimationSubscribed;
         private bool _flexibleLayout;
+        private bool _viewToggleVisible = true;
         private bool _fitWholeAvatar = true;
         private BodyPartCategory? _focusedBodyPart;
         private bool _shoulderLeftSide = true;
@@ -584,7 +585,7 @@ namespace Ee4v.UI
                 (!_focusedBodyPart.HasValue ||
                  _focusedBodyPart == BodyPartCategory.Head ||
                  _focusedBodyPart == BodyPartCategory.Waist);
-            var visible = _instance != null &&
+            var visible = _viewToggleVisible && _instance != null &&
                 (sideSelection || backSelection);
             _viewToggle.style.display = visible
                 ? DisplayStyle.Flex
@@ -690,6 +691,12 @@ namespace Ee4v.UI
         public void SetFlexibleLayout(bool flexible)
         {
             _flexibleLayout = flexible;
+            RefreshViewToggle();
+        }
+
+        public void SetViewToggleVisible(bool visible)
+        {
+            _viewToggleVisible = visible;
             RefreshViewToggle();
         }
 

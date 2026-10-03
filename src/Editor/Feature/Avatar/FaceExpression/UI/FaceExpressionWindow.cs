@@ -1056,6 +1056,7 @@ namespace Ee4v.FaceExpression
                 NewClip = I18N.Get("action.newClip"),
                 CopyAndEdit = I18N.Get("action.copyAndEdit"),
                 ResetView = I18N.Get("action.resetView"),
+                PreviewBackground = I18N.Get("action.previewBackground"),
                 BackToLibrary = I18N.Get("action.backToLibrary"),
                 SearchPlaceholder = I18N.Get("search.placeholder"),
                 SearchTooltip = I18N.Get("search.tooltip"),

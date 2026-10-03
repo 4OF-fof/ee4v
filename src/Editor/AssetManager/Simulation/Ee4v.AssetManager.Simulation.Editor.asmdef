@@ -2,7 +2,6 @@
   "name": "Ee4v.AssetManager.Simulation.Editor",
   "rootNamespace": "Ee4v.AssetManager.Simulation",
   "references": [
-    "Ee4v.Core.Preview.Editor",
     "Ee4v.Core.Presentation.Editor",
     "Ee4v.UI.Editor",
     "vrchat.blackstartx.gesture-manager",

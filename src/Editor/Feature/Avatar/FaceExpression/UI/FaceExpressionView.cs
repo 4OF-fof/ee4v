@@ -17,6 +17,7 @@ namespace Ee4v.FaceExpression
         public string NewClip { get; set; }
         public string CopyAndEdit { get; set; }
         public string ResetView { get; set; }
+        public string PreviewBackground { get; set; }
         public string BackToLibrary { get; set; }
         public string SearchPlaceholder { get; set; }
         public string SearchTooltip { get; set; }
@@ -53,6 +54,7 @@ namespace Ee4v.FaceExpression
         private const float LibraryFolderIconSize = 80f;
 
         private readonly ObjectField _avatarField;
+        private readonly ScenePreviewViewport _previewViewport;
         private readonly ObjectField _clipField;
         private readonly MessagePanel _validation;
         private readonly SearchField _search;
@@ -160,33 +162,15 @@ namespace Ee4v.FaceExpression
 
             var content = new VisualElement();
             content.AddToClassList("ee4v-face-expression__content");
-            var previewPane = new PreviewContainer();
-            previewPane.AddToClassList("ee4v-face-expression__preview-pane");
-            var preview = new IMGUIContainer(() =>
-            {
-                var rect = GUILayoutUtility.GetRect(
-                    1f,
-                    10000f,
-                    1f,
-                    10000f,
-                    GUILayout.ExpandWidth(true),
-                    GUILayout.ExpandHeight(true));
-                drawPreview?.Invoke(rect);
-            });
-            preview.AddToClassList("ee4v-face-expression__preview");
-            previewPane.Content.Add(preview);
-            var resetView = new UiButton(
-                string.Empty,
+            _previewViewport = new ScenePreviewViewport(
+                drawPreview,
                 () => ResetViewRequested?.Invoke(),
-                text.ResetView,
-                FluentUiIcons.CreateState(
-                    "arrow_clockwise.png",
-                    UiSizeTokens.Size28),
-                UiButtonVariant.Ghost);
-            resetView.AddToClassList("ee4v-face-expression__reset-view");
-            previewPane.Overlay.Add(resetView);
-            previewPane.SetHasContent(true);
-            content.Add(previewPane);
+                text.PreviewBackground,
+                text.ResetView);
+            _previewViewport.AddToClassList("ee4v-face-expression__preview-pane");
+            _previewViewport.RegisterCallback<DetachFromPanelEvent>(_ =>
+                _previewViewport.Dispose());
+            content.Add(_previewViewport);
 
             var editorPane = new VisualElement();
             editorPane.AddToClassList("ee4v-face-expression__editor-pane");
@@ -364,6 +348,7 @@ namespace Ee4v.FaceExpression
         {
             _rendering = true;
             _avatarField.SetValueWithoutNotify(avatar);
+            _previewViewport.SetPreviewAvailable(avatar != null);
             _rendering = false;
         }
 

@@ -132,6 +132,7 @@
     "newClip": "New expression",
     "copyAndEdit": "Copy and edit",
     "resetView": "Reset view",
+    "previewBackground": "Toggle background brightness",
     "backToLibrary": "Back",
     "apply": "Apply to Avatar",
     "addMenuExpression": "Add menu-only expression",

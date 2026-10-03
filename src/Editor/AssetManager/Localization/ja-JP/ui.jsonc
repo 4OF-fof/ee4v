@@ -20,7 +20,6 @@
     },
     "execution": {
       "title": "操作確認",
-      "resetView": "表示リセット",
       "ready": "PlayModeでアバターの操作を確認できます。",
       "running": "実行中",
       "missing": "作業SceneにGestureManagerを配置してください。",

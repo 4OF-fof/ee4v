@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,8 +11,7 @@ namespace Ee4v.FaceExpression
         private const int MinimumRenderSize = 64;
         private const int MaximumRenderSize = 512;
         private const int RenderSizeStep = 64;
-        private static readonly Color EmptyColor =
-            new Color(0.1f, 0.1f, 0.1f, 1f);
+        private PreviewGridBackground _gridBackground;
         private readonly Dictionary<AnimationClip, Dictionary<int, Entry>>
             _entries =
                 new Dictionary<AnimationClip, Dictionary<int, Entry>>();
@@ -49,9 +49,12 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
+            _gridBackground ??= new PreviewGridBackground(
+                !EditorGUIUtility.isProSkin);
+            _gridBackground.Draw(rect);
+
             if (clip == null || preview == null || avatar == null)
             {
-                EditorGUI.DrawRect(rect, EmptyColor);
                 return;
             }
 
@@ -101,7 +104,6 @@ namespace Ee4v.FaceExpression
 
             if (entry.Texture == null)
             {
-                EditorGUI.DrawRect(rect, EmptyColor);
                 return;
             }
 
@@ -109,7 +111,7 @@ namespace Ee4v.FaceExpression
                 rect,
                 entry.Texture,
                 ScaleMode.ScaleAndCrop,
-                false);
+                true);
         }
 
         private static int GetRenderSize(Rect rect)
@@ -137,6 +139,8 @@ namespace Ee4v.FaceExpression
             }
 
             _entries.Clear();
+            _gridBackground?.Dispose();
+            _gridBackground = null;
         }
 
         internal void Invalidate(AnimationClip clip)

@@ -20,7 +20,6 @@
     },
     "execution": {
       "title": "Controls",
-      "resetView": "Reset view",
       "ready": "Enter PlayMode to try the avatar controls.",
       "running": "Running",
       "missing": "Place GestureManager in the working scene.",

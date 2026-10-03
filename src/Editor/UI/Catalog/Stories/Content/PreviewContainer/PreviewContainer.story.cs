@@ -22,8 +22,7 @@ namespace Ee4v.UI
                     {
                         "Editor/AssetManager/UI/Components/AssetItemGridCard.cs",
                         "Editor/AssetManager/UI/Components/AssetThumbnailStack.cs",
-                        "Editor/Feature/Avatar/FaceExpression/UI/Components/GestureAssignmentCell.cs",
-                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs"
+                        "Editor/Feature/Avatar/FaceExpression/UI/Components/GestureAssignmentCell.cs"
                     }));
             }
         }

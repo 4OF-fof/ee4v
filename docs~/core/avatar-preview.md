@@ -1,6 +1,6 @@
 # Avatarのプレビュー描画
 
-`Core/Preview`の`Ee4v.Core.Preview.Editor`は、NDMF 1.14.8以降のPreview APIとCamera描画を共有する基盤です。`AvatarPreviewRenderer`をUIの`PrefabScenePreview`、FaceExpressionとAssetManagerの`AvatarExecutionViewport`が使用します。保存、Undo、Sceneの保存、GestureManagerの生成・操作、Play Modeの開始・停止は扱いません。
+`Core/Preview`の`Ee4v.Core.Preview.Editor`は、NDMF 1.14.8以降のPreview APIとCamera描画を共有する基盤です。`AvatarPreviewRenderer`をUIの`PrefabScenePreview`とFaceExpressionが使用します。AssetManagerの操作確認も`PrefabScenePreview`を使用し、実行中のAvatarを描画します。保存、Undo、Sceneの保存、GestureManagerの生成・操作、Play Modeの開始・停止は扱いません。
 
 ## 対象と描画
 

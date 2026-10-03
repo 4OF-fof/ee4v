@@ -39,7 +39,7 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 - `StatusOverlay`はspinnerと状態メッセージを表示する小型パネルです。バックグラウンド処理ではウィンドウ右下へ重ね、統合ee4vの変更破棄では再読み込み完了まで画面中央へ表示します。配置と操作の抑止は使用側が制御します。
 - `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンと`InputGroup`の開閉chevronにはFluent UI System Iconsを使用します。組み込みアイコンはUnityのFolder、Scene、GameObject、Model FileとHierarchyの非表示操作に限定します。Fluent画像が読み込めない場合は組み込みアイコンへ代替せず非表示にします。
 - `PrefabThumbnail`はUnityのAssetPreviewを表示し、読み込み中はMiniThumbnailを表示します。取得の再試行は表示中だけ行います。
-- `PrefabScenePreview`はCoreの[`AvatarPreviewRenderer`](./avatar-preview.md)へ描画を委ねます。Scene上の対象は複製せず、Edit ModeではNDMF Previewの加工後Renderer、Play Modeでは実際の対象を描画します。Prefabアセットの表示は隔離された表示用コピーを使用します。対象、部位・Material選択、Cameraと破棄を担当し、`SetFlexibleLayout`で親のサイズへ追従し、`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。表示中は約30fpsで再描画し、NDMFの更新、時間依存Shaderと実行中の姿勢を表示します。
+- `PrefabScenePreview`はCoreの[`AvatarPreviewRenderer`](./avatar-preview.md)へ描画を委ねます。Scene上の対象は複製せず、Edit ModeではNDMF Previewの加工後Renderer、Play Modeでは実際の対象を描画します。Prefabアセットの表示は隔離された表示用コピーを使用します。対象、部位・Material選択、Cameraと破棄を担当し、`SetFlexibleLayout`で親のサイズへ追従し、`SetViewToggleVisible`で視点切り替えトグルだけを非表示にでき、Cameraのフレーミングは変えません。`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。表示中は約30fpsで再描画し、NDMFの更新、時間依存Shaderと実行中の姿勢を表示します。
 - `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
 
 ### Containers
@@ -58,7 +58,7 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 
 `PreviewPane` Storyは実部品へ内容と操作ボタンを配置し、見出しの更新を確認します。共通の3D描画は`Displays/PrefabScenePreview`、機能固有の描画内容はDomain側のStoryで確認します。
 
-`ScenePreviewViewport` Storyは共有グリッド、右上の背景切り替えと表示リセット、左上の機能固有オーバーレイを一つのPreview内で確認できる構成にします。AssetManagerのAppearance Previewはこの部品を使用します。
+`ScenePreviewViewport` Storyは共有グリッド、右上の背景切り替えと表示リセット、左上の機能固有オーバーレイを一つのPreview内で確認できる構成にします。AssetManagerのAppearance PreviewとPlay Modeの操作確認は`PrefabScenePreview`を介してこの部品を使用し、表情エディターは自身の顔向けCamera制御と組み合わせます。描画画像は透過で重ね、グリッド背景と明暗切り替えを表示します。`PreviewGridBackground`は同じグリッドの描画とTextureの破棄を担当し、表情サムネイルでも使用します。
 
 ### Collections
 

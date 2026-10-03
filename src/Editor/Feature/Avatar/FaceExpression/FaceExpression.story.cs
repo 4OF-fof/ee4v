@@ -242,6 +242,7 @@ namespace Ee4v.FaceExpression
                     NewClip = "New expression",
                     CopyAndEdit = "Copy and edit",
                     ResetView = "Reset view",
+                    PreviewBackground = "Toggle background brightness",
                     BackToLibrary = "Back",
                     SearchPlaceholder = "Search BlendShapes",
                     SearchTooltip = "Filter BlendShapes by name",
@@ -271,9 +272,7 @@ namespace Ee4v.FaceExpression
                     Transition = "Transition",
                     TimelineTooltip = "Scrub the expression preview"
                 },
-                rect => EditorGUI.DrawRect(
-                    rect,
-                    new Color(0.1f, 0.1f, 0.1f, 1f)),
+                _ => { },
                 (_, time, rect) => EditorGUI.DrawRect(
                     rect,
                     Color.Lerp(

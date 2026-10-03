@@ -66,21 +66,6 @@
     position: relative;
 }
 
-.ee4v-face-expression__preview {
-    flex-grow: 1;
-}
-
-.ee4v-face-expression__reset-view {
-    width: var(--ee4v-size-28);
-    min-width: var(--ee4v-size-28);
-    height: var(--ee4v-size-28);
-    min-height: var(--ee4v-size-28);
-    padding: var(--ee4v-space-none);
-    position: absolute;
-    top: var(--ee4v-space-xl);
-    right: var(--ee4v-space-xl);
-}
-
 .ee4v-face-expression__editor-pane > .ee4v-ui-search-field {
     margin-top: var(--ee4v-space-md);
     margin-left: var(--ee4v-space-xs);
