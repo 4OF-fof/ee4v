@@ -10,6 +10,7 @@
       "fetchAvatarsLoading": "取得中…",
       "sdkLoginRequired": "VRChat SDKでログインしてから一覧を取得してください。",
       "avatarListFailed": "一覧取得・選択に失敗しました：{0}",
+      "avatarListOpenControlPanel": "一覧を取得できませんでした。VRChat SDKのControl Panelを一度開き、ログイン状態を確認してから、もう一度「一覧取得」を押してください。",
       "avatarListLoading": "アバター一覧を取得しています…",
       "avatarListLoaded": "登録済みアバター {0}件から選択できます。",
       "parametersBuilt": "同期パラメーター（ビルド後）",

@@ -320,6 +320,7 @@ namespace Ee4v.UI
             {
                 _prefabSiblingIndices.UnionWith(prefabSiblingIndices);
             }
+            RebuildHiddenPartRenderers();
             RefreshBounds();
             ApplyRequestedSelection();
             RequestPreviewRepaint();
@@ -497,11 +498,20 @@ namespace Ee4v.UI
             RequestPreviewRepaint();
         }
 
-        public void FocusBodyPart(BodyPartCategory? part)
+        public void FocusBodyPart(BodyPartCategory? part, bool preserveView = false)
         {
             _focusedBodyPart = part;
             RefreshViewToggle();
-            FrameCurrentSelection(true);
+            if (preserveView)
+            {
+                _orbit.CancelTransition();
+                StopCameraAnimation();
+                RequestPreviewRepaint();
+            }
+            else
+            {
+                FrameCurrentSelection(true);
+            }
         }
 
         private bool IsLeftSide(BodyPartCategory part)

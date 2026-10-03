@@ -42,6 +42,10 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 - `PrefabScenePreview`はCoreの[`AvatarPreviewRenderer`](./avatar-preview.md)へ描画を委ねます。Scene上の対象は複製せず、Edit ModeではNDMF Previewの加工後Renderer、Play Modeでは実際の対象を描画します。Prefabアセットの表示は隔離された表示用コピーを使用します。対象、部位・Material選択、Cameraと破棄を担当し、`SetFlexibleLayout`で親のサイズへ追従し、`SetViewToggleVisible`で視点切り替えトグルだけを非表示にでき、Cameraのフレーミングは変えません。`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。表示中は約30fpsで再描画し、NDMFの更新、時間依存Shaderと実行中の姿勢を表示します。
 - `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
 
+`PrefabScenePreview.SetScope`は描画対象とboundsを同期的に切り替え、PreviewとNDMF sessionを再生成しません。選択した構成Prefab rootのEditorOnly除外規則も同時に再計算し、scope変更後の最初の描画から選択範囲だけを表示します。
+
+`FocusBodyPart`は通常、選択部位へCameraをアニメーションで合わせます。`preserveView: true`では部位選択と視点ボタンだけを更新し、Cameraの位置・角度・距離を維持して進行中のアニメーションを止めます。構成Prefabの選択解除・切り替え時に使用します。
+
 `PrefabScenePreview`の選択輪郭は、選択中のRenderer・Material slotの加工後submeshをGeometry maskへ投影して生成します。maskは深度判定を行わず、手前のオブジェクトに遮られた部分や背面も含め、輪郭をPreview画像の上へ重ねます。透過・cutoutのテクスチャ形状ではなくMeshの形状を使用します。別Materialのsubmeshや影はmaskに含めません。部位選択では対象Renderer内の表示中slotをすべて含め、表示切替で非表示にした部位・Materialは輪郭にも含めません。Geometry maskは更新ごとに解放し、共有Meshを複製・変更しません。クリック選択では元Materialの描画差分を使用して見えている対象を判定します。
 
 ### Containers

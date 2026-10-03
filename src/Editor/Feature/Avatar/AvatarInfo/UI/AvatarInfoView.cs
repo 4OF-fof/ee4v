@@ -19,6 +19,7 @@ namespace Ee4v.AvatarInfo
         private readonly Dictionary<AvatarInfoSdkAvatar, string> _blueprintLabels =
             new Dictionary<AvatarInfoSdkAvatar, string>();
         private UiButton _fetchAvatars;
+        private MessagePanel _avatarListError;
         private bool _avatarListLoaded;
         private CancellationTokenSource _avatarListRequest;
         private string _selectedBlueprintId;
@@ -331,6 +332,12 @@ namespace Ee4v.AvatarInfo
                 variant: UiButtonVariant.Ghost) { name = "overviewFetchAvatars" };
             _fetchAvatars.SetEnabled(_editing?.Editable == true && _editing.SdkAvailable);
             content.Add(new FormInput(I18N.Get("workflow.overview.blueprintSelection"), _blueprintPicker, _fetchAvatars));
+            _avatarListError = new MessagePanel(new MessagePanelState(string.Empty))
+            {
+                name = "overviewAvatarListError"
+            };
+            _avatarListError.style.display = DisplayStyle.None;
+            content.Add(_avatarListError);
         }
 
         private string FormatBlueprintSelection(AvatarInfoSdkAvatar avatar) =>
@@ -386,6 +393,7 @@ namespace Ee4v.AvatarInfo
             var request = new CancellationTokenSource();
             _avatarListRequest = request;
             _avatarListLoaded = false;
+            _avatarListError.style.display = DisplayStyle.None;
             _blueprintPicker.SetEnabled(false);
             _fetchAvatars.SetEnabled(false);
             _fetchAvatars.SetLabel(I18N.Get("workflow.overview.fetchAvatarsLoading"));
@@ -394,7 +402,7 @@ namespace Ee4v.AvatarInfo
             {
                 if (_editing.IsLoggedIn?.Invoke() != true)
                 {
-                    _fetchAvatars.tooltip = I18N.Get("workflow.overview.sdkLoginRequired");
+                    ShowAvatarListFailure(I18N.Get("workflow.overview.sdkLoginRequired"));
                     return;
                 }
                 var avatars = await _editing.FetchAvatars(request.Token);
@@ -414,7 +422,7 @@ namespace Ee4v.AvatarInfo
             catch (Exception exception)
             {
                 if (_avatarListRequest == request)
-                    _fetchAvatars.tooltip = string.Format(I18N.Get("workflow.overview.avatarListFailed"), exception.Message);
+                    ShowAvatarListFailure(string.Format(I18N.Get("workflow.overview.avatarListFailed"), exception.Message));
             }
             finally
             {
@@ -426,6 +434,14 @@ namespace Ee4v.AvatarInfo
                 }
                 request.Dispose();
             }
+        }
+
+        private void ShowAvatarListFailure(string reason)
+        {
+            _fetchAvatars.tooltip = reason;
+            _avatarListError.SetState(new MessagePanelState(string.Empty,
+                I18N.Get("workflow.overview.avatarListOpenControlPanel"), MessageSeverity.Warning));
+            _avatarListError.style.display = DisplayStyle.Flex;
         }
 
         private void CancelAvatarListRequest()

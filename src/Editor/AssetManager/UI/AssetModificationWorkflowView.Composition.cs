@@ -211,6 +211,7 @@ namespace Ee4v.AssetManager.UI
             _parts.EndBodyScaleDrag();
             _parts.SaveBodyScalePrefab();
             if (_parts.BodyScaleDirty) { return; }
+            if (!_parts.FlushPendingPartVisibility()) { return; }
             _avatarContext.SelectedPrefabSiblingIndex = siblingIndex;
             _avatarContext.SelectedPrefabName = name ?? string.Empty;
             _avatarContext.SelectedBodyPart = null;
@@ -224,7 +225,15 @@ namespace Ee4v.AssetManager.UI
                 _currentCategory = WorkflowCategory.ShapeParts;
             }
             _avatarContext.AssetFeedback = string.Empty;
-            BuildWindow();
+            ClearAppearanceCaches();
+            _workspaceHeader?.RemoveFromHierarchy();
+            _workspaceHeader = BuildWorkspaceHeader();
+            Insert(0, _workspaceHeader);
+            _categoryRail?.SetPrefabScope(siblingIndex.HasValue);
+            _avatarContext.Preview?.FocusBodyPart(null, true);
+            ShowCategory(_currentCategory, false, true);
+            SyncPreviewSelection();
+            RequestRepaint();
         }
 
         private IEnumerable<int> GetDisplayedPrefabScopes()

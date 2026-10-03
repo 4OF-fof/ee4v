@@ -10,6 +10,7 @@
       "fetchAvatarsLoading": "Loading…",
       "sdkLoginRequired": "Log in using the VRChat SDK before fetching the list.",
       "avatarListFailed": "Could not fetch or select an avatar: {0}",
+      "avatarListOpenControlPanel": "Could not fetch the avatar list. Open the VRChat SDK Control Panel once, check that you are logged in, then click Fetch List again.",
       "avatarListLoading": "Fetching avatars…",
       "avatarListLoaded": "Choose from {0} registered avatars.",
       "parametersBuilt": "Synced parameters (built)",

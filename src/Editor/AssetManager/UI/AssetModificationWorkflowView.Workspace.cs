@@ -65,7 +65,8 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            root.Add(BuildWorkspaceHeader());
+            _workspaceHeader = BuildWorkspaceHeader();
+            root.Add(_workspaceHeader);
             var preview = EditorApplication.isPlaying && _mode == ModificationEditorMode.All
                 ? new VisualElement() : BuildPreviewPane();
             _editorLayout = new WorkflowEditorLayout(
@@ -546,8 +547,7 @@ namespace Ee4v.AssetManager.UI
             _avatarContext.Preview.SetFullBodyFraming(false);
             _avatarContext.Preview.AddToClassList(
                 "ee4v-modification-workflow__preview");
-            _previewScopeSiblingIndex = _currentCategory == WorkflowCategory.Overview
-                ? null : _avatarContext.SelectedPrefabSiblingIndex;
+            _previewScopeSiblingIndex = _avatarContext.SelectedPrefabSiblingIndex;
             _avatarContext.Preview.SetScope(
                 _previewScopeSiblingIndex, _avatarContext.PrefabSiblingIndices);
             _avatarContext.Preview.SetHiddenPrefabs(
@@ -562,7 +562,8 @@ namespace Ee4v.AssetManager.UI
 
         private void ShowCategory(
             WorkflowCategory category,
-            bool clearFeedback = true)
+            bool clearFeedback = true,
+            bool preservePreviewCamera = false)
         {
             if (_mode == ModificationEditorMode.All)
             {
@@ -593,6 +594,12 @@ namespace Ee4v.AssetManager.UI
                 _parts.EndBodyScaleDrag();
                 _parts.SaveBodyScalePrefab();
                 if (_parts.BodyScaleDirty) { return; }
+            }
+            var previewScope = _avatarContext.SelectedPrefabSiblingIndex;
+            if (_previewScopeSiblingIndex != previewScope)
+            {
+                _previewScopeSiblingIndex = previewScope;
+                _avatarContext.Preview?.SetScope(previewScope, _avatarContext.PrefabSiblingIndices);
             }
             if (_customizerHost == null ||
                 _faceExpressionHost == null)
@@ -656,13 +663,6 @@ namespace Ee4v.AssetManager.UI
             }
 
             _faceExpressionEditor?.StopPlayback();
-            var previewScope = category == WorkflowCategory.Overview
-                ? null : _avatarContext.SelectedPrefabSiblingIndex;
-            if (_previewScopeSiblingIndex != previewScope)
-            {
-                _previewScopeSiblingIndex = previewScope;
-                _avatarContext.Preview?.SetScope(previewScope, _avatarContext.PrefabSiblingIndices);
-            }
             _overviewContent?.RemoveFromHierarchy();
             _overviewContent = null;
             if (category == WorkflowCategory.Overview)
@@ -674,7 +674,7 @@ namespace Ee4v.AssetManager.UI
                     cachedControls.Content.AddToClassList(
                         "ee4v-modification-workflow__hidden");
                 }
-                _avatarContext.Preview?.FocusBodyPart(null);
+                _avatarContext.Preview?.FocusBodyPart(null, preservePreviewCamera);
                 _avatarContext.Preview?.SetListSelection(null, null);
                 _overviewContent = BuildOverviewControls();
                 _avatarContext.ControlsHost.Add(_overviewContent);
@@ -689,7 +689,7 @@ namespace Ee4v.AssetManager.UI
                 !HasFocusBone(_avatarContext.SelectedBodyPart.Value))
             {
                 _avatarContext.SelectedBodyPart = null;
-                _avatarContext.Preview?.FocusBodyPart(null);
+                _avatarContext.Preview?.FocusBodyPart(null, preservePreviewCamera);
             }
             _appearanceHeader.Clear();
             _appearanceHeader.style.display = DisplayStyle.Flex;

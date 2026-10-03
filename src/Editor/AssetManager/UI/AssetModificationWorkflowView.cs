@@ -110,6 +110,8 @@ namespace Ee4v.AssetManager.UI
 
         private int? _previewScopeSiblingIndex;
 
+        private VisualElement _workspaceHeader;
+
         private FaceExpressionEmbeddedView _faceExpressionEditor;
 
         private VisualElement _customizerHost;
