@@ -23,7 +23,16 @@ namespace Ee4v.UI
             if (TryPickPreviewObject(rect, position,
                     out var renderer, out var material))
             {
-                ApplyPickedSelection(renderer, material);
+                var instance = _instance;
+                EditorApplication.delayCall += () =>
+                {
+                    if (_instance == null || _instance != instance ||
+                        renderer == null || material == null)
+                    {
+                        return;
+                    }
+                    ApplyPickedSelection(renderer, material);
+                };
             }
             else
             {
@@ -47,8 +56,7 @@ namespace Ee4v.UI
             _selectionOverlay.style.display = DisplayStyle.Flex;
             RequestPreviewRepaint();
             var partKey = GetPreviewPartKey(renderer.transform);
-            EditorApplication.delayCall += () =>
-                PreviewObjectClicked?.Invoke(partKey, material);
+            PreviewObjectClicked?.Invoke(partKey, material);
         }
 
         private bool TryPickPreviewObject(

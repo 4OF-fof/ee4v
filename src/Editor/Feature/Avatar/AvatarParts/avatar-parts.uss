@@ -285,10 +285,6 @@
     min-width: 0;
 }
 
-.ee4v-modification-workflow__object-group-content {
-    padding-left: var(--ee4v-space-md);
-}
-
 .ee4v-modification-workflow__object-group--last.ee4v-modification-workflow__object-group--header-last > .ee4v-modification-workflow__object-row {
     border-bottom-width: 0;
 }

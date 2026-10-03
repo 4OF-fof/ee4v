@@ -170,7 +170,7 @@ namespace Ee4v.AvatarParts
 
             foreach (var root in roots)
             {
-                container.Add(BuildObjectNode(root));
+                container.Add(BuildObjectNode(root, 0));
             }
         }
 
@@ -192,9 +192,11 @@ namespace Ee4v.AvatarParts
             return true;
         }
 
-        private VisualElement BuildObjectNode(PrefabObjectNode node)
+        private VisualElement BuildObjectNode(PrefabObjectNode node, int depth)
         {
             var row = BuildObjectRow(node.Entry);
+            row.style.paddingLeft = UiSpacingTokens.Small +
+                depth * UiSpacingTokens.Medium;
             if (node.Children.Count == 0)
             {
                 var placeholder = new VisualElement();
@@ -212,7 +214,7 @@ namespace Ee4v.AvatarParts
                 "ee4v-modification-workflow__object-group-content");
             foreach (var child in node.Children)
             {
-                content.Add(BuildObjectNode(child));
+                content.Add(BuildObjectNode(child, depth + 1));
             }
 
             var key = PrefabScenePreview.GetPartKey(

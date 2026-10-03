@@ -177,10 +177,18 @@ namespace Ee4v.FaceExpression
             ApplyChannels(_thumbnailUtility, _thumbnailRenderers, channels);
             var texture = _thumbnailUtility.Render(new Rect(0f, 0f, width, height));
             var previous = RenderTexture.active;
+            var previousSrgbWrite = GL.sRGBWrite;
+            RenderTexture readback = null;
             var result = new Texture2D(width, height, TextureFormat.RGBA32, false);
             try
             {
-                RenderTexture.active = texture as RenderTexture;
+                readback = RenderTexture.GetTemporary(
+                    width, height, 0,
+                    RenderTextureFormat.ARGB32,
+                    RenderTextureReadWrite.sRGB);
+                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
+                Graphics.Blit(texture, readback);
+                RenderTexture.active = readback;
                 result.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
                 result.Apply(false, false);
                 return result;
@@ -190,7 +198,15 @@ namespace Ee4v.FaceExpression
                 UnityEngine.Object.DestroyImmediate(result);
                 throw;
             }
-            finally { RenderTexture.active = previous; }
+            finally
+            {
+                GL.sRGBWrite = previousSrgbWrite;
+                RenderTexture.active = previous;
+                if (readback != null)
+                {
+                    RenderTexture.ReleaseTemporary(readback);
+                }
+            }
         }
 
         public void Dispose()
