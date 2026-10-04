@@ -15,16 +15,12 @@ namespace Ee4v.AssetManager.Simulation
     {
         private readonly List<Action> _restore = new List<Action>();
         private readonly List<Action> _refreshAdvanced = new List<Action>();
-        private readonly int[] _patterns = { 1, 3, 6, 6 };
-        private readonly Color[] _volumeColors = { Color.white, Color.white, Color.white, new Color(1, 0.65f, 0.35f) };
-        private readonly List<UiButton> _patternButtons = new List<UiButton>();
-        private readonly List<UiButton> _layoutButtons = new List<UiButton>();
+        private readonly List<LightingPreset> _previews = new List<LightingPreset>();
         private readonly List<Light> _lights = new List<Light>();
         private Light _previewLight;
         private VisualElement _advanced;
         private UiTextElement _selection;
-        private readonly VisualElement _volumeControls;
-        private readonly ColorField _volumeColor;
+        private bool _volumesAvailable;
         private readonly string[] _patternNames = { "scene", "day", "overcast", "night", "warm", "backlight",
             "lv" };
 
@@ -34,51 +30,21 @@ namespace Ee4v.AssetManager.Simulation
         public AvatarLightingView(GameObject avatar, Action repaint)
             : base(avatar, repaint, Text("title"))
         {
-            Controls.Add(UiTextFactory.Create(Text("patterns"), UiClassNames.SectionTitle));
+            _volumesAvailable = AppDomain.CurrentDomain.GetAssemblies().Any(assembly =>
+                assembly.GetType("VRCLightVolumes.LightVolumeManager", false) != null);
+            _previews.Add(CreateBuiltin(1));
+            _addPreview = new UiButton(Text("addPreview"), AddPreview,
+                icon: FluentUiIcons.CreateState("add.png", UiSizeTokens.Size12));
+            PreviewActions.Add(_addPreview);
+            Controls.Add(UiTextFactory.Create(Text("settings"), UiClassNames.SectionTitle));
             _selection = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
             Controls.Add(_selection);
-            var patterns = new VisualElement();
-            patterns.AddToClassList("ee4v-inspection__choices");
-            Controls.Add(patterns);
-            var volumesAvailable = AppDomain.CurrentDomain.GetAssemblies().Any(assembly =>
-                assembly.GetType("VRCLightVolumes.LightVolumeManager", false) != null);
-            if (!volumesAvailable) { _patterns[2] = 2; _patterns[3] = 5; }
-            for (var i = 0; i < (volumesAvailable ? _patternNames.Length : 6); i++)
-            {
-                var pattern = i;
-                var button = new UiButton(Text(_patternNames[i]), () =>
-                { _patterns[ActivePreview] = pattern; RefreshSelection(); Repaint(); });
-                button.AddToClassList("ee4v-inspection__choice");
-                patterns.Add(button);
-                _patternButtons.Add(button);
-            }
-            if (volumesAvailable)
-            {
-                _volumeControls = new VisualElement();
-                _volumeColor = UiTextFactory.CreateColorField(Text("lvColor"));
-                _volumeColor.showAlpha = false;
-                _volumeColor.RegisterValueChangedCallback(evt =>
-                { _volumeColors[ActivePreview] = evt.newValue; Repaint(); });
-                _volumeControls.Add(_volumeColor);
-                _volumeControls.Add(UiTextFactory.Create(Text("lvHint"), UiClassNames.SecondaryText));
-                Controls.Add(_volumeControls);
-            }
-            Controls.Add(UiTextFactory.Create(Text("compare"), UiClassNames.SectionTitle));
-            var layouts = new VisualElement();
-            layouts.AddToClassList("ee4v-inspection__choices");
-            Controls.Add(layouts);
-            foreach (var count in new[] { 1, 2, 4 })
-            {
-                var button = new UiButton(Text("layout" + count), () =>
-                { SetPreviewCount(count); RefreshSelection(); });
-                button.AddToClassList("ee4v-inspection__choice");
-                layouts.Add(button);
-                _layoutButtons.Add(button);
-            }
+            BuildPresetControls();
+            BuildPreviewSettings();
             Controls.Add(UiTextFactory.Create(Text("compareHint"), UiClassNames.SecondaryText));
             _advanced = AddAdvancedSettings();
             _advanced.Add(UiTextFactory.Create(Text("advancedHint"), UiClassNames.SecondaryText));
-            SetPreviewCount(2);
+            SetPreviewCount(_previews.Count);
             RefreshSelection();
             if (avatar == null || !EditorApplication.isPlaying)
             { Status.SetText(Text("ready")); Controls.SetEnabled(false); return; }
@@ -143,7 +109,7 @@ namespace Ee4v.AssetManager.Simulation
             var volumes = components.Where(component => component != null &&
                 (component.GetType().FullName == "VRCLightVolumes.LightVolume" ||
                  component.GetType().FullName == "VRCLightVolumes.PointLightVolume")).ToArray();
-            if (volumesAvailable && volumes.Length == 0) { _advanced.Add(UiTextFactory.Create(Text("noVolumes"), UiClassNames.SecondaryText)); }
+            if (_volumesAvailable && volumes.Length == 0) { _advanced.Add(UiTextFactory.Create(Text("noVolumes"), UiClassNames.SecondaryText)); }
             foreach (var volume in volumes)
             {
                 _advanced.Add(UiTextFactory.Create(volume.name + " (Light Volume)", UiClassNames.SectionTitle));
@@ -157,28 +123,32 @@ namespace Ee4v.AssetManager.Simulation
             }));
         }
 
-        protected override void ActivePreviewChanged() { RefreshSelection(); }
+        protected override void ActivePreviewChanged()
+        {
+            if (_presetName != null) { _presetName.SetValueWithoutNotify(_previews[ActivePreview].Name); }
+            RefreshSelection();
+        }
 
         private void RefreshSelection()
         {
             if (_selection == null) { return; }
             for (var i = 0; i < PreviewCount; i++)
-            { SetPreviewTitle(i, (i + 1) + " · " + Text(_patternNames[_patterns[i]])); }
+            { SetPreviewTitle(i, (i + 1) + " · " + PresetLabel(_previews[i])); }
             _selection.SetText(I18N.Get("workflow.lighting.selected", ActivePreview + 1));
-            if (_volumeControls != null)
-            {
-                _volumeControls.style.display = _patterns[ActivePreview] == 6 ? DisplayStyle.Flex : DisplayStyle.None;
-                _volumeColor.SetValueWithoutNotify(_volumeColors[ActivePreview]);
-            }
-            for (var i = 0; i < _patternButtons.Count; i++)
-            { _patternButtons[i].EnableInClassList("ee4v-inspection__choice--selected", _patterns[ActivePreview] == i); }
-            for (var i = 0; i < _layoutButtons.Count; i++)
-            { _layoutButtons[i].EnableInClassList("ee4v-inspection__choice--selected", PreviewCount == (i == 2 ? 4 : i + 1)); }
+            _addPreview.SetEnabled(PreviewCount < MaxPreviewCount);
+            RefreshPresetControls();
+            foreach (var refresh in _refreshPreviewSettings) { refresh(); }
+            var pattern = _previews[ActivePreview].Pattern;
+            _previewSettings.style.display = pattern != 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            _directionalSettings.style.display = pattern > 0 && pattern < 6 ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_volumeSettings != null)
+            { _volumeSettings.style.display = pattern == 6 ? DisplayStyle.Flex : DisplayStyle.None; }
         }
 
         protected override void RenderPreview(Camera camera, int index)
         {
-            var pattern = _patterns[index];
+            var settings = _previews[index];
+            var pattern = settings.Pattern;
             if (pattern == 0 || _previewLight == null) { camera.Render(); return; }
             var mode = RenderSettings.ambientMode;
             var ambient = RenderSettings.ambientLight;
@@ -191,22 +161,20 @@ namespace Ee4v.AssetManager.Simulation
                 try
                 {
                     for (var i = 0; i < _lights.Count; i++) { if (_lights[i] != null) { _lights[i].enabled = false; } }
-                    var ambientColor = pattern == 3 ? new Color(0.025f, 0.035f, 0.08f) : new Color(0.22f, 0.24f, 0.28f);
-                    if (pattern == 2) { ambientColor = new Color(0.5f, 0.52f, 0.56f); }
                     RenderSettings.ambientMode = AmbientMode.Flat;
-                    RenderSettings.ambientLight = ambientColor;
-                    RenderSettings.ambientIntensity = 1;
-                    RenderSettings.reflectionIntensity = pattern == 3 ? 0.1f : 0.5f;
+                    RenderSettings.ambientLight = settings.AmbientColor;
+                    RenderSettings.ambientIntensity = settings.AmbientIntensity;
+                    RenderSettings.reflectionIntensity = settings.ReflectionIntensity;
                     var previewProbe = new SphericalHarmonicsL2();
-                    previewProbe.AddAmbientLight(ambientColor.linear);
+                    previewProbe.AddAmbientLight(settings.AmbientColor.linear * settings.AmbientIntensity);
                     RenderSettings.ambientProbe = previewProbe;
-                    _previewLight.color = pattern == 4 ? new Color(1, 0.65f, 0.35f) : pattern == 3 ? new Color(0.45f, 0.6f, 1) : Color.white;
-                    _previewLight.intensity = pattern == 2 ? 0.25f : pattern == 3 ? 0.15f : 1;
+                    _previewLight.color = settings.LightColor;
+                    _previewLight.intensity = settings.LightIntensity;
                     _previewLight.transform.rotation = (Avatar != null ? Avatar.transform.rotation : Quaternion.identity) *
-                        Quaternion.Euler(35, pattern == 5 ? 0 : 160, 0);
+                        Quaternion.Euler(settings.Pitch, settings.Yaw, 0);
                     _previewLight.enabled = pattern < 6;
                     if (pattern < 6) { volumes.Disable(); }
-                    else { volumes.Apply(_volumeColors[index], VisibleAvatar.transform.position, VisibleAvatar.transform.rotation, GetVolumeAtlas()); }
+                    else { volumes.Apply(settings.VolumeColor, VisibleAvatar.transform.position, VisibleAvatar.transform.rotation, GetVolumeAtlas()); }
                     camera.Render();
                 }
                 finally
@@ -278,6 +246,7 @@ namespace Ee4v.AssetManager.Simulation
                 var value = nonnegative ? Mathf.Max(0, evt.newValue) : evt.newValue;
                 field.SetValueWithoutNotify(value);
                 changed(value);
+                Repaint();
             });
             parent.Add(field);
         }
@@ -293,6 +262,7 @@ namespace Ee4v.AssetManager.Simulation
             {
                 Restore();
                 _restore.Clear();
+                Ee4v.Core.Settings.GlobalDataSettings.PathChanged -= ReloadPresets;
                 _refreshAdvanced.Clear();
                 if (_previewLight != null) { UnityEngine.Object.DestroyImmediate(_previewLight.gameObject); }
                 _previewLight = null;

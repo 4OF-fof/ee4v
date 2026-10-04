@@ -12,16 +12,18 @@ namespace Ee4v.AssetManager.Simulation
 {
     public abstract class AvatarInspectionView : VisualElement, IDisposable
     {
+        protected const int MaxPreviewCount = 6;
         protected readonly GameObject Avatar;
         protected readonly ScrollView Controls;
         protected readonly UiTextElement Status;
+        protected readonly VisualElement PreviewActions;
         private readonly VisualElement _previewGrid;
         private readonly List<ScenePreviewViewport> _viewports = new List<ScenePreviewViewport>();
         private readonly List<UiButton> _previewTitles = new List<UiButton>();
         private readonly PreviewOrbitController _orbit;
         private readonly Action _repaint;
         private Camera _camera;
-        private readonly RenderTexture[] _textures = new RenderTexture[4];
+        private readonly RenderTexture[] _textures = new RenderTexture[MaxPreviewCount];
         private bool _disposed;
         protected int ActivePreview { get; private set; }
         protected int PreviewCount => _viewports.Count;
@@ -35,12 +37,14 @@ namespace Ee4v.AssetManager.Simulation
             _orbit = new PreviewOrbitController(GetHashCode(), Repaint);
             var preview = new PreviewPane(title);
             preview.AddToClassList("ee4v-modification-workflow__preview-pane");
+            PreviewActions = preview.Actions;
             _previewGrid = new VisualElement();
             _previewGrid.AddToClassList("ee4v-inspection__grid");
             preview.Content.Add(_previewGrid);
             Add(preview);
             Controls = new ScrollView(ScrollViewMode.Vertical);
             Controls.AddToClassList("ee4v-execution__controls");
+            Controls.contentContainer.AddToClassList("ee4v-inspection__controls-content");
             Status = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
             Controls.Add(Status);
             Add(Controls);
@@ -59,6 +63,7 @@ namespace Ee4v.AssetManager.Simulation
             }
             SetPreviewCount(1);
             ResetCamera();
+            schedule.Execute(ResetCamera);
             schedule.Execute(() =>
             {
                 if (_disposed || panel == null) { return; }
@@ -78,29 +83,35 @@ namespace Ee4v.AssetManager.Simulation
             _repaint?.Invoke();
         }
 
-        protected void SetPreviewCount(int count)
+        protected void SetPreviewCount(int count, int activeIndex = -1)
         {
-            count = count == 4 ? 4 : count == 2 ? 2 : 1;
+            count = Mathf.Clamp(count, 1, _textures.Length);
             _orbit.CancelInteraction();
             foreach (var viewport in _viewports) { viewport.Dispose(); }
             _viewports.Clear();
             _previewTitles.Clear();
             _previewGrid.Clear();
             for (var i = count; i < _textures.Length; i++) { ReleaseTexture(i); }
-            ActivePreview = Mathf.Min(ActivePreview, count - 1);
-            for (var rowIndex = 0; rowIndex < (count == 4 ? 2 : 1); rowIndex++)
+            ActivePreview = Mathf.Clamp(activeIndex < 0 ? ActivePreview : activeIndex, 0, count - 1);
+            var columns = count > 4 ? 3 : count == 1 ? 1 : 2;
+            var rows = (count + columns - 1) / columns;
+            for (var rowIndex = 0; rowIndex < rows; rowIndex++)
             {
                 var row = new VisualElement();
                 row.AddToClassList("ee4v-inspection__preview-row");
                 _previewGrid.Add(row);
-                for (var column = 0; column < (count == 1 ? 1 : 2); column++)
+                for (var column = 0; column < columns && _viewports.Count < count; column++)
                 {
                     var index = _viewports.Count;
                     var tile = new VisualElement();
                     tile.AddToClassList("ee4v-inspection__tile");
                     var heading = new UiButton(string.Empty, () => SelectPreview(index), variant: UiButtonVariant.Ghost);
                     heading.AddToClassList("ee4v-inspection__tile-heading");
-                    tile.Add(heading);
+                    var header = new VisualElement();
+                    header.AddToClassList("ee4v-inspection__tile-header");
+                    header.Add(heading);
+                    AddPreviewActions(header, index, count);
+                    tile.Add(header);
                     _previewTitles.Add(heading);
                     var viewport = new ScenePreviewViewport(rect => Draw(rect, index), ResetCamera,
                         I18N.Get("workflow.inspection.background"), I18N.Get("workflow.inspection.resetCamera"));
@@ -112,14 +123,21 @@ namespace Ee4v.AssetManager.Simulation
                 }
             }
             SelectPreview(ActivePreview);
-            schedule.Execute(ResetCamera);
         }
 
-        private void SelectPreview(int index)
+        protected virtual void AddPreviewActions(VisualElement header, int index, int count) { }
+
+        protected void SelectPreview(int index)
         {
             ActivePreview = index;
             for (var i = 0; i < _previewTitles.Count; i++)
-            { _previewTitles[i].EnableInClassList("ee4v-inspection__tile-heading--selected", i == index); }
+            {
+                var selected = i == index;
+                var heading = _previewTitles[i];
+                heading.parent.EnableInClassList("ee4v-inspection__tile-header--selected", selected);
+                heading.parent.parent.EnableInClassList("ee4v-inspection__tile--selected", selected);
+                heading.SetLabelColor(selected ? UiColorTokens.TextOnState : UiColorTokens.TextPrimary);
+            }
             ActivePreviewChanged();
             Repaint();
         }
