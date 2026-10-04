@@ -24,7 +24,12 @@ namespace Ee4v.AssetManager.Simulation
                     {
                         "Editor/AssetManager/UI/asset-modification-workflow.uss",
                         "Editor/AssetManager/UI/Components/Workflow/workflow-story.uss"
-                    })
+                    }),
+                new UiStory("avatar-lighting-view", "Domain/AssetManager/Containers", "AvatarLightingView",
+                    "通常照明とVRCLVのプリセットを選び、分割プレビューで比較します。", "対象がない実Viewのプリセットと閉じた詳細設定を表示します。",
+                    BuildLighting, usageLocations: new[]
+                    { "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs" },
+                    styleSheetPaths: new[] { "Editor/AssetManager/Simulation/avatar-execution.uss" })
             };
         }
 
@@ -38,6 +43,14 @@ namespace Ee4v.AssetManager.Simulation
             view.RegisterCallback<DetachFromPanelEvent>(_ => view.Dispose());
             surface.Add(view);
             parent.Add(surface);
+        }
+
+        private static void BuildLighting(VisualElement parent)
+        {
+            var view = new AvatarLightingView(null, () => { });
+            view.SetEnabled(false);
+            view.RegisterCallback<DetachFromPanelEvent>(_ => view.Dispose());
+            parent.Add(view);
         }
     }
 }

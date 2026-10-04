@@ -6,6 +6,13 @@ namespace Ee4v.AssetManager.UI
         MenuAndGestures,
         ShapeParts,
         Material,
-        ExpressionAnimation
+        ExpressionAnimation,
+        Lighting
+    }
+
+    internal static class WorkflowCategories
+    {
+        internal static bool IsPlayMode(this WorkflowCategory category) =>
+            category == WorkflowCategory.MenuAndGestures || category == WorkflowCategory.Lighting;
     }
 }

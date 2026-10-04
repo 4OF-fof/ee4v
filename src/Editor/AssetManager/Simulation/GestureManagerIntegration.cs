@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using BlackStartX.GestureManager;
 using BlackStartX.GestureManager.Editor.Modules.Vrc3;
 using BlackStartX.GestureManager.Modules;
@@ -64,6 +65,15 @@ namespace Ee4v.AssetManager.Simulation
             }
             manager.SetModule(module);
             return manager.Module as ModuleVrc3;
+        }
+
+        internal static GameObject GetVisibleAvatar(ModuleVrc3 module)
+        {
+            if (module == null) { return null; }
+            var dummy = typeof(ModuleVrc3).GetField("DummyMode", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(module);
+            var avatar = dummy?.GetType().GetField("Avatar", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                ?.GetValue(dummy) as GameObject;
+            return avatar != null ? avatar : module.Avatar;
         }
     }
 }

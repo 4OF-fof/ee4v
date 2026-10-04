@@ -12,6 +12,7 @@
     },
     "windowTitle": "ee4v",
     "category": {
+      "lighting": "Lighting check",
       "menuAndGestures": "Controls",
       "overview": "Overview",
       "shapeParts": "Shape & parts",
@@ -28,6 +29,23 @@
       "leftHand": "Left hand",
       "rightHand": "Right hand",
       "weight": "Weight"
+    },
+    "inspection": { "background": "Toggle background", "resetCamera": "Reset camera", "advanced": "Advanced settings" },
+    "lighting": {
+      "volumeFailed": "Could not update {0}: {1}",
+      "title": "Lighting check", "ready": "Check lighting in Play Mode.",
+      "patterns": "Lighting patterns", "selected": "Choose lighting for preview {0}",
+      "scene": "Scene lighting", "day": "Daylight", "overcast": "Overcast", "night": "Night", "warm": "Warm", "backlight": "Backlight",
+      "lv": "VRCLV", "lvColor": "VRCLV color",
+      "lvHint": "Change the volume color for the selected preview. VRCLV requires compatible materials.",
+      "compare": "Compare previews", "layout1": "Single", "layout2": "Two panes", "layout4": "Four panes",
+      "compareHint": "Click a preview, then choose its lighting. Orbit, pan and zoom are synchronized across all panes.",
+      "advancedHint": "Select Scene lighting to adjust advanced settings.",
+      "description": "Render the running avatar using scene lighting. Right drag to orbit, middle drag to pan, and scroll to zoom. Adjustments are restored when leaving this tab.",
+      "ambient": "Ambient color", "ambientIntensity": "Ambient intensity", "reflection": "Reflection intensity",
+      "enabled": "Enable light", "intensity": "Intensity", "color": "Color", "pitch": "Pitch (degrees)", "yaw": "Yaw (degrees)",
+      "noVolumes": "No scene VRC Light Volumes are available for adjustment.",
+      "reset": "Restore adjustments"
     },
     "overview": {
       "avatar": "Avatar information",

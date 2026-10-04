@@ -46,11 +46,11 @@ namespace Ee4v.AssetManager.UI
         internal void ShowCategory(WorkflowCategory category)
         {
             AppearanceHost.EnableInClassList("ee4v-modification-workflow__hidden",
-                category == WorkflowCategory.ExpressionAnimation || category == WorkflowCategory.MenuAndGestures);
+                category == WorkflowCategory.ExpressionAnimation || category.IsPlayMode());
             FaceExpressionHost.EnableInClassList("ee4v-modification-workflow__hidden",
                 category != WorkflowCategory.ExpressionAnimation);
             ExecutionHost.EnableInClassList("ee4v-modification-workflow__hidden",
-                category != WorkflowCategory.MenuAndGestures);
+                !category.IsPlayMode());
         }
     }
 }

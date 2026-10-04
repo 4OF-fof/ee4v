@@ -173,13 +173,15 @@ namespace Ee4v.AssetManager.UI
         private VisualElement _executionHost;
 
         private AvatarExecutionView _executionView;
+        private AvatarInspectionView _inspectionView;
+        private WorkflowCategory? _executionCategory;
 
-        internal WorkflowCategory EditingCategory => _currentCategory == WorkflowCategory.MenuAndGestures
+        internal WorkflowCategory EditingCategory => _currentCategory.IsPlayMode()
             ? _editingCategory : _currentCategory;
 
         internal void RestoreEditingCategory(WorkflowCategory category)
         {
-            _editingCategory = category == WorkflowCategory.MenuAndGestures
+            _editingCategory = category.IsPlayMode()
                 ? WorkflowCategory.Overview : category;
             if (!EditorApplication.isPlaying) { ShowCategory(_editingCategory, false); }
         }
@@ -242,13 +244,13 @@ namespace Ee4v.AssetManager.UI
         {
             if (EditorApplication.isPlaying)
             {
-                if (_currentCategory != WorkflowCategory.MenuAndGestures)
+                if (!_currentCategory.IsPlayMode())
                 {
                     _editingCategory = _currentCategory;
+                    _currentCategory = WorkflowCategory.MenuAndGestures;
                 }
-                _currentCategory = WorkflowCategory.MenuAndGestures;
             }
-            else if (_currentCategory == WorkflowCategory.MenuAndGestures)
+            else if (_currentCategory.IsPlayMode())
             {
                 _currentCategory = _editingCategory;
             }
@@ -526,6 +528,9 @@ namespace Ee4v.AssetManager.UI
         {
             _executionView?.Dispose();
             _executionView = null;
+            _inspectionView?.Dispose();
+            _inspectionView = null;
+            _executionCategory = null;
             _assetManagerView?.Dispose();
             _assetManagerView = null;
             _materials.DisposeMaterialEditor();

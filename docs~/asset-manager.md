@@ -4,13 +4,25 @@ AssetManager は Item、File、Import Target、依存関係、Tag、Collection�
 
 ## PlayModeの操作確認
 
-統合ee4vはUnityのモードに合わせてカテゴリ一覧を切り替えます。Edit Modeは「総合」「体型・パーツ」「マテリアル」「表情」、Play Modeは「操作確認」を表示します。「操作確認」は作業Scene内のアバター全体を対象とします。GestureManagerはVPMの必須外部依存（`>=3.9.9 <4.0.0-a`）とし、接続を`AssetManager/Simulation`のEditor assemblyへまとめます。AssetManager UIはこの内部モジュールの公開APIを使用します。エミュレーション、PlayableGraph、パラメーター伝播、メニューの動作と円形描画は導入済みGestureManagerが担当します。ee4vはソースやアセットを取り込まず、`SetModule`、`GetOrCreateRadial`、`GetParam`などの公開APIを使用します。依存先とライセンスの記載は`ThirdParty~/THIRD_PARTY_NOTICES.md`に置きます。
+統合ee4vはUnityのモードに合わせてカテゴリ一覧を切り替えます。Edit Modeは「総合」「体型・パーツ」「マテリアル」「表情」、Play Modeは「操作確認」「ライティング確認」を表示します。各確認タブは作業Scene内のアバター全体を対象とします。GestureManagerはVPMの必須外部依存（`>=3.9.9 <4.0.0-a`）とし、接続を`AssetManager/Simulation`のEditor assemblyへまとめます。AssetManager UIはこの内部モジュールの公開APIを使用します。エミュレーション、PlayableGraph、パラメーター伝播、メニューの動作と円形描画は導入済みGestureManagerが担当します。ee4vはソースやアセットを取り込まず、`SetModule`、`GetOrCreateRadial`、`GetParam`などの公開APIを使用します。依存先とライセンスの記載は`ThirdParty~/THIRD_PARTY_NOTICES.md`に置きます。
 
 UnityのToolbarでPlay Modeを開始すると「操作確認」へ切り替え、NDMFのビルド後に作業SceneのGestureManagerを対象へ接続します。停止すると元の編集カテゴリへ戻します。編集カテゴリはdomain reloadを跨いで保持します。Play Mode中はPrefab構成・保存・破棄の操作を表示せず、Variantの切り替えを無効にします。Play Modeへ入る前に体型のドラッグと保留中のパーツ変更を確定して編集用Previewを解放します。操作確認では編集用Previewを併設せず、同じ`PrefabScenePreview`で実行中のアバターを描画します。初期表示とリセット時のカメラ距離、中心の補正、画角とサイズ追従は編集モードのAppearance Previewと同じ拡大表示設定を使用します。背景には共通の明暗グリッドを表示し、右上へ背景切り替えとリセットのアイコンを配置します。操作確認では正面・背面のトグルを表示しません。見出しにテキストの表示リセットボタンは置きません。Scene内のGestureManagerは保存された構成として維持し、タブやWindowを閉じても実行中のModuleを切断しません。同じアバターを制御中の別GestureManagerがあれば接続に失敗します。ee4vは既存エミュレーターを削除しません。SceneにGestureManagerがない場合は配置の案内を表示します。
 
 右ペインに外部GestureManagerの300pxラジアルUI、左右0〜7のジェスチャーと強さを表示します。GestureManagerのOptionsもそのまま利用し、入力はPlay Mode内のModuleへ渡します。外部のラジアルUIの文字とアイコンはパッケージ側が生成します。ee4v自身の文字はUiTextFactoryを使用します。ラジアルは固定の高さに配置し、選択要素の文字をee4v側で追加表示しません。
 
 中央は共通の`AvatarPreviewRenderer`で実行中のAvatarだけを描画します。Camera、照明とRenderTextureの管理を編集用Previewと共有し、実アバターのAnimator、揺れ物、Particleなどの状態を表示します。右ドラッグで回転、中ドラッグで移動、ホイールで拡大縮小し、「表示リセット」で対象を収めます。表示用Camera、LightとRenderTextureは保存せず、タブの画面再構築・Window終了時に解放します。総合タブのパフォーマンスは既存のNDMFビルド記録を使用します。
+
+## ライティングの確認
+
+確認用Cameraの初期表示とリセットは有効なRendererの実形状へ合わせます。SkinnedMeshはリセット時だけ現在のポーズをBakeMeshしてboundsを取得し、膨らんだカリング用boundsで対象が小さく表示されるのを避けます。毎フレームのBakeMeshは行いません。分割画面は各画面専用のRenderTextureを維持し、画面ごとの照明と異なる描画サイズを保持します。
+
+ライティング確認の描画とカメラ操作は`AvatarInspectionView`が担当し、実行中のSceneへ一時Cameraを置きます。Scene照明、shaderのglobal情報と実アバターの動きを直接描画するため、Sceneにある他の表示物も映ります。専用CameraとRenderTextureはタブ切替・再構築・Window終了時に破棄します。CameraはPrefab保存へ含めません。右ドラッグで回転、中央ドラッグで移動、ホイールで拡大します。通常操作を上部へ配置し、数値入力などは初期状態で閉じた「詳細設定」にまとめます。
+
+`AvatarLightingView`の通常操作はSceneの照明、昼、曇り、夜、暖色、逆光のワンクリック選択と1画面・2分割・4分割の比較表示です。初期状態は昼と夜の2分割です。プレビューの見出しまたは描画面を選択して、その画面だけの照明を変更します。各画面は同じorbit controllerを使用し、カメラ角度・中心・距離を揃えて比較します。照明プリセットはCameraの描画中だけSceneのLightと環境光を差し替え、描画の成功・失敗にかかわらず直後に復元します。Sceneの照明では詳細設定の変更を描画します。詳細設定に環境光・反射強度、アバター外にあるLightの有効状態・強度・色・上下左右方向を配置します。任意の`VRCLightVolumes.LightVolume`と`PointLightVolume`があれば、reflectionによる接続で強度・色・方向を調整し、パッケージの同期APIへ通知します。詳細設定の変更はリセットとタブ終了時に元へ戻し、リセット後もプリセットと詳細設定を操作できます。
+
+VRC Light Volumesは任意依存です。導入時だけ照明の選択肢へ「VRCLV」を1つ表示し、未導入時はVRCLVの選択肢・色入力・案内を生成しません。VRCLVを選択したプレビューには、右ペインの通常操作として色入力を表示します。色はプレビューごとに保持し、プレビューを切り替えると入力値を同期します。別の照明へ切り替えると色入力を非表示にし、VRCLVへ戻したときは保持した色を使用します。分割表示で異なる色を同じ角度から比較できます。SceneにVolumeがなくても使用でき、対応マテリアルが必要です。`AvatarLightingView.LightVolumes.cs`はVRCLV v2のshader global契約に従い、一時的なL0/L1 Texture3Dと選択した色のVolume情報を描画中だけ渡します。色はshaderへ渡す際にlinearへ変換します。通常の照明パターンではVRCLVを描画中だけ無効にします。変更したglobalの数値・配列・textureは描画後に復元し、SceneのVolumeの追加・ベイクやアセットへの保存は行いません。一時LightとTexture3DはView終了時に破棄します。このパッケージへのassembly依存はありません。
+
+確認タブを切り替えると前のViewを破棄してから次のViewを生成し、確認の一時状態がほかのタブへ持ち越されないようにします。Play Mode中の再構築は現在の確認タブを保持し、停止後は元の編集カテゴリへ戻ります。
 
 ## 統合画面の部品と責務
 
@@ -36,6 +48,7 @@ UIとMCPの追加Material Variantは`DerivedAssetCreator`の共通生成処理�
 | `EmbeddedMaterialInspector` | Feature/Avatar/AvatarMaterials / Domain/AvatarMaterials/Inputs | MaterialEditorの埋め込み、変更通知と解放 |
 | `AvatarInfoView` | Feature/Avatar/AvatarInfo / Domain/AvatarInfo/Displays | 装着警告と性能結果の表示。解析・ビルド結果cacheもAvatarInfoが所有する |
 | `AvatarExecutionView` | AssetManager/Simulation / Domain/AssetManager/Containers | PlayModeの操作確認の入力、GestureManager接続と実行用viewportの構成 |
+| `AvatarLightingView` | AssetManager/Simulation / Domain/AssetManager/Containers | 通常照明・VRCLVのプリセット選択、分割比較、詳細調整と復元 |
 
 共通UI部品は`src/Editor/UI/Components`の公開APIです。AssetManagerのDB、Window session、改変カテゴリや翻訳に依存せず、他の編集補助ツールも同じAPIを使用できます。部位を表す`BodyPartCategory`とPrefab内の範囲判定・名前分割を行う`PrefabHierarchyUtility`はCoreの公開APIを使用します。固定の改変画面切り替えはAssetManager、詳細はAvatarInfo、GestureManager接続はSimulationへ置きます。
 

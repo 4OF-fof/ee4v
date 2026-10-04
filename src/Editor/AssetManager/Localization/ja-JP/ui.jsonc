@@ -12,6 +12,7 @@
     },
     "windowTitle": "ee4v",
     "category": {
+      "lighting": "ライティング確認",
       "menuAndGestures": "操作確認",
       "overview": "総合",
       "shapeParts": "体型・パーツ",
@@ -28,6 +29,23 @@
       "leftHand": "左手",
       "rightHand": "右手",
       "weight": "強さ"
+    },
+    "inspection": { "background": "背景を切り替え", "resetCamera": "カメラをリセット", "advanced": "詳細設定" },
+    "lighting": {
+      "volumeFailed": "{0}の光源を更新できませんでした：{1}",
+      "title": "ライティング確認", "ready": "Play Modeでライティングを確認できます。",
+      "patterns": "照明パターン", "selected": "プレビュー{0}の照明を選択",
+      "scene": "Sceneの照明", "day": "昼", "overcast": "曇り", "night": "夜", "warm": "暖色", "backlight": "逆光",
+      "lv": "VRCLV", "lvColor": "VRCLVの色",
+      "lvHint": "選択中のプレビューのVolumeの色を変更します。VRCLV対応マテリアルで確認できます。",
+      "compare": "比較表示", "layout1": "1画面", "layout2": "2分割", "layout4": "4分割",
+      "compareHint": "変更するプレビューをクリックして照明を選びます。カメラの回転・移動・拡大は全画面で連動します。",
+      "advancedHint": "詳細設定は「Sceneの照明」を選んで調整します。",
+      "description": "Sceneの照明で実行中のアバターを描画します。右ドラッグで回転、中央ドラッグで移動、ホイールで拡大できます。調整はこのタブを離れると元に戻ります。",
+      "ambient": "環境光の色", "ambientIntensity": "環境光の強度", "reflection": "反射の強度",
+      "enabled": "光源を有効化", "intensity": "光の強度", "color": "光の色", "pitch": "上下方向（度）", "yaw": "左右方向（度）",
+      "noVolumes": "このSceneには調整対象のVRC Light Volumeがありません。",
+      "reset": "調整を戻す"
     },
     "overview": {
       "avatar": "アバター情報",

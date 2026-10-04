@@ -20,6 +20,8 @@ namespace Ee4v.AssetManager.UI
             {
                 AddCategoryButton(WorkflowCategory.MenuAndGestures,
                     "workflow.category.menuAndGestures", "arrow_clockwise.png");
+                AddCategoryButton(WorkflowCategory.Lighting,
+                    "workflow.category.lighting", "weather_sunny.png");
                 return;
             }
             AddCategoryButton(

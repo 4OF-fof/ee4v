@@ -542,8 +542,8 @@ namespace Ee4v.AssetManager.UI
             bool clearFeedback = true,
             bool preservePreviewCamera = false)
         {
-            if (EditorApplication.isPlaying) { category = WorkflowCategory.MenuAndGestures; }
-            else if (category == WorkflowCategory.MenuAndGestures) { category = _editingCategory; }
+            if (EditorApplication.isPlaying && !category.IsPlayMode()) { category = WorkflowCategory.MenuAndGestures; }
+            else if (!EditorApplication.isPlaying && category.IsPlayMode()) { category = _editingCategory; }
             if (category != WorkflowCategory.ShapeParts ||
                 _parts.Section != ShapePartsSection.Parts)
             {
@@ -555,7 +555,7 @@ namespace Ee4v.AssetManager.UI
             }
             if (_avatarContext.SelectedPrefabSiblingIndex.HasValue &&
                 category != WorkflowCategory.Overview &&
-                category != WorkflowCategory.MenuAndGestures &&
+                !category.IsPlayMode() &&
                 category != WorkflowCategory.ShapeParts &&
                 category != WorkflowCategory.Material)
             {
@@ -604,15 +604,29 @@ namespace Ee4v.AssetManager.UI
 
             var faceExpression =
                 category == WorkflowCategory.ExpressionAnimation;
-            var execution = category == WorkflowCategory.MenuAndGestures;
+            var execution = category.IsPlayMode();
             _editorLayout.ShowCategory(category);
             if (execution)
             {
                 _faceExpressionEditor?.StopPlayback();
-                if (_executionView == null)
+                if (_executionCategory != category)
                 {
-                    _executionView = new AvatarExecutionView(_avatarContext.Root, RequestRepaint);
-                    _executionHost.Add(_executionView);
+                    _executionView?.Dispose();
+                    _inspectionView?.Dispose();
+                    _executionView = null;
+                    _inspectionView = null;
+                    _executionHost.Clear();
+                    _executionCategory = category;
+                    if (category == WorkflowCategory.MenuAndGestures)
+                    {
+                        _executionView = new AvatarExecutionView(_avatarContext.Root, RequestRepaint);
+                        _executionHost.Add(_executionView);
+                    }
+                    else
+                    {
+                        _inspectionView = new AvatarLightingView(_avatarContext.Root, RequestRepaint);
+                        _executionHost.Add(_inspectionView);
+                    }
                 }
                 return;
             }
