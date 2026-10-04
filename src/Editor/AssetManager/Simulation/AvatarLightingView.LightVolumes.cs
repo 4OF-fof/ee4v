@@ -21,8 +21,7 @@ namespace Ee4v.AssetManager.Simulation
             for (var y = 0; y < 2; y++)
             for (var x = 0; x < 6; x++)
             {
-                pixels[x + 6 * (y + 2 * z)] = x < 2 ? new Color(0.55f, 0.55f, 0.55f, 0.22f)
-                    : x < 4 ? new Color(0, 0, 0, 0.22f) : new Color(0.1f, 0.1f, 0.1f, 0.22f);
+                pixels[x + 6 * (y + 2 * z)] = x < 2 ? new Color(1, 1, 1, 0) : Color.clear;
             }
             _volumeAtlas.SetPixels(pixels);
             _volumeAtlas.Apply(false, true);
@@ -41,7 +40,9 @@ namespace Ee4v.AssetManager.Simulation
             {
                 ("_UdonLightVolumeInvLocalEdgeSmooth", 32), ("_UdonLightVolumeColor", 32),
                 ("_UdonLightVolumeRotation", 64), ("_UdonLightVolumeRotationQuaternion", 32),
-                ("_UdonLightVolumeUvw", 192), ("_UdonLightVolumeUvwScale", 96), ("_UdonLightVolumeOcclusionUvw", 32)
+                ("_UdonLightVolumeUvw", 192), ("_UdonLightVolumeUvwScale", 96), ("_UdonLightVolumeOcclusionUvw", 32),
+                ("_UdonPointLightVolumePosition", 128), ("_UdonPointLightVolumeColor", 128),
+                ("_UdonPointLightVolumeDirection", 128), ("_UdonPointLightVolumeCustomID", 128)
             };
             private readonly float[] _floats = new float[FloatNames.Length];
             private readonly Dictionary<string, Vector4[]> _vectors = new Dictionary<string, Vector4[]>();
@@ -63,7 +64,7 @@ namespace Ee4v.AssetManager.Simulation
 
             internal void Disable() { Shader.SetGlobalFloat("_UdonLightVolumeEnabled", 0); }
 
-            internal void Apply(Color volumeColor, Vector3 origin, Quaternion rotation, Texture3D atlas)
+            internal void Apply(LightingPreset settings, Transform avatar, Texture3D atlas)
             {
                 Shader.SetGlobalFloat("_UdonLightVolumeEnabled", 1);
                 Shader.SetGlobalFloat("_UdonLightVolumeVersion", 2);
@@ -73,14 +74,22 @@ namespace Ee4v.AssetManager.Simulation
                 Shader.SetGlobalFloat("_UdonLightVolumeProbesBlend", 0);
                 Shader.SetGlobalFloat("_UdonLightVolumeSharpBounds", 1);
                 Shader.SetGlobalFloat("_UdonLightVolumeAdditiveMaxOverdraw", 4);
-                Shader.SetGlobalFloat("_UdonPointLightVolumeCount", 0);
+                Shader.SetGlobalFloat("_UdonPointLightVolumeCount", 1);
                 Shader.SetGlobalTexture("_UdonLightVolume", atlas);
                 var matrices = new Matrix4x4[32];
-                matrices[0] = Matrix4x4.TRS(origin + rotation * Vector3.up, rotation, Vector3.one * 20).inverse;
+                var center = avatar.position + avatar.rotation * Vector3.up;
+                matrices[0] = Matrix4x4.TRS(center, avatar.rotation, Vector3.one * 20).inverse;
                 Shader.SetGlobalMatrixArray("_UdonLightVolumeInvWorldMatrix", matrices);
-                var linearColor = volumeColor.linear;
-                var color = new Vector4(linearColor.r, linearColor.g, linearColor.b, 0);
-                SetVectors("_UdonLightVolumeColor", 32, color);
+                var ambient = settings.AmbientColor.linear * settings.AmbientIntensity;
+                SetVectors("_UdonLightVolumeColor", 32, new Vector4(ambient.r, ambient.g, ambient.b, 0));
+                var lightRotation = avatar.rotation * Quaternion.Euler(settings.Pitch, settings.Yaw, 0);
+                var lightPosition = center - lightRotation * Vector3.forward * 2;
+                var lightColor = settings.VolumeColor.linear * settings.LightIntensity;
+                SetVectors("_UdonPointLightVolumePosition", 128,
+                    new Vector4(lightPosition.x, lightPosition.y, lightPosition.z, 1));
+                SetVectors("_UdonPointLightVolumeColor", 128, new Vector4(lightColor.r, lightColor.g, lightColor.b, 0));
+                SetVectors("_UdonPointLightVolumeDirection", 128, new Vector4(0, 0, 0, 1));
+                SetVectors("_UdonPointLightVolumeCustomID", 128, new Vector4(0, -1, 64, 0));
                 SetVectors("_UdonLightVolumeInvLocalEdgeSmooth", 32, Vector4.one * 100);
                 SetVectors("_UdonLightVolumeOcclusionUvw", 32, -Vector4.one);
                 SetVectors("_UdonLightVolumeRotationQuaternion", 32, new Vector4(0, 0, 0, 1));

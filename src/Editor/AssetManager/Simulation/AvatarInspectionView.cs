@@ -145,24 +145,6 @@ namespace Ee4v.AssetManager.Simulation
         protected void SetPreviewTitle(int index, string title)
         { _previewTitles[index].SetLabel(title); }
 
-        protected VisualElement AddAdvancedSettings()
-        {
-            var content = new VisualElement();
-            content.AddToClassList("ee4v-inspection__advanced-content");
-            content.style.display = DisplayStyle.None;
-            UiButton button = null;
-            button = new UiButton(I18N.Get("workflow.inspection.advanced"), () =>
-            {
-                var expanded = content.style.display.value == DisplayStyle.None;
-                content.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
-                button.SetIcon(FluentUiIcons.CreateState(expanded ? "chevron_down.png" : "chevron_right.png", UiSizeTokens.Size12));
-            }, icon: FluentUiIcons.CreateState("chevron_right.png", UiSizeTokens.Size12), variant: UiButtonVariant.Ghost);
-            button.AddToClassList("ee4v-inspection__advanced-heading");
-            Controls.Add(button);
-            Controls.Add(content);
-            return content;
-        }
-
         private void ResetCamera()
         {
             if (_disposed) { return; }

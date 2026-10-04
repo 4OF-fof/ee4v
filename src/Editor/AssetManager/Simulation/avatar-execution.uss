@@ -173,14 +173,3 @@
     white-space: normal;
     margin-bottom: var(--ee4v-space-md);
 }
-
-.ee4v-inspection__advanced-heading.ee4v-ui-button {
-    margin-top: var(--ee4v-space-xl);
-    border-top-width: var(--ee4v-border-hairline);
-    border-top-color: var(--ee4v-color-border-default);
-    min-height: 36px;
-}
-
-.ee4v-inspection__advanced-content > * {
-    margin-top: var(--ee4v-space-sm);
-}

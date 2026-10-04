@@ -30,9 +30,8 @@
       "rightHand": "Right hand",
       "weight": "Weight"
     },
-    "inspection": { "background": "Toggle background", "resetCamera": "Reset camera", "advanced": "Advanced settings" },
+    "inspection": { "background": "Toggle background", "resetCamera": "Reset camera" },
     "lighting": {
-      "volumeFailed": "Could not update {0}: {1}",
       "title": "Lighting check", "ready": "Check lighting in Play Mode.",
       "settings": "Light settings", "selected": "Light settings for preview {0}",
       "addPreview": "Add preview", "removePreview": "Remove this preview",
@@ -40,16 +39,12 @@
       "savePreset": "Save", "overwritePreset": "Overwrite", "deletePreset": "Delete",
       "presetFailed": "Could not load or save lighting presets: {0}",
       "invalidPresets": "The preset file has an invalid format.",
-      "scene": "Scene lighting", "day": "Daylight", "overcast": "Overcast", "night": "Night", "warm": "Warm", "backlight": "Backlight",
-      "lv": "VRCLV", "lvColor": "VRCLV color",
-      "lvHint": "Change the volume color for the selected preview. VRCLV requires compatible materials.",
+      "day": "Daylight", "night": "Night", "warm": "Warm", "cold": "Cool", "backlight": "Backlight",
+      "lv": "VRCLV", "lvColor": "Light source color",
+      "lvHint": "Simulate a VRCLV light source illuminating the avatar with the selected color. Adjust its intensity and direction. Requires VRCLV-compatible materials.",
       "compareHint": "Select a preview and adjust its lights on the right. Add up to six previews; remove one with the × in its heading. Camera controls are synchronized.",
-      "advancedHint": "Select Scene lighting to adjust advanced settings.",
-      "description": "Render the running avatar using scene lighting. Right drag to orbit, middle drag to pan, and scroll to zoom. Adjustments are restored when leaving this tab.",
       "ambient": "Ambient color", "ambientIntensity": "Ambient intensity", "reflection": "Reflection intensity",
-      "enabled": "Enable light", "intensity": "Intensity", "color": "Color", "pitch": "Pitch (degrees)", "yaw": "Yaw (degrees)",
-      "noVolumes": "No scene VRC Light Volumes are available for adjustment.",
-      "reset": "Restore adjustments"
+      "intensity": "Intensity", "color": "Color", "pitch": "Pitch (degrees)", "yaw": "Yaw (degrees)"
     },
     "overview": {
       "avatar": "Avatar information",

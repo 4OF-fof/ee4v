@@ -30,9 +30,8 @@
       "rightHand": "右手",
       "weight": "強さ"
     },
-    "inspection": { "background": "背景を切り替え", "resetCamera": "カメラをリセット", "advanced": "詳細設定" },
+    "inspection": { "background": "背景を切り替え", "resetCamera": "カメラをリセット" },
     "lighting": {
-      "volumeFailed": "{0}の光源を更新できませんでした：{1}",
       "title": "ライティング確認", "ready": "Play Modeでライティングを確認できます。",
       "settings": "ライト設定", "selected": "プレビュー{0}のライト設定",
       "addPreview": "プレビューを追加", "removePreview": "このプレビューを削除",
@@ -40,16 +39,12 @@
       "savePreset": "保存", "overwritePreset": "上書き保存", "deletePreset": "削除",
       "presetFailed": "照明プリセットを読み込み・保存できませんでした：{0}",
       "invalidPresets": "プリセットファイルの形式が不正です。",
-      "scene": "Sceneの照明", "day": "昼", "overcast": "曇り", "night": "夜", "warm": "暖色", "backlight": "逆光",
-      "lv": "VRCLV", "lvColor": "VRCLVの色",
-      "lvHint": "選択中のプレビューのVolumeの色を変更します。VRCLV対応マテリアルで確認できます。",
+      "day": "昼", "night": "夜", "warm": "暖色", "cold": "寒色", "backlight": "逆光",
+      "lv": "VRCLV", "lvColor": "光源の色",
+      "lvHint": "指定した色のVRCLV光源がアバターを照らす場面を再現します。強度と上下左右方向を調整できます。VRCLV対応マテリアルで確認してください。",
       "compareHint": "プレビューを選び、右側でライトを調整します。追加は最大6枚まで、削除は各見出しの×から行えます。カメラ操作は全画面で連動します。",
-      "advancedHint": "詳細設定は「Sceneの照明」を選んで調整します。",
-      "description": "Sceneの照明で実行中のアバターを描画します。右ドラッグで回転、中央ドラッグで移動、ホイールで拡大できます。調整はこのタブを離れると元に戻ります。",
       "ambient": "環境光の色", "ambientIntensity": "環境光の強度", "reflection": "反射の強度",
-      "enabled": "光源を有効化", "intensity": "光の強度", "color": "光の色", "pitch": "上下方向（度）", "yaw": "左右方向（度）",
-      "noVolumes": "このSceneには調整対象のVRC Light Volumeがありません。",
-      "reset": "調整を戻す"
+      "intensity": "光の強度", "color": "光の色", "pitch": "上下方向（度）", "yaw": "左右方向（度）"
     },
     "overview": {
       "avatar": "アバター情報",

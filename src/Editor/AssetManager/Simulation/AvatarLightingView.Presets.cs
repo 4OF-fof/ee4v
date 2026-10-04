@@ -70,18 +70,23 @@ namespace Ee4v.AssetManager.Simulation
 
         private LightingPreset CreateBuiltin(int pattern)
         {
-            var preset = new LightingPreset { Pattern = pattern, BuiltinKey = _patternNames[pattern] };
+            var preset = new LightingPreset { Pattern = pattern, BuiltinKey = _patternNames[pattern - 1] };
             if (pattern == 2)
-            { preset.AmbientColor = new Color(0.5f, 0.52f, 0.56f); preset.LightIntensity = 0.25f; }
-            if (pattern == 3)
             {
                 preset.AmbientColor = new Color(0.025f, 0.035f, 0.08f);
                 preset.ReflectionIntensity = 0.1f;
                 preset.LightColor = new Color(0.45f, 0.6f, 1);
                 preset.LightIntensity = 0.15f;
             }
-            if (pattern == 4) { preset.LightColor = new Color(1, 0.65f, 0.35f); }
+            if (pattern == 3) { preset.LightColor = new Color(1, 0.65f, 0.35f); }
+            if (pattern == 4) { preset.LightColor = new Color(0.45f, 0.65f, 1); }
             if (pattern == 5) { preset.Yaw = 0; }
+            if (pattern == 6)
+            {
+                preset.AmbientColor = new Color(0.18f, 0.18f, 0.18f);
+                preset.ReflectionIntensity = 0.2f;
+                preset.LightIntensity = 2;
+            }
             return preset;
         }
 
@@ -168,7 +173,7 @@ namespace Ee4v.AssetManager.Simulation
         {
             if (_presetField == null) { return; }
             var choices = new List<LightingPreset> { _customChoice };
-            for (var i = 0; i < (_volumesAvailable ? 7 : 6); i++) { choices.Add(CreateBuiltin(i)); }
+            for (var i = 1; i <= (_volumesAvailable ? 6 : 5); i++) { choices.Add(CreateBuiltin(i)); }
             choices.AddRange(_savedPresets.Where(preset => _volumesAvailable || preset.Pattern != 6));
             _presetField.choices = choices;
             var active = _previews[ActivePreview];
@@ -182,12 +187,11 @@ namespace Ee4v.AssetManager.Simulation
         {
             var active = _previews[ActivePreview];
             var name = _presetName.Value.Trim();
-            _savePreset.SetEnabled(!_presetReadFailed && active.Pattern != 0 && name.Length > 0 &&
+            _savePreset.SetEnabled(!_presetReadFailed && name.Length > 0 &&
                 !_patternNames.Any(key => string.Equals(Text(key), name, StringComparison.Ordinal)));
             _savePreset.SetLabel(Text(_savedPresets.Any(preset => preset.Name == name) ? "overwritePreset" : "savePreset"));
             _deletePreset.SetEnabled(!_presetReadFailed && string.IsNullOrEmpty(active.BuiltinKey) &&
                 _savedPresets.Any(preset => preset.Name == active.Name));
-            _presetName.SetEnabled(active.Pattern != 0);
         }
 
         private bool PersistPresets(List<LightingPreset> presets)
@@ -256,6 +260,9 @@ namespace Ee4v.AssetManager.Simulation
             _volumeSettings = new VisualElement();
             _previewSettings.Add(_volumeSettings);
             AddPreviewColor(_volumeSettings, "lvColor", preset => preset.VolumeColor, (preset, value) => preset.VolumeColor = value);
+            AddPreviewFloat(_volumeSettings, "intensity", preset => preset.LightIntensity, (preset, value) => preset.LightIntensity = value);
+            AddPreviewFloat(_volumeSettings, "pitch", preset => preset.Pitch, (preset, value) => preset.Pitch = value, false);
+            AddPreviewFloat(_volumeSettings, "yaw", preset => preset.Yaw, (preset, value) => preset.Yaw = value, false);
             _volumeSettings.Add(UiTextFactory.Create(Text("lvHint"), UiClassNames.SecondaryText));
         }
 
