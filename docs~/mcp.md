@@ -29,6 +29,7 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 - Unity objectへ触れるtool実行は`EditorApplication.update`からmain threadへdispatchする。
 - dispatch待ちの操作がないEditor frameではqueueの配列を生成しない。
 - tool結果は機械処理用の`structuredContent`と、同じ内容のtext contentを返す。preview PNGはimage contentも返す。
+- AssetManagerとVariantの必須文字列入力は`McpJson.RequireString`で前後の空白を除き、空なら`invalid_request`を返す。
 - tool annotationでread-only、破壊性、冪等性、open-world accessを宣言する。
 - AssetManagerではmetadata編集、明示的な`ee4v_asset_import`によるUnity ProjectへのImport、Itemに紐付くVariantの作成・改変・履歴保存を公開する。同期、Item／Fileの削除、File登録、新規Item作成は公開しない。Collectionの作成・削除も公開し、削除toolは削除前の名前と条件を返す。Importは既存Project Assetを上書きする可能性があるため、破壊性あり・冪等性なしのannotationを付ける。
 - AssetManagerのPrefab調査は、既にUnity Projectへ取り込まれたPrefab assetとAssetManagerで作成済みの派生Prefabだけを対象にする。Prefab調査・previewからImportを暗黙には開始しない。必要な場合は登録済みFileを明示的なImport toolで取り込む。

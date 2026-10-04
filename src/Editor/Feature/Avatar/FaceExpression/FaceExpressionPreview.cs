@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.Preview;
 using Ee4v.UI;
 using UnityEditor;

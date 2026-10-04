@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Ee4v.AvatarEditing;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using UnityEngine;
 
 namespace Ee4v.AvatarInfo
 {

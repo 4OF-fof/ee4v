@@ -2304,13 +2304,6 @@ namespace Ee4v.AssetManager.UI
             return preview;
         }
 
-        private void SetVariantRevisionPreview(PreviewContainer preview, string variantId, string revisionId)
-        {
-            var key = string.IsNullOrEmpty(revisionId) ? null : "variant-revision:" + revisionId;
-            SetVariantPreview(preview, key, key == null || _variantManager == null ? null :
-                (Func<Task<AssetThumbnail>>)(() => _variantManager.GetRevisionThumbnail(variantId, revisionId)));
-        }
-
         private void SetVariantPreview(PreviewContainer preview, string key, Func<Task<AssetThumbnail>> load)
         {
             var image = preview.Q<CachedImage>();

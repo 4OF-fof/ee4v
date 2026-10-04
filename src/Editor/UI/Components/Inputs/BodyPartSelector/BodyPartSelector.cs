@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Ee4v.Core.I18n;
 using Ee4v.Core.EditorIntegration;
 using UnityEngine.UIElements;
 

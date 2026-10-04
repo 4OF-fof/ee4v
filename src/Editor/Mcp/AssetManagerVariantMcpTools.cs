@@ -24,7 +24,7 @@ namespace Ee4v.Mcp
                 "Lists Project Variants with their working Scene, source Prefab, root path, and editable Material Variants.",
                 McpSchemas.Object(new JObject { ["itemId"] = McpSchemas.String() }, "itemId"),
                 arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
-                    ListVariants(Required(arguments, "itemId"))))),
+                    ListVariants(McpJson.RequireString(arguments, "itemId"))))),
                 readOnly: true));
 
             McpToolRegistry.Register(new McpToolDefinition(
@@ -92,9 +92,9 @@ namespace Ee4v.Mcp
 
         private static object CreateVariant(JObject arguments)
         {
-            var itemId = Required(arguments, "itemId");
-            var sourceGuid = Required(arguments, "sourcePrefabGuid");
-            var name = Required(arguments, "name");
+            var itemId = McpJson.RequireString(arguments, "itemId");
+            var sourceGuid = McpJson.RequireString(arguments, "sourcePrefabGuid");
+            var name = McpJson.RequireString(arguments, "name");
             var manager = AssetManagerMcpTools.Manager();
             manager.GetItem(itemId);
             if (!manager.GetItemImportedAssetGuids(itemId)
@@ -127,8 +127,8 @@ namespace Ee4v.Mcp
 
         private static object AddPrefab(JObject arguments)
         {
-            var variant = ResolveVariant(Required(arguments, "variantGuid"));
-            var sourceGuid = Required(arguments, "sourcePrefabGuid");
+            var variant = ResolveVariant(McpJson.RequireString(arguments, "variantGuid"));
+            var sourceGuid = McpJson.RequireString(arguments, "sourcePrefabGuid");
             var source = AssetManagerPrefabMcpTools.Resolve(sourceGuid, null);
             if (!AssetManagerMcpTools.Manager()
                     .GetImportedAssetAssociations(new[] { sourceGuid }).Any())
@@ -169,8 +169,8 @@ namespace Ee4v.Mcp
 
         private static object CreateMaterialVariant(JObject arguments)
         {
-            var variant = ResolveVariant(Required(arguments, "variantGuid"));
-            var sourcePath = Required(arguments, "sourceMaterialPath").Replace('\\', '/');
+            var variant = ResolveVariant(McpJson.RequireString(arguments, "variantGuid"));
+            var sourcePath = McpJson.RequireString(arguments, "sourceMaterialPath").Replace('\\', '/');
             if (!sourcePath.StartsWith("Assets/", StringComparison.Ordinal) ||
                 sourcePath.Split('/').Any(part => part == ".."))
             {
@@ -229,7 +229,7 @@ namespace Ee4v.Mcp
 
         private static async Task<McpToolResult> SaveVariant(JObject arguments)
         {
-            var variant = ResolveVariant(Required(arguments, "variantGuid"));
+            var variant = ResolveVariant(McpJson.RequireString(arguments, "variantGuid"));
             DerivedAssetCreator.ApplyWorkingScene(variant.AssetPath);
             var databasePath = Path.Combine(GlobalDataSettings.RootDirectory, "asset-manager-v1.db");
             var manager = AssetManagerFactory.OpenVariantSession(
@@ -288,14 +288,5 @@ namespace Ee4v.Mcp
             };
         }
 
-        private static string Required(JObject arguments, string name)
-        {
-            var value = ((string)arguments[name] ?? string.Empty).Trim();
-            if (value.Length == 0)
-            {
-                throw new McpToolException("invalid_request", name + " is required.");
-            }
-            return value;
-        }
     }
 }

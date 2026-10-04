@@ -54,9 +54,5 @@ namespace Ee4v.Core.Injector
             CoreInjector.Current.Presenter.UpdateVisualHosts();
         }
 
-        internal static void ResetForTests()
-        {
-            CoreInjector.Current.ResetForTests();
-        }
     }
 }

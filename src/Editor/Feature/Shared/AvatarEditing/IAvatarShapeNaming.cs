@@ -1,4 +1,3 @@
-using System;
 
 namespace Ee4v.AvatarEditing
 {

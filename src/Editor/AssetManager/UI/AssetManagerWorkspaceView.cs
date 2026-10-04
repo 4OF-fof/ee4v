@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Ee4v.AssetManager.Contracts;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI

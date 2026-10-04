@@ -8,6 +8,7 @@ namespace Ee4v.AvatarEditing
     public static class AvatarShapeNaming
     {
         private static Func<GameObject, IEnumerable<Mesh>, IAvatarShapeNaming> _factory;
+        private static readonly IAvatarShapeNaming Unclassified = new UnclassifiedNaming();
         public static event Action Changed;
         public static void Register(Func<GameObject, IEnumerable<Mesh>, IAvatarShapeNaming> factory)
         {
@@ -16,7 +17,7 @@ namespace Ee4v.AvatarEditing
         }
         public static void NotifyChanged() => Changed?.Invoke();
         public static IAvatarShapeNaming Create(GameObject avatar, IEnumerable<Mesh> meshes) =>
-            _factory?.Invoke(avatar, meshes) ?? new UnclassifiedNaming();
+            _factory?.Invoke(avatar, meshes) ?? Unclassified;
         private sealed class UnclassifiedNaming : IAvatarShapeNaming
         {
             public bool IsHeader(string name) => false;

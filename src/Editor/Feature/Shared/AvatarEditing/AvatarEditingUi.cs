@@ -1,5 +1,4 @@
 using System;
-using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEngine.UIElements;
 
@@ -20,23 +19,13 @@ namespace Ee4v.AvatarEditing
         }
 
         public static VisualElement CreateEmptyState(
-            string titleKey,
-            string descriptionKey)
+            string title,
+            string description)
         {
-            var empty = new VisualElement();
-            empty.AddToClassList("ee4v-ui-empty-state");
+            var empty = new EmptyState(new EmptyStateState(title, description));
             empty.AddToClassList(
                 "ee4v-modification-workflow__empty-state");
-            empty.Add(UiTextFactory.Create(
-                I18N.Get(titleKey),
-                UiClassNames.SectionTitle,
-                "ee4v-ui-empty-state__title"));
-            var description = UiTextFactory.Create(
-                I18N.Get(descriptionKey),
-                UiClassNames.SecondaryText,
-                "ee4v-ui-empty-state__description");
-            description.SetWhiteSpace(WhiteSpace.Normal);
-            empty.Add(description);
+            empty.Actions.style.display = DisplayStyle.None;
             return empty;
         }
 

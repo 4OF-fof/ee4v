@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Ee4v.AvatarEditing;
 using Ee4v.UI;

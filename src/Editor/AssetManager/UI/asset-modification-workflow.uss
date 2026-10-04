@@ -68,11 +68,6 @@
     flex-grow: 1;
 }
 
-.ee4v-modification-workflow__selection-new.ee4v-ui-button {
-    flex-shrink: 0;
-    margin-left: var(--ee4v-space-xl);
-}
-
 .ee4v-modification-workflow__selection-back.ee4v-ui-button {
     width: 32px;
     min-width: 32px;
@@ -89,74 +84,6 @@
 
 .ee4v-modification-workflow__selection-description {
     max-width: 720px;
-}
-
-.ee4v-modification-workflow__selection-scroll {
-    min-width: 0;
-    min-height: 0;
-    flex-grow: 1;
-}
-
-.ee4v-modification-workflow__selection-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container {
-    max-width: 1120px;
-    align-self: center;
-    padding: var(--ee4v-space-3xl) var(--ee4v-space-4xl);
-}
-
-.ee4v-modification-workflow__selection-grid {
-    min-width: 0;
-    flex-direction: row;
-    flex-wrap: wrap;
-}
-
-.ee4v-modification-workflow__selection-card {
-    width: 248px;
-    min-height: 330px;
-    flex-shrink: 0;
-    margin-right: var(--ee4v-space-xl);
-    margin-bottom: var(--ee4v-space-xl);
-    padding: var(--ee4v-space-lg);
-    border-width: var(--ee4v-border-hairline);
-    border-color: var(--ee4v-color-border-default);
-    border-radius: var(--ee4v-radius-2xl);
-    background-color: var(--ee4v-color-surface-subtle);
-}
-
-.ee4v-modification-workflow__selection-card:hover {
-    border-color: var(--ee4v-color-border-active);
-    background-color: var(--ee4v-color-surface-hover);
-}
-
-.ee4v-modification-workflow__selection-preview.ee4v-ui-prefab-thumbnail {
-    width: 216px;
-    min-width: 216px;
-    height: 184px;
-    min-height: 184px;
-    margin-right: var(--ee4v-space-none);
-    margin-bottom: var(--ee4v-space-lg);
-}
-
-.ee4v-modification-workflow__selection-card-text {
-    min-width: 0;
-    min-height: 58px;
-    flex-grow: 1;
-}
-
-.ee4v-modification-workflow__selection-card-title {
-    margin-bottom: var(--ee4v-space-xs);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.ee4v-modification-workflow__selection-card-description {
-    max-height: 38px;
-    overflow: hidden;
-}
-
-.ee4v-modification-workflow__selection-choose.ee4v-ui-button {
-    width: 100%;
-    margin-top: var(--ee4v-space-lg);
 }
 
 .ee4v-modification-workflow__selection-manager.ee4v-ui-button {

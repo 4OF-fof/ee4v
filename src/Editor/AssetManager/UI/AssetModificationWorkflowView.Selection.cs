@@ -1,28 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
-using Ee4v.AvatarEditing;
-using static Ee4v.AvatarEditing.AvatarBodyAnalysis;
 using static Ee4v.AvatarEditing.AvatarEditingUi;
-using nadena.dev.modular_avatar.core;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
-using Ee4v.AssetProtection;
 using Ee4v.AssetManager.Contracts;
-using Ee4v.AssetManager.Simulation;
-using Ee4v.Core.Settings;
-using Ee4v.FaceExpression;
-using Ee4v.AvatarParts;
-using Ee4v.AvatarMaterials;
-using Ee4v.AvatarInfo;
 using static Ee4v.AvatarParts.AvatarPartsEditor;
-using AppearancePanel = Ee4v.AvatarEditing.AvatarEditorPanel;
 
 namespace Ee4v.AssetManager.UI
 {
@@ -31,75 +17,31 @@ namespace Ee4v.AssetManager.UI
         private VisualElement BuildDerivedAssetSelection()
         {
             var page = new VisualElement();
-            page.AddToClassList(
-                "ee4v-modification-workflow__selection-page");
+            page.AddToClassList("ee4v-modification-workflow__selection-page");
             if (!string.IsNullOrEmpty(_avatarContext.AssetFeedback))
             {
                 page.Add(UiTextFactory.CreateHelpBox(
                     _avatarContext.AssetFeedback, HelpBoxMessageType.Error));
             }
-            if (_mode == ModificationEditorMode.All)
+            try
             {
-                try
-                {
-                    _assetManagerView = new AssetManagerWorkspaceView(
-                        SelectDerivedAsset,
-                        StartDerivedAssetCreation,
-                        (mode, createDerivedAsset) => new AssetManagerView(
-                            _manager = _manager ?? AssetManagerWindowSession.GetManager(),
-                            _assetManagerViewState,
-                            mode,
-                            createDerivedAsset: createDerivedAsset));
-                    page.Add(_assetManagerView);
-                }
-                catch (Exception exception)
-                {
-                    Debug.LogException(exception);
-                    page.Add(UiTextFactory.CreateHelpBox(
-                        I18N.Get("workflow.selection.managerLoadFailed"),
-                        HelpBoxMessageType.Error));
-                }
-                return page;
+                _assetManagerView = new AssetManagerWorkspaceView(
+                    SelectDerivedAsset,
+                    StartDerivedAssetCreation,
+                    (mode, createDerivedAsset) => new AssetManagerView(
+                        _manager = _manager ?? AssetManagerWindowSession.GetManager(),
+                        _assetManagerViewState,
+                        mode,
+                        createDerivedAsset: createDerivedAsset));
+                page.Add(_assetManagerView);
             }
-
-            var header = BuildSelectionHeader(
-                "workflow.selection.title",
-                "workflow.selection.description");
-            header.Add(AssetManagerControls.CreateIconTextButton(
-                I18N.Get("workflow.selection.createNew"),
-                "add.png",
-                StartDerivedAssetCreation,
-                "ee4v-modification-workflow__primary-action",
-                "ee4v-modification-workflow__selection-new"));
-            page.Add(header);
-            var content = new ScrollView(ScrollViewMode.Vertical);
-            content.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            content.AddToClassList(
-                "ee4v-modification-workflow__selection-scroll");
-            var assets = DerivedAssetCreator.FindAll();
-            if (assets.Count == 0)
+            catch (Exception exception)
             {
-                content.Add(CreateEmptyState(
-                    "workflow.selection.emptyTitle",
-                    "workflow.selection.emptyDescription"));
-                content.Add(AssetManagerControls.CreateIconTextButton(
-                    I18N.Get("workflow.selection.openManager"),
-                    "library.png",
-                    _openAssetManager,
-                    "ee4v-modification-workflow__selection-manager"));
-                page.Add(content);
-                return page;
+                Debug.LogException(exception);
+                page.Add(UiTextFactory.CreateHelpBox(
+                    I18N.Get("workflow.selection.managerLoadFailed"),
+                    HelpBoxMessageType.Error));
             }
-
-            var grid = new VisualElement();
-            grid.AddToClassList(
-                "ee4v-modification-workflow__selection-grid");
-            foreach (var asset in assets)
-            {
-                grid.Add(BuildDerivedAssetCard(asset));
-            }
-            content.Add(grid);
-            page.Add(content);
             return page;
         }
 
@@ -118,8 +60,7 @@ namespace Ee4v.AssetManager.UI
                 "workflow.selection.createTitle",
                 "workflow.selection.createDescription");
             header.Insert(0, AssetManagerControls.CreateIconButton(
-                I18N.Get(_mode == ModificationEditorMode.All
-                    ? "workflow.selection.backToAssets" : "workflow.selection.back"),
+                I18N.Get("workflow.selection.backToAssets"),
                 "arrow_left.png",
                 CancelDerivedAssetCreation,
                 "ee4v-modification-workflow__selection-back"));
@@ -129,65 +70,28 @@ namespace Ee4v.AssetManager.UI
             scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             scroll.AddToClassList(
                 "ee4v-modification-workflow__creation-scroll");
-            var sources = GetVariantSources();
-            if (_mode == ModificationEditorMode.All)
-            {
-                sources = sources.Where(source => string.Equals(
-                    source.Item.Id, _creationItemId, StringComparison.Ordinal)).ToArray();
-            }
-            if (sources.Count == 0)
+            var selectedSource = GetSelectedVariantSource();
+            if (selectedSource == null)
             {
                 scroll.Add(CreateEmptyState(
-                    _mode == ModificationEditorMode.All
-                        ? "workflow.selection.assetNoSourceTitle" : "workflow.selection.noSourceTitle",
-                    "workflow.selection.noSourceDescription"));
+                    I18N.Get("workflow.selection.assetNoSourceTitle"),
+                    I18N.Get("workflow.selection.noSourceDescription")));
                 scroll.Add(AssetManagerControls.CreateIconTextButton(
                     I18N.Get("workflow.selection.openManager"),
                     "library.png",
-                    _openAssetManager,
+                    ShowAssetManagerSelection,
                     "ee4v-modification-workflow__selection-manager"));
                 page.Add(scroll);
                 return page;
             }
 
-            var selectedSource = sources.FirstOrDefault(source =>
-                string.Equals(
-                    source.Item.Id,
-                    _creationItemId,
-                    StringComparison.Ordinal)) ?? sources[0];
-            if (!string.Equals(
-                    _creationItemId,
-                    selectedSource.Item.Id,
-                    StringComparison.Ordinal))
-            {
-                _creationItemId = selectedSource.Item.Id;
-                _creationPrefab = null;
-                _derivedName = selectedSource.Item.Name + " Variant";
-            }
             if (_creationPrefab == null ||
                 !selectedSource.Prefabs.Contains(_creationPrefab))
             {
                 _creationPrefab = selectedSource.Prefabs[0];
             }
 
-            VisualElement sourceField;
-            if (_mode == ModificationEditorMode.All)
-            {
-                sourceField = UiTextFactory.Create(FormatVariantSource(selectedSource));
-            }
-            else
-            {
-                var sourceChoices = sources.ToList();
-                var sourcePopup = UiTextFactory.CreatePopupField(
-                    string.Empty,
-                    sourceChoices,
-                    Mathf.Max(0, sourceChoices.IndexOf(selectedSource)),
-                    FormatVariantSource,
-                    FormatVariantSource);
-                sourcePopup.RegisterValueChangedCallback(evt =>
-                    SelectVariantSource(evt.newValue));
-                sourceField = sourcePopup;
-            }
+            var sourceField = UiTextFactory.Create(FormatVariantSource(selectedSource));
             var sourceInput = new FormInput(
                 I18N.Get("workflow.selection.sourceItem"),
                 sourceField);
@@ -230,10 +134,9 @@ namespace Ee4v.AssetManager.UI
             description.value = _derivedDescription;
             description.SetMultiline(true, 144f);
             fields.Add(description);
-            AddFeedback(fields);
+            AddFeedback(_avatarContext, fields);
             fields.Add(AssetManagerControls.CreateIconTextButton(
-                I18N.Get(_mode == ModificationEditorMode.All
-                    ? "workflow.selection.createAndStart" : "workflow.selection.create"),
+                I18N.Get("workflow.selection.createAndStart"),
                 "add.png",
                 () =>
                 {
@@ -273,40 +176,6 @@ namespace Ee4v.AssetManager.UI
             return header;
         }
 
-        private VisualElement BuildDerivedAssetCard(DerivedAssetInfo asset)
-        {
-            var card = new VisualElement();
-            card.AddToClassList(
-                "ee4v-modification-workflow__selection-card");
-            var preview = new PrefabThumbnail(asset.Prefab);
-            preview.AddToClassList(
-                "ee4v-modification-workflow__selection-preview");
-            card.Add(preview);
-            var text = new VisualElement();
-            text.AddToClassList(
-                "ee4v-modification-workflow__selection-card-text");
-            text.Add(UiTextFactory.Create(
-                asset.Name,
-                UiClassNames.SectionTitle,
-                "ee4v-modification-workflow__selection-card-title"));
-            var description = UiTextFactory.Create(
-                string.IsNullOrWhiteSpace(asset.Description)
-                    ? I18N.Get("workflow.selection.noDescription")
-                    : asset.Description,
-                UiClassNames.SecondaryText,
-                "ee4v-modification-workflow__selection-card-description");
-            description.SetWhiteSpace(WhiteSpace.Normal);
-            text.Add(description);
-            card.Add(text);
-            card.Add(AssetManagerControls.CreateIconTextButton(
-                I18N.Get("workflow.selection.choose"),
-                "arrow_right.png",
-                () => SelectDerivedAsset(asset),
-                "ee4v-modification-workflow__primary-action",
-                "ee4v-modification-workflow__selection-choose"));
-            return card;
-        }
-
         private void StartDerivedAssetCreation()
         {
             _creatingDerivedAsset = true;
@@ -344,16 +213,9 @@ namespace Ee4v.AssetManager.UI
                 return _manager.SearchItems(new AssetItemQuery())
                     .Items
                     .Where(item => item != null && !item.IsArchived)
-                    .Select(item => new VariantSourceOption
-                    {
-                        Item = item,
-                        Prefabs = DerivedAssetCreator.FindPrefabCandidates(
-                            _manager.GetItemImportedAssetGuids(item.Id))
-                    })
+                    .Select(CreateVariantSource)
                     .Where(source => source.Prefabs.Count > 0)
-                    .OrderBy(
-                        source => source.Item.Name,
-                        StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(source => source.Item.Name, StringComparer.OrdinalIgnoreCase)
                     .ToArray();
             }
             catch (Exception exception)
@@ -363,18 +225,32 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void SelectVariantSource(VariantSourceOption source)
+        private VariantSourceOption CreateVariantSource(AssetItem item)
         {
-            if (source?.Item == null || source.Prefabs.Count == 0)
+            return new VariantSourceOption
             {
-                return;
+                Item = item,
+                Prefabs = DerivedAssetCreator.FindPrefabCandidates(
+                    _manager.GetItemImportedAssetGuids(item.Id))
+            };
+        }
+
+        private VariantSourceOption GetSelectedVariantSource()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_creationItemId)) { return null; }
+                _manager = _manager ?? AssetManagerWindowSession.GetManager();
+                var item = _manager.GetItem(_creationItemId);
+                if (item == null || item.IsArchived) { return null; }
+                var source = CreateVariantSource(item);
+                return source.Prefabs.Count == 0 ? null : source;
             }
-            _creationItemId = source.Item.Id;
-            _creationPrefab = source.Prefabs[0];
-            _derivedName = source.Item.Name + " Variant";
-            _derivedDescription = string.Empty;
-            _avatarContext.Feedback = string.Empty;
-            BuildWindow();
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                return null;
+            }
         }
 
         private void CreateDerivedAsset()

@@ -18,11 +18,6 @@ namespace Ee4v.Core.Injector
 
         public InjectionPresenter Presenter { get; }
 
-        public void ResetForTests()
-        {
-            Registry.Clear();
-            Presenter.ResetState();
-        }
     }
 
     internal sealed class InjectionRegistrationLease : IDisposable

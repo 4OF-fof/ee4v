@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Ee4v.UI;
 using UnityEditor;
-using UnityEditor.SceneManagement;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI

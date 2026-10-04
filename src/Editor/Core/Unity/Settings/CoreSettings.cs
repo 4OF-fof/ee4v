@@ -4,16 +4,11 @@ namespace Ee4v.Core.Settings
 {
     public static class CoreSettings
     {
-        private static ISettingsService _current = CreateDefault();
+        private static readonly ISettingsService _current = CreateDefault();
 
         public static ISettingsService Current
         {
             get { return _current; }
-        }
-
-        internal static void ResetForTests(ISettingsService replacement = null)
-        {
-            _current = replacement ?? CreateDefault();
         }
 
         private static ISettingsService CreateDefault()

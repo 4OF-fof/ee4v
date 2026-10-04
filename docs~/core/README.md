@@ -18,6 +18,8 @@ Core は機能横断の契約、共通実装、Unity Editor との接続部を�
 
 各ページでは公開型とメンバーに加え、既定実装が変更する状態、永続化、イベント登録などの副作用を記載します。
 
+`CoreSettings.Current`、`CoreLocalization.Current`、`CoreBackgroundActivities.Current`と表示注入の既定実装はEditorのdomain内で同じインスタンスを保持します。テストで状態を分離するときは各serviceの独立したインスタンスを使用します。
+
 ## assembly
 
 | assembly | 役割 | Unity 依存 |

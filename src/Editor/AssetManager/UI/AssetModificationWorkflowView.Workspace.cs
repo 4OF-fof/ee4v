@@ -1,26 +1,16 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
-using Ee4v.AvatarEditing;
-using static Ee4v.AvatarEditing.AvatarBodyAnalysis;
-using static Ee4v.AvatarEditing.AvatarEditingUi;
-using nadena.dev.modular_avatar.core;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
-using Ee4v.AssetProtection;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Simulation;
-using Ee4v.Core.Settings;
 using Ee4v.FaceExpression;
-using Ee4v.AvatarParts;
-using Ee4v.AvatarMaterials;
 using Ee4v.AvatarInfo;
 using static Ee4v.AvatarParts.AvatarPartsEditor;
 using AppearancePanel = Ee4v.AvatarEditing.AvatarEditorPanel;
@@ -67,18 +57,11 @@ namespace Ee4v.AssetManager.UI
 
             _workspaceHeader = BuildWorkspaceHeader();
             root.Add(_workspaceHeader);
-            var preview = EditorApplication.isPlaying && _mode == ModificationEditorMode.All
+            var preview = EditorApplication.isPlaying
                 ? new VisualElement() : BuildPreviewPane();
             _editorLayout = new WorkflowEditorLayout(
-                _mode == ModificationEditorMode.All ? BuildCategoryRail() : null,
-                preview,
-                _mode != ModificationEditorMode.Composition);
+                BuildCategoryRail(), preview);
             root.Add(_editorLayout);
-            if (_mode == ModificationEditorMode.Composition)
-            {
-                SetPreviewTitle("workflow.preview.appearanceTitle");
-                return;
-            }
             _customizerHost = _editorLayout.AppearanceHost;
             _appearanceHeader = _editorLayout.AppearanceHeader;
             _avatarContext.ControlsHost = _editorLayout.Controls;
@@ -533,12 +516,9 @@ namespace Ee4v.AssetManager.UI
             _previewPane.AddToClassList("ee4v-modification-workflow__preview-pane");
             _previewPane.Content.AddToClassList("ee4v-modification-workflow__preview-viewport");
             _avatarContext.Preview = new PrefabScenePreview();
-            if (_mode != ModificationEditorMode.Composition)
-            {
-                _avatarContext.Preview.PreviewObjectClicked += OnPreviewObjectClicked;
-                _avatarContext.Preview.PreviewSelectionCleared +=
-                    OnPreviewSelectionCleared;
-            }
+            _avatarContext.Preview.PreviewObjectClicked += OnPreviewObjectClicked;
+            _avatarContext.Preview.PreviewSelectionCleared +=
+                OnPreviewSelectionCleared;
             _avatarContext.Preview.SetFlexibleLayout(true);
             _avatarContext.Preview.SetFullBodyFraming(false);
             _avatarContext.Preview.AddToClassList(
@@ -561,11 +541,8 @@ namespace Ee4v.AssetManager.UI
             bool clearFeedback = true,
             bool preservePreviewCamera = false)
         {
-            if (_mode == ModificationEditorMode.All)
-            {
-                if (EditorApplication.isPlaying) { category = WorkflowCategory.MenuAndGestures; }
-                else if (category == WorkflowCategory.MenuAndGestures) { category = _editingCategory; }
-            }
+            if (EditorApplication.isPlaying) { category = WorkflowCategory.MenuAndGestures; }
+            else if (category == WorkflowCategory.MenuAndGestures) { category = _editingCategory; }
             if (category != WorkflowCategory.ShapeParts ||
                 _parts.Section != ShapePartsSection.Parts)
             {

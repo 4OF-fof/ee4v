@@ -24,30 +24,6 @@ namespace Ee4v.AssetManager.Domain
             return order;
         }
 
-        internal static void EnsureCanReplace(
-            IReadOnlyList<string> dependentFileIds,
-            IReadOnlyList<string> dependencyFileIds,
-            Func<string, IReadOnlyList<string>> getDependencies)
-        {
-            if (getDependencies == null)
-            {
-                throw new ArgumentNullException(nameof(getDependencies));
-            }
-
-            var dependents = new HashSet<string>(
-                dependentFileIds ?? Array.Empty<string>(),
-                StringComparer.Ordinal);
-            var replacements = dependencyFileIds ?? Array.Empty<string>();
-            foreach (var dependentFileId in dependents)
-            {
-                ResolveImportOrder(
-                    dependentFileId,
-                    fileId => dependents.Contains(fileId)
-                        ? replacements
-                        : getDependencies(fileId));
-            }
-        }
-
         private static void Visit(
             string fileId,
             Func<string, IReadOnlyList<string>> getDependencies,

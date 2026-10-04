@@ -1,9 +1,6 @@
 {
   "workflow": {
     "appearance": {
-      "bodyPart": {
-        "wholeBody": "Whole body"
-      },
       "sizeHumanoidRequired": "A Humanoid Animator is required for advanced skeleton scaling. Height and appearance BlendShapes remain available.",
       "heightDescriptorRequired": "A VRC Avatar Descriptor with a valid View Position is required to read the upload-time avatar height.",
       "sizeProtected": "This Prefab is outside the derived asset. Its size cannot be changed so the source remains protected.",
@@ -47,34 +44,12 @@
         "hands": "Hands",
         "legs": "Legs",
         "feet": "Feet"
-      },
-      "materialUsage": "{0} / slot {1}",
-      "moreUsages": "+{0} more",
-      "allMaterials": "All",
-      "hideMaterial": "Hide this Material",
-      "showMaterial": "Show this Material",
-      "hideAll": "Hide all Materials",
-      "showAll": "Show all Materials",
-      "readOnly": "Read only",
-      "editorUnavailable": "The Material Inspector could not be created.",
-      "makeEditable": "Create Material Variant and edit",
-      "materialReplacementFailed": "The Material could not be replaced. Check the Console.",
-      "materialVariantFailed": "The editable Material Variant could not be created. Check the Console.",
-      "emptyTitle": "No Materials found",
-      "emptyPartDescription": "No Materials were classified under this part. Check Whole body.",
-      "emptyDescription": "Check that the selected derived asset has Materials assigned."
+      }
     },
     "assets": {
-      "add": "Add asset",
-      "base": "Base",
       "clickToShow": "Show in the preview",
       "clickToHide": "Hide temporarily from the preview",
-      "remove": "Remove",
-      "removeConfirmTitle": "Remove asset",
-      "removeConfirmMessage": "Remove {0} from the derived Prefab?",
-      "noSourceDescription": "No Prefabs are available. Import an asset with AssetManager first.",
       "protected": "This item is outside the derived Prefab and cannot be edited here.",
-      "invalidPrefab": "This Prefab cannot be added. The derived Prefab itself and Prefabs that reference it are not allowed.",
       "readFailed": "Child assets could not be loaded. Check the Console.",
       "saveFailed": "The derived Prefab could not be updated. Check the Console."
     },

@@ -8,11 +8,12 @@ namespace Ee4v.Core.I18n
 {
     public static class CoreLocalization
     {
-        private static ILocalizationService _current;
+        private static readonly ILocalizationService _current;
 
         static CoreLocalization()
         {
-            Replace(CreateDefault());
+            _current = CreateDefault();
+            _current.Reloaded += OnReloaded;
         }
 
         public static event EventHandler Reloaded;
@@ -20,22 +21,6 @@ namespace Ee4v.Core.I18n
         public static ILocalizationService Current
         {
             get { return _current; }
-        }
-
-        internal static void ResetForTests(ILocalizationService replacement = null)
-        {
-            Replace(replacement ?? CreateDefault());
-        }
-
-        private static void Replace(ILocalizationService replacement)
-        {
-            if (_current != null)
-            {
-                _current.Reloaded -= OnReloaded;
-            }
-
-            _current = replacement;
-            _current.Reloaded += OnReloaded;
         }
 
         private static void OnReloaded(object sender, EventArgs args)

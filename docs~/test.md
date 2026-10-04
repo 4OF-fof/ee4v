@@ -119,3 +119,5 @@
 ## 実行と判定
 
 Codexからの実行コマンド、Licensing ClientのIPC待ちを避ける条件、結果XMLによる成否判定は、リポジトリルートの`AGENTS.md`を正とします。
+
+隔離検証Projectではee4vを`Packages/dev.4of.ee4v`または名前が`src`で終わるlocal packageとして配置します。VRChat SDKとGestureManagerを使う範囲では元Projectと同じ`VRC_SDK_VRCSDK3`のコンパイル定義を使用します。

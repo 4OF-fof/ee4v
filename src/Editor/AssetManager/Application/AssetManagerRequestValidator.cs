@@ -90,17 +90,6 @@ namespace Ee4v.AssetManager.Application
             return NormalizeIds(ids, field);
         }
 
-        internal static void ValidateDependencyReplacement(
-            IReadOnlyList<string> dependentFileIds,
-            IReadOnlyList<string> dependencyFileIds,
-            Func<string, IReadOnlyList<string>> getDependencies)
-        {
-            Execute(() => FileDependencyGraphPolicy.EnsureCanReplace(
-                dependentFileIds,
-                dependencyFileIds,
-                getDependencies));
-        }
-
         internal static IReadOnlyList<string> ResolveDependencyOrder(
             string fileId,
             Func<string, IReadOnlyList<string>> getDependencies)

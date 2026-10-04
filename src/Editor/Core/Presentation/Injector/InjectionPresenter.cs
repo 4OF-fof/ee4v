@@ -116,15 +116,6 @@ namespace Ee4v.Core.Injector
             SyncProjectToolbarHosts();
         }
 
-        public void ResetState()
-        {
-            _projectHostVersions.Clear();
-            _hostsDirty = true;
-            _hostVersion = 0;
-            _nextHostSyncAt = 0d;
-            RefreshRegistrationCaches();
-        }
-
         private void SyncProjectToolbarHosts()
         {
             if (!ProjectBrowserApi.TryGetOpenWindows(out var windows))

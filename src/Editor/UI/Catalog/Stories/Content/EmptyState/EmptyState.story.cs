@@ -23,6 +23,7 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/Feature/Shared/AvatarEditing/AvatarEditingUi.cs",
                         "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/Components/GestureAssignmentCell.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",

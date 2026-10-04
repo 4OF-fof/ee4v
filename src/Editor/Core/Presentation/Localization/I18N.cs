@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Ee4v.Core.I18n;
 using Ee4v.Core.Injector;
 using UnityEditorInternal;
 

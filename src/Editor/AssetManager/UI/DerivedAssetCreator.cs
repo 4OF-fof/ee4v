@@ -242,26 +242,8 @@ namespace Ee4v.AssetManager.UI
                 throw new ArgumentException("The Material must be an external dependency of the Variant.");
             }
 
-            var materialsFolder = variantFolder + "/Assets/Materials";
-            EnsureFolder(materialsFolder);
-            var safeName = new string(sourceMaterial.name
-                .Select(character => char.IsLetterOrDigit(character) ||
-                    character == ' ' || character == '_' || character == '-'
-                    ? character : '_')
-                .Take(80).ToArray());
-            if (string.IsNullOrWhiteSpace(safeName))
-            {
-                safeName = "Material";
-            }
-            var destinationPath = AssetDatabase.GenerateUniqueAssetPath(
-                materialsFolder + "/" + safeName + ".mat");
-            var materialVariant = new Material(sourceMaterial)
-            {
-                name = sourceMaterial.name,
-                parent = sourceMaterial,
-                hideFlags = HideFlags.None
-            };
-            AssetDatabase.CreateAsset(materialVariant, destinationPath);
+            var materialVariant = CreateMaterialVariantAsset(
+                variantPath, sourceMaterial, out var destinationPath);
             try
             {
                 var objectMap = new Dictionary<AssetObjectKey, Object>();
@@ -300,18 +282,53 @@ namespace Ee4v.AssetManager.UI
                 .ToArray();
         }
 
+        internal static Material CreateMaterialVariantAsset(
+            string prefabPath, Material sourceMaterial, out string materialPath)
+        {
+            var variantFolder = Path.GetDirectoryName(prefabPath)?.Replace('\\', '/');
+            if (string.IsNullOrEmpty(variantFolder))
+            {
+                throw new InvalidOperationException("The derived asset folder could not be found.");
+            }
+
+            var materialsFolder = variantFolder + "/Assets/Materials";
+            EnsureFolder(materialsFolder);
+            var safeName = new string(sourceMaterial.name
+                .Select(character => char.IsLetterOrDigit(character) ||
+                    character == ' ' || character == '_' || character == '-'
+                    ? character : '_')
+                .Take(80).ToArray());
+            if (string.IsNullOrWhiteSpace(safeName))
+            {
+                safeName = "Material";
+            }
+            materialPath = AssetDatabase.GenerateUniqueAssetPath(
+                materialsFolder + "/" + safeName + ".mat");
+            var variant = new Material(sourceMaterial)
+            {
+                name = sourceMaterial.name,
+                parent = sourceMaterial,
+                hideFlags = HideFlags.None
+            };
+            try
+            {
+                AssetDatabase.CreateAsset(variant, materialPath);
+                return variant;
+            }
+            catch
+            {
+                if (AssetDatabase.Contains(variant)) { AssetDatabase.DeleteAsset(materialPath); }
+                else { Object.DestroyImmediate(variant); }
+                throw;
+            }
+        }
+
         public static IReadOnlyList<DerivedAssetInfo> FindAll()
         {
             return DerivedAssetCatalog.FindAll()
                 .Select(ToInfo)
                 .Where(info => info?.Prefab != null)
                 .ToArray();
-        }
-
-        internal static DerivedAssetInfo Read(string assetPath)
-        {
-            var info = ToInfo(DerivedAssetCatalog.Read(assetPath));
-            return info?.Prefab != null ? info : null;
         }
 
         private static DerivedAssetInfo ToInfo(DerivedAssetRecord record)

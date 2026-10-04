@@ -960,16 +960,6 @@ namespace Ee4v.AssetManager.Application
             };
         }
 
-        private IReadOnlyList<string> GetDependencyIds(string fileId)
-        {
-            return _store.GetFileDependencies(fileId)
-                .Select(dependency => dependency.DependencyFileId)
-                .Where(id => !string.Equals(
-                    id, fileId, StringComparison.Ordinal))
-                .Distinct(StringComparer.Ordinal)
-                .ToArray();
-        }
-
         public AssetFileAnalysis AnalyzeFile(string fileId)
         {
             return _fileAnalyzer.Analyze(GetFileForAnalysis(fileId));

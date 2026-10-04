@@ -24,5 +24,16 @@ namespace Ee4v.Mcp
         {
             return value == null ? default : value.ToObject<T>(Serializer);
         }
+
+        internal static string RequireString(JObject arguments, string name)
+        {
+            var value = ((string)arguments[name] ?? string.Empty).Trim();
+            if (value.Length == 0)
+            {
+                throw new McpToolException("invalid_request", name + " is required.");
+            }
+
+            return value;
+        }
     }
 }

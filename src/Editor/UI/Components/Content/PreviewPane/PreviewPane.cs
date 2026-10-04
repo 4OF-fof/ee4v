@@ -1,4 +1,3 @@
-using Ee4v.Core.I18n;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI

@@ -6,12 +6,9 @@ using Ee4v.Core.I18n;
 using Ee4v.UI;
 using Ee4v.AvatarEditing;
 using static Ee4v.AvatarEditing.AvatarBodyAnalysis;
-using static Ee4v.AvatarEditing.AvatarEditingUi;
 using nadena.dev.modular_avatar.core;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AvatarParts

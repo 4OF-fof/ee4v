@@ -754,13 +754,6 @@ namespace Ee4v.UI
             return RegisteredStories.ToArray();
         }
 
-        internal static IReadOnlyList<string>
-            GetRegisteredStyleSheetPathsForTests()
-        {
-            EnsureCatalogRegistrations();
-            return RegisteredStyleSheetPaths.ToArray();
-        }
-
         private sealed class NavigatorTreeNode
         {
             public NavigatorTreeNode(

@@ -1,4 +1,3 @@
-using System;
 using Ee4v.Core.I18n;
 using UnityEngine.UIElements;
 

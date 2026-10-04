@@ -115,24 +115,14 @@
       "backToAssets": "Back to asset selection",
       "assetNoSourceTitle": "The selected asset has no imported Prefabs",
       "managerLoadFailed": "AssetManager could not be loaded. Check the Console.",
-      "title": "Choose a derived asset",
-      "description": "Choose the character to edit from the derived assets prepared with AssetManager's Variant creation feature.",
-      "createNew": "New derived asset",
       "createTitle": "Create a derived asset",
       "createDescription": "Create an editable Prefab Variant and Material Variants from a Prefab already imported with AssetManager.",
-      "back": "Back to derived assets",
-      "emptyTitle": "No derived assets",
-      "emptyDescription": "Create one here, or create a Variant from an item's details in AssetManager.",
-      "noSourceTitle": "No source Prefabs available",
       "noSourceDescription": "Import an item's Prefab with AssetManager, then return here.",
       "sourceItem": "Source asset",
       "sourcePrefab": "Source Prefab",
       "name": "Derived asset name",
       "assetDescription": "Description",
-      "create": "Create derived asset",
-      "openManager": "Open AssetManager",
-      "choose": "Customize this character",
-      "noDescription": "No description"
+      "openManager": "Open AssetManager"
     },
     "asset": {
       "change": "Change"

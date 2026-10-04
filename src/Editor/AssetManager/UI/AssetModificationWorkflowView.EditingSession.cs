@@ -1,28 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Ee4v.Core.EditorIntegration;
-using Ee4v.Core.I18n;
 using Ee4v.UI;
-using Ee4v.AvatarEditing;
 using static Ee4v.AvatarEditing.AvatarBodyAnalysis;
-using static Ee4v.AvatarEditing.AvatarEditingUi;
-using nadena.dev.modular_avatar.core;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
-using Ee4v.AssetProtection;
-using Ee4v.AssetManager.Contracts;
-using Ee4v.AssetManager.Simulation;
-using Ee4v.Core.Settings;
-using Ee4v.FaceExpression;
-using Ee4v.AvatarParts;
-using Ee4v.AvatarMaterials;
-using Ee4v.AvatarInfo;
-using static Ee4v.AvatarParts.AvatarPartsEditor;
-using AppearancePanel = Ee4v.AvatarEditing.AvatarEditorPanel;
 
 namespace Ee4v.AssetManager.UI
 {

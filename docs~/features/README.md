@@ -48,4 +48,4 @@
 
 `src/Editor/Mcp`は機能moduleではなく外部integration層です。Face Expressionの公開APIとAssetManager Contractsを組み合わせますが、機能module間の参照は作りません。MCP固有の契約は[`../mcp.md`](../mcp.md)で管理します。
 
-AssetManager UIは例外として、取り込み先フォルダーの初期アイコン設定に`ProjectStyleApi`、改変画面にAvatarParts・AvatarMaterials・AvatarInfo・FaceExpressionの公開APIを使用します。BlendShape分類は`WorkflowShapeNaming`でFaceExpressionから共有契約へ変換します。これらの機能からAssetManagerへの逆方向参照と、機能同士の参照はありません。
+AssetManager UIは例外として、取り込み先フォルダーの初期アイコン設定に`ProjectStyleApi`、改変画面にAvatarParts・AvatarMaterials・AvatarInfo・FaceExpressionの公開APIを使用します。BlendShape分類は単独Windowと同じ`AvatarShapeNaming`でFaceExpressionが提供する共有契約へ接続します。これらの機能からAssetManagerへの逆方向参照と、機能同士の参照はありません。

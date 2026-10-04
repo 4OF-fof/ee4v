@@ -1,26 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
-using Ee4v.AvatarEditing;
-using static Ee4v.AvatarEditing.AvatarBodyAnalysis;
 using static Ee4v.AvatarEditing.AvatarEditingUi;
-using nadena.dev.modular_avatar.core;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
-using Ee4v.AssetProtection;
-using Ee4v.AssetManager.Contracts;
-using Ee4v.AssetManager.Simulation;
-using Ee4v.Core.Settings;
-using Ee4v.FaceExpression;
 using Ee4v.AvatarParts;
-using Ee4v.AvatarMaterials;
-using Ee4v.AvatarInfo;
 using static Ee4v.AvatarParts.AvatarPartsEditor;
 using AppearancePanel = Ee4v.AvatarEditing.AvatarEditorPanel;
 
@@ -34,11 +21,7 @@ namespace Ee4v.AssetManager.UI
             {
                 return;
             }
-            if (_mode == ModificationEditorMode.Composition)
-            {
-                _avatarContext.Preview.SetListSelection(null, null);
-            }
-            else if (_currentCategory == WorkflowCategory.Material)
+            if (_currentCategory == WorkflowCategory.Material)
             {
                 _avatarContext.Preview.SetListSelection(null, _avatarContext.SelectedMaterial);
             }
@@ -268,13 +251,6 @@ namespace Ee4v.AssetManager.UI
             RequestRepaint();
         }
 
-        private IEnumerable<int> GetDisplayedPrefabScopes()
-        {
-            return _avatarContext.SelectedPrefabSiblingIndex.HasValue
-                ? new[] { _avatarContext.SelectedPrefabSiblingIndex.Value }
-                : new[] { -1 }.Concat(_avatarContext.PrefabSiblingIndices);
-        }
-
         private VisualElement BuildCollapsiblePrefabGroup(
             int prefabSiblingIndex,
             VisualElement content,
@@ -411,8 +387,7 @@ namespace Ee4v.AssetManager.UI
 
         private void OnPreviewObjectClicked(string partKey, Material material)
         {
-            if (_mode == ModificationEditorMode.Composition ||
-                _currentCategory == WorkflowCategory.Overview || _avatarContext.ControlsHost == null) { return; }
+            if (_currentCategory == WorkflowCategory.Overview || _avatarContext.ControlsHost == null) { return; }
             if (_currentCategory == WorkflowCategory.Material)
             {
                 _materials.SelectPreviewMaterial(material, GetPreviewPrefabSiblingIndex(partKey));
@@ -422,7 +397,7 @@ namespace Ee4v.AssetManager.UI
 
         private void OnPreviewSelectionCleared()
         {
-            if (_mode == ModificationEditorMode.Composition || _avatarContext.ControlsHost == null) { return; }
+            if (_avatarContext.ControlsHost == null) { return; }
             if (_currentCategory == WorkflowCategory.Material)
             {
                 _avatarContext.SelectedMaterial = null;
@@ -545,8 +520,7 @@ namespace Ee4v.AssetManager.UI
                     _avatarContext.SelectedPrefabSiblingIndex = null;
                     _avatarContext.SelectedPrefabName = string.Empty;
                     _avatarContext.SelectedBodyPart = null;
-                    _currentCategory = _mode == ModificationEditorMode.All
-                        ? WorkflowCategory.Overview : WorkflowCategory.ShapeParts;
+                    _currentCategory = WorkflowCategory.Overview;
                     _parts.Section = ShapePartsSection.Parts;
                     _avatarContext.HiddenPrefabSiblingIndices.Clear();
                     _prefabPreviewVisibilityInitialized = false;

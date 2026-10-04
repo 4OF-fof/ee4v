@@ -5,16 +5,10 @@ namespace Ee4v.AssetManager.UI
     internal sealed class WorkflowEditorLayout : VisualElement
     {
         internal WorkflowEditorLayout(VisualElement navigation,
-            VisualElement preview, bool showControls = true)
+            VisualElement preview)
         {
             AddToClassList("ee4v-modification-workflow__body");
             if (navigation != null) { Add(navigation); }
-            if (!showControls)
-            {
-                Add(preview);
-                return;
-            }
-
             AppearanceHost = new VisualElement();
             AppearanceHost.AddToClassList("ee4v-modification-workflow__customizer-host");
             AppearanceHost.Add(preview);
@@ -51,7 +45,6 @@ namespace Ee4v.AssetManager.UI
 
         internal void ShowCategory(WorkflowCategory category)
         {
-            if (AppearanceHost == null) { return; }
             AppearanceHost.EnableInClassList("ee4v-modification-workflow__hidden",
                 category == WorkflowCategory.ExpressionAnimation || category == WorkflowCategory.MenuAndGestures);
             FaceExpressionHost.EnableInClassList("ee4v-modification-workflow__hidden",

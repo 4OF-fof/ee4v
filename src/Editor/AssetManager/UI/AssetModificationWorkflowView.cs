@@ -1,22 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using Ee4v.AvatarEditing;
-using static Ee4v.AvatarEditing.AvatarBodyAnalysis;
-using static Ee4v.AvatarEditing.AvatarEditingUi;
-using nadena.dev.modular_avatar.core;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
-using Ee4v.AssetProtection;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Simulation;
-using Ee4v.Core.Settings;
 using Ee4v.FaceExpression;
 using Ee4v.AvatarParts;
 using Ee4v.AvatarMaterials;
@@ -84,7 +78,6 @@ namespace Ee4v.AssetManager.UI
 
         private IReadOnlyCollection<BodyPartCategory> _meshBodyPartCategoriesCache;
 
-        private ISettingsService _settings;
 
         private bool _appearanceDataDirty;
 
@@ -171,11 +164,9 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private readonly ModificationEditorMode _mode;
 
         private readonly Action _repaint;
 
-        private readonly Action _openAssetManager;
 
         private bool _disposed;
 
@@ -199,10 +190,7 @@ namespace Ee4v.AssetManager.UI
 
         internal event Action<DerivedAssetInfo> DerivedAssetChanged;
 
-        internal AssetModificationWorkflowView(
-            ModificationEditorMode mode,
-            Action repaint,
-            Action openAssetManager)
+        internal AssetModificationWorkflowView(Action repaint)
         {
             _avatarContext = new AvatarEditingContext
             {
@@ -211,7 +199,7 @@ namespace Ee4v.AssetManager.UI
                 CanEditMaterial = IsEditableWorkflowMaterial,
                 GetAssetPath = GetWorkingAssetPath,
                 GetExcludedPartPrefixes = () => AssetManagerSettings.ExcludedPartPrefixes,
-                CreateShapeNaming = (avatar, meshes) => new WorkflowShapeNaming(avatar, meshes),
+                CreateShapeNaming = AvatarShapeNaming.Create,
                 Changed = InvalidateVariantSaveStatus,
                 WorkingSceneDirtyChanged = value => _workingSceneDirty = value,
                 Refresh = () => ShowCategory(_currentCategory, false),
@@ -233,10 +221,7 @@ namespace Ee4v.AssetManager.UI
             };
             _parts = new AvatarPartsEditor(_avatarContext);
             _materials = new AvatarMaterialsEditor(_avatarContext);
-            _mode = mode;
             _repaint = repaint;
-            _openAssetManager = mode == ModificationEditorMode.All
-                ? ShowAssetManagerSelection : openAssetManager;
             ApplyEditorMode();
             OnEnable();
             try
@@ -252,29 +237,17 @@ namespace Ee4v.AssetManager.UI
 
         private void ApplyEditorMode()
         {
-            if (_mode == ModificationEditorMode.All)
+            if (EditorApplication.isPlaying)
             {
-                if (EditorApplication.isPlaying)
+                if (_currentCategory != WorkflowCategory.MenuAndGestures)
                 {
-                    if (_currentCategory != WorkflowCategory.MenuAndGestures)
-                    {
-                        _editingCategory = _currentCategory;
-                    }
-                    _currentCategory = WorkflowCategory.MenuAndGestures;
+                    _editingCategory = _currentCategory;
                 }
-                else if (_currentCategory == WorkflowCategory.MenuAndGestures)
-                {
-                    _currentCategory = _editingCategory;
-                }
-                return;
+                _currentCategory = WorkflowCategory.MenuAndGestures;
             }
-            if (_mode == ModificationEditorMode.Materials)
+            else if (_currentCategory == WorkflowCategory.MenuAndGestures)
             {
-                _currentCategory = WorkflowCategory.Material;
-            }
-            else if (_mode != ModificationEditorMode.All)
-            {
-                _currentCategory = WorkflowCategory.ShapeParts;
+                _currentCategory = _editingCategory;
             }
         }
 
@@ -295,9 +268,9 @@ namespace Ee4v.AssetManager.UI
             Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
             Undo.undoRedoPerformed += RefreshAfterUndoRedo;
             Undo.postprocessModifications += OnUndoModifications;
-            FaceExpressionShapeNamingSnapshot.PresetsChanged -=
+            AvatarShapeNaming.Changed -=
                 OnBlendShapePresetChanged;
-            FaceExpressionShapeNamingSnapshot.PresetsChanged +=
+            AvatarShapeNaming.Changed +=
                 OnBlendShapePresetChanged;
             AssetManagerSettings.PartListExclusionsChanged -=
                 OnPartListExclusionsChanged;
@@ -309,8 +282,6 @@ namespace Ee4v.AssetManager.UI
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorSceneManager.sceneClosed += OnWorkingSceneClosed;
             EditorSceneManager.sceneSaved += OnWorkingSceneSaved;
-            _settings = CoreSettings.Current;
-            _settings.Changed += OnSettingChanged;
         }
 
         public void Dispose()
@@ -329,7 +300,7 @@ namespace Ee4v.AssetManager.UI
                 OnManagerInvalidated;
             Undo.undoRedoPerformed -= RefreshAfterUndoRedo;
             Undo.postprocessModifications -= OnUndoModifications;
-            FaceExpressionShapeNamingSnapshot.PresetsChanged -=
+            AvatarShapeNaming.Changed -=
                 OnBlendShapePresetChanged;
             AssetManagerSettings.PartListExclusionsChanged -=
                 OnPartListExclusionsChanged;
@@ -339,7 +310,6 @@ namespace Ee4v.AssetManager.UI
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorSceneManager.sceneClosed -= OnWorkingSceneClosed;
             EditorSceneManager.sceneSaved -= OnWorkingSceneSaved;
-            _settings.Changed -= OnSettingChanged;
             ReleaseVariantStatusManager();
             DisposeEditors();
             ClearAppearanceCaches();
@@ -466,15 +436,6 @@ namespace Ee4v.AssetManager.UI
                 }
             }
             return modifications;
-        }
-
-        private void OnSettingChanged(object sender, SettingChangedEventArgs args)
-        {
-            if (FaceExpressionShapeNamingSnapshot.IsSeparatorSetting(
-                    args.Definition))
-            {
-                OnBlendShapePresetChanged();
-            }
         }
 
         private void ClearAppearanceCaches()

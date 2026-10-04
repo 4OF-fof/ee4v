@@ -226,36 +226,6 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        internal static FileTreeImagePreviewData Decode(
-            string fileName,
-            byte[] bytes,
-            CancellationToken cancellationToken)
-        {
-            if (bytes == null || bytes.Length == 0)
-            {
-                return null;
-            }
-
-            if (!string.Equals(
-                    Path.GetExtension(
-                        fileName ?? string.Empty),
-                    ".psd",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return FileTreeImagePreviewData
-                    .FromEncoded(bytes);
-            }
-
-            using (var stream = new MemoryStream(
-                       bytes,
-                       false))
-            {
-                return PsdCompositeImageDecoder.Decode(
-                    stream,
-                    cancellationToken);
-            }
-        }
-
         private static Stream OpenSource(
             FileTreeImageSource source,
             CancellationToken cancellationToken)

@@ -105,7 +105,7 @@ namespace Ee4v.Mcp
                 arguments => AssetResult(() =>
                 {
                     var manager = Manager();
-                    var itemId = Required(arguments, "itemId");
+                    var itemId = McpJson.RequireString(arguments, "itemId");
                     var item = manager.GetItem(itemId);
                     var files = manager.GetFiles(itemId, true);
                     var importedAssetGuids =
@@ -182,7 +182,7 @@ namespace Ee4v.Mcp
             {
                 throw new McpToolException("invalid_request", "targets requires exactly one item.");
             }
-            var name = arguments.Property("name") == null ? null : Required(arguments, "name");
+            var name = arguments.Property("name") == null ? null : McpJson.RequireString(arguments, "name");
             var metadata = name != null || arguments.Property("description") != null;
             var manager = Manager();
             var originals = ids.Select(manager.GetItem).ToArray();
@@ -254,7 +254,7 @@ namespace Ee4v.Mcp
                     ["fileId"] = McpSchemas.String()
                 }, "fileId"),
                 arguments => AssetResult(() => Success(Manager().AnalyzeFile(
-                    Required(arguments, "fileId")))),
+                    McpJson.RequireString(arguments, "fileId")))),
                 readOnly: true,
                 openWorld: true));
         }
@@ -319,7 +319,7 @@ namespace Ee4v.Mcp
                     {
                         throw new McpToolException("invalid_request", "selectedTargets must be an array.");
                     }
-                    result = await Manager().ImportItemTargets(Required(arguments, "itemId"),
+                    result = await Manager().ImportItemTargets(McpJson.RequireString(arguments, "itemId"),
                         McpJson.To<List<AssetFileTarget>>(arguments["selectedTargets"]) ?? new List<AssetFileTarget>());
                 }
                 else
@@ -328,7 +328,7 @@ namespace Ee4v.Mcp
                     {
                         throw new McpToolException("invalid_request", "paths must contain at least one string.");
                     }
-                    result = await Manager().ImportFileEntries(Required(arguments, "fileId"), paths.Values<string>().ToArray());
+                    result = await Manager().ImportFileEntries(McpJson.RequireString(arguments, "fileId"), paths.Values<string>().ToArray());
                 }
                 return result.Succeeded ? Success(result) : McpToolResult.Error(
                     result.Canceled ? "asset_import_canceled" : "asset_import_failed",
@@ -394,7 +394,7 @@ namespace Ee4v.Mcp
                 {
                     var manager = Manager();
                     var existing = arguments.Property("collectionId") == null
-                        ? null : manager.GetCollection(Required(arguments, "collectionId"));
+                        ? null : manager.GetCollection(McpJson.RequireString(arguments, "collectionId"));
                     if (existing != null && !new[] { "name", "icon", "filter" }.Any(field => arguments.Property(field) != null))
                     {
                         throw new McpToolException("invalid_request", "Provide at least one collection field to edit.");
@@ -404,7 +404,7 @@ namespace Ee4v.Mcp
                         throw new McpToolException("invalid_request", "filter must be an object.");
                     }
                     var name = arguments.Property("name") == null && existing != null
-                        ? existing.Name : Required(arguments, "name");
+                        ? existing.Name : McpJson.RequireString(arguments, "name");
                     var filter = arguments.Property("filter") == null && existing != null
                         ? existing.Root : McpJson.To<AssetFilterNode>(arguments["filter"]);
                     var icon = CollectionIcon(arguments);
@@ -431,7 +431,7 @@ namespace Ee4v.Mcp
                 arguments => AssetResult(() =>
                 {
                     var manager = Manager();
-                    var id = Required(arguments, "collectionId");
+                    var id = McpJson.RequireString(arguments, "collectionId");
                     var collection = manager.GetCollection(id);
                     manager.DeleteCollection(id);
                     return Success(collection);
@@ -496,19 +496,6 @@ namespace Ee4v.Mcp
             {
                 ["itemId"] = McpSchemas.String()
             }, "itemId");
-        }
-
-        private static string Required(JObject arguments, string name)
-        {
-            var value = ((string)arguments[name] ?? string.Empty).Trim();
-            if (value.Length == 0)
-            {
-                throw new McpToolException(
-                    "invalid_request",
-                    name + " is required.");
-            }
-
-            return value;
         }
 
         private static IReadOnlyList<string> RequiredStrings(

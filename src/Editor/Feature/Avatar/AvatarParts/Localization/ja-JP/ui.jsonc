@@ -1,9 +1,6 @@
 {
   "workflow": {
     "appearance": {
-      "bodyPart": {
-        "wholeBody": "全身"
-      },
       "sizeHumanoidRequired": "高度な骨格スケールには、Humanoid Avatarが設定されたAnimatorが必要です。身長と見た目用BlendShapeは引き続き使用できます。",
       "heightDescriptorRequired": "VRChatアップロード時の身長を取得するには、VRC Avatar Descriptorと有効なView Positionが必要です。",
       "sizeProtected": "このPrefabは派生アセット外にあります。元素材を守るため、サイズを変更できません。",
@@ -47,34 +44,12 @@
         "hands": "手",
         "legs": "脚",
         "feet": "足"
-      },
-      "materialUsage": "{0} / slot {1}",
-      "moreUsages": "ほか{0}箇所",
-      "allMaterials": "すべて",
-      "hideMaterial": "このMaterialを非表示",
-      "showMaterial": "このMaterialを表示",
-      "hideAll": "すべてのMaterialを非表示",
-      "showAll": "すべてのMaterialを表示",
-      "readOnly": "読取専用",
-      "editorUnavailable": "Material Inspectorを作成できませんでした。",
-      "makeEditable": "Material Variantを作成して編集",
-      "materialReplacementFailed": "Materialを差し替えられませんでした。Consoleを確認してください。",
-      "materialVariantFailed": "編集用Material Variantを作成できませんでした。Consoleを確認してください。",
-      "emptyTitle": "Materialが見つかりません",
-      "emptyPartDescription": "この部位に分類されたMaterialはありません。「全身」も確認してください。",
-      "emptyDescription": "選択した派生アセットにMaterialが設定されているか確認してください。"
+      }
     },
     "assets": {
-      "add": "アセットを追加",
-      "base": "ベース",
       "clickToShow": "プレビューに表示",
       "clickToHide": "プレビューから一時的に隠す",
-      "remove": "削除",
-      "removeConfirmTitle": "アセットを削除",
-      "removeConfirmMessage": "「{0}」を派生Prefabから削除しますか？",
-      "noSourceDescription": "追加できるPrefabがありません。AssetManagerで素材をImportしてください。",
       "protected": "派生Prefabの外にあるため、このアイテムは編集できません。",
-      "invalidPrefab": "追加できないPrefabです。派生Prefab自身や、それを参照するPrefabは選べません。",
       "readFailed": "アセットを読み込めませんでした。Consoleを確認してください。",
       "saveFailed": "派生Prefabを更新できませんでした。Consoleを確認してください。"
     },

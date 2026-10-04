@@ -18,12 +18,12 @@ for (const plugin of plugins) {
   const sourcePath = path.join(sourceRoot, "plugins", plugin);
   const compiledPath = path.join(compiledRoot, "plugins", plugin);
   const outputPath = path.join(distRoot, plugin);
-  await copyStaticTree(sourcePath, outputPath);
-  await copyCompiledTree(compiledPath, outputPath);
+  await copyTree(sourcePath, outputPath, true);
+  await copyTree(compiledPath, outputPath);
   await copyFile(sharedCorePath, path.join(outputPath, "js", "core.js"));
 }
 
-async function copyStaticTree(sourcePath, outputPath) {
+async function copyTree(sourcePath, outputPath, skipTypeScript = false) {
   const sourceStat = await stat(sourcePath);
   if (sourceStat.isDirectory()) {
     await mkdir(outputPath, { recursive: true });
@@ -31,28 +31,12 @@ async function copyStaticTree(sourcePath, outputPath) {
     for (const entry of entries) {
       const childSource = path.join(sourcePath, entry.name);
       const childOutput = path.join(outputPath, entry.name);
-      await copyStaticTree(childSource, childOutput);
+      await copyTree(childSource, childOutput, skipTypeScript);
     }
     return;
   }
 
-  if (sourcePath.endsWith(".ts")) {
-    return;
-  }
-
-  await copyFile(sourcePath, outputPath);
-}
-
-async function copyCompiledTree(sourcePath, outputPath) {
-  const sourceStat = await stat(sourcePath);
-  if (sourceStat.isDirectory()) {
-    await mkdir(outputPath, { recursive: true });
-    const entries = await readdir(sourcePath, { withFileTypes: true });
-    for (const entry of entries) {
-      const childSource = path.join(sourcePath, entry.name);
-      const childOutput = path.join(outputPath, entry.name);
-      await copyCompiledTree(childSource, childOutput);
-    }
+  if (skipTypeScript && sourcePath.endsWith(".ts")) {
     return;
   }
 

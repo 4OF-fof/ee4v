@@ -16,6 +16,10 @@ UnityのToolbarでPlay Modeを開始すると「操作確認」へ切り替え�
 
 統合ee4vは`AssetModificationWorkflowView`を統合ホストとして使用します。ホストはVariant選択・作成、Prefab構成、作業Scene、編集保護、保存と外部機能への接続を管理します。パーツ・体型は[AvatarParts](./features/avatar-parts.md)、Materialは[AvatarMaterials](./features/avatar-materials.md)、詳細と性能解析は[AvatarInfo](./features/avatar-info.md)の公開APIへ委譲します。共通の編集対象・選択と通知は[AvatarEditingContext](./features/avatar-editing.md)で接続し、各機能はAssetManagerへ逆依存しません。
 
+ワークフローは統合画面だけを所有し、単独Prefab編集は各FeatureのWindowが担当します。作成元は一覧で選んだItemに固定し、そのItemの取り込み済みPrefab候補だけを取得します。構成Prefabの追加Pickerは別途Catalog全体の取り込み済み候補を使用します。
+
+UIとMCPの追加Material Variantは`DerivedAssetCreator`の共通生成処理を使用します。派生Prefabと同じフォルダーの`Assets/Materials`へ、元Materialをparentとした新規Materialを保存します。ファイル名の正規化と重複回避も共通です。生成失敗時は生成中のMaterialを解放し、割り当て前の失敗ではAssetを削除します。Rendererへの割り当てと画面更新は各呼び出し側が担当します。
+
 | 部品 | 所属・Catalog分類 | 責務 |
 | --- | --- | --- |
 | `PreviewPane` | 共通UI / Containers | プレビューの見出し、操作と描画要素の配置 |

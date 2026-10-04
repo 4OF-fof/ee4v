@@ -1,5 +1,4 @@
 using System.Linq;
-using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
@@ -21,21 +20,6 @@ namespace Ee4v.AssetManager.UI
             window.Show();
         }
 
-        internal static void ShowFor(DerivedAssetInfo asset)
-        {
-            if (asset?.Prefab == null)
-            {
-                return;
-            }
-            var window = GetWindow<AssetModificationWorkflowWindow>();
-            if (window._view == null)
-            {
-                window.CreateGUI();
-            }
-            window._view.SelectDerivedAsset(asset);
-            window.Show();
-        }
-
         private void OnEnable()
         {
             I18N.Reloaded += ConfigureWindow;
@@ -54,8 +38,7 @@ namespace Ee4v.AssetManager.UI
             _view?.Dispose();
             rootVisualElement.Clear();
             AssetManagerWindowSession.PrepareWorkflowRoot(rootVisualElement);
-            _view = new AssetModificationWorkflowView(
-                ModificationEditorMode.All, Repaint, AssetManagerLibraryWindow.ShowWindow);
+            _view = new AssetModificationWorkflowView(Repaint);
             _view.DerivedAssetChanged += RememberDerivedAsset;
             rootVisualElement.Add(_view);
             var asset = DerivedAssetCreator.FindAll().FirstOrDefault(candidate =>

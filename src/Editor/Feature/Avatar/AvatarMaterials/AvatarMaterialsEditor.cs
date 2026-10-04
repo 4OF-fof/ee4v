@@ -1,16 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using Ee4v.AvatarEditing;
-using static Ee4v.AvatarEditing.AvatarBodyAnalysis;
 using static Ee4v.AvatarEditing.AvatarEditingUi;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AvatarMaterials
@@ -95,10 +91,10 @@ namespace Ee4v.AvatarMaterials
             {
                 _context.SelectedMaterial = null;
                 panel.Add(AvatarEditingUi.CreateEmptyState(
-                    "workflow.appearance.emptyTitle",
-                    _context.SelectedBodyPart.HasValue
+                    I18N.Get("workflow.appearance.emptyTitle"),
+                    I18N.Get(_context.SelectedBodyPart.HasValue
                         ? "workflow.appearance.emptyPartDescription"
-                        : "workflow.appearance.emptyDescription"));
+                        : "workflow.appearance.emptyDescription")));
                 return panel;
             }
 

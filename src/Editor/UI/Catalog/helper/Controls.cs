@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Ee4v.Core.I18n;
-using UnityEditor;
 using UnityEditor.UIElements;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
@@ -13,19 +9,6 @@ namespace Ee4v.UI
     {
         private const string CatalogControlClassName =
             "ee4v-ui-catalog-control";
-
-        private static string FormatCatalogToastTitle(string title)
-        {
-            var normalized = (title ?? string.Empty).Trim();
-            if (string.IsNullOrEmpty(normalized))
-            {
-                return "[TEST]";
-            }
-
-            return normalized.StartsWith("[TEST]", StringComparison.Ordinal)
-                ? normalized
-                : "[TEST] " + normalized;
-        }
 
         internal ControlsSectionContext CreatePlainControlsSection(VisualElement parent, string description)
         {
