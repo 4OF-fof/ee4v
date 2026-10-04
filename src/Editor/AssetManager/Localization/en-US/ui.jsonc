@@ -87,7 +87,7 @@
     "assets": {
       "add": "Add asset",
       "base": "Base",
-      "clickToShow": "Show temporarily in the preview",
+      "clickToShow": "Show in the preview",
       "clickToHide": "Hide temporarily from the preview",
       "remove": "Remove",
       "removeConfirmTitle": "Remove asset",

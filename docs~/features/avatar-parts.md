@@ -18,6 +18,8 @@ AssetManager、AvatarMaterials、AvatarInfo、FaceExpression、PlayModeComponent
 
 パーツ階層の字下げは各行の内側の余白で表現し、子行も一覧の左端から右端まで広げます。選択背景と行の区切り線は字下げ領域にも表示し、階層の深さに応じた文字・開閉ボタンの位置を維持します。
 
+パーツ行の目アイコンは、自身または祖先のGameObjectが非アクティブなら非表示アイコンにして操作を無効にし、目アイコンのTooltipも表示しません。EditorOnlyのチェックボックスはタグだけでチェック状態を決め、非アクティブでも操作できます。チェックボックスによるactiveSelfの変更は対象行と子孫行の目アイコンへ直ちに反映します。非アクティブによる目アイコンの更新ではPreviewの一時非表示状態を変更せず、再度アクティブになると保持していた状態を表示します。
+
 部品のスタイルは`avatar-parts.uss`、共有編集部品は`Feature/Shared/AvatarEditing/avatar-editing.uss`に置きます。`BuildControls`が読み込み、統合画面は同じスタイルを取り込みます。Catalogは`Domain/AvatarParts/Containers/AvatarPartsEditor`へ登録し、Storyの使用箇所には統合と単独Windowの呼び出し元を記載します。編集UIの翻訳はAvatarParts scopeに置きます。
 
 AssetManagerの作業Scene・編集保護・版保存への接続は[AssetManager](../asset-manager.md)で管理します。

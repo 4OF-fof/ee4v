@@ -73,12 +73,8 @@ namespace Ee4v.AssetManager.UI
                 _ => SelectPrefabCard(child.SiblingIndex, child.Name));
             if (HasMeshInPrefabScope(child.SiblingIndex))
             {
-                var visibility = CreatePrefabVisibilityButton(
-                    !_avatarContext.HiddenPrefabSiblingIndices.Contains(child.SiblingIndex),
-                    I18N.Get(_avatarContext.HiddenPrefabSiblingIndices.Contains(child.SiblingIndex)
-                        ? "workflow.assets.clickToShow"
-                        : "workflow.assets.clickToHide"),
-                    () => TogglePrefabPreviewVisibility(child.SiblingIndex),
+                var visibility = CreateWorkflowPrefabVisibilityButton(
+                    child.SiblingIndex,
                     "ee4v-ui-selection-tab-visibility");
                 visibility.userData = child.SiblingIndex;
                 visibility.AddToClassList(
@@ -108,6 +104,10 @@ namespace Ee4v.AssetManager.UI
 
         private void TogglePrefabPreviewVisibility(int siblingIndex)
         {
+            if (!IsPrefabPreviewVisibilityEnabled(siblingIndex))
+            {
+                return;
+            }
             if (siblingIndex == -1)
             {
                 _avatarContext.BasePrefabHidden = !_avatarContext.BasePrefabHidden;
@@ -129,12 +129,6 @@ namespace Ee4v.AssetManager.UI
         private void RefreshPrefabPreviewVisibilityControls(
             int siblingIndex)
         {
-            var hidden = siblingIndex == -1
-                ? _avatarContext.BasePrefabHidden
-                : _avatarContext.HiddenPrefabSiblingIndices.Contains(siblingIndex);
-            var tooltip = I18N.Get(hidden
-                ? "workflow.assets.clickToShow"
-                : "workflow.assets.clickToHide");
             foreach (var button in this.Query<UiButton>(className:
                          "ee4v-modification-workflow__prefab-preview-visibility")
                      .ToList())
@@ -144,12 +138,50 @@ namespace Ee4v.AssetManager.UI
                 {
                     continue;
                 }
-                button.tooltip = tooltip;
-                button.SetIcon(FluentUiIcons.CreateState(
-                    hidden ? "eye_off.png" : "eye.png",
-                    UiSizeTokens.Size18,
-                    tooltip));
+                UpdatePrefabPreviewVisibilityButton(button, siblingIndex);
             }
+        }
+
+        private UiButton CreateWorkflowPrefabVisibilityButton(
+            int siblingIndex,
+            string className)
+        {
+            var button = CreatePrefabVisibilityButton(
+                true,
+                string.Empty,
+                () => TogglePrefabPreviewVisibility(siblingIndex),
+                className);
+            UpdatePrefabPreviewVisibilityButton(button, siblingIndex);
+            return button;
+        }
+
+        private bool IsPrefabPreviewVisibilityEnabled(int siblingIndex)
+        {
+            var root = _avatarContext.Root;
+            return root != null && (siblingIndex == -1
+                ? root.activeInHierarchy
+                : root.transform.GetChild(siblingIndex).gameObject.activeInHierarchy);
+        }
+
+        private void UpdatePrefabPreviewVisibilityButton(
+            UiButton button,
+            int siblingIndex)
+        {
+            var enabled = IsPrefabPreviewVisibilityEnabled(siblingIndex);
+            var hidden = !enabled || (siblingIndex == -1
+                ? _avatarContext.BasePrefabHidden
+                : _avatarContext.HiddenPrefabSiblingIndices.Contains(siblingIndex));
+            var tooltip = enabled
+                ? I18N.Get(hidden
+                    ? "workflow.assets.clickToShow"
+                    : "workflow.assets.clickToHide")
+                : string.Empty;
+            button.tooltip = tooltip;
+            button.SetEnabled(enabled);
+            button.SetIcon(FluentUiIcons.CreateState(
+                hidden ? "eye_off.png" : "eye.png",
+                UiSizeTokens.Size18,
+                tooltip));
         }
 
         private void RefreshPrefabHeaderActiveSelf(
@@ -304,14 +336,8 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-modification-workflow__prefab-group-actions");
             if (HasMeshInPrefabScope(prefabSiblingIndex))
             {
-                var previewHidden = _avatarContext.HiddenPrefabSiblingIndices.Contains(
-                    prefabSiblingIndex);
-                var previewVisibility = CreatePrefabVisibilityButton(
-                    !previewHidden,
-                    I18N.Get(previewHidden
-                        ? "workflow.assets.clickToShow"
-                        : "workflow.assets.clickToHide"),
-                    () => TogglePrefabPreviewVisibility(prefabSiblingIndex),
+                var previewVisibility = CreateWorkflowPrefabVisibilityButton(
+                    prefabSiblingIndex,
                     "ee4v-modification-workflow__prefab-group-preview-visibility");
                 previewVisibility.userData = prefabSiblingIndex;
                 previewVisibility.AddToClassList(

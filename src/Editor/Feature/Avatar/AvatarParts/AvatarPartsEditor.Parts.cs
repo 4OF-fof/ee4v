@@ -436,8 +436,7 @@ namespace Ee4v.AvatarParts
 
         private void UpdateObjectRow(
             PrefabObjectEntry entry,
-            PrefabObjectRowState state,
-            bool updatePreviewIcon = true)
+            PrefabObjectRowState state)
         {
             var parentHidden = entry.IsActiveSelf &&
                                !entry.ParentActiveInHierarchy;
@@ -457,17 +456,21 @@ namespace Ee4v.AvatarParts
             state.Visibility.tooltip = I18N.Get(entry.IsVisible
                 ? "workflow.objects.turnOff"
                 : "workflow.objects.turnOn");
-            if (!updatePreviewIcon || state.PreviewVisibility == null)
+            if (state.PreviewVisibility == null)
             {
                 return;
             }
-            var previewVisible = !_context.HiddenPreviewParts.Contains(
-                PrefabScenePreview.GetPartKey(
-                    entry.PrefabSiblingIndex, entry.SiblingPath));
-            var previewTooltip = I18N.Get(previewVisible
-                ? "workflow.assets.clickToHide"
-                : "workflow.assets.clickToShow");
+            var previewVisible = entry.IsVisibleInHierarchy &&
+                !_context.HiddenPreviewParts.Contains(
+                    PrefabScenePreview.GetPartKey(
+                        entry.PrefabSiblingIndex, entry.SiblingPath));
+            var previewTooltip = entry.IsVisibleInHierarchy
+                ? I18N.Get(previewVisible
+                    ? "workflow.assets.clickToHide"
+                    : "workflow.assets.clickToShow")
+                : string.Empty;
             state.PreviewVisibility.tooltip = previewTooltip;
+            state.PreviewVisibility.SetEnabled(entry.IsVisibleInHierarchy);
             state.PreviewVisibility.SetIcon(FluentUiIcons.CreateState(
                 previewVisible ? "eye.png" : "eye_off.png",
                 UiSizeTokens.Size18,
@@ -476,6 +479,10 @@ namespace Ee4v.AvatarParts
 
         private void TogglePartPreviewVisibility(PrefabObjectEntry entry)
         {
+            if (!entry.IsVisibleInHierarchy)
+            {
+                return;
+            }
             var key = PrefabScenePreview.GetPartKey(
                 entry.PrefabSiblingIndex, entry.SiblingPath);
             if (!_context.HiddenPreviewParts.Add(key))
@@ -780,6 +787,12 @@ namespace Ee4v.AvatarParts
                     visible);
                 var restoreTags = new List<PartTagChange>();
                 ApplyPartVisibility(_context.Root, pending, restoreTags);
+                if (entry.PrefabSiblingIndex >= 0 &&
+                    entry.SiblingPath.Length == 0)
+                {
+                    _context.RefreshPrefabPreviewVisibilityControls(
+                        entry.PrefabSiblingIndex);
+                }
                 foreach (var tag in restoreTags)
                 {
                     if (tag.Visible)
@@ -816,7 +829,7 @@ namespace Ee4v.AvatarParts
                 entry.ParentActiveInHierarchy && activeSelf;
             if (_objectRows.TryGetValue(entry, out var changedRow))
             {
-                UpdateObjectRow(entry, changedRow, false);
+                UpdateObjectRow(entry, changedRow);
             }
             if (_objectEntriesCache == null ||
                 previousActiveSelf == activeSelf)
@@ -845,7 +858,7 @@ namespace Ee4v.AvatarParts
                     candidate.IsActiveSelf;
                 if (_objectRows.TryGetValue(candidate, out var row))
                 {
-                    UpdateObjectRow(candidate, row, false);
+                    UpdateObjectRow(candidate, row);
                 }
             }
         }

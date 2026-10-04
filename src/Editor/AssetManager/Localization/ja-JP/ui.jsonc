@@ -87,7 +87,7 @@
     "assets": {
       "add": "アセットを追加",
       "base": "ベース",
-      "clickToShow": "プレビューに一時表示",
+      "clickToShow": "プレビューに表示",
       "clickToHide": "プレビューから一時的に隠す",
       "remove": "削除",
       "removeConfirmTitle": "アセットを削除",

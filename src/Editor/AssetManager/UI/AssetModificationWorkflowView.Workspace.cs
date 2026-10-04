@@ -133,12 +133,8 @@ namespace Ee4v.AssetManager.UI
             baseCard.tooltip = I18N.Get("workflow.assets.base");
             if (HasMeshInPrefabScope(-1))
             {
-                var baseVisibility = CreatePrefabVisibilityButton(
-                    !_avatarContext.BasePrefabHidden,
-                    I18N.Get(_avatarContext.BasePrefabHidden
-                        ? "workflow.assets.clickToShow"
-                        : "workflow.assets.clickToHide"),
-                    () => TogglePrefabPreviewVisibility(-1),
+                var baseVisibility = CreateWorkflowPrefabVisibilityButton(
+                    -1,
                     "ee4v-ui-selection-tab-visibility");
                 baseVisibility.userData = -1;
                 baseVisibility.AddToClassList(
