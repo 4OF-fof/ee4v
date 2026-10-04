@@ -14,8 +14,40 @@ namespace Ee4v.AvatarParts
 {
     public sealed partial class AvatarPartsEditor
     {
+        private readonly HashSet<string> _collapsedBodyShapeGroups = new HashSet<string>(StringComparer.Ordinal);
+
+        private VisualElement BuildBodyShapeGroup(string key, string title, out VisualElement content)
+        {
+            var group = new VisualElement();
+            group.AddToClassList("ee4v-body-shape-group");
+            var children = new VisualElement();
+            children.AddToClassList("ee4v-body-shape-group__content");
+            UiButton header = null;
+            void Update()
+            {
+                var collapsed = _collapsedBodyShapeGroups.Contains(key);
+                children.EnableInClassList("ee4v-body-shape-group__content--hidden", collapsed);
+                header.EnableInClassList("ee4v-body-shape-group__header--collapsed", collapsed);
+                header.SetIcon(FluentUiIcons.CreateState(collapsed
+                    ? "chevron_right.png" : "chevron_down.png", UiSizeTokens.Size12));
+            }
+            header = new UiButton(title, () =>
+            {
+                if (!_collapsedBodyShapeGroups.Add(key)) { _collapsedBodyShapeGroups.Remove(key); }
+                Update();
+            }, title, variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SectionTitle);
+            header.AddToClassList("ee4v-body-shape-group__header");
+            header.SetContentAlignment(Justify.FlexStart);
+            group.Add(header);
+            group.Add(children);
+            content = children;
+            Update();
+            return group;
+        }
+
         private VisualElement BuildBodyScaleControls()
         {
+            var blendShapeRenders = new Dictionary<string, List<Action<float>>>(StringComparer.Ordinal);
             var content = new VisualElement();
             content.AddToClassList(
                 "ee4v-modification-workflow__size-content");
@@ -81,6 +113,40 @@ namespace Ee4v.AvatarParts
                 var bodyShapeList = new VisualElement();
                 bodyShapeList.AddToClassList(
                     "ee4v-modification-workflow__size-list");
+                var favoriteGroups = bodyShapes.GroupBy(shape => shape.ShapeName, StringComparer.Ordinal)
+                    .Select(group => group.ToArray()).ToArray();
+                var favoriteKeys = favoriteGroups.Select(group => group.Select(BodyFavoriteKey).ToArray()).ToArray();
+                var favoriteGroup = BuildBodyShapeGroup("favorites", I18N.Get("workflow.favorites.title"), out var favorites);
+                bodyShapeList.Add(favoriteGroup);
+                var favoriteSlots = favoriteGroups.Select(_ => new VisualElement()).ToArray();
+                foreach (var slot in favoriteSlots) { favorites.Add(slot); }
+                void RefreshFavorites()
+                {
+                    var anyFavorites = false;
+                    for (var index = 0; index < favoriteGroups.Length; index++)
+                    {
+                        var selected = favoriteKeys[index].Any(BlendShapeFavorites.Contains);
+                        var slot = favoriteSlots[index];
+                        if (selected && slot.childCount == 0)
+                        {
+                            var definitions = favoriteGroups[index];
+                            slot.Add(definitions.Length == 1
+                                ? BuildBodyBlendShapeControl(definitions[0],
+                                    weight => ApplyBodyBlendShape(definitions[0].RendererPath, definitions[0].ShapeName, weight),
+                                    out _, rendersByChannel: blendShapeRenders)
+                                : BuildGroupedBodyBlendShapeControl(definitions, blendShapeRenders));
+                        }
+                        slot.style.display = selected ? DisplayStyle.Flex : DisplayStyle.None;
+                        anyFavorites |= selected;
+                    }
+                    favoriteGroup.style.display = anyFavorites ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+                content.RegisterCallback<AttachToPanelEvent>(_ =>
+                {
+                    BlendShapeFavorites.Changed += RefreshFavorites;
+                    RefreshFavorites();
+                });
+                content.RegisterCallback<DetachFromPanelEvent>(_ => BlendShapeFavorites.Changed -= RefreshFavorites);
                 foreach (BodyPartCategory category in Enum.GetValues(
                              typeof(BodyPartCategory)))
                 {
@@ -98,16 +164,14 @@ namespace Ee4v.AvatarParts
                         continue;
                     }
 
+                    var categoryContent = new VisualElement();
                     if (!_context.SelectedBodyPart.HasValue &&
                         category != BodyPartCategory.Other)
                     {
-                        var categoryLabel = UiTextFactory.Create(
-                            I18N.Get(GetBodyPartCategoryLocalizationKey(
-                                category)),
-                            UiClassNames.SecondaryText,
-                            "ee4v-modification-workflow__size-group-title");
-                        bodyShapeList.Add(categoryLabel);
+                        bodyShapeList.Add(BuildBodyShapeGroup("category:" + category,
+                            I18N.Get(GetBodyPartCategoryLocalizationKey(category)), out categoryContent));
                     }
+                    else { bodyShapeList.Add(categoryContent); }
                     var shapeGroups = categoryShapes
                         .GroupBy(shape => shape.ShapeName,
                             StringComparer.Ordinal)
@@ -133,13 +197,13 @@ namespace Ee4v.AvatarParts
                                                 groupedShapes[0].Group,
                                                 groupedShapes[0].DisplayName,
                                                 StringComparison.OrdinalIgnoreCase));
+                        var roleContent = new VisualElement();
                         if (hasRoleTitle)
                         {
-                            bodyShapeList.Add(UiTextFactory.Create(
-                                groupedShapes[0].Group,
-                                UiClassNames.SecondaryText,
-                                "ee4v-modification-workflow__size-role-title"));
+                            categoryContent.Add(BuildBodyShapeGroup("role:" + category + ":" + roleGroup.Key,
+                                groupedShapes[0].Group, out roleContent));
                         }
+                        else { categoryContent.Add(roleContent); }
                         foreach (var shapeGroup in roleGroup)
                         {
                             var control = shapeGroup.Shapes.Length == 1
@@ -149,18 +213,14 @@ namespace Ee4v.AvatarParts
                                         shapeGroup.Shapes[0].RendererPath,
                                         shapeGroup.Shapes[0].ShapeName,
                                         weight),
-                                    out _)
+                                    out _, rendersByChannel: blendShapeRenders)
                                 : BuildGroupedBodyBlendShapeControl(
-                                    shapeGroup.Shapes);
-                            if (hasRoleTitle)
-                            {
-                                control.AddToClassList(
-                                    "ee4v-modification-workflow__size-control--child");
-                            }
-                            bodyShapeList.Add(control);
+                                    shapeGroup.Shapes, blendShapeRenders);
+                            roleContent.Add(control);
                         }
                     }
                 }
+                RefreshFavorites();
                 content.Add(bodyShapeList);
             }
 
@@ -568,7 +628,8 @@ namespace Ee4v.AvatarParts
         }
 
         private VisualElement BuildGroupedBodyBlendShapeControl(
-            IReadOnlyList<BodyBlendShapeDefinition> definitions)
+            IReadOnlyList<BodyBlendShapeDefinition> definitions,
+            Dictionary<string, List<Action<float>>> rendersByChannel)
         {
             var group = new VisualElement();
             group.AddToClassList(
@@ -616,6 +677,8 @@ namespace Ee4v.AvatarParts
                 IsBodyBlendShapeGroupSource(definition, source));
             var parentDefinition = new BodyBlendShapeDefinition
             {
+                RendererPath = sourceDefinition?.RendererPath ?? first.RendererPath,
+                ShapeName = first.ShapeName,
                 DisplayName = first.DisplayName,
                 Value = sourceValue,
                 BaseValue = sourceDefinition?.BaseValue ?? first.BaseValue
@@ -633,7 +696,8 @@ namespace Ee4v.AvatarParts
                 },
                 out var renderParent,
                 leading: toggle,
-                labelClicked: ToggleChildren);
+                labelClicked: ToggleChildren,
+                rendersByChannel: rendersByChannel);
             group.Add(parent);
             foreach (var definition in definitions
                          .OrderBy(definition =>
@@ -654,7 +718,8 @@ namespace Ee4v.AvatarParts
                     },
                     out var renderChild,
                     isChild: true,
-                    showRenderer: true);
+                    showRenderer: true,
+                    rendersByChannel: rendersByChannel);
                 child.AddToClassList(
                     "ee4v-modification-workflow__size-control--blendshape-child");
                 children.Add(child);
@@ -672,7 +737,8 @@ namespace Ee4v.AvatarParts
             bool isChild = false,
             VisualElement leading = null,
             Action labelClicked = null,
-            bool showRenderer = false)
+            bool showRenderer = false,
+            Dictionary<string, List<Action<float>>> rendersByChannel = null)
         {
             var label = definition.DisplayName;
             var tooltip = showRenderer
@@ -688,6 +754,37 @@ namespace Ee4v.AvatarParts
                 detail: showRenderer
                     ? definition.RendererName
                     : null);
+            var favoriteKey = BodyFavoriteKey(definition);
+            var selectedFavorite = BlendShapeFavorites.Contains(favoriteKey);
+            UiButton favorite = null;
+            void RefreshFavorite(string changedKey)
+            {
+                if (!string.Equals(changedKey, favoriteKey, StringComparison.Ordinal)) { return; }
+                var selected = BlendShapeFavorites.Contains(favoriteKey);
+                if (selectedFavorite == selected) { return; }
+                selectedFavorite = selected;
+                favorite.SetIcon(AvatarEditingUi.CreateBlendShapeFavoriteIcon(selected));
+                favorite.tooltip = I18N.Get(selected ? "workflow.favorites.remove" : "workflow.favorites.add");
+            }
+            favorite = new UiButton(string.Empty, () =>
+            {
+                BlendShapeFavorites.Toggle(favoriteKey);
+                RefreshFavorite(favoriteKey);
+            }, I18N.Get(selectedFavorite
+                ? "workflow.favorites.remove" : "workflow.favorites.add"),
+                AvatarEditingUi.CreateBlendShapeFavoriteIcon(selectedFavorite), UiButtonVariant.Ghost);
+            if (!isChild)
+            {
+                row.RegisterCallback<AttachToPanelEvent>(_ =>
+                {
+                    BlendShapeFavorites.KeyChanged += RefreshFavorite;
+                    RefreshFavorite(favoriteKey);
+                });
+                row.RegisterCallback<DetachFromPanelEvent>(_ => BlendShapeFavorites.KeyChanged -= RefreshFavorite);
+            }
+            favorite.AddToClassList("ee4v-body-shape-favorite");
+            favorite.style.display = isChild ? DisplayStyle.None : DisplayStyle.Flex;
+            row.Insert(0, favorite);
             var slider = new Slider(
                 MinimumBodyBlendShapeWeight,
                 MaximumBodyBlendShapeWeight);
@@ -712,7 +809,7 @@ namespace Ee4v.AvatarParts
                 Mathf.Round(definition.Value),
                 MinimumBodyBlendShapeWeight,
                 MaximumBodyBlendShapeWeight);
-            void RenderWeight(float weight)
+            void RenderLocalWeight(float weight)
             {
                 var normalized = Mathf.Clamp(
                     Mathf.Round(weight),
@@ -726,6 +823,19 @@ namespace Ee4v.AvatarParts
                     normalized,
                     definition.BaseValue));
                 appliedWeight = normalized;
+                definition.Value = normalized;
+            }
+            var renderKey = definition.RendererPath + "\0" + definition.ShapeName;
+            rendersByChannel = rendersByChannel ?? new Dictionary<string, List<Action<float>>>(StringComparer.Ordinal);
+            if (!rendersByChannel.TryGetValue(renderKey, out var renders))
+            {
+                renders = new List<Action<float>>();
+                rendersByChannel.Add(renderKey, renders);
+            }
+            renders.Add(RenderLocalWeight);
+            void RenderWeight(float weight)
+            {
+                foreach (var update in renders) { update(weight); }
             }
             void SetWeight(float weight)
             {
@@ -761,6 +871,9 @@ namespace Ee4v.AvatarParts
             RenderWeight(definition.Value);
             return row;
         }
+
+        private string BodyFavoriteKey(BodyBlendShapeDefinition definition) =>
+            BlendShapeFavorites.Key(GetBodyBlendShapeRenderer(definition)?.sharedMesh, definition.ShapeName);
 
         private VisualElement CreateSizeControlRow(
             string label,

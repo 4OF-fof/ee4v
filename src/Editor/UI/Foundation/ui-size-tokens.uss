@@ -17,6 +17,7 @@
     --ee4v-size-26: 26px;
     --ee4v-size-28: 28px;
     --ee4v-size-31: 31px;
+    --ee4v-size-32: 32px;
 
     /* Semantic aliases for commonly reused control geometry. */
     --ee4v-control-height-compact: var(--ee4v-size-18);

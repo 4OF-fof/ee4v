@@ -217,12 +217,15 @@ namespace Ee4v.FaceExpression
             var items = BlendShapeRowItem.Create(
                 new[]
                 {
+                    new BlendShapeChannel("Body", "---EYE---", 0f, false, "Eye"),
                     CreateStoryChannel("eye_blink_1", 80f, true),
                     CreateStoryChannel("eye_blink_1_L", 0f, false),
-                    CreateStoryChannel("eye_blink_1_R", 0f, false)
+                    CreateStoryChannel("eye_blink_1_R", 0f, false),
+                    new BlendShapeChannel("Body", "---MOUTH---", 0f, false, "Mouth"),
+                    CreateStoryChannel("mouth_smile", 25f, true)
                 },
                 CreateStoryRule(),
-                true);
+                false);
             foreach (var item in items)
             {
                 var row = new BlendShapeRow();
@@ -338,7 +341,8 @@ namespace Ee4v.FaceExpression
                 value,
                 animated,
                 sourceAssetGuid: "story-fbx",
-                sourceMeshLocalId: 1L);
+                sourceMeshLocalId: 1L,
+                initialValue: 0f);
         }
 
         private static BlendShapeNamingRule CreateStoryRule()

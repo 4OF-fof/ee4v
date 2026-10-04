@@ -103,10 +103,12 @@ namespace Ee4v.AvatarParts
             _advancedBodyScaleExpanded = false;
             _expandedBodyScaleAxes.Clear();
             _expandedBodyBlendShapeGroups.Clear();
+            _collapsedBodyShapeGroups.Clear();
             _baseAvatarViewPosition = null;
             _avatarDescriptor = null;
             _expandedPartPrefabGroups.Clear();
             _expandedObjectGroups.Clear();
+            _expandedAttachments.Clear();
             ClearData();
         }
 

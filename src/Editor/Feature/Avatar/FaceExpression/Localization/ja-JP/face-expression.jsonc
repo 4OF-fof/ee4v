@@ -1,4 +1,24 @@
 {
+  "favorites": { "title": "お気に入り", "add": "お気に入りに追加", "remove": "お気に入りから外す", "removeCurve": "クリップからこのBlendShapeを削除" },
+  "conversion": {
+    "pickerTitle": "変換先のBlendShapeを検索",
+    "pickerSearch": "Renderer名・BlendShape名で検索",
+    "pickerEmpty": "一致するBlendShapeがありません。",
+    "pickerSelect": "選択", "pickerCancel": "キャンセル",
+    "pickerClearSearch": "検索をクリア",
+    "pickerRoot": "アバター直下",
+    "sourceChanged": "元クリップが変更されています。変換画面を開き直してください。",
+    "title": "別アバターの表情を変換",
+    "back": "表情編集へ戻る",
+    "source": "元のBlendShape", "target": "対応先のBlendShape",
+    "duplicate": "対応先が他の行と重複しています。",
+    "unmapped": "対応先を選択",
+    "skip": "設定しない",
+    "save": "変換して別のクリップへ保存",
+    "invalidMapping": "すべての行で対応先または除外を選択してください。対応先の重複はできず、最低1つのカーブが必要です。",
+    "newPathRequired": "既存クリップを上書きできません。新しい保存先を選んでください。",
+    "targetChanged": "アバターの構成が変更されています。変換画面を開き直してください。"
+  },
   "window": {
     "title": "表情エディター"
   },
@@ -74,6 +94,7 @@
   },
   "group": {
     "all": "すべて",
+    "ungrouped": "グループなし",
     "noMeshes": "追加できるメッシュがありません",
     "sectionMeshes": "追加メッシュ",
     "sectionBody": "Body"
@@ -129,6 +150,8 @@
     "blendShapes": "BlendShape がありません。"
   },
   "action": {
+    "resetBlendShape": "リセット",
+    "resetBlendShapeTooltip": "アバターの初期値（{0}%）へ戻す",
     "newClip": "新規表情",
     "copyAndEdit": "コピーして編集",
     "resetView": "表示をリセット",

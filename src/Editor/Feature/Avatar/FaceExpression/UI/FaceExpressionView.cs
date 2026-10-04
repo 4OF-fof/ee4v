@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.Core.I18n;
+using Ee4v.AvatarEditing;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -57,6 +59,9 @@ namespace Ee4v.FaceExpression
         private readonly ScenePreviewViewport _previewViewport;
         private readonly ObjectField _clipField;
         private readonly MessagePanel _validation;
+        private readonly UiButton _convert;
+        private readonly VisualElement _editorContent;
+        private readonly VisualElement _conversionPane;
         private readonly SearchField _search;
         private readonly SectionHeader _sectionHeader;
         private readonly UiButton _backToLibrary;
@@ -70,7 +75,6 @@ namespace Ee4v.FaceExpression
         private readonly UiButton _addPose;
         private readonly Action<AnimationClip, float, Rect> _drawPosePreview;
         private readonly ListView _blendShapeList;
-        private readonly ScrollView _blendShapeScrollView;
         private readonly ScrollView _library;
         private readonly EmptyState _empty;
         private readonly string _defaultSectionTitle;
@@ -92,7 +96,12 @@ namespace Ee4v.FaceExpression
         private readonly string _poseSourceTooltip;
         private string _sectionTitle;
         private List<BlendShapeChannel> _channels = new List<BlendShapeChannel>();
-        private List<BlendShapeRowItem> _visibleItems = new List<BlendShapeRowItem>();
+        private readonly List<BlendShapeRowItem> _visibleItems = new List<BlendShapeRowItem>();
+        private List<BlendShapeRowItem> _groupItems = new List<BlendShapeRowItem>();
+        private List<BlendShapeChannel> _filteredChannels = new List<BlendShapeChannel>();
+        private readonly Dictionary<BlendShapeChannel, string> _favoriteKeys = new Dictionary<BlendShapeChannel, string>();
+        private IVisualElementScheduledItem _favoriteRefresh;
+        private readonly HashSet<string> _collapsedBlendShapeGroups = new HashSet<string>(StringComparer.Ordinal);
         private BlendShapeNamingRule _namingRule;
         private bool _hideHeaders;
         private bool _rendering;
@@ -104,10 +113,6 @@ namespace Ee4v.FaceExpression
         private int _selectedPoseIndex;
         private bool _canAddPose;
         private bool _selectedPoseReadOnly;
-        private int _animationDragPointerId = -1;
-        private bool _animationDragValue;
-        private float _animationDragPointerY;
-        private int _animationDragLastIndex = -1;
 
         public FaceExpressionView(
             FaceExpressionViewText text,
@@ -173,8 +178,16 @@ namespace Ee4v.FaceExpression
                 _previewViewport.Dispose());
             content.Add(_previewViewport);
 
-            var editorPane = new VisualElement();
-            editorPane.AddToClassList("ee4v-face-expression__editor-pane");
+            var rightPane = new VisualElement();
+            rightPane.AddToClassList("ee4v-face-expression__editor-pane");
+            _editorContent = new VisualElement();
+            _editorContent.AddToClassList("ee4v-face-expression__editor-content");
+            var editorPane = _editorContent;
+            rightPane.Add(editorPane);
+            _conversionPane = new VisualElement();
+            _conversionPane.AddToClassList("ee4v-face-expression__conversion-pane");
+            _conversionPane.style.display = DisplayStyle.None;
+            rightPane.Add(_conversionPane);
             _sectionHeader = new SectionHeader(_defaultSectionTitle);
             _sectionHeader.AddToClassList(
                 "ee4v-face-expression__section-header");
@@ -227,6 +240,11 @@ namespace Ee4v.FaceExpression
             _validation = new MessagePanel();
             _validation.AddToClassList("ee4v-face-expression__validation");
             editorPane.Add(_validation);
+            _convert = new UiButton(I18N.Get("conversion.title"), () => ConversionRequested?.Invoke());
+            _convert.AddToClassList("ee4v-face-expression__convert");
+            _convert.style.display = DisplayStyle.None;
+            _validation.DetailsActions.style.display = DisplayStyle.None;
+            _validation.DetailsActions.Add(_convert);
 
             _animationControls = new VisualElement();
             _animationControls.AddToClassList(
@@ -301,38 +319,33 @@ namespace Ee4v.FaceExpression
             editorPane.Add(_search);
             _blendShapeList = new ListView
             {
-                fixedItemHeight = 28f,
+                fixedItemHeight = 36f,
                 virtualizationMethod = CollectionVirtualizationMethod.FixedHeight,
                 selectionType = SelectionType.None,
                 makeItem = CreateBlendShapeRow,
                 bindItem = BindBlendShapeRow
             };
             _blendShapeList.AddToClassList("ee4v-face-expression__blend-shapes");
-            _blendShapeScrollView = _blendShapeList.Q<ScrollView>();
-            if (_blendShapeScrollView != null)
-            {
-                _blendShapeScrollView.verticalScroller.valueChanged += _ =>
-                {
-                    if (_animationDragPointerId >= 0)
-                    {
-                        ApplyAnimationDragAtPointer();
-                    }
-                };
-            }
             editorPane.Add(_blendShapeList);
             _library = new ScrollView(ScrollViewMode.Vertical);
             _library.AddToClassList("ee4v-face-expression__library");
             _library.contentContainer.AddToClassList(
                 "ee4v-face-expression__library-content");
             editorPane.Add(_library);
-            RegisterCallback<PointerMoveEvent>(OnAnimationDragPointerMove);
-            RegisterCallback<PointerUpEvent>(OnAnimationDragPointerUp);
-            RegisterCallback<PointerCaptureOutEvent>(
-                OnAnimationDragPointerCaptureOut);
+            RegisterCallback<AttachToPanelEvent>(_ =>
+            {
+                BlendShapeFavorites.Changed += OnFavoritesChanged;
+                OnFavoritesChanged();
+            });
+            RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                BlendShapeFavorites.Changed -= OnFavoritesChanged;
+                _favoriteRefresh?.Pause();
+            });
             _empty = new EmptyState();
             _empty.AddToClassList("ee4v-face-expression__empty");
             editorPane.Add(_empty);
-            content.Add(editorPane);
+            content.Add(rightPane);
             Add(content);
         }
 
@@ -343,6 +356,29 @@ namespace Ee4v.FaceExpression
         public event Action BackRequested;
         public event Action<string> LibraryFolderRequested;
         public event Action<BlendShapeChannel> ChannelChanged;
+        public event Action ConversionRequested;
+
+        public void SetConversionAvailable(bool available)
+        {
+            _convert.style.display = available ? DisplayStyle.Flex : DisplayStyle.None;
+            _validation.DetailsActions.style.display = available ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        public void ShowConversion(GameObject avatar, AnimationClip source, Action<AnimationClip> saved)
+        {
+            if (avatar == null || source == null) { return; }
+            _conversionPane.Clear();
+            _conversionPane.Add(new ExpressionConversionView(avatar, source, HideConversion, saved));
+            _editorContent.style.display = DisplayStyle.None;
+            _conversionPane.style.display = DisplayStyle.Flex;
+        }
+
+        private void HideConversion()
+        {
+            _conversionPane.Clear();
+            _conversionPane.style.display = DisplayStyle.None;
+            _editorContent.style.display = DisplayStyle.Flex;
+        }
         public event Action<int> PoseSelected;
         public event Action PoseAddRequested;
         public event Action<int> PoseInsertRequested;
@@ -358,6 +394,12 @@ namespace Ee4v.FaceExpression
 
         public void SetAvatar(GameObject avatar)
         {
+            HideConversion();
+            if (_avatarField.value != avatar)
+            {
+                _collapsedBlendShapeGroups.Clear();
+                _favoriteKeys.Clear();
+            }
             _rendering = true;
             _avatarField.SetValueWithoutNotify(avatar);
             _previewViewport.SetPreviewAvailable(avatar != null);
@@ -371,6 +413,7 @@ namespace Ee4v.FaceExpression
 
         public void SetClip(AnimationClip clip)
         {
+            HideConversion();
             _hasClip = clip != null;
             _rendering = true;
             _clipField.SetValueWithoutNotify(clip);
@@ -423,8 +466,9 @@ namespace Ee4v.FaceExpression
             _poseNames = nextPoseNames;
             _selectedPoseIndex = selectedPoseIndex;
             _canAddPose = canAddPose;
+            var editingChanged = _selectedPoseReadOnly != nextSelectedPoseReadOnly;
             _selectedPoseReadOnly = nextSelectedPoseReadOnly;
-            _blendShapeList.SetEnabled(!_selectedPoseReadOnly);
+            if (editingChanged) { _blendShapeList.RefreshItems(); }
             if (sequenceChanged)
             {
                 RebuildPoseSequence();
@@ -769,6 +813,7 @@ namespace Ee4v.FaceExpression
             bool hideHeaders = false)
         {
             _channels = channels?.ToList() ?? new List<BlendShapeChannel>();
+            _favoriteKeys.Clear();
             _namingRule = namingRule;
             _hideHeaders = hideHeaders;
             _sectionTitle = string.IsNullOrEmpty(sectionTitle)
@@ -950,7 +995,12 @@ namespace Ee4v.FaceExpression
 
         private VisualElement CreateBlendShapeRow()
         {
-            var row = new BlendShapeRow();
+            var row = new BlendShapeRow(FavoriteKey);
+            row.GroupToggled += key =>
+            {
+                if (!_collapsedBlendShapeGroups.Add(key)) { _collapsedBlendShapeGroups.Remove(key); }
+                RefreshFavoriteRows();
+            };
             row.Changed += channel =>
             {
                 ChannelChanged?.Invoke(channel);
@@ -958,176 +1008,35 @@ namespace Ee4v.FaceExpression
                 {
                     RefreshFilter();
                 }
+                else { _blendShapeList.RefreshItems(); }
             };
-            row.AnimationDragStarted += BeginAnimationDrag;
-            row.AnimationChanged += ChangeAnimation;
-            return row;
+            var slot = new VisualElement();
+            slot.AddToClassList("ee4v-face-expression-row-slot");
+            slot.Add(row);
+            return slot;
         }
 
-        private void ChangeAnimation(BlendShapeChannel channel, bool animated)
+        private void OnFavoritesChanged()
         {
-            if (SetAnimated(channel, animated))
-            {
-                RefreshAfterAnimationChanges();
-            }
+            if (!_hasClip) { return; }
+            if (_favoriteRefresh == null) { _favoriteRefresh = schedule.Execute(RefreshFavoriteRows); }
+            else { _favoriteRefresh.ExecuteLater(0); }
         }
 
-        private void BeginAnimationDrag(
-            BlendShapeChannel channel,
-            int pointerId,
-            bool value,
-            float pointerY)
+        private void RefreshBlendShapeList()
         {
-            _animationDragPointerId = pointerId;
-            _animationDragValue = value;
-            _animationDragLastIndex = _visibleItems.FindIndex(item =>
-                ReferenceEquals(item.ActiveChannel, channel));
-            _animationDragPointerY = pointerY;
-            this.CapturePointer(pointerId);
-            ApplyAnimationRange(_animationDragLastIndex);
-        }
-
-        private void OnAnimationDragPointerMove(PointerMoveEvent evt)
-        {
-            if (evt.pointerId != _animationDragPointerId ||
-                !this.HasPointerCapture(evt.pointerId))
-            {
-                return;
-            }
-
-            _animationDragPointerY = evt.position.y;
-            ApplyAnimationDragAtPointer();
-            evt.StopPropagation();
-        }
-
-        private void ApplyAnimationDragAtPointer()
-        {
-            if (_animationDragPointerId < 0 ||
-                _visibleItems.Count == 0 ||
-                _blendShapeScrollView == null)
-            {
-                return;
-            }
-
-            var viewport = _blendShapeScrollView.contentViewport.worldBound;
-            var pointerY = Mathf.Clamp(
-                _animationDragPointerY,
-                viewport.yMin,
-                Mathf.Max(viewport.yMin, viewport.yMax - 0.01f));
-            var contentY = _blendShapeScrollView.verticalScroller.value +
-                           pointerY - viewport.yMin;
-            var targetIndex = Mathf.Clamp(
-                Mathf.FloorToInt(contentY / _blendShapeList.fixedItemHeight),
-                0,
-                _visibleItems.Count - 1);
-            ApplyAnimationRange(targetIndex);
-        }
-
-        private void ApplyAnimationRange(int targetIndex)
-        {
-            if (targetIndex < 0)
-            {
-                return;
-            }
-
-            if (_animationDragLastIndex < 0)
-            {
-                _animationDragLastIndex = targetIndex;
-            }
-
-            var firstIndex = Mathf.Min(_animationDragLastIndex, targetIndex);
-            var lastIndex = Mathf.Max(_animationDragLastIndex, targetIndex);
-            var changed = false;
-            for (var index = firstIndex; index <= lastIndex; index++)
-            {
-                changed |= SetAnimated(
-                    _visibleItems[index].ActiveChannel,
-                    _animationDragValue);
-            }
-
-            _animationDragLastIndex = targetIndex;
-            if (changed)
-            {
-                RefreshAfterAnimationChanges();
-            }
-        }
-
-        private bool SetAnimated(BlendShapeChannel channel, bool animated)
-        {
-            if (channel == null ||
-                channel.IsHeader ||
-                channel.Animated == animated)
-            {
-                return false;
-            }
-
-            channel.Animated = animated;
-            ChannelChanged?.Invoke(channel);
-            return true;
-        }
-
-        private void RefreshAfterAnimationChanges()
-        {
-            if (_clipOnly.value)
-            {
-                if (_animationDragPointerId < 0)
-                {
-                    RefreshFilter();
-                    return;
-                }
-            }
-
-            _blendShapeList.RefreshItems();
-        }
-
-        private void OnAnimationDragPointerUp(PointerUpEvent evt)
-        {
-            if (evt.pointerId == _animationDragPointerId)
-            {
-                EndAnimationDrag();
-                evt.StopPropagation();
-            }
-        }
-
-        private void OnAnimationDragPointerCaptureOut(
-            PointerCaptureOutEvent evt)
-        {
-            if (evt.pointerId == _animationDragPointerId)
-            {
-                ApplyAnimationDragAtPointer();
-                _animationDragPointerId = -1;
-                _animationDragLastIndex = -1;
-                CompleteAnimationDrag();
-            }
-        }
-
-        private void EndAnimationDrag()
-        {
-            ApplyAnimationDragAtPointer();
-            var pointerId = _animationDragPointerId;
-            _animationDragPointerId = -1;
-            _animationDragLastIndex = -1;
-            if (pointerId >= 0 && this.HasPointerCapture(pointerId))
-            {
-                this.ReleasePointer(pointerId);
-            }
-
-            CompleteAnimationDrag();
-        }
-
-        private void CompleteAnimationDrag()
-        {
-            if (_clipOnly.value)
-            {
-                RefreshFilter();
-            }
+            if (!ReferenceEquals(_blendShapeList.itemsSource, _visibleItems))
+            { _blendShapeList.itemsSource = _visibleItems; }
+            else { _blendShapeList.RefreshItems(); }
         }
 
         private void BindBlendShapeRow(VisualElement element, int index)
         {
-            if (element is BlendShapeRow row && index >= 0 && index < _visibleItems.Count)
+            var row = element.Q<BlendShapeRow>();
+            if (row != null && index >= 0 && index < _visibleItems.Count)
             {
                 row.SetItem(_visibleItems[index]);
+                row.SetEditingEnabled(!_selectedPoseReadOnly);
             }
         }
 
@@ -1150,8 +1059,7 @@ namespace Ee4v.FaceExpression
             if (!_hasClip)
             {
                 _visibleItems.Clear();
-                _blendShapeList.itemsSource = (IList)_visibleItems;
-                _blendShapeList.Rebuild();
+                RefreshBlendShapeList();
                 _blendShapeList.style.display = DisplayStyle.None;
                 _library.style.display = DisplayStyle.Flex;
                 _empty.style.display = DisplayStyle.None;
@@ -1161,20 +1069,51 @@ namespace Ee4v.FaceExpression
             _library.style.display = DisplayStyle.None;
 
             var query = (_search?.Value ?? string.Empty).Trim();
-            var visibleChannels = string.IsNullOrEmpty(query) && !_clipOnly.value
+            _filteredChannels = string.IsNullOrEmpty(query) && !_clipOnly.value
                 ? _channels.ToList()
                 : FilterWithHeaders(
                     _channels,
                     query,
                     _clipOnly.value);
-            _visibleItems = BlendShapeRowItem.Create(
-                    visibleChannels,
+            _groupItems = BlendShapeRowItem.Create(
+                    _filteredChannels,
                     _namingRule,
                     _hideHeaders,
                     nestSides: !_clipOnly.value)
                 .ToList();
-            _blendShapeList.itemsSource = (IList)_visibleItems;
-            _blendShapeList.Rebuild();
+            RefreshFavoriteRows();
+        }
+
+        private void RefreshFavoriteRows()
+        {
+            if (!_hasClip) { return; }
+            var allItems = new List<BlendShapeRowItem>(_groupItems);
+            var favorites = _filteredChannels.Where(channel => !channel.IsHeader &&
+                BlendShapeFavorites.Contains(FavoriteKey(channel))).ToArray();
+            if (favorites.Length > 0)
+            {
+                var pinned = BlendShapeRowItem.Create(new[] { new BlendShapeChannel(string.Empty, string.Empty,
+                    0, false, I18N.Get("favorites.title")) }.Concat(favorites).ToArray(), _namingRule, false, nestSides: false);
+                allItems.InsertRange(0, pinned);
+            }
+            _visibleItems.Clear();
+            BlendShapeRowItem groupHeader = null;
+            for (var index = 0; index < allItems.Count; index++)
+            {
+                var item = allItems[index];
+                if (item.IsHeader)
+                {
+                    groupHeader = item;
+                    item.GroupKey = item.Header.RendererPath + "\n" + item.Header.Name + "\n" +
+                        item.Header.DisplayHeaderText + "\n" + _channels.IndexOf(item.Header);
+                    item.IsCollapsed = _collapsedBlendShapeGroups.Contains(item.GroupKey);
+                    item.IsGroupEnd = item.IsCollapsed || index == allItems.Count - 1 || allItems[index + 1].IsHeader ||
+                        !allItems[index + 1].IsGrouped;
+                }
+                else if (!item.IsGrouped) { groupHeader = null; }
+                if (item.IsHeader || groupHeader?.IsCollapsed != true) { _visibleItems.Add(item); }
+            }
+            RefreshBlendShapeList();
             var hasItems = _visibleItems.Count > 0;
             _blendShapeList.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
             _empty.SetState(new EmptyStateState(
@@ -1236,6 +1175,17 @@ namespace Ee4v.FaceExpression
 
             return result;
         }
+
+        private string FavoriteKey(BlendShapeChannel channel)
+        {
+            var avatar = _avatarField.value as GameObject;
+            if (channel == null || avatar == null) { return null; }
+            if (_favoriteKeys.TryGetValue(channel, out var key)) { return key; }
+            var target = string.IsNullOrEmpty(channel.RendererPath) ? avatar.transform : avatar.transform.Find(channel.RendererPath);
+            key = BlendShapeFavorites.Key(target?.GetComponent<SkinnedMeshRenderer>()?.sharedMesh, channel.Name);
+            _favoriteKeys.Add(channel, key);
+            return key;
+        }
     }
 
     internal sealed class BlendShapeRowItem
@@ -1268,6 +1218,10 @@ namespace Ee4v.FaceExpression
         internal string DisplayName { get; }
         internal BlendShapeChannel ActiveChannel { get; }
         internal bool IsChild { get; }
+        internal bool IsGrouped { get; private set; }
+        internal bool IsGroupEnd { get; set; }
+        internal string GroupKey { get; set; }
+        internal bool IsCollapsed { get; set; }
         internal string Tooltip => IsHeader
             ? Header.DisplayHeaderText
             : ActiveChannel.DisplayName;
@@ -1303,6 +1257,38 @@ namespace Ee4v.FaceExpression
             }
 
             AppendSegment(result, segment, namingRule, nestSides);
+
+            BlendShapeRowItem header = null;
+            BlendShapeRowItem previous = null;
+            foreach (var item in result)
+            {
+                if (item.IsHeader || (header != null && !string.IsNullOrEmpty(header.Header.Name) &&
+                    item.ActiveChannel.RendererPath != header.Header.RendererPath))
+                {
+                    if (previous?.IsGrouped == true) { previous.IsGroupEnd = true; }
+                    header = item.IsHeader ? item : null;
+                }
+                item.IsGrouped = header != null;
+                previous = item;
+            }
+            if (previous?.IsGrouped == true) { previous.IsGroupEnd = true; }
+
+            if (!hideHeaders)
+            {
+                var ungrouped = result.Where(item => !item.IsGrouped).ToArray();
+                if (ungrouped.Length > 0)
+                {
+                    result.RemoveAll(item => !item.IsGrouped);
+                    result.Add(new BlendShapeRowItem(new BlendShapeChannel(string.Empty, string.Empty,
+                        0f, false, I18N.Get("group.ungrouped")), null) { IsGrouped = true });
+                    foreach (var item in ungrouped)
+                    {
+                        item.IsGrouped = true;
+                        result.Add(item);
+                    }
+                    ungrouped[ungrouped.Length - 1].IsGroupEnd = true;
+                }
+            }
 
             return result;
         }
@@ -1489,32 +1475,57 @@ namespace Ee4v.FaceExpression
 
     internal sealed class BlendShapeRow : VisualElement
     {
-        private readonly Toggle _toggle;
+        private readonly UiButton _favorite;
+        private readonly UiButton _groupToggle;
+        private readonly Func<BlendShapeChannel, string> _favoriteKey;
         private readonly UiTextElement _name;
         private readonly VisualElement _controls;
         private readonly Slider _slider;
         private readonly FloatField _value;
+        private readonly UiButton _reset;
         private BlendShapeRowItem _item;
         private bool _rendering;
+        private bool _editingEnabled = true;
 
-        public BlendShapeRow()
+        public BlendShapeRow(Func<BlendShapeChannel, string> favoriteKey = null)
         {
+            _favoriteKey = favoriteKey ?? (channel => string.IsNullOrEmpty(channel?.SourceAssetGuid) ? null
+                : BlendShapeFavorites.Key(channel.SourceAssetGuid, channel.SourceMeshLocalId, channel.Name));
             AddToClassList("ee4v-face-expression-row");
-            _toggle = UiTextFactory.CreateToggle();
-            _toggle.AddToClassList(
-                "ee4v-face-expression-row__animation-toggle");
-            _toggle.RegisterValueChangedCallback(evt =>
+            _groupToggle = new UiButton(string.Empty, () =>
+            {
+                if (_item?.IsHeader == true && _item.GroupKey != null) { GroupToggled?.Invoke(_item.GroupKey); }
+            }, variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SectionTitle);
+            _groupToggle.AddToClassList("ee4v-face-expression-row__group-toggle");
+            _groupToggle.SetContentAlignment(Justify.FlexStart);
+            Add(_groupToggle);
+            _favorite = new UiButton(string.Empty, () =>
             {
                 var channel = _item?.ActiveChannel;
-                if (!_rendering && channel != null)
+                if (_editingEnabled && channel != null)
                 {
-                    AnimationChanged?.Invoke(channel, evt.newValue);
+                    BlendShapeFavorites.Toggle(_favoriteKey(channel));
+                    if (panel == null) { RefreshFavoriteIcon(); }
                 }
+            }, icon: AvatarEditingUi.CreateBlendShapeFavoriteIcon(false), variant: UiButtonVariant.Ghost);
+            _favorite.AddToClassList("ee4v-face-expression-row__favorite");
+            Add(_favorite);
+            RegisterCallback<AttachToPanelEvent>(_ => BlendShapeFavorites.KeyChanged += OnFavoriteKeyChanged);
+            RegisterCallback<DetachFromPanelEvent>(_ => BlendShapeFavorites.KeyChanged -= OnFavoriteKeyChanged);
+            RegisterCallback<ContextClickEvent>(evt =>
+            {
+                var channel = _item?.ActiveChannel;
+                if (!_editingEnabled || channel?.Animated != true) { return; }
+                var menu = new GenericMenu();
+                menu.AddItem(UiTextFactory.CreateGuiContent(I18N.Get("favorites.removeCurve")), false, () =>
+                {
+                    channel.Animated = false;
+                    channel.Value = channel.InitialValue;
+                    Changed?.Invoke(channel);
+                });
+                menu.ShowAsContext();
+                evt.StopPropagation();
             });
-            RegisterCallback<PointerDownEvent>(
-                OnTogglePointerDown,
-                TrickleDown.TrickleDown);
-            Add(_toggle);
             _name = UiTextFactory.Create(string.Empty, "ee4v-face-expression-row__name");
             Add(_name);
             _controls = new VisualElement();
@@ -1528,24 +1539,48 @@ namespace Ee4v.FaceExpression
             _value.AddToClassList("ee4v-face-expression-row__value");
             _value.RegisterValueChangedCallback(evt => SetValue(evt.newValue));
             _controls.Add(_value);
+            _reset = new UiButton(I18N.Get("action.resetBlendShape"),
+                () =>
+                {
+                    var channel = _item?.ActiveChannel;
+                    if (channel != null) { SetValue(channel.InitialValue); }
+                }, variant: UiButtonVariant.Ghost);
+            _reset.AddToClassList("ee4v-face-expression-row__reset");
+            _controls.Add(_reset);
         }
 
         public event Action<BlendShapeChannel> Changed;
-        public event Action<BlendShapeChannel, bool> AnimationChanged;
-        public event Action<BlendShapeChannel, int, bool, float>
-            AnimationDragStarted;
+        public event Action<string> GroupToggled;
+
+        public void SetEditingEnabled(bool enabled)
+        {
+            _editingEnabled = enabled;
+            _controls.SetEnabled(enabled);
+            _favorite.SetEnabled(enabled && _favoriteKey(_item?.ActiveChannel) != null);
+        }
 
         public void SetItem(BlendShapeRowItem item)
         {
             _item = item;
             var isHeader = item?.IsHeader == true;
             EnableInClassList("ee4v-face-expression-row--header", isHeader);
+            EnableInClassList("ee4v-face-expression-row--grouped", item?.IsGrouped == true);
+            EnableInClassList("ee4v-face-expression-row--group-end", item?.IsGroupEnd == true);
             EnableInClassList(
                 "ee4v-face-expression-row--child",
                 item?.IsChild == true);
             _name.SetText(item?.DisplayName ?? string.Empty);
             _name.tooltip = item?.Tooltip ?? string.Empty;
-            _toggle.style.display = isHeader ? DisplayStyle.None : DisplayStyle.Flex;
+            _name.style.display = isHeader ? DisplayStyle.None : DisplayStyle.Flex;
+            _groupToggle.style.display = isHeader ? DisplayStyle.Flex : DisplayStyle.None;
+            if (isHeader)
+            {
+                _groupToggle.SetLabel(item.DisplayName);
+                _groupToggle.SetIcon(FluentUiIcons.CreateState(item.IsCollapsed
+                    ? "chevron_right.png" : "chevron_down.png", UiSizeTokens.Size12));
+                _groupToggle.tooltip = item.Tooltip;
+            }
+            _favorite.style.display = isHeader || item?.IsChild == true ? DisplayStyle.None : DisplayStyle.Flex;
             _controls.style.display = isHeader ? DisplayStyle.None : DisplayStyle.Flex;
             RefreshControls();
         }
@@ -1554,38 +1589,39 @@ namespace Ee4v.FaceExpression
         {
             var channel = _item?.ActiveChannel;
             _rendering = true;
-            _toggle.SetValueWithoutNotify(channel?.Animated == true);
+            var key = _favoriteKey(channel);
+            _favorite.SetEnabled(_editingEnabled && key != null);
+            RefreshFavoriteIcon();
             _slider.SetValueWithoutNotify(channel?.Value ?? 0f);
             _value.SetValueWithoutNotify(channel?.Value ?? 0f);
+            RefreshReset(channel);
             _rendering = false;
         }
 
-        private void OnTogglePointerDown(PointerDownEvent evt)
+        private void OnFavoriteKeyChanged(string key)
         {
-            if (evt.button != (int)MouseButton.LeftMouse ||
-                _item?.ActiveChannel == null ||
-                _item.IsHeader ||
-                !(evt.target is VisualElement target) ||
-                !_toggle.Contains(target))
-            {
-                return;
-            }
+            if (string.Equals(_favoriteKey(_item?.ActiveChannel), key, StringComparison.Ordinal)) { RefreshFavoriteIcon(); }
+        }
 
-            _toggle.Focus();
-            var channel = _item.ActiveChannel;
-            AnimationDragStarted?.Invoke(
-                channel,
-                evt.pointerId,
-                !channel.Animated,
-                evt.position.y);
-            evt.PreventDefault();
-            evt.StopPropagation();
+        private void RefreshFavoriteIcon()
+        {
+            var key = _favoriteKey(_item?.ActiveChannel);
+            var favorite = BlendShapeFavorites.Contains(key);
+            _favorite.SetIcon(AvatarEditingUi.CreateBlendShapeFavoriteIcon(favorite));
+            _favorite.tooltip = I18N.Get(favorite ? "favorites.remove" : "favorites.add");
+        }
+
+        private void RefreshReset(BlendShapeChannel channel)
+        {
+            _reset.SetEnabled(channel != null && !Mathf.Approximately(channel.Value, channel.InitialValue));
+            _reset.tooltip = channel == null ? string.Empty
+                : I18N.Get("action.resetBlendShapeTooltip", channel.InitialValue);
         }
 
         private void SetValue(float value)
         {
             var channel = _item?.ActiveChannel;
-            if (_rendering || channel == null)
+            if (!_editingEnabled || _rendering || channel == null)
             {
                 return;
             }
@@ -1598,9 +1634,9 @@ namespace Ee4v.FaceExpression
             _rendering = true;
             channel.Value = value;
             channel.Animated = true;
-            _toggle.SetValueWithoutNotify(channel.Animated);
             _slider.SetValueWithoutNotify(channel.Value);
             _value.SetValueWithoutNotify(channel.Value);
+            RefreshReset(channel);
             _rendering = false;
             Changed?.Invoke(channel);
         }

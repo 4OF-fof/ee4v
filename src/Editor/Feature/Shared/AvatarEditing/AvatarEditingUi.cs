@@ -6,6 +6,14 @@ namespace Ee4v.AvatarEditing
 {
     public static class AvatarEditingUi
     {
+        public static IconState CreateBlendShapeFavoriteIcon(bool selected)
+        {
+            return FluentUiIcons.CreateState(selected ? "star_20.png" : "star_regular_20.png",
+                UiSizeTokens.Size12, tintColor: selected
+                    ? new UnityEngine.Color32(255, 205, 64, 255)
+                    : UiColorTokens.TextPrimary);
+        }
+
         public static void AddFeedback(AvatarEditingContext context, VisualElement panel)
         {
             if (string.IsNullOrWhiteSpace(context.Feedback))

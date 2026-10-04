@@ -61,14 +61,30 @@
 }
 
 .ee4v-ui-message-panel__details {
+    flex-grow: 1;
+    flex-basis: 0;
     max-height: 144px;
     min-width: 0;
+}
+
+.ee4v-ui-message-panel__detail {
+    margin-bottom: var(--ee4v-space-xs);
+}
+
+.ee4v-ui-message-panel__details-row {
+    min-width: 0;
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-ui-message-panel__details-row--with-details {
     margin-top: var(--ee4v-space-md);
     padding-top: var(--ee4v-space-sm);
     border-top-width: var(--ee4v-border-hairline);
     border-top-color: var(--ee4v-color-border-subtle);
 }
 
-.ee4v-ui-message-panel__detail {
-    margin-bottom: var(--ee4v-space-xs);
+.ee4v-ui-message-panel__details-actions {
+    flex-shrink: 0;
+    align-self: center;
 }

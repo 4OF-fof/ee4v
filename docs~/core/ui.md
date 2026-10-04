@@ -35,7 +35,7 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 
 - `Badge`は件数や短い分類値を中立表示し、任意の`UiStatusTone`で処理状態も表示します。
 - `EmptyState`は薄い枠面で空領域を示し、対象がない理由と次の操作を中央へ表示します。操作要素自体は利用側が`Actions`へ追加します。
-- `MessagePanel`はエラー・警告・案内を表示する共通パネルです。`MessagePanelState`で見出し、説明、`MessageSeverity`と任意の対象一覧を渡します。共通の文字・余白・角丸・意味別の色と小型Fluentアイコンを使用し、長文は折り返し、多数の対象は高さ144px以内の一覧で縦スクロールします。説明だけの通知ではアイコンと本文を縦中央へ揃え、本文はアイコンと同じ最小高さを確保します。空のstateでは非表示になります。検証や翻訳は利用側が担当し、Catalogの`Displays`へ登録します。
+- `MessagePanel`はエラー・警告・案内を表示する共通パネルです。`MessagePanelState`で見出し、説明、`MessageSeverity`と任意の対象一覧を渡します。共通の文字・余白・角丸・意味別の色と小型Fluentアイコンを使用し、長文は折り返し、多数の対象は高さ144px以内の一覧で縦スクロールします。`Actions`には通知本文の末尾へ、`DetailsActions`には対象一覧の右側へボタンなどを配置でき、stateの更新でも保持します。右側の操作欄は縦中央に揃え、対象一覧が残りの幅を使用します。対象一覧がある場合は説明との区切り線を操作欄まで含めた全幅へ表示し、対象一覧がない場合は区切り線とその余白を表示しません。利用側が操作欄の表示条件と余白を管理します。説明だけの通知ではアイコンと本文を縦中央へ揃え、本文はアイコンと同じ最小高さを確保します。空のstateでは非表示になります。検証や翻訳は利用側が担当し、Catalogの`Displays`へ登録します。
 - `StatusOverlay`はspinnerと状態メッセージを表示する小型パネルです。バックグラウンド処理ではウィンドウ右下へ重ね、統合ee4vの変更破棄では再読み込み完了まで画面中央へ表示します。配置と操作の抑止は使用側が制御します。
 - `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンと`InputGroup`の開閉chevronにはFluent UI System Iconsを使用します。組み込みアイコンはUnityのFolder、Scene、GameObject、Model FileとHierarchyの非表示操作に限定します。Fluent画像が読み込めない場合は組み込みアイコンへ代替せず非表示にします。
 - `PrefabThumbnail`はUnityのAssetPreviewを表示し、読み込み中はMiniThumbnailを表示します。取得の再試行は表示中だけ行います。
@@ -87,7 +87,7 @@ Fluent UIのPNGは`FluentUiIconPostprocessor`でGUI用Textureとして取り込�
 
 ## `CustomPopup`
 
-`CustomPopup`は`c31a22adf8a49e6fc91addde1febed94a98ea85b`の`old/Editor/Core/UI/Window/BaseWindow.cs`を基準にしたpopup外枠です。同じ`old`配下の`FolderStyleSelectorWindow`などが使用していた操作を移植し、外観は共通トークンを使う単純なパネルへ変更しています。外枠は1pxとし、HeaderとFooterは本文との面の濃度差と境界線で区切ります。現行の`UiTextFactory`、`FluentUiIcons`、`EditorPopupApi`へ接続し、画面内への位置補正とUnity標準Pickerのfocus処理を加えています。popup用Windowは`CustomPopupWindow`を継承し、`ShowAsPopup`で表示して`SetPopup(CustomPopup)`で外枠を設定します。
+`CustomPopup`は共通トークンを使うpopup外枠です。外枠は1pxとし、HeaderとFooterは本文との面の濃度差と境界線で区切ります。タイトルは`UiTextFactory`と`UiClassNames.SectionTitle`を使用して、共通の太字見出しとして描画します。`FluentUiIcons`と`EditorPopupApi`を使用し、画面内への位置補正とUnity標準Pickerのfocus処理を行います。popup用Windowは`CustomPopupWindow`を継承し、`ShowAsPopup`で表示して`SetPopup(CustomPopup)`で外枠を設定します。
 
 Footerに並ぶボタンの間隔は共通スタイルで12px確保します。
 

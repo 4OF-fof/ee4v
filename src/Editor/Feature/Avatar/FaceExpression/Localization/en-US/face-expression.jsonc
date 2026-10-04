@@ -1,4 +1,24 @@
 {
+  "favorites": { "title": "Favorites", "add": "Add to favorites", "remove": "Remove from favorites", "removeCurve": "Remove this BlendShape from the clip" },
+  "conversion": {
+    "pickerTitle": "Find a target BlendShape",
+    "pickerSearch": "Search Renderer or BlendShape names",
+    "pickerEmpty": "No matching BlendShapes.",
+    "pickerSelect": "Select", "pickerCancel": "Cancel",
+    "pickerClearSearch": "Clear search",
+    "pickerRoot": "Avatar root",
+    "sourceChanged": "The source clip has changed. Reopen the conversion screen.",
+    "title": "Convert expression for this avatar",
+    "back": "Back to expression editing",
+    "source": "Source BlendShape", "target": "Target BlendShape",
+    "duplicate": "Another row uses the same target.",
+    "unmapped": "Select a target",
+    "skip": "No target",
+    "save": "Convert and save a new clip",
+    "invalidMapping": "Map or exclude every row. Targets must be unique and at least one curve is required.",
+    "newPathRequired": "Existing clips cannot be overwritten. Select a new path.",
+    "targetChanged": "The avatar has changed. Reopen the conversion screen."
+  },
   "window": {
     "title": "Face Expression Editor"
   },
@@ -74,6 +94,7 @@
   },
   "group": {
     "all": "All",
+    "ungrouped": "Ungrouped",
     "noMeshes": "No meshes are available to add",
     "sectionMeshes": "Added meshes",
     "sectionBody": "Body"
@@ -129,6 +150,8 @@
     "blendShapes": "No BlendShapes were found."
   },
   "action": {
+    "resetBlendShape": "Reset",
+    "resetBlendShapeTooltip": "Restore the avatar's initial value ({0}%)",
     "newClip": "New expression",
     "copyAndEdit": "Copy and edit",
     "resetView": "Reset view",

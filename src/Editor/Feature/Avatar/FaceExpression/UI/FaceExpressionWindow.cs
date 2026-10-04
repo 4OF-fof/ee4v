@@ -232,6 +232,18 @@ namespace Ee4v.FaceExpression
             _view.ClipChanged += SetClip;
             _view.NewClipRequested += CreateClip;
             _view.CopyClipRequested += CopyClip;
+            _view.ConversionRequested += () =>
+            {
+                StopPlayback();
+                var targetAvatar = _avatar;
+                var sourceClip = _clip;
+                _view.ShowConversion(targetAvatar, sourceClip, converted =>
+                {
+                    if (_disposed || _avatar != targetAvatar || _clip != sourceClip) { return; }
+                    RenderLibrary();
+                    SetClip(converted);
+                });
+            };
             _view.BackRequested += GoBack;
             _view.LibraryFolderRequested += OpenLibraryFolder;
             _view.ChannelChanged += ChangeChannel;
@@ -711,11 +723,13 @@ namespace Ee4v.FaceExpression
 
             if (_avatar == null || _clip == null)
             {
+                _view.SetConversionAvailable(false);
                 _view.SetValidation(null);
                 return;
             }
 
             var findings = FaceExpressionApi.ValidateClip(_avatar, _clip);
+            _view.SetConversionAvailable(findings.Any(finding => finding.Code == "binding_not_found"));
             if (findings.Count == 0)
             {
                 _view.SetValidation(null);

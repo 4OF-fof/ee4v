@@ -49,6 +49,16 @@ namespace Ee4v.AvatarParts
                 displayed = FilterPrefabObjectsByBodyPart(
                     entries, _context.SelectedBodyPart.Value);
             }
+            if (_context.SelectedPrefabSiblingIndex is int attachmentIndex && attachmentIndex >= 0 &&
+                _context.Root != null && attachmentIndex < _context.Root.transform.childCount)
+            {
+                var attachments = new VisualElement();
+                attachments.AddToClassList("ee4v-part-attachments-section");
+                attachments.Add(UiTextFactory.Create(I18N.Get("workflow.attachment.title"), UiClassNames.SectionTitle,
+                    "ee4v-part-attachments-section__title"));
+                attachments.Add(BuildAttachmentControls(attachmentIndex));
+                panel.Add(attachments);
+            }
             if (displayed.Count == 0)
             {
                 panel.Add(UiTextFactory.CreateHelpBox(

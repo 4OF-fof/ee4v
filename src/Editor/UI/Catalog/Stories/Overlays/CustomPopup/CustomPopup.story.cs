@@ -30,6 +30,7 @@ namespace Ee4v.UI
                         "Editor/AssetManager/UI/AssetManagerView.cs",
                         "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs",
                         "Editor/Feature/Avatar/PlayModeComponentSuppression/ComponentTypePickerWindow.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/ExpressionTargetPickerWindow.cs",
                         "Editor/Feature/Shared/ItemStyle/ItemStyleWindow.cs"
                     }));
             }

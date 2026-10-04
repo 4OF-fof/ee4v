@@ -1,5 +1,18 @@
 {
   "workflow": {
+    "favorites": { "title": "Favorites", "add": "Add to favorites", "remove": "Remove from favorites" },
+    "attachment": {
+      "title": "Bone settings",
+      "mergeTitle": "Merge Armature", "mergeSource": "Source armature", "mergeTarget": "Target armature",
+      "proxy": "Bone Proxy",
+      "missing": "No attachment settings", "unassigned": "No target assigned",
+      "addMerge": "Add Merge Armature", "addProxy": "Add Bone Proxy",
+      "target": "Attachment target", "mode": "Position and rotation mode", "matchScale": "Match target scale",
+      "undo": "Configure part attachment",
+      "mergeRecommended": "This part has an armature. Merge Armature will be used. Check the target armature.",
+      "proxyRecommended": "This part has no armature to merge. Bone Proxy will be used. Check the target bone. World position and rotation are preserved.",
+      "invalidTarget": "Select a target within this avatar and outside this part."
+    },
     "appearance": {
       "sizeHumanoidRequired": "A Humanoid Animator is required for advanced skeleton scaling. Height and appearance BlendShapes remain available.",
       "heightDescriptorRequired": "A VRC Avatar Descriptor with a valid View Position is required to read the upload-time avatar height.",

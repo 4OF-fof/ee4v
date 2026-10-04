@@ -53,6 +53,9 @@ search
 search_16
 star
 star_16
+star_20
+star_regular_16
+star_regular_20
 subtract
 subtract_12
 subtract_16

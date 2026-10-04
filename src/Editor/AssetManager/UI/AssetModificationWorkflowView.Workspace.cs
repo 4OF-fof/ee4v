@@ -745,9 +745,9 @@ namespace Ee4v.AssetManager.UI
                 prefab =>
                 {
                     if (prefab == null) { return; }
-                    Selection.activeGameObject = prefab;
-                    EditorGUIUtility.PingObject(prefab);
-                    EditorUtility.OpenPropertyEditor(prefab);
+                    SelectPrefabCard(prefab.transform.GetSiblingIndex(), prefab.name);
+                    _parts.Section = ShapePartsSection.Parts;
+                    ShowCategory(WorkflowCategory.ShapeParts, false);
                 }, AvatarInfoEditing.CreateOptions(_avatarContext),
                 AvatarInfoSdk.Provider?.ReadParameterMemory(_avatarContext.Root),
                 AvatarBuildSizeCache.Get(_avatarContext.Root, _overviewMobile));

@@ -594,14 +594,13 @@ namespace Ee4v.UI
             HeaderLeading.style.alignItems = Align.Center;
             _title = UiTextFactory.Create(
                 title ?? string.Empty,
+                UiClassNames.SectionTitle,
                 TitleClassName);
             _title.tooltip = titleTooltip ?? string.Empty;
             _title.style.flexGrow = 1f;
             _title.style.flexShrink = 1f;
             _title.style.marginLeft = 8f;
             _title.style.marginRight = 4f;
-            _title.style.fontSize = 14f;
-            _title.style.unityFontStyleAndWeight = FontStyle.Bold;
             _title.style.overflow = Overflow.Hidden;
             _title.style.textOverflow = TextOverflow.Ellipsis;
             _title.SetWhiteSpace(WhiteSpace.NoWrap);

@@ -36,6 +36,7 @@ namespace Ee4v.UI
         private const string RootClassName = "ee4v-ui-message-panel";
         private readonly Icon _icon;
         private readonly ScrollView _details;
+        private readonly VisualElement _detailsRow;
 
         public MessagePanel(MessagePanelState state = null)
         {
@@ -58,7 +59,16 @@ namespace Ee4v.UI
             _details.AddToClassList(RootClassName + "__details");
             content.Add(TitleText);
             content.Add(MessageText);
-            content.Add(_details);
+            _detailsRow = new VisualElement();
+            _detailsRow.AddToClassList(RootClassName + "__details-row");
+            _detailsRow.Add(_details);
+            DetailsActions = new VisualElement();
+            DetailsActions.AddToClassList(RootClassName + "__details-actions");
+            _detailsRow.Add(DetailsActions);
+            content.Add(_detailsRow);
+            Actions = new VisualElement();
+            Actions.AddToClassList(RootClassName + "__actions");
+            content.Add(Actions);
             Add(_icon);
             Add(content);
             SetState(state);
@@ -66,6 +76,8 @@ namespace Ee4v.UI
 
         public UiTextElement TitleText { get; }
         public UiTextElement MessageText { get; }
+        public VisualElement Actions { get; }
+        public VisualElement DetailsActions { get; }
 
         public void SetState(MessagePanelState state)
         {
@@ -93,6 +105,7 @@ namespace Ee4v.UI
                 _details.Add(text);
             }
             _details.style.display = state.Details.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            _detailsRow.EnableInClassList(RootClassName + "__details-row--with-details", state.Details.Count > 0);
             _details.scrollOffset = Vector2.zero;
             style.display = hasTitle || hasMessage || state.Details.Count > 0
                 ? DisplayStyle.Flex : DisplayStyle.None;
