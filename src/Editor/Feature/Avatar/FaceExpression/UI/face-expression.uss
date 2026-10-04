@@ -26,7 +26,9 @@
     flex-basis: auto;
     flex-shrink: 0;
     margin-right: 0;
-    margin-bottom: var(--ee4v-space-xs);
+    margin-bottom: var(--ee4v-space-none);
+    padding-top: var(--ee4v-space-sm);
+    padding-bottom: var(--ee4v-space-sm);
 }
 
 .ee4v-face-expression__clip-field > .ee4v-ui-form-input__label {
@@ -176,7 +178,7 @@
 .ee4v-face-expression__library {
     flex-grow: 1;
     min-height: 0;
-    margin-top: var(--ee4v-space-sm);
+    margin-top: var(--ee4v-space-none);
     margin-left: var(--ee4v-space-xs);
     margin-right: var(--ee4v-space-xs);
 }
