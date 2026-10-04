@@ -33,6 +33,7 @@ namespace Ee4v.AvatarEditing
         protected abstract void ClearFeatureData();
         protected abstract void DisposeFeature();
         protected virtual bool FlushFeatureChanges() => true;
+        protected virtual bool PrepareFeatureSave() => true;
         protected virtual void CancelFeatureChanges() { }
         protected virtual void CreateMaterialVariant(Material material) { }
         protected virtual void SelectPreview(string partKey, Material material) { }
@@ -250,7 +251,8 @@ namespace Ee4v.AvatarEditing
 
         public override void SaveChanges()
         {
-            if (!ShowsSaveButton || !CanEditPrefab() || !FlushFeatureChanges()) return;
+            if (!ShowsSaveButton || !CanEditPrefab() || !FlushFeatureChanges() ||
+                !PrepareFeatureSave()) return;
             try
             {
                 // Commit delayed Undo records before clearing the saved state.

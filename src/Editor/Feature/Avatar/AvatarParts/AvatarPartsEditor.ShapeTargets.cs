@@ -31,11 +31,19 @@ namespace Ee4v.AvatarParts
                 return _bodyBlendShapesCache;
             }
 
+            _bodyBlendShapesCache = ReadBodyBlendShapes(false);
+            return _bodyBlendShapesCache;
+        }
+
+        private IReadOnlyList<BodyBlendShapeDefinition> ReadBodyBlendShapes(
+            bool includeAllPrefabs)
+        {
             var renderers = _context.Root
                 .GetComponentsInChildren<SkinnedMeshRenderer>(true)
                 .Where(renderer =>
                     renderer != null &&
-                    _context.IsInSelectedPrefabScope(renderer.transform) &&
+                    (includeAllPrefabs ||
+                     _context.IsInSelectedPrefabScope(renderer.transform)) &&
                     renderer.sharedMesh != null &&
                     renderer.sharedMesh.blendShapeCount > 0)
                 .ToArray();
@@ -124,8 +132,7 @@ namespace Ee4v.AvatarParts
                 }
             }
             AddSyncedBodyBlendShapes(result);
-            _bodyBlendShapesCache = result;
-            return _bodyBlendShapesCache;
+            return result;
         }
 
         private void AddSyncedBodyBlendShapes(

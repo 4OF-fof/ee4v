@@ -64,7 +64,6 @@ namespace Ee4v.AvatarParts
             }
 
             var allBodyShapes = GetBodyBlendShapes();
-            EnsureBodyBlendShapeSyncBindings(allBodyShapes);
             var bodyShapes = allBodyShapes
                 .Where(definition =>
                     MatchesSelectedBodyPart(definition.Category))

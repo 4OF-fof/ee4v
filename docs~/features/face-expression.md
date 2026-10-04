@@ -6,6 +6,8 @@
 
 単独Windowの上部にはアバター入力欄を置き、表情Clip入力欄は右側の表情ライブラリ見出し直下に置きます。右ペインの見出しは上端寄りに配置し、Clip入力欄とライブラリカードの間隔は狭く保ちます。統合ee4vウィンドウではアバター入力欄を表示せず、同じ位置のClip入力欄からClipを選択できます。
 
+右ペインの見出し、「クリップ内のみ」、表情Clip入力欄のラベルは`UiTextFactory`の描画要素を使用します。ToggleとObjectFieldのラベルは`FormInput`で表示し、見出しの戻る矢印と文字、各入力欄とラベルを縦中央に揃えます。「クリップ内のみ」はラベルをクリックしても切り替えられます。
+
 ## 対象範囲
 
 `AvatarShapeNamingProvider`は共有の`Ee4v.AvatarEditing.Editor`へBlendShapeプリセットの分類器を登録し、単独Shape and Parts Windowへ保存済みの部位・グループ分類を提供します。AvatarPartsやAssetManagerには依存せず、プリセットの変更は共有の変更通知へ伝えます。

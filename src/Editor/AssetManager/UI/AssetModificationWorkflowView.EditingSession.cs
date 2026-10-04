@@ -56,8 +56,10 @@ namespace Ee4v.AssetManager.UI
             }
             try
             {
+                Undo.FlushUndoRecordObjects();
                 var saved = DerivedAssetCreator.ApplyWorkingScene(
                     GetWorkingAssetPath());
+                Undo.FlushUndoRecordObjects();
                 if (saved == null)
                 {
                     throw new InvalidOperationException(

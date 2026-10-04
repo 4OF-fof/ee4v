@@ -61,6 +61,7 @@ namespace Ee4v.FaceExpression
         private readonly SectionHeader _sectionHeader;
         private readonly UiButton _backToLibrary;
         private readonly Toggle _clipOnly;
+        private readonly FormInput _clipOnlyControl;
         private readonly VisualElement _animationControls;
         private readonly UiButton _playback;
         private readonly Slider _timeline;
@@ -189,18 +190,27 @@ namespace Ee4v.FaceExpression
                 "ee4v-face-expression__back-to-library");
             _backToLibrary.style.display = DisplayStyle.None;
             _sectionHeader.Insert(0, _backToLibrary);
-            _clipOnly = UiTextFactory.CreateToggle(
-                text.ClipOnly,
-                "ee4v-face-expression__clip-only");
+            _clipOnly = UiTextFactory.CreateToggle();
             _clipOnly.tooltip = text.ClipOnlyTooltip;
             _clipOnly.RegisterValueChangedCallback(_ => RefreshFilter());
-            _sectionHeader.Actions.Add(_clipOnly);
+            _clipOnlyControl = new FormInput(text.ClipOnly, _clipOnly);
+            _clipOnlyControl.AddToClassList("ee4v-face-expression__clip-only");
+            _clipOnlyControl.tooltip = text.ClipOnlyTooltip;
+            _clipOnlyControl.LabelText.RegisterCallback<ClickEvent>(evt =>
+            {
+                if (evt.button == 0 && _clipOnly.enabledInHierarchy)
+                {
+                    _clipOnly.Focus();
+                    _clipOnly.value = !_clipOnly.value;
+                    evt.StopPropagation();
+                }
+            });
+            _sectionHeader.Actions.Add(_clipOnlyControl);
             editorPane.Add(_sectionHeader);
 
             _clipField = UiTextFactory.CreateObjectField(
-                text.Clip,
-                "ee4v-face-expression__asset-field",
-                "ee4v-face-expression__clip-field");
+                string.Empty,
+                "ee4v-face-expression__asset-field");
             _clipField.objectType = typeof(AnimationClip);
             _clipField.allowSceneObjects = false;
             _clipField.RegisterValueChangedCallback(evt =>
@@ -210,7 +220,9 @@ namespace Ee4v.FaceExpression
                     ClipChanged?.Invoke(evt.newValue as AnimationClip);
                 }
             });
-            editorPane.Add(_clipField);
+            var clipControl = new FormInput(text.Clip, _clipField);
+            clipControl.AddToClassList("ee4v-face-expression__clip-field");
+            editorPane.Add(clipControl);
 
             _validation = new MessagePanel();
             _validation.AddToClassList("ee4v-face-expression__validation");
@@ -1126,7 +1138,7 @@ namespace Ee4v.FaceExpression
                 _hasClip || _canNavigateLibraryBack
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
-            _clipOnly.style.display = _hasClip
+            _clipOnlyControl.style.display = _hasClip
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             _search.style.display = _hasClip

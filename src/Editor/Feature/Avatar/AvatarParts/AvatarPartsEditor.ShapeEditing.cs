@@ -271,71 +271,85 @@ namespace Ee4v.AvatarParts
             }
         }
 
-        private void EnsureBodyBlendShapeSyncBindings(
-            IReadOnlyList<BodyBlendShapeDefinition> definitions)
+        public bool PrepareBodyBlendShapeSyncForSave()
         {
-            if (!_context.Edits.CanEditPrefab())
+            if (_context.Root == null || !_context.Edits.CanEditPrefab())
             {
-                return;
+                return false;
             }
-            var changed = false;
+            var undoGroup = -1;
             try
             {
-                var undoGroup = -1;
-                foreach (var group in definitions
-                             .GroupBy(definition => new
-                             {
-                                 definition.Category,
-                                 definition.ShapeName
-                             })
-                             .Where(group => group.Count() > 1))
-                {
-                    var members = group.ToArray();
-                    var source = ResolveBodyBlendShapeGroupSource(members);
-                    var sourceIndex = source?.sharedMesh == null
-                        ? -1
-                        : source.sharedMesh.GetBlendShapeIndex(
-                            group.Key.ShapeName);
-                    if (sourceIndex < 0)
-                    {
-                        continue;
-                    }
-                    var sourceWeight = source.GetBlendShapeWeight(sourceIndex);
-                    foreach (var definition in members)
-                    {
-                        var target = GetBodyBlendShapeRenderer(definition);
-                        if (target == null || target == source ||
-                            HasBodyBlendShapeSyncBinding(
-                                target, definition.ShapeName))
-                        {
-                            continue;
-                        }
-                        if (!changed)
-                        {
-                            Undo.IncrementCurrentGroup();
-                            undoGroup = Undo.GetCurrentGroup();
-                            Undo.SetCurrentGroupName(
-                                I18N.Get("workflow.appearance.sizeUndo"));
-                        }
-                        SetBodyBlendShapeSyncBinding(
-                            target, source, definition.ShapeName, null);
-                        SetBodyBlendShapeRendererWeight(
-                            target, definition.ShapeName, sourceWeight);
-                        definition.Value = sourceWeight;
-                        changed = true;
-                    }
-                }
-                if (changed)
+                // New bindings can bring previously excluded meshes into a
+                // group. Complete those groups before committing the Prefab.
+                while (EnsureBodyBlendShapeSyncBindings(
+                           ReadBodyBlendShapes(true), ref undoGroup)) { }
+                if (undoGroup >= 0)
                 {
                     Undo.CollapseUndoOperations(undoGroup);
-                    _bodyScaleDirty = true;
+                    InvalidateBlendShapes();
                     SaveBodyScalePrefab(false);
                 }
+                return true;
             }
             catch (Exception exception)
             {
+                if (undoGroup >= 0) { Undo.CollapseUndoOperations(undoGroup); }
                 ReportBodyScaleFailure(exception, false);
+                return false;
             }
+        }
+
+        private bool EnsureBodyBlendShapeSyncBindings(
+            IReadOnlyList<BodyBlendShapeDefinition> definitions,
+            ref int undoGroup)
+        {
+            var changed = false;
+            foreach (var group in definitions
+                         .GroupBy(definition => new
+                         {
+                             definition.Category,
+                             definition.ShapeName
+                         })
+                         .Where(group => group.Count() > 1))
+            {
+                var members = group.ToArray();
+                var source = ResolveBodyBlendShapeGroupSource(members);
+                var sourceIndex = source?.sharedMesh == null
+                    ? -1
+                    : source.sharedMesh.GetBlendShapeIndex(
+                        group.Key.ShapeName);
+                if (sourceIndex < 0)
+                {
+                    continue;
+                }
+                var sourceWeight = source.GetBlendShapeWeight(sourceIndex);
+                foreach (var definition in members)
+                {
+                    var target = GetBodyBlendShapeRenderer(definition);
+                    if (target == null || target == source ||
+                        HasBodyBlendShapeSyncBinding(
+                            target, definition.ShapeName))
+                    {
+                        continue;
+                    }
+                    if (undoGroup < 0)
+                    {
+                        Undo.IncrementCurrentGroup();
+                        undoGroup = Undo.GetCurrentGroup();
+                        Undo.SetCurrentGroupName(
+                            I18N.Get("workflow.appearance.sizeUndo"));
+                    }
+                    SetBodyBlendShapeSyncBinding(
+                        target, source, definition.ShapeName, null);
+                    SetBodyBlendShapeRendererWeight(
+                        target, definition.ShapeName, sourceWeight);
+                    definition.Value = sourceWeight;
+                    _bodyScaleDirty = true;
+                    changed = true;
+                }
+            }
+            return changed;
         }
 
         private void ApplyIndividualBodyBlendShape(
@@ -493,14 +507,14 @@ namespace Ee4v.AvatarParts
                 ? sync.Bindings[index]
                 : new BlendshapeBinding
                 {
-                    ReferenceMesh = new AvatarObjectReference
-                    {
-                        referencePath = AnimationUtility.CalculateTransformPath(
-                            source.transform, _context.Root.transform)
-                    },
+                    ReferenceMesh = new AvatarObjectReference(),
                     Blendshape = shapeName,
                     LocalBlendshape = string.Empty
                 };
+            if (index < 0)
+            {
+                bindingValue.ReferenceMesh.Set(source.gameObject);
+            }
             bindingValue.RemapCurveIsValid = true;
             bindingValue.RemapCurve = remap ??
                 AnimationCurve.Linear(0f, 0f, 100f, 100f);

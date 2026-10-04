@@ -234,6 +234,7 @@ namespace Ee4v.AssetManager.UI
             _parts.SaveBodyScalePrefab();
             if (_parts.BodyScaleDirty) { return; }
             if (!_parts.FlushPendingPartVisibility()) { return; }
+            if (!_parts.PrepareBodyBlendShapeSyncForSave()) { return; }
             if (!CommitWorkingScene()) { return; }
             _savingVariant = true;
             var assetPath = GetWorkingAssetPath();

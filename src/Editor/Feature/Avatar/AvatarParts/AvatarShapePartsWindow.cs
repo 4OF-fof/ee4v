@@ -19,6 +19,8 @@ namespace Ee4v.AvatarParts
             Context.ControlsHost.Add(_editor.BuildControls());
         }
         protected override void ClearFeatureData() => _editor?.ClearData();
+        protected override bool PrepareFeatureSave() =>
+            _editor == null || _editor.PrepareBodyBlendShapeSyncForSave();
         protected override bool FlushFeatureChanges()
         {
             if (_editor == null) return true;
