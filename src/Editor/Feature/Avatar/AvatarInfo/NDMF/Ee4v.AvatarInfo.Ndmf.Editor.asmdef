@@ -3,10 +3,15 @@
   "rootNamespace": "Ee4v.AvatarInfo",
   "references": [
     "Ee4v.AvatarInfo.Editor",
-    "nadena.dev.ndmf"
+    "nadena.dev.ndmf",
+    "nadena.dev.ndmf.vrchat"
   ],
   "includePlatforms": [
     "Editor"
   ],
-  "autoReferenced": true
+  "autoReferenced": true,
+  "defineConstraints": ["EE4V_VRC_AVATARS"],
+  "versionDefines": [
+    { "name": "com.vrchat.avatars", "expression": "3.0.0", "define": "EE4V_VRC_AVATARS" }
+  ]
 }

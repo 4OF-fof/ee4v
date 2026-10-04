@@ -36,8 +36,9 @@ namespace Ee4v.AvatarInfo
         private static readonly Dictionary<string, Record> Results = Load(ResultsKey)
             .ToDictionary(record => record.Key, StringComparer.Ordinal);
         private static List<Record> _pending = Load(PendingKey);
-        private static readonly List<(Func<GameObject> Avatar, Func<bool> Successful, Record Source)> Built =
-            new List<(Func<GameObject>, Func<bool>, Record)>();
+        private static readonly List<(Func<GameObject> Avatar, Func<bool> Successful, Record Source,
+            AvatarInfoParameterSource[] ParameterSources)> Built =
+            new List<(Func<GameObject>, Func<bool>, Record, AvatarInfoParameterSource[])>();
         private static bool _enteredPlayMode = EditorApplication.isPlaying;
 
         public static event Action Changed;
@@ -92,10 +93,11 @@ namespace Ee4v.AvatarInfo
             return source;
         }
 
-        internal static void RememberBuild(Record source, Func<GameObject> avatar, Func<bool> successful)
+        internal static void RememberBuild(Record source, Func<GameObject> avatar, Func<bool> successful,
+            AvatarInfoParameterSource[] parameterSources)
         {
             if (source == null) { return; }
-            Built.Add((avatar, successful, source));
+            Built.Add((avatar, successful, source, parameterSources));
             if (_enteredPlayMode)
             {
                 EditorApplication.delayCall -= CaptureBuiltAvatars;
@@ -162,6 +164,7 @@ namespace Ee4v.AvatarInfo
                         { Rating = mobileRating, Metrics = mobileMetrics };
                     record.CapturedAt = DateTime.Now;
                     record.ParameterMemory = AvatarInfoSdk.Provider?.ReadParameterMemory(avatar);
+                    record.ParameterMemory?.SetItemUsage(build.ParameterSources, false);
                     record.Error = null;
                 }
                 else { record.Error = error; }

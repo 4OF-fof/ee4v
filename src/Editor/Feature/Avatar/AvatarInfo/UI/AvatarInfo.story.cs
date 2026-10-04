@@ -13,7 +13,7 @@ namespace Ee4v.AvatarInfo
         public IReadOnlyList<UiStory> GetStories()
         {
             return new[] { new UiStory("avatar-info", "Domain/AvatarInfo/Displays", "AvatarInfoView",
-                "名前編集、サンプル一覧からのID選択、装着警告とビルド結果を確認できます。SDKへの通信は行いません。",
+                "名前編集、サンプル一覧からのID選択、装着警告、パラメーター使用量の色分けバーと凡例、ビルド結果、最下部の取得日時を確認できます。SDKへの通信は行いません。",
                 "AvatarInfoの詳細表示です。", BuildOverview,
                 usageLocations: new[] { "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",
                     "Editor/Feature/Avatar/AvatarInfo/UI/AvatarInfoWindow.cs" },
@@ -25,7 +25,7 @@ namespace Ee4v.AvatarInfo
             {
                 AaoAttached = true,
                 CapturedAt = DateTime.Now,
-                ParameterMemory = new AvatarInfoParameterMemory { Used = 120, Limit = 256 },
+                ParameterMemory = SampleParameterMemory(false),
                 Desktop = SampleReport("Good", "Good", "75,000", 75000, 70000),
                 Mobile = SampleReport("VeryPoor", "VeryPoor", "75,000", 75000, 20000)
             };
@@ -52,7 +52,7 @@ namespace Ee4v.AvatarInfo
                     Array.Empty<GameObject>(),
                     available ? record : null, mobile, false,
                     value => { mobile = value; Render(); }, _ => { }, editing,
-                    new AvatarInfoParameterMemory { Used = 96, Limit = 256 },
+                    SampleParameterMemory(true),
                     available ? new AvatarBuildSizeCache.Record
                     {
                         Mobile = mobile, DownloadBytes = (mobile ? 12 : 38) * 1024L * 1024,
@@ -72,6 +72,21 @@ namespace Ee4v.AvatarInfo
                 Render();
             }));
             Render();
+        }
+
+        private static AvatarInfoParameterMemory SampleParameterMemory(bool estimated)
+        {
+            return new AvatarInfoParameterMemory
+            {
+                Used = estimated ? 96 : 120, Limit = 256, ItemsEstimated = estimated,
+                Items = new[]
+                {
+                    new AvatarInfoParameterItemUsage { Name = "Sample Outfit", Path = "Sample Outfit [2]", Used = 64 },
+                    new AvatarInfoParameterItemUsage { Name = "Sample Gimmick", Path = "Sample Gimmick [3]", Used = 24 },
+                    new AvatarInfoParameterItemUsage { Path = string.Empty, Used = 24 },
+                    new AvatarInfoParameterItemUsage { Path = null, Used = 8 }
+                }
+            };
         }
 
         private static AvatarInfoAnalysis.PerformanceReport SampleReport(

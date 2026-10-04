@@ -44,17 +44,43 @@ namespace Ee4v.AvatarInfo
             var parameters = descriptor.expressionParameters;
             if (descriptor.customExpressions)
             {
-                return parameters == null ? null : new AvatarInfoParameterMemory
-                    { Used = parameters.CalcTotalCost(), Limit = VRCExpressionParameters.MAX_PARAMETER_COST };
+                return parameters == null ? null : ReadParameterMemory(parameters, avatar, false);
             }
             var defaults = ScriptableObject.CreateInstance<VRCExpressionParameters>();
             try
             {
                 defaults.parameters = VRCExpressionParametersEditor.GetDefaultParameters();
-                return new AvatarInfoParameterMemory
-                    { Used = defaults.CalcTotalCost(), Limit = VRCExpressionParameters.MAX_PARAMETER_COST };
+                return ReadParameterMemory(defaults, avatar, true);
             }
             finally { UnityEngine.Object.DestroyImmediate(defaults); }
+        }
+
+        private static AvatarInfoParameterMemory ReadParameterMemory(
+            VRCExpressionParameters parameters, GameObject avatar, bool standard)
+        {
+            var memory = new AvatarInfoParameterMemory
+                { Used = parameters.CalcTotalCost(), Limit = VRCExpressionParameters.MAX_PARAMETER_COST };
+            var single = ScriptableObject.CreateInstance<VRCExpressionParameters>();
+            try
+            {
+                memory.Parameters = (parameters.parameters ?? Array.Empty<VRCExpressionParameters.Parameter>())
+                    .Where(parameter => parameter != null).Select(parameter =>
+                    {
+                        single.parameters = new[] { parameter };
+                        return new AvatarInfoParameterSource
+                        {
+                            Name = parameter.name, Used = single.CalcTotalCost(),
+                            ItemName = avatar.name, ItemPath = string.Empty
+                        };
+                    }).ToArray();
+            }
+            finally { UnityEngine.Object.DestroyImmediate(single); }
+            var sources = AvatarInfoSdk.ReadParameterSources?.Invoke(avatar);
+            if (standard && sources != null)
+                sources = memory.Parameters.Concat(sources.Where(source => source.ItemPath != string.Empty))
+                    .GroupBy(source => source.Name).Select(group => group.First()).ToArray();
+            memory.SetItemUsage(sources, true);
+            return memory;
         }
 
         public Task<IReadOnlyList<AvatarInfoSdkAvatar>> GetOwnAvatars(CancellationToken cancellationToken)

@@ -11,6 +11,28 @@ namespace Ee4v.AvatarInfo
 {
     public sealed class AvatarInfoView : VisualElement
     {
+        private static readonly Color32[] DarkParameterItemColors =
+        {
+            new Color32(105, 150, 200, 255),
+            new Color32(207, 152, 98, 255),
+            new Color32(102, 168, 158, 255),
+            new Color32(161, 137, 189, 255),
+            new Color32(180, 171, 101, 255),
+            new Color32(200, 127, 157, 255),
+            new Color32(125, 163, 181, 255),
+            new Color32(140, 167, 118, 255)
+        };
+        private static readonly Color32[] LightParameterItemColors =
+        {
+            new Color32(63, 111, 157, 255),
+            new Color32(155, 104, 47, 255),
+            new Color32(56, 122, 112, 255),
+            new Color32(121, 96, 152, 255),
+            new Color32(131, 119, 51, 255),
+            new Color32(166, 83, 118, 255),
+            new Color32(82, 124, 143, 255),
+            new Color32(93, 122, 61, 255)
+        };
         private readonly bool _mobile;
         private readonly bool _hasAao;
         private readonly Action<bool> _platformChanged;
@@ -89,12 +111,6 @@ namespace Ee4v.AvatarInfo
             if (buildSize?.UncompressedBytes != null)
                 information.Add(CreateInformationCard("workflow.overview.uncompressedSize", FormatSize(buildSize.UncompressedBytes),
                     "overviewUncompressedSize", true));
-            if (record?.CapturedAt != null)
-                information.Add(CreateInformationCard("workflow.overview.performanceCapturedAt", FormatCapturedAt(record.CapturedAt),
-                    "overviewPerformanceCapturedAt", true, compact: true));
-            if (buildSize != null)
-                information.Add(CreateInformationCard("workflow.overview.buildCapturedAt", FormatCapturedAt(buildSize.CapturedAt),
-                    "overviewBuildCapturedAt", true, compact: true));
             if (information.childCount > 0) content.Add(information);
             if (report == null)
             {
@@ -102,13 +118,14 @@ namespace Ee4v.AvatarInfo
                     content.Add(new MessagePanel(new MessagePanelState(string.Empty,
                         string.Format(I18N.Get("workflow.overview.performanceFailed"), record.Error),
                         MessageSeverity.Error)));
-                return;
             }
-            foreach (var group in new[] { "rendering", "dynamics", "effects" })
+            else
             {
-                AddPerformanceGroup(content, group, metrics.Where(metric =>
-                    GetPerformanceMetricGroup(metric.Category) == group));
+                foreach (var group in new[] { "rendering", "dynamics", "effects" })
+                    AddPerformanceGroup(content, group, metrics.Where(metric =>
+                        GetPerformanceMetricGroup(metric.Category) == group));
             }
+            AddCapturedAtFooter(content, record?.CapturedAt, buildSize?.CapturedAt);
         }
 
         private VisualElement BuildPerformancePlatformSwitch()
@@ -455,11 +472,30 @@ namespace Ee4v.AvatarInfo
         private static string FormatSize(long? bytes) => bytes.HasValue
             ? $"{bytes.Value / (1024d * 1024d):N2} MB" : I18N.Get("workflow.overview.notCaptured");
 
-        private static string FormatCapturedAt(DateTime? time) => time.HasValue
-            ? time.Value.ToLocalTime().ToString("yyyy/MM/dd\nHH:mm:ss") : I18N.Get("workflow.overview.notCaptured");
+        private static void AddCapturedAtFooter(VisualElement content, DateTime? performance, DateTime? size)
+        {
+            if (!performance.HasValue && !size.HasValue) return;
+            var footer = new VisualElement();
+            footer.AddToClassList("ee4v-avatar-info__captured-at-footer");
+            void AddTime(string key, string name, DateTime? time)
+            {
+                if (!time.HasValue) return;
+                var label = UiTextFactory.Create(
+                    $"{I18N.Get(key)}: {time.Value.ToLocalTime():yyyy/MM/dd HH:mm:ss}",
+                    UiClassNames.SecondaryText, "ee4v-avatar-info__captured-at");
+                label.name = name;
+                label.SetWhiteSpace(WhiteSpace.Normal);
+                label.SetColor(UiColorTokens.TextMuted);
+                label.SetTextAlign(TextAnchor.MiddleRight);
+                footer.Add(label);
+            }
+            AddTime("workflow.overview.performanceCapturedAt", "overviewPerformanceCapturedAt", performance);
+            AddTime("workflow.overview.buildCapturedAt", "overviewBuildCapturedAt", size);
+            content.Add(footer);
+        }
 
         private static InfoCard CreateInformationCard(string labelKey, string value,
-            string name, bool available, bool compact = false)
+            string name, bool available)
         {
             var card = new InfoCard(new InfoCardState(value, eyebrow: I18N.Get(labelKey))) { name = name };
             card.AddToClassList("ee4v-avatar-info__performance-card");
@@ -468,7 +504,7 @@ namespace Ee4v.AvatarInfo
             card.EyebrowText.SetWhiteSpace(WhiteSpace.Normal);
             card.EyebrowText.SetColor(UiColorTokens.TextMuted);
             card.TitleText.SetWhiteSpace(WhiteSpace.Normal);
-            card.TitleText.SetFontSize(compact ? 14 : 21);
+            card.TitleText.SetFontSize(21);
             if (!available) card.TitleText.SetColor(UiColorTokens.TextMuted);
             ApplyPerformanceRatingStyle(card, null);
             return card;
@@ -479,26 +515,98 @@ namespace Ee4v.AvatarInfo
             var grid = new VisualElement();
             grid.AddToClassList("ee4v-avatar-info__performance-grid");
             grid.AddToClassList("ee4v-avatar-info__information-grid");
-            var card = CreateInformationCard(built ? "workflow.overview.parametersBuilt" : "workflow.overview.parametersCurrent",
-                memory == null ? I18N.Get("workflow.overview.notCaptured") : $"{memory.Used:N0} / {memory.Limit:N0} bit",
+            var estimated = memory?.ItemsEstimated == true && memory.Items != null;
+            var items = memory?.Items ?? (memory == null ? Array.Empty<AvatarInfoParameterItemUsage>()
+                : new[] { new AvatarInfoParameterItemUsage { Used = memory.Used } });
+            var used = estimated ? items.Sum(item => item.Used) : memory?.Used ?? 0;
+            var colors = items.Where(item => !string.IsNullOrEmpty(item.Path))
+                .OrderBy(item => item.Path, StringComparer.Ordinal)
+                .Select((item, index) => new { Item = item, Color = GetParameterItemColor(index) })
+                .ToDictionary(entry => entry.Item, entry => entry.Color);
+            var dark = UiColorTokens.Current == UiColorPalettes.UnityDark;
+            Color freeColor = UiColorTokens.SurfaceRaised;
+            foreach (var item in items.Where(item => string.IsNullOrEmpty(item.Path)))
+                colors[item] = item.Path == null
+                    ? dark ? new Color32(207, 99, 203, 255) : new Color32(164, 54, 160, 255)
+                    : dark ? new Color32(98, 199, 118, 255) : new Color32(40, 158, 66, 255);
+            var card = CreateInformationCard(estimated ? "workflow.overview.parametersEstimated"
+                    : built ? "workflow.overview.parametersBuilt" : "workflow.overview.parametersCurrent",
+                memory == null ? I18N.Get("workflow.overview.notCaptured") : $"{used:N0} / {memory.Limit:N0} bit",
                 "overviewParameters", memory != null);
             card.AddToClassList("ee4v-avatar-info__parameter-card");
             if (memory != null && memory.Limit > 0)
             {
-                Color color = memory.Used > memory.Limit ? UiColorTokens.Error : UiColorTokens.StatusPassedText;
+                Color color = used > memory.Limit ? UiColorTokens.Error : UiColorTokens.StatusPassedText;
                 card.style.borderLeftColor = color;
-                card.EnableInClassList("ee4v-avatar-info__performance--critical", memory.Used > memory.Limit);
+                card.EnableInClassList("ee4v-avatar-info__performance--critical", used > memory.Limit);
                 var track = new VisualElement();
                 track.AddToClassList("ee4v-avatar-info__performance-budget");
+                track.AddToClassList("ee4v-avatar-info__parameter-budget");
+                track.style.backgroundColor = freeColor;
                 var fill = new VisualElement { name = "overviewParameterBudget" };
-                fill.AddToClassList("ee4v-avatar-info__performance-budget-fill");
-                fill.style.width = Length.Percent(Mathf.Clamp01((float)memory.Used / memory.Limit) * 100f);
-                fill.style.backgroundColor = color;
+                fill.AddToClassList("ee4v-avatar-info__parameter-budget-used");
+                fill.style.width = Length.Percent((float)used / Math.Max(used, memory.Limit) * 100f);
+                foreach (var item in items.Where(item => item.Used > 0))
+                {
+                    var segment = new VisualElement();
+                    segment.AddToClassList("ee4v-avatar-info__parameter-budget-segment");
+                    segment.style.width = Length.Percent((float)item.Used / used * 100f);
+                    segment.style.backgroundColor = colors[item];
+                    segment.style.borderLeftColor = freeColor;
+                    segment.tooltip = $"{GetParameterItemLabel(item)}: {item.Used:N0} bit";
+                    fill.Add(segment);
+                }
                 track.Add(fill);
                 card.Body.Add(track);
             }
+            var details = new VisualElement { name = "overviewParameterItems" };
+            details.AddToClassList("ee4v-avatar-info__parameter-items");
+            details.Add(UiTextFactory.Create(I18N.Get("workflow.overview.parameterItems"),
+                UiClassNames.SecondaryText, "ee4v-avatar-info__parameter-items-help"));
+            if (memory?.Items == null)
+                details.Add(UiTextFactory.Create(I18N.Get("workflow.overview.parameterItemsUnavailable"),
+                    UiClassNames.SecondaryText, "ee4v-avatar-info__parameter-items-help"));
+            else if (memory.Items.Length == 0)
+                details.Add(UiTextFactory.Create(I18N.Get("workflow.overview.parameterItemsEmpty"),
+                    UiClassNames.SecondaryText));
+            foreach (var item in items.Where(item => item.Used > 0))
+                details.Add(BuildParameterLegendRow(GetParameterItemLabel(item), item.Used, colors[item], item.Path));
+            if (memory != null && used < memory.Limit)
+                details.Add(BuildParameterLegendRow(I18N.Get("workflow.overview.parameterItemsFree"),
+                    memory.Limit - used, freeColor));
+            card.Body.Add(details);
             grid.Add(card);
             return grid;
+        }
+
+        private static string GetParameterItemLabel(AvatarInfoParameterItemUsage item) => item.Path == null
+            ? I18N.Get("workflow.overview.parameterItemsUnknown") : item.Path.Length == 0
+                ? I18N.Get("workflow.overview.parameterItemsBase") : item.Name;
+
+        private static Color GetParameterItemColor(int index)
+        {
+            var palette = UiColorTokens.Current == UiColorPalettes.UnityDark
+                ? DarkParameterItemColors : LightParameterItemColors;
+            Color color = palette[index % palette.Length];
+            var shade = index / palette.Length;
+            return shade == 0 ? color : Color.Lerp(color, shade % 2 == 1 ? Color.white : Color.black,
+                Mathf.Min(0.6f, ((shade + 1) / 2) * 0.18f));
+        }
+
+        private static VisualElement BuildParameterLegendRow(string name, int used, Color color, string path = null)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("ee4v-avatar-info__parameter-item");
+            var swatch = new VisualElement();
+            swatch.AddToClassList("ee4v-avatar-info__parameter-item-color");
+            swatch.style.backgroundColor = color;
+            row.Add(swatch);
+            var label = UiTextFactory.Create(name, "ee4v-avatar-info__parameter-item-name");
+            label.tooltip = path;
+            label.SetWhiteSpace(WhiteSpace.Normal);
+            row.Add(label);
+            row.Add(UiTextFactory.Create($"{used:N0} bit", "ee4v-avatar-info__parameter-item-value"));
+            return row;
         }
 
     }
