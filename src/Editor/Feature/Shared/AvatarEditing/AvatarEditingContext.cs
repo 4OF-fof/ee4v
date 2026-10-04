@@ -31,31 +31,14 @@ namespace Ee4v.AvatarEditing
         public HelpBoxMessageType FeedbackType { get; set; } = HelpBoxMessageType.Info;
         public string AssetFeedback { get; set; } = string.Empty;
 
-        public Func<bool> CanEditPrefab { get; set; }
-        public Func<Material, bool> CanEditMaterial { get; set; }
-        public Func<bool> FlushChanges { get; set; }
-        public Func<string> GetAssetPath { get; set; }
-        public Func<IReadOnlyList<string>> GetExcludedPartPrefixes { get; set; }
-        public Func<GameObject, IEnumerable<Mesh>, IAvatarShapeNaming> CreateShapeNaming { get; set; }
-        public Action<bool> WorkingSceneDirtyChanged { get; set; }
-        public bool WorkingSceneDirty { set => WorkingSceneDirtyChanged(value); }
-        public Action Changed { get; set; }
-        public Action<Material> MaterialChanged { get; set; }
-        public Action Refresh { get; set; }
-        public Action ShowParts { get; set; }
-        public Action ShowMaterials { get; set; }
-        public Action Rebuild { get; set; }
-        public Action ClearCaches { get; set; }
-        public Action<AvatarEditorPanel> InvalidateControls { get; set; }
-        public Action InvalidateMaterialData { get; set; }
-        public Action Repaint { get; set; }
-        public Action SyncPreviewSelection { get; set; }
-        public Action<string> ShowAssetError { get; set; }
-        public Action<Material> CreateMaterialVariant { get; set; }
-        public Action<int, bool, bool> RefreshPrefabGroupVisibility { get; set; }
-        public Action<int, bool> RefreshPrefabHeaderActiveSelf { get; set; }
-        public Action<int> RefreshPrefabPreviewVisibilityControls { get; set; }
-        public Func<int, VisualElement, HashSet<int>, bool, VisualElement> BuildPrefabGroup { get; set; }
+        public AvatarEditingContext(AvatarEditingServices edits, AvatarEditingHost host)
+        {
+            Edits = edits ?? throw new ArgumentNullException(nameof(edits));
+            Host = host ?? throw new ArgumentNullException(nameof(host));
+        }
+
+        public AvatarEditingServices Edits { get; }
+        public AvatarEditingHost Host { get; }
 
         public bool IsInSelectedPrefabScope(Transform target)
         {

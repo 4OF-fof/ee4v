@@ -192,32 +192,35 @@ namespace Ee4v.AssetManager.UI
 
         internal AssetModificationWorkflowView(Action repaint)
         {
-            _avatarContext = new AvatarEditingContext
+            _avatarContext = new AvatarEditingContext(
+                new AvatarEditingServices(IsEditableWorkflowPrefab, IsEditableWorkflowMaterial,
+                    () =>
+                    {
+                        _parts.EndBodyScaleDrag();
+                        _parts.SaveBodyScalePrefab();
+                        return !_parts.BodyScaleDirty && _parts.FlushPendingPartVisibility();
+                    },
+                    GetWorkingAssetPath, value => _workingSceneDirty = value,
+                    InvalidateVariantSaveStatus, ShowAssetError, CreateEditableMaterialVariant),
+                new AvatarEditingHost(() => ShowCategory(_currentCategory, false),
+                    BuildWindow, ClearAppearanceCaches, RequestRepaint, SyncPreviewSelection)
+                {
+                    GetExcludedPartPrefixes = () => AssetManagerSettings.ExcludedPartPrefixes,
+                    ShowParts = () => ShowCategory(WorkflowCategory.ShapeParts, false),
+                    ShowMaterials = () => ShowCategory(WorkflowCategory.Material, false),
+                    InvalidateControls = InvalidateAppearanceControls,
+                    InvalidateMaterialData = () =>
+                    {
+                        _materials.ClearData();
+                        InvalidateAppearanceControls(AppearancePanel.Material);
+                    },
+                    RefreshPrefabGroupVisibility = RefreshPrefabGroupVisibility,
+                    RefreshPrefabHeaderActiveSelf = RefreshPrefabHeaderActiveSelf,
+                    RefreshPrefabPreviewVisibilityControls = RefreshPrefabPreviewVisibilityControls,
+                    BuildPrefabGroup = BuildCollapsiblePrefabGroup
+                })
             {
-                UiRoot = this,
-                CanEditPrefab = IsEditableWorkflowPrefab,
-                CanEditMaterial = IsEditableWorkflowMaterial,
-                GetAssetPath = GetWorkingAssetPath,
-                GetExcludedPartPrefixes = () => AssetManagerSettings.ExcludedPartPrefixes,
-                CreateShapeNaming = AvatarShapeNaming.Create,
-                Changed = InvalidateVariantSaveStatus,
-                WorkingSceneDirtyChanged = value => _workingSceneDirty = value,
-                Refresh = () => ShowCategory(_currentCategory, false),
-                ShowParts = () => ShowCategory(WorkflowCategory.ShapeParts, false),
-                ShowMaterials = () => ShowCategory(WorkflowCategory.Material, false),
-                Rebuild = BuildWindow,
-                ClearCaches = ClearAppearanceCaches,
-                InvalidateControls = InvalidateAppearanceControls,
-                InvalidateMaterialData = () => { _materials.ClearData(); InvalidateAppearanceControls(AppearancePanel.Material); },
-                Repaint = RequestRepaint,
-                SyncPreviewSelection = SyncPreviewSelection,
-                ShowAssetError = ShowAssetError,
-                CreateMaterialVariant = CreateEditableMaterialVariant,
-                RefreshPrefabGroupVisibility = RefreshPrefabGroupVisibility,
-                RefreshPrefabHeaderActiveSelf = RefreshPrefabHeaderActiveSelf,
-                RefreshPrefabPreviewVisibilityControls = RefreshPrefabPreviewVisibilityControls,
-                BuildPrefabGroup = BuildCollapsiblePrefabGroup,
-                FlushChanges = () => { _parts.EndBodyScaleDrag(); _parts.SaveBodyScalePrefab(); return !_parts.BodyScaleDirty && _parts.FlushPendingPartVisibility(); }
+                UiRoot = this
             };
             _parts = new AvatarPartsEditor(_avatarContext);
             _materials = new AvatarMaterialsEditor(_avatarContext);

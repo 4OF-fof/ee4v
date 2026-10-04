@@ -25,7 +25,7 @@ namespace Ee4v.AvatarMaterials
                 () =>
                 {
                     _context.SelectedMaterial = material;
-                    _context.ShowMaterials();
+                    _context.Host.ShowMaterials();
                 });
             choice.AddToClassList(
                 "ee4v-modification-workflow__material-item");
@@ -38,7 +38,7 @@ namespace Ee4v.AvatarMaterials
             materialField.objectType = typeof(Material);
             materialField.allowSceneObjects = false;
             materialField.SetValueWithoutNotify(material);
-            materialField.SetEnabled(_context.CanEditPrefab());
+            materialField.SetEnabled(_context.Edits.CanEditPrefab());
             materialField.RegisterCallback<PointerDownEvent>(
                 evt => evt.StopPropagation());
             materialField.RegisterCallback<ClickEvent>(
@@ -57,7 +57,7 @@ namespace Ee4v.AvatarMaterials
             var titleContainer = choice.Row.TitleText.parent;
             titleContainer.Insert(0, materialField);
             choice.Row.TitleText.RemoveFromHierarchy();
-            if (!_context.CanEditMaterial(material))
+            if (!_context.Edits.CanEditMaterial(material))
             {
                 choice.Trailing.Add(new Badge(
                     I18N.Get("workflow.appearance.readOnly")));
@@ -582,24 +582,24 @@ namespace Ee4v.AvatarMaterials
                 Debug.LogException(exception);
                 _context.Feedback = I18N.Get("workflow.appearance.materialReplacementFailed");
                 _context.FeedbackType = HelpBoxMessageType.Error;
-                _context.ShowMaterials();
+                _context.Host.ShowMaterials();
             }
         }
 
         public void ReplaceMaterialAssignments(Material sourceMaterial, Material replacement)
         {
-            if (!_context.FlushChanges())
+            if (!_context.Edits.FlushChanges())
             {
                 throw new InvalidOperationException(
                     "The derived Prefab size could not be saved.");
             }
-            if (!_context.CanEditPrefab() || sourceMaterial == null ||
+            if (!_context.Edits.CanEditPrefab() || sourceMaterial == null ||
                 replacement == null || !EditorUtility.IsPersistent(replacement))
             {
                 throw new InvalidOperationException(
                     "A derived Prefab and a Material asset are required.");
             }
-            if (!_context.FlushChanges())
+            if (!_context.Edits.FlushChanges())
             {
                 throw new InvalidOperationException(
                     "Pending part visibility could not be saved.");
@@ -645,8 +645,8 @@ namespace Ee4v.AvatarMaterials
                     throw new InvalidOperationException(
                         "The selected Material is no longer assigned.");
                 }
-                _context.WorkingSceneDirty = true;
-                _context.Changed();
+                _context.Edits.WorkingSceneDirty = true;
+                _context.Edits.Changed();
             }
         }
 
@@ -658,11 +658,11 @@ namespace Ee4v.AvatarMaterials
             }
             _context.SelectedMaterial = replacement;
             _context.Feedback = string.Empty;
-            _context.ClearCaches();
-            _context.Changed();
+            _context.Host.ClearCaches();
+            _context.Edits.Changed();
             _context.Preview?.SetHiddenMaterials(_hiddenMaterials);
             _context.Preview?.ReloadPrefabPreservingView(_context.Root);
-            _context.ShowMaterials();
+            _context.Host.ShowMaterials();
         }
 
         public bool IsMaterialSharedOutsideSelectedPrefab(Material material)
@@ -678,8 +678,8 @@ namespace Ee4v.AvatarMaterials
 
         public void RefreshMaterialPreview()
         {
-            _context.MaterialChanged?.Invoke(_context.SelectedMaterial);
-            _context.Changed();
+            _context.Edits.MaterialChanged?.Invoke(_context.SelectedMaterial);
+            _context.Edits.Changed();
             _context.Preview?.RefreshPreview();
         }
 

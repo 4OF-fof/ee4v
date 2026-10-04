@@ -49,6 +49,10 @@ Storyは実部品を使用し、編集・保存やPlay Modeの切り替えを行
 
 ## UI契約
 
+`AssetManagerView`は生成・購読・破棄を管理するホストです。partialは`Navigation`（Toolbarと移動）、`Catalog`（一覧と検索）、`Items`（Item詳細と派生作成）、`Files`（File詳細）、`Targets`（Target表示とGroup操作）、`Collections`（Collection編集）、`Variants`（版・Galleryと復元）、`Images`（画像取得とPreview）、`Metadata`（自動保存）、`Actions`（取り込みと削除）に分けます。Variant詳細の選択、Preview要求、Gallery操作と自動保存の状態は`VariantPageState`へまとめます。
+
+Galleryの追加・削除・先頭への移動は共通の実行処理を通します。保留中のmetadata保存を待ち、復元と共有する操作中の状態を設定し、先に表示へ反映します。失敗時には同じGalleryが表示されている場合だけ表示を戻し、操作終了時に状態と操作可否を更新します。Window破棄後は表示を更新しません。
+
 Previewのクリック判定で使用する識別色のMaterialと画素読取用TextureはPreviewごとに再利用し、Previewの破棄時に解放します。判定方法と選択結果は後述のPreview操作に従います。
 
 「パーツ」の一覧にはMeshの有無によらず、設定された除外接頭辞の対象を除いたGameObjectを元の階層順で表示します。子を持つGameObject行は既定で折りたたみ、トグルで親子階層を開閉します。通常のGameObjectの開閉矢印はhover時も背景を変えません。部位で絞り込んだ場合は一致したGameObjectに加えて一覧に存在するすべての祖先を含め、元の親子関係と階層順を維持します。直下のnested Prefabはパーツ・マテリアル両一覧で別グループにまとめ、キューブアイコンで通常の親子階層と区別し、既定で折りたたみます。Prefab見出しのhover背景は操作アイコンの領域まで行全幅に表示します。ベースPrefabの見出しは表示せず、項目は残します。個別Prefabタブでは対象Prefabのroot自身を表示せず、その子GameObjectを最上位から表示します。Variant全体のタブでは所属Prefab名をpathに含め、ルートの切り替えも作業SceneのPrefabインスタンスへ反映します。ベースPrefabタブにはnested Prefabを重複表示しません。
@@ -419,6 +423,10 @@ VariantのImport・復元は、保存版に記録された素材FileとImport対
 DBの`variant`（GUID、作成元Prefab GUID、名前、説明、所有Assetを表す親Item ID、ルートpath、最新版ID、更新日時）と`variant_revision`（版ID、Variant GUID、親版ID、版番号、commit ID、メモ、保存日時）は検索用の索引です。版番号はVariantごとに一意とし、索引の置換はtransactionで行います。`OpenVariants`とVariant一覧の再読み込みでGitから再構築するため、DB削除で履歴を失いません。DB再生成後の素材ImportにはSourceを同期して依存Fileを再登録する必要があります。親Item IDはrepoの所有Asset IDでもあり、再生成したDBで別のItem IDになったAssetへの自動再関連付けは行いません。履歴のバックアップには`AssetManager/Assets/Variant`を含めます。
 
 ### ItemとFileのSQLite保存
+
+Item検索は件数とページの本体を取得した後、BOOTH情報・タグ・Fileを最大400件ずつ一括取得します。タグは手動とSource由来を統合し、同じタグが両方にあればSource所有として扱います。Itemの検索順、タグのpath順、Fileの名前とID順を維持し、SQLiteのパラメーター上限内で処理します。空の検索結果には関連データのSQLを発行しません。
+
+Item Targetと依存Targetの正規化は共通処理でFile ID・path・ZIP拒否・重複排除を扱います。Item Targetは指定Itemへの所属、依存Targetは何らかのItemへの所属をそれぞれ検証します。Group選択と循環依存の検証は別の契約として維持します。
 
 AssetManagerはSQLiteを1ファイル使用します。DBはUser Settingsの`ee4v 共通データの保存先`直下に`asset-manager-v1.db`として保存します。論理構造は次のとおりです。
 

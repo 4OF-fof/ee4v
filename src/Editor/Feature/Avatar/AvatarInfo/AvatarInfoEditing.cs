@@ -24,12 +24,12 @@ namespace Ee4v.AvatarInfo
         {
             var avatar = context.Root;
             bool CanEdit() => avatar != null && context.Root == avatar &&
-                !EditorApplication.isPlayingOrWillChangePlaymode && context.CanEditPrefab?.Invoke() == true;
+                !EditorApplication.isPlayingOrWillChangePlaymode && context.Edits.CanEditPrefab();
             void Changed()
             {
                 EditorSceneManager.MarkSceneDirty(avatar.scene);
-                context.WorkingSceneDirty = true;
-                context.Changed?.Invoke();
+                context.Edits.WorkingSceneDirty = true;
+                context.Edits.Changed();
             }
             return new AvatarInfoEditOptions
             {
@@ -49,7 +49,7 @@ namespace Ee4v.AvatarInfo
                 },
                 SelectBlueprint = id =>
                 {
-                    if (!CanEdit() || AvatarInfoSdk.Provider == null || context.FlushChanges?.Invoke() == false) return false;
+                    if (!CanEdit() || AvatarInfoSdk.Provider == null || !context.Edits.FlushChanges()) return false;
                     AvatarInfoSdk.Provider.SetBlueprintId(avatar, id);
                     Changed();
                     return true;

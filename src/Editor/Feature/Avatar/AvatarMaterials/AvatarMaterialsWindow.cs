@@ -16,8 +16,8 @@ namespace Ee4v.AvatarMaterials
         protected override void CreateFeature()
         {
             _editor = new AvatarMaterialsEditor(Context);
-            Context.InvalidateMaterialData = _editor.ClearData;
-            Context.MaterialChanged = material =>
+            Context.Host.InvalidateMaterialData = _editor.ClearData;
+            Context.Edits.MaterialChanged = material =>
             {
                 if (CanEditMaterial(material)) AssetDatabase.SaveAssetIfDirty(material);
             };
@@ -30,7 +30,7 @@ namespace Ee4v.AvatarMaterials
         { Context.SelectedMaterial = null; Render(); }
         protected override void CreateMaterialVariant(Material material)
         {
-            if (!Context.CanEditPrefab() || material == null || !FlushFeatureChanges()) return;
+            if (!Context.Edits.CanEditPrefab() || material == null || !FlushFeatureChanges()) return;
             var path = string.Empty;
             Material variant = null;
             var assigned = false;

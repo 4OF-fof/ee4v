@@ -23,7 +23,7 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/AssetDetailComponents.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Navigation.cs",
                         "Editor/AssetManager/UI/SearchableFileTree.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionGroupView.cs",

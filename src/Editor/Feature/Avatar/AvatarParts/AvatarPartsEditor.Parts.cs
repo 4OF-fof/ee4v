@@ -21,7 +21,7 @@ namespace Ee4v.AvatarParts
             var panel = new VisualElement();
             panel.AddToClassList(
                 "ee4v-modification-workflow__objects-content");
-            if (!_context.CanEditPrefab())
+            if (!_context.Edits.CanEditPrefab())
             {
                 panel.Add(UiTextFactory.CreateHelpBox(
                     I18N.Get("workflow.assets.protected"),
@@ -74,7 +74,7 @@ namespace Ee4v.AvatarParts
                 {
                     var content = new VisualElement();
                     AddObjectHierarchy(content, group);
-                    list.Add(_context.BuildPrefabGroup(
+                    list.Add(_context.Host.BuildPrefabGroup(
                         prefabSiblingIndex,
                         content,
                         _expandedPartPrefabGroups,
@@ -289,7 +289,7 @@ namespace Ee4v.AvatarParts
                 candidate.SiblingPath.Length == 0);
             if (entry == null)
             {
-                _context.ShowAssetError("workflow.assets.saveFailed");
+                _context.Edits.ShowAssetError("workflow.assets.saveFailed");
                 return;
             }
             if (entry.IsVisible == visible)
@@ -311,7 +311,7 @@ namespace Ee4v.AvatarParts
             }
             _context.Preview?.SetHiddenPrefabs(
                 _context.BasePrefabHidden, _context.HiddenPrefabSiblingIndices);
-            _context.RefreshPrefabPreviewVisibilityControls(prefabSiblingIndex);
+            _context.Host.RefreshPrefabPreviewVisibilityControls(prefabSiblingIndex);
         }
 
         private VisualElement BuildObjectRow(PrefabObjectEntry entry)
@@ -386,7 +386,7 @@ namespace Ee4v.AvatarParts
                         pair.Key.PrefabSiblingIndex,
                         pair.Key.SiblingPath) == key);
             }
-            _context.SyncPreviewSelection();
+            _context.Host.SyncPreviewSelection();
         }
 
         private void ScrollToSelectedPart()
@@ -505,7 +505,7 @@ namespace Ee4v.AvatarParts
                 var classifier = new PrefabPartClassifier(root);
                 var meshPresence = new Dictionary<Transform, bool>();
                 var excludedPrefixes =
-                    _context.GetExcludedPartPrefixes();
+                    _context.Host.GetExcludedPartPrefixes();
                 var scopes = _context.SelectedPrefabSiblingIndex.HasValue
                     ? new[] { _context.SelectedPrefabSiblingIndex.Value }
                     : new[] { -1 }.Concat(_context.PrefabSiblingIndices).ToArray();
@@ -658,7 +658,7 @@ namespace Ee4v.AvatarParts
                     throw new InvalidOperationException(
                         "The derived Prefab size could not be saved.");
                 }
-                if (!_context.CanEditPrefab() ||
+                if (!_context.Edits.CanEditPrefab() ||
                     !FlushPendingPartVisibility())
                 {
                     throw new InvalidOperationException(
@@ -672,7 +672,7 @@ namespace Ee4v.AvatarParts
                     PrefabUtility.RecordPrefabInstancePropertyModifications(
                         gameObject);
                 }
-                _context.WorkingSceneDirty = true;
+                _context.Edits.WorkingSceneDirty = true;
                 if (entry.PrefabSiblingIndex >= 0 &&
                     entry.SiblingPath.Length == 0)
                 {
@@ -691,9 +691,9 @@ namespace Ee4v.AvatarParts
                     }
                     _context.Preview?.SetHiddenPrefabs(
                         _context.BasePrefabHidden, _context.HiddenPrefabSiblingIndices);
-                    _context.RefreshPrefabPreviewVisibilityControls(
+                    _context.Host.RefreshPrefabPreviewVisibilityControls(
                         entry.PrefabSiblingIndex);
-                    _context.RefreshPrefabHeaderActiveSelf(
+                    _context.Host.RefreshPrefabHeaderActiveSelf(
                         entry.PrefabSiblingIndex,
                         _context.Root.transform
                             .GetChild(entry.PrefabSiblingIndex)
@@ -701,14 +701,14 @@ namespace Ee4v.AvatarParts
                 }
                 _context.Preview?.ReloadPrefabPreservingView(_context.Root);
                 _context.AssetFeedback = string.Empty;
-                _context.ClearCaches();
-                _context.Changed();
-                _context.Refresh();
+                _context.Host.ClearCaches();
+                _context.Edits.Changed();
+                _context.Host.Refresh();
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                _context.ShowAssetError("workflow.assets.saveFailed");
+                _context.Edits.ShowAssetError("workflow.assets.saveFailed");
             }
         }
 
@@ -722,18 +722,18 @@ namespace Ee4v.AvatarParts
             }
             try
             {
-                if (!_context.CanEditPrefab())
+                if (!_context.Edits.CanEditPrefab())
                 {
                     throw new InvalidOperationException(
                         "The selected Prefab is not a derived asset.");
                 }
-                var assetPath = _context.GetAssetPath();
+                var assetPath = _context.Edits.GetAssetPath();
                 if (_pendingPartVisibility.Count > 0 &&
                     !string.Equals(_pendingPartAssetPath, assetPath,
                         StringComparison.Ordinal) &&
                     !FlushPendingPartVisibility())
                 {
-                    _context.Rebuild();
+                    _context.Host.Rebuild();
                     return;
                 }
                 if (!_pendingPartVisibility.TryGetValue(entry,
@@ -768,13 +768,13 @@ namespace Ee4v.AvatarParts
                 if (entry.PrefabSiblingIndex >= 0 &&
                     entry.SiblingPath.Length == 0)
                 {
-                    _context.RefreshPrefabHeaderActiveSelf(
+                    _context.Host.RefreshPrefabHeaderActiveSelf(
                         entry.PrefabSiblingIndex, activeSelf);
-                    _context.RefreshPrefabGroupVisibility(
+                    _context.Host.RefreshPrefabGroupVisibility(
                         entry.PrefabSiblingIndex, activeSelf, visible);
                 }
-                _context.InvalidateMaterialData();
-                _context.InvalidateControls(AvatarEditorPanel.Material);
+                _context.Host.InvalidateMaterialData();
+                _context.Host.InvalidateControls(AvatarEditorPanel.Material);
                 _context.Preview?.SetPartVisibility(
                     _context.Root,
                     entry.PrefabSiblingIndex,
@@ -787,7 +787,7 @@ namespace Ee4v.AvatarParts
                 if (entry.PrefabSiblingIndex >= 0 &&
                     entry.SiblingPath.Length == 0)
                 {
-                    _context.RefreshPrefabPreviewVisibilityControls(
+                    _context.Host.RefreshPrefabPreviewVisibilityControls(
                         entry.PrefabSiblingIndex);
                 }
                 foreach (var tag in restoreTags)
@@ -804,13 +804,13 @@ namespace Ee4v.AvatarParts
                 }
                 _pendingPartVisibility.Clear();
                 _pendingPartAssetPath = null;
-                _context.WorkingSceneDirty = true;
-                _context.Changed();
+                _context.Edits.WorkingSceneDirty = true;
+                _context.Edits.Changed();
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                _context.ShowAssetError("workflow.assets.saveFailed");
+                _context.Edits.ShowAssetError("workflow.assets.saveFailed");
             }
         }
 
@@ -950,9 +950,9 @@ namespace Ee4v.AvatarParts
                             tag.RestoreKey, tag.OriginalTag);
                     }
                 }
-                _context.WorkingSceneDirty = true;
+                _context.Edits.WorkingSceneDirty = true;
                 _context.AssetFeedback = string.Empty;
-                _context.Changed();
+                _context.Edits.Changed();
                 return true;
             }
             catch (Exception exception)

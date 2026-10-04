@@ -13,6 +13,14 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
     internal sealed partial class SqliteAssetManagerStore
         : IAssetManagerStore
     {
+        private const string ItemSelect =
+            @"SELECT item.id AS Id, item.name AS Name,
+                     item.description AS Description,
+                     item.thumbnail_url AS ThumbnailUrl,
+                     item.source_type AS SourceType, item.source_id AS SourceId,
+                     item.is_archived AS IsArchived,
+                     item.created_at AS CreatedAt, item.updated_at AS UpdatedAt
+              FROM item";
         private const string FileSelect =
             @"SELECT id AS Id, item_id AS ItemId,
                      file_name AS FileName, extension AS Extension,
@@ -61,18 +69,14 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         query.Limit == 0 ? -1 : query.Limit,
                         query.Offset
                     };
-                    var ids = connection.Query<IdRow>(
-                            "SELECT item.id AS Id FROM item" + where +
+                    var rows = connection.Query<ItemRow>(
+                            ItemSelect + where +
                             " ORDER BY item.name COLLATE NOCASE, item.id" +
                             " LIMIT ? OFFSET ?",
-                            pageParameters.ToArray())
-                        .Select(row => row.Id)
-                        .ToArray();
+                            pageParameters.ToArray());
                     return new AssetSearchResult
                     {
-                        Items = ids
-                            .Select(id => ReadItem(connection, id))
-                            .ToArray(),
+                        Items = ReadItems(connection, rows),
                         TotalCount = total
                     };
                 }
@@ -1730,15 +1734,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             string itemId)
         {
             var row = connection.Query<ItemRow>(
-                    @"SELECT id AS Id, name AS Name,
-                             description AS Description,
-                             thumbnail_url AS ThumbnailUrl,
-                             source_type AS SourceType,
-                             source_id AS SourceId,
-                             is_archived AS IsArchived,
-                             created_at AS CreatedAt,
-                             updated_at AS UpdatedAt
-                      FROM item WHERE id = ?",
+                    ItemSelect + " WHERE item.id = ?",
                     itemId)
                 .SingleOrDefault();
             if (row == null)
@@ -1746,12 +1742,20 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 throw NotFound("Item was not found.");
             }
 
-            var item = new AssetItem
+            var item = MapItem(row);
+            item.Booth = ReadItemBoothMetadata(connection, itemId);
+            item.Tags = ReadTags(connection, itemId, null);
+            item.Files = ReadFiles(connection, "item_id = @p0", itemId);
+            return item;
+        }
+
+        private static AssetItem MapItem(ItemRow row)
+        {
+            return new AssetItem
             {
                 Id = row.Id,
                 Name = row.Name,
                 Description = row.Description,
-                Booth = ReadItemBoothMetadata(connection, itemId),
                 ThumbnailUrl = row.ThumbnailUrl,
                 SourceType = row.SourceType == null
                     ? (AssetSourceType?)null
@@ -1761,13 +1765,6 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 CreatedAt = ParseDate(row.CreatedAt),
                 UpdatedAt = ParseDate(row.UpdatedAt)
             };
-
-            item.Tags = ReadTags(connection, itemId, null);
-            item.Files = ReadFiles(
-                connection,
-                "item_id = @p0",
-                itemId);
-            return item;
         }
 
         private static AssetBoothMetadata ReadItemBoothMetadata(
@@ -2848,6 +2845,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
 
         private sealed class BoothMetadataRow
         {
+            public string ItemId { get; set; }
             public string ItemUrl { get; set; }
             public string ShopName { get; set; }
             public string ShopUrl { get; set; }
@@ -3013,6 +3011,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
 
         private sealed class TagRow
         {
+            public string ItemId { get; set; }
             public string Id { get; set; }
             public string Path { get; set; }
             public int IsSourceOwned { get; set; }

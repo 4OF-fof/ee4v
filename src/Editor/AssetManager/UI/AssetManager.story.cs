@@ -73,7 +73,7 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Catalog.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -105,7 +105,7 @@ namespace Ee4v.AssetManager.UI
                     dependencies: new[] { "UiTextFactory" },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Navigation.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -147,7 +147,7 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Collections.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -168,7 +168,7 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -188,7 +188,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -209,7 +210,9 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Files.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Variants.cs",
                         "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs",
                         "Editor/AssetManager/UI/Components/AssetFilterEditor.cs"
                     },
@@ -231,7 +234,7 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Navigation.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -271,7 +274,11 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Catalog.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Files.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Variants.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -333,7 +340,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Images.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -353,7 +361,7 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Files.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -370,7 +378,9 @@ namespace Ee4v.AssetManager.UI
                     dependencies: new[] { "SectionHeader" },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Files.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Variants.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -387,7 +397,7 @@ namespace Ee4v.AssetManager.UI
                     dependencies: new[] { "UiTextFactory" },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -408,7 +418,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Files.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -429,7 +440,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Files.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -446,7 +458,7 @@ namespace Ee4v.AssetManager.UI
                     dependencies: new[] { "UiTextFactory" },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs"
                     },
                     styleSheetPaths: new[]
                     {

@@ -719,49 +719,9 @@ namespace Ee4v.AssetManager.Application
         private IReadOnlyList<AssetFileTarget> NormalizeDependencyTargets(
             IReadOnlyList<AssetFileTarget> dependencyTargets)
         {
-            var result = new List<AssetFileTarget>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var target in dependencyTargets ??
-                     Array.Empty<AssetFileTarget>())
-            {
-                if (target == null)
-                {
-                    throw new AssetManagerException(
-                        AssetManagerErrorCode.InvalidRequest,
-                        "Dependency target is required.");
-                }
-
-                AssetManagerRequestValidator.Require(
-                    target.FileId,
-                    "dependency target file id");
-                var fileId = target.FileId.Trim();
-                var path = AssetManagerRequestValidator
-                    .NormalizeTargetPaths(new[] { target.TargetPath })
-                    .Single();
-                var file = _store.GetFile(fileId);
-                if (string.IsNullOrWhiteSpace(file.ItemId))
-                {
-                    throw new AssetManagerException(
-                        AssetManagerErrorCode.InvalidRequest,
-                        "Dependency targets must belong to an item.");
-                }
-
-                AssetManagerRequestValidator
-                    .EnsureImportTargetsDoNotContainZip(
-                        file,
-                        new[] { path });
-                if (!seen.Add(fileId + "\n" + path))
-                {
-                    continue;
-                }
-
-                result.Add(new AssetFileTarget
-                {
-                    FileId = fileId,
-                    TargetPath = path
-                });
-            }
-            return result;
+            return NormalizeImportTargets(dependencyTargets, "Dependency target", "dependency target file id",
+                file => !string.IsNullOrWhiteSpace(file.ItemId),
+                "Dependency targets must belong to an item.");
         }
 
         private static IReadOnlyList<AssetFileTarget> NormalizeTargetChoices(
@@ -822,50 +782,42 @@ namespace Ee4v.AssetManager.Application
             string itemId,
             IReadOnlyList<AssetFileTarget> targets)
         {
+            return NormalizeImportTargets(targets, "Item target", "item target file id",
+                file => string.Equals(file.ItemId, itemId, StringComparison.Ordinal),
+                "Item targets must belong to the item.");
+        }
+
+        private IReadOnlyList<AssetFileTarget> NormalizeImportTargets(
+            IReadOnlyList<AssetFileTarget> targets,
+            string targetLabel,
+            string fileIdLabel,
+            Func<AssetFile, bool> belongsToItem,
+            string membershipError)
+        {
             var result = new List<AssetFileTarget>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var target in targets ??
-                     Array.Empty<AssetFileTarget>())
+            foreach (var target in targets ?? Array.Empty<AssetFileTarget>())
             {
                 if (target == null)
                 {
                     throw new AssetManagerException(
-                        AssetManagerErrorCode.InvalidRequest,
-                        "Item target is required.");
+                        AssetManagerErrorCode.InvalidRequest, targetLabel + " is required.");
                 }
-
-                AssetManagerRequestValidator.Require(
-                    target.FileId,
-                    "item target file id");
+                AssetManagerRequestValidator.Require(target.FileId, fileIdLabel);
                 var fileId = target.FileId.Trim();
                 var path = AssetManagerRequestValidator
-                    .NormalizeTargetPaths(new[] { target.TargetPath })
-                    .Single();
+                    .NormalizeTargetPaths(new[] { target.TargetPath }).Single();
                 var file = _store.GetFile(fileId);
-                if (!string.Equals(
-                        file.ItemId,
-                        itemId,
-                        StringComparison.Ordinal))
+                if (!belongsToItem(file))
                 {
                     throw new AssetManagerException(
-                        AssetManagerErrorCode.InvalidRequest,
-                        "Item targets must belong to the item.");
+                        AssetManagerErrorCode.InvalidRequest, membershipError);
                 }
-
-                AssetManagerRequestValidator
-                    .EnsureImportTargetsDoNotContainZip(
-                        file,
-                        new[] { path });
-                if (!seen.Add(fileId + "\n" + path))
+                AssetManagerRequestValidator.EnsureImportTargetsDoNotContainZip(file, new[] { path });
+                if (seen.Add(fileId + "\n" + path))
                 {
-                    continue;
+                    result.Add(new AssetFileTarget { FileId = fileId, TargetPath = path });
                 }
-
-                result.Add(new AssetFileTarget
-                {
-                    FileId = fileId,
-                    TargetPath = path
-                });
             }
             return result;
         }

@@ -40,16 +40,16 @@ namespace Ee4v.AvatarMaterials
             avatar.GetComponent<Renderer>().sharedMaterial = material;
             var controls = new ScrollView();
             controls.style.maxHeight = 420;
-            var context = new AvatarEditingContext {
-                Root = avatar, UiRoot = parent, ControlsHost = controls,
-                CanEditPrefab = () => false, CanEditMaterial = _ => false,
-                GetAssetPath = () => string.Empty
+            AvatarMaterialsEditor editor = null;
+            var context = new AvatarEditingContext(
+                new AvatarEditingServices(() => false, _ => false, () => true,
+                    () => string.Empty, _ => { }, () => { }, _ => { }, _ => { }),
+                new AvatarEditingHost(Render, Render, () => { }, parent.MarkDirtyRepaint, () => { }))
+            {
+                Root = avatar, UiRoot = parent, ControlsHost = controls
             };
-            var editor = new AvatarMaterialsEditor(context);
+            editor = new AvatarMaterialsEditor(context);
             void Render() { controls.Clear(); controls.Add(editor.BuildControls()); }
-            context.ShowMaterials = Render;
-            context.Refresh = Render;
-            context.Repaint = parent.MarkDirtyRepaint;
             parent.Add(controls);
             parent.RegisterCallback<DetachFromPanelEvent>(_ => {
                 editor.Dispose();

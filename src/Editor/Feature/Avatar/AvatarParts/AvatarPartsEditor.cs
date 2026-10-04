@@ -62,8 +62,8 @@ namespace Ee4v.AvatarParts
                 separatorIndex = selectedKey.IndexOf('/', separatorIndex + 1);
             }
             _context.SelectedPartKey = selectedKey;
-            _context.InvalidateControls(AvatarEditorPanel.Parts);
-            _context.ShowParts();
+            _context.Host.InvalidateControls(AvatarEditorPanel.Parts);
+            _context.Host.ShowParts();
             ScrollToSelectedPart();
         }
 
@@ -72,7 +72,7 @@ namespace Ee4v.AvatarParts
             _context.SelectedPartKey = null;
             foreach (var row in _objectRows.Values)
             { row.Row.EnableInClassList("ee4v-modification-workflow__object-row--selected", false); }
-            _context.SyncPreviewSelection();
+            _context.Host.SyncPreviewSelection();
         }
 
         public VisualElement BuildControls()

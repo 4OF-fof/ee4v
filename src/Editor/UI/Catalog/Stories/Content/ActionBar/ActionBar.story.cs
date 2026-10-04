@@ -19,7 +19,7 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildActionBarStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Navigation.cs",
                         "Editor/AssetManager/UI/Components/AssetFilterEditor.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",

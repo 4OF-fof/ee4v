@@ -111,29 +111,19 @@ namespace Ee4v.AvatarEditing
             controls.AddToClassList("ee4v-avatar-prefab-editor__controls");
             sidebar.Add(controls);
             _body.Add(sidebar);
-            Context = new AvatarEditingContext
+            Context = new AvatarEditingContext(
+                new AvatarEditingServices(CanEditPrefab, CanEditMaterial, FlushFeatureChanges,
+                    () => AssetDatabase.GetAssetPath(_prefab),
+                    value =>
+                    {
+                        if (value && _instance != null) EditorSceneManager.MarkSceneDirty(_instance.scene);
+                        MarkChanged();
+                    },
+                    MarkChanged, ShowError, CreateMaterialVariant),
+                new AvatarEditingHost(Render, Rebuild, ClearFeatureData, Repaint, SyncPreviewSelection))
             {
                 UiRoot = rootVisualElement, ControlsHost = controls, Preview = preview,
-                Root = _instance, PrefabAsset = _prefab,
-                CanEditPrefab = CanEditPrefab, CanEditMaterial = CanEditMaterial,
-                FlushChanges = FlushFeatureChanges,
-                GetAssetPath = () => AssetDatabase.GetAssetPath(_prefab),
-                GetExcludedPartPrefixes = () => Array.Empty<string>(),
-                CreateShapeNaming = AvatarShapeNaming.Create,
-                WorkingSceneDirtyChanged = value =>
-                {
-                    if (value && _instance != null) EditorSceneManager.MarkSceneDirty(_instance.scene);
-                    MarkChanged();
-                },
-                Changed = MarkChanged, Refresh = Render, ShowParts = Render, ShowMaterials = Render,
-                Rebuild = Rebuild, ClearCaches = ClearFeatureData,
-                InvalidateControls = _ => { }, InvalidateMaterialData = () => { },
-                Repaint = Repaint, SyncPreviewSelection = SyncPreviewSelection,
-                ShowAssetError = ShowError, CreateMaterialVariant = CreateMaterialVariant,
-                RefreshPrefabGroupVisibility = (_, __, ___) => { },
-                RefreshPrefabHeaderActiveSelf = (_, __) => { },
-                RefreshPrefabPreviewVisibilityControls = _ => { },
-                BuildPrefabGroup = (_, content, __, ___) => content
+                Root = _instance, PrefabAsset = _prefab
             };
             preview.PreviewObjectClicked += SelectPreview;
             preview.PreviewSelectionCleared += ClearPreviewSelection;

@@ -51,8 +51,8 @@ namespace Ee4v.AvatarMaterials
             { _context.SelectedBodyPart = null; }
             _context.SelectedMaterial = material;
             if (prefabSiblingIndex >= 0) { _expandedMaterialPrefabGroups.Add(prefabSiblingIndex); }
-            _context.InvalidateControls(AvatarEditorPanel.Material);
-            _context.ShowMaterials();
+            _context.Host.InvalidateControls(AvatarEditorPanel.Material);
+            _context.Host.ShowMaterials();
             ScrollToMaterial(material, prefabSiblingIndex);
         }
 
@@ -144,7 +144,7 @@ namespace Ee4v.AvatarMaterials
                     {
                         content.Add(BuildMaterialChoice(entry));
                     }
-                    materialChoices.Add(_context.BuildPrefabGroup(
+                    materialChoices.Add(_context.Host.BuildPrefabGroup(
                         prefabSiblingIndex,
                         content,
                         _expandedMaterialPrefabGroups,
@@ -165,14 +165,14 @@ namespace Ee4v.AvatarMaterials
                 return panel;
             }
 
-            if (!_context.CanEditMaterial(_context.SelectedMaterial))
+            if (!_context.Edits.CanEditMaterial(_context.SelectedMaterial))
             {
-                if (_context.CanEditPrefab())
+                if (_context.Edits.CanEditPrefab())
                 {
                     var sourceMaterial = _context.SelectedMaterial;
                     var makeEditable = new UiButton(
                         I18N.Get("workflow.appearance.makeEditable"),
-                        () => _context.CreateMaterialVariant(sourceMaterial));
+                        () => _context.Edits.CreateMaterialVariant(sourceMaterial));
                     makeEditable.AddToClassList(
                         "ee4v-modification-workflow__make-material-editable");
                     panel.Add(makeEditable);

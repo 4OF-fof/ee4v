@@ -30,11 +30,11 @@ namespace Ee4v.UI
                 Story("prefab-scene-preview", "Displays", "PrefabScenePreview",
                     "共通の3Dプレビューです。独立したPreview Sceneのサンプルでカメラと選択を確認します。",
                     BuildScenePreview, "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",
-                    "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs", "Editor/AssetManager/UI/AssetManagerView.cs",
+                    "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs", "Editor/AssetManager/UI/AssetManagerView.Items.cs",
                     "Editor/AssetManager/Simulation/AvatarExecutionView.cs"),
                 Story("prefab-selector", "Inputs", "PrefabSelector",
                     "呼び出し側が渡したPrefab候補を選択する入力です。ProjectのAssetは変更しません。",
-                    BuildPrefabSelector, "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs", "Editor/AssetManager/UI/AssetManagerView.cs"),
+                    BuildPrefabSelector, "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs", "Editor/AssetManager/UI/AssetManagerView.Items.cs"),
                 Story("prefab-thumbnail", "Displays", "PrefabThumbnail",
                     "UnityのAssetPreviewを使うPrefabサムネイルです。",
                     BuildPrefabPreview, "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs", "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs")

@@ -28,7 +28,7 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildInputGroupStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
                         "Editor/Core/Presentation/Settings/SettingsUiRenderer.cs"
                     }));
             }

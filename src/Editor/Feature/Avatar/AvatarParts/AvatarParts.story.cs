@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Ee4v.AvatarEditing;
 using Ee4v.UI;
@@ -36,13 +35,15 @@ namespace Ee4v.AvatarParts
             var header = new VisualElement();
             var controls = new ScrollView();
             controls.style.maxHeight = 420;
-            var context = new AvatarEditingContext {
-                Root = avatar, UiRoot = parent, ControlsHost = controls,
-                CanEditPrefab = () => true,
-                GetAssetPath = () => string.Empty,
-                GetExcludedPartPrefixes = () => Array.Empty<string>()
+            AvatarPartsEditor editor = null;
+            var context = new AvatarEditingContext(
+                new AvatarEditingServices(() => true, _ => false, () => true,
+                    () => string.Empty, _ => { }, () => { }, _ => { }, _ => { }),
+                new AvatarEditingHost(Render, Render, () => { }, parent.MarkDirtyRepaint, () => { }))
+            {
+                Root = avatar, UiRoot = parent, ControlsHost = controls
             };
-            var editor = new AvatarPartsEditor(context);
+            editor = new AvatarPartsEditor(context);
             void Render()
             {
                 header.Clear();
@@ -51,9 +52,6 @@ namespace Ee4v.AvatarParts
                 controls.Add(editor.BuildControls());
                 controls.SetEnabled(false);
             }
-            context.ShowParts = Render;
-            context.Refresh = Render;
-            context.Repaint = parent.MarkDirtyRepaint;
             parent.Add(header);
             parent.Add(controls);
             parent.RegisterCallback<DetachFromPanelEvent>(_ => UnityEngine.Object.DestroyImmediate(avatar));
