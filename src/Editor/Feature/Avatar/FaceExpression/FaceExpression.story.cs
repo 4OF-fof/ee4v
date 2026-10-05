@@ -249,6 +249,7 @@ namespace Ee4v.FaceExpression
                     ResetView = "Reset view",
                     PreviewBackground = "Toggle background brightness",
                     BackToLibrary = "Back",
+                    BackToAssignments = "Back to assignments",
                     SearchPlaceholder = "Search BlendShapes",
                     SearchTooltip = "Filter BlendShapes by name",
                     ClearSearchTooltip = "Clear search",

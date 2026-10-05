@@ -25,6 +25,7 @@ namespace Ee4v.FaceExpression
         public string ResetView { get; set; }
         public string PreviewBackground { get; set; }
         public string BackToLibrary { get; set; }
+        public string BackToAssignments { get; set; }
         public string SearchPlaceholder { get; set; }
         public string SearchTooltip { get; set; }
         public string ClearSearchTooltip { get; set; }
@@ -65,10 +66,11 @@ namespace Ee4v.FaceExpression
         private readonly ActionBar _toolbar;
         private readonly bool _showAvatarField;
         private readonly ScenePreviewViewport _previewViewport;
+        private readonly VisualElement _previewPane;
+        private readonly ActionBar _previewNavbar;
         private readonly VisualElement _assignmentPane;
         private readonly VisualElement _rightPane;
         private readonly VisualElement _assignmentSettings;
-        private readonly UiButton _editAssignment;
         private readonly ObjectField _clipField;
         private readonly MessagePanel _validation;
         private readonly MessagePanel _saveNotification;
@@ -88,6 +90,7 @@ namespace Ee4v.FaceExpression
         private Action<AnimationClip, Rect> _drawLibraryPreview;
         private readonly SectionHeader _sectionHeader;
         private readonly UiButton _backToLibrary;
+        private readonly string _libraryBackText;
         private readonly Toggle _clipOnly;
         private readonly FormInput _clipOnlyControl;
         private readonly VisualElement _animationControls;
@@ -202,15 +205,22 @@ namespace Ee4v.FaceExpression
 
             var content = new VisualElement();
             content.AddToClassList("ee4v-face-expression__content");
+            _previewPane = new VisualElement();
+            _previewPane.AddToClassList("ee4v-face-expression__preview-pane");
+            _previewNavbar = new ActionBar();
+            _previewNavbar.AddToClassList("ee4v-face-expression__preview-navbar");
+            _previewNavbar.style.display = DisplayStyle.None;
+            _previewPane.Add(_previewNavbar);
             _previewViewport = new ScenePreviewViewport(
                 drawPreview,
                 () => ResetViewRequested?.Invoke(),
                 text.PreviewBackground,
                 text.ResetView);
-            _previewViewport.AddToClassList("ee4v-face-expression__preview-pane");
+            _previewViewport.AddToClassList("ee4v-face-expression__preview-viewport");
             _previewViewport.RegisterCallback<DetachFromPanelEvent>(_ =>
                 _previewViewport.Dispose());
-            content.Add(_previewViewport);
+            _previewPane.Add(_previewViewport);
+            content.Add(_previewPane);
 
             _assignmentPane = new VisualElement();
             _assignmentPane.AddToClassList("ee4v-face-expression__assignment-pane");
@@ -231,10 +241,11 @@ namespace Ee4v.FaceExpression
             _sectionHeader = new SectionHeader(_defaultSectionTitle);
             _sectionHeader.AddToClassList(
                 "ee4v-face-expression__section-header");
+            _libraryBackText = text.BackToLibrary;
             _backToLibrary = new UiButton(
                 string.Empty,
                 () => BackRequested?.Invoke(),
-                text.BackToLibrary,
+                text.BackToAssignments ?? text.BackToLibrary,
                 FluentUiIcons.CreateState(
                     "arrow_left.png",
                     UiSizeTokens.Size20));
@@ -271,13 +282,9 @@ namespace Ee4v.FaceExpression
                     ClipChanged?.Invoke(evt.newValue as AnimationClip);
                 }
             });
-            _editAssignment = new UiButton(_edit, () =>
-                EditClipRequested?.Invoke(_clipField.value as AnimationClip));
-            _editAssignment.AddToClassList("ee4v-face-expression__edit-assignment");
-            _editAssignment.style.display = DisplayStyle.None;
-            var clipControl = new FormInput(text.Clip, _clipField, _editAssignment);
+            var clipControl = new FormInput(_clipField);
             clipControl.AddToClassList("ee4v-face-expression__clip-field");
-            editorPane.Add(clipControl);
+            _previewNavbar.Center.Add(clipControl);
 
             _validation = new MessagePanel();
             _validation.AddToClassList("ee4v-face-expression__validation");
@@ -420,7 +427,7 @@ namespace Ee4v.FaceExpression
             _empty.AddToClassList("ee4v-face-expression__empty");
             editorPane.Add(_empty);
             content.Add(rightPane);
-            _previewViewport.FeatureOverlay.Add(_backToLibrary);
+            _previewNavbar.Leading.Add(_backToLibrary);
             Add(content);
         }
 
@@ -585,16 +592,6 @@ namespace Ee4v.FaceExpression
             _assignmentSettings.Clear();
             _assignmentSettings.Add(settings);
             RefreshFilter();
-        }
-
-        public void SetSelectedAssignment(AnimationClip clip, bool editable)
-        {
-            if (_hasClip) { return; }
-            _rendering = true;
-            _clipField.SetValueWithoutNotify(clip);
-            _rendering = false;
-            _clipField.SetEnabled(editable);
-            _editAssignment.SetEnabled(editable && clip != null);
         }
 
         public void SetClip(AnimationClip clip)
@@ -1038,7 +1035,7 @@ namespace Ee4v.FaceExpression
             if (_canNavigateLibraryBack)
             {
                 items.Add(CreateIconLibraryItem(
-                    _backToLibrary.tooltip,
+                    _libraryBackText,
                     "arrow_left.png",
                     UiSizeTokens.Size28,
                     () => BackRequested?.Invoke()));
@@ -1293,14 +1290,14 @@ namespace Ee4v.FaceExpression
         private void RefreshFilter()
         {
             var assigning = !_hasClip && _assignmentPane.childCount > 0;
-            _previewViewport.style.display = assigning ? DisplayStyle.None : DisplayStyle.Flex;
+            _previewPane.style.display = assigning ? DisplayStyle.None : DisplayStyle.Flex;
             _assignmentPane.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
             _assignmentSettings.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
-            _editAssignment.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
             _rightPane.EnableInClassList("ee4v-face-expression__editor-pane--assigning", assigning);
             _sectionHeader.SetTitle(_hasClip ? _sectionTitle : _libraryTitle);
             _toolbar.style.display = _showAvatarField ? DisplayStyle.Flex : DisplayStyle.None;
             _backToLibrary.style.display = _hasClip ? DisplayStyle.Flex : DisplayStyle.None;
+            _previewNavbar.style.display = _hasClip ? DisplayStyle.Flex : DisplayStyle.None;
             _clipOnlyControl.style.display = _hasClip
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;

@@ -112,18 +112,13 @@
 }
 
 .ee4v-face-expression__clip-field {
+    height: var(--ee4v-control-height-default);
+    min-height: var(--ee4v-control-height-default);
     flex-grow: 0;
     flex-basis: auto;
     flex-shrink: 0;
     margin-right: 0;
     margin-bottom: var(--ee4v-space-none);
-    padding-top: var(--ee4v-space-sm);
-    padding-bottom: var(--ee4v-space-sm);
-}
-
-.ee4v-face-expression__clip-field > .ee4v-ui-form-input__label {
-    justify-content: center;
-    margin-right: var(--ee4v-space-sm);
 }
 
 .ee4v-face-expression__clip-field > .ee4v-ui-form-input__input {
@@ -165,7 +160,11 @@
 
 .ee4v-face-expression__preview-pane {
     margin-right: var(--ee4v-space-lg);
-    position: relative;
+}
+
+.ee4v-face-expression__preview-viewport {
+    flex-basis: 0;
+    height: auto;
 }
 
 .ee4v-face-expression__assignment-pane {
@@ -205,10 +204,6 @@
     padding: var(--ee4v-space-sm);
 }
 
-.ee4v-face-expression__edit-assignment {
-    flex-shrink: 0;
-}
-
 .ee4v-face-expression__editor-content > .ee4v-ui-search-field {
     margin-top: var(--ee4v-space-md);
     margin-left: var(--ee4v-space-xs);
@@ -216,8 +211,6 @@
 }
 
 .ee4v-face-expression__editor-content > .ee4v-face-expression__library-search {
-    height: var(--ee4v-size-32);
-    min-height: var(--ee4v-size-32);
     flex-shrink: 0;
     margin-bottom: var(--ee4v-space-sm);
 }
@@ -441,10 +434,36 @@
     white-space: nowrap;
 }
 
+.ee4v-face-expression__preview-navbar {
+    min-height: var(--ee4v-size-32);
+    flex-shrink: 0;
+    margin-bottom: var(--ee4v-space-md);
+    padding-bottom: var(--ee4v-space-xs);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-bottom-color: var(--ee4v-color-border-default);
+}
+
+.ee4v-face-expression__preview-navbar > .ee4v-ui-action-bar__leading {
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+.ee4v-face-expression__preview-navbar > .ee4v-ui-action-bar__center {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    margin-left: var(--ee4v-space-md);
+    margin-right: var(--ee4v-space-md);
+}
+
+.ee4v-face-expression__preview-navbar .ee4v-face-expression__clip-field {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 0;
+}
+
 .ee4v-face-expression .ee4v-face-expression__back-to-library.ee4v-ui-button {
-    position: absolute;
-    left: var(--ee4v-space-lg);
-    top: var(--ee4v-space-lg);
     width: var(--ee4v-size-32);
     min-width: var(--ee4v-size-32);
     height: var(--ee4v-size-32);

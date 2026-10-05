@@ -171,7 +171,6 @@ namespace Ee4v.FaceExpression
             _presetStore.Changed += RefreshClip;
             FaceExpressionGroupSession.Changed += ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged += RefreshClip;
-            _assignments.Changed += RefreshAssignmentSelection;
             _assignments.ConfigurationChanged += RefreshSaveNotification;
             _preview = new FaceExpressionPreview(RequestRepaint);
             Undo.undoRedoPerformed += OnUndoRedo;
@@ -213,7 +212,6 @@ namespace Ee4v.FaceExpression
             I18N.Reloaded -= Rebuild;
             FaceExpressionGroupSession.Changed -= ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged -= RefreshClip;
-            _assignments.Changed -= RefreshAssignmentSelection;
             _assignments.ConfigurationChanged -= RefreshSaveNotification;
             _assignments.Dispose();
             ClearThumbnails();
@@ -311,7 +309,6 @@ namespace Ee4v.FaceExpression
             _view.SetAssignmentContent(_assignmentView,
                 new GestureAssignmentSettingsView(GestureAssignmentWindow.CreateText(), _settings, _assignments));
             RenderLibrary();
-            RefreshAssignmentSelection();
             RefreshSaveNotification();
             root.Add(_view);
         }
@@ -360,7 +357,6 @@ namespace Ee4v.FaceExpression
                 _presetStore);
             RefreshValidation();
             RefreshClip();
-            RefreshAssignmentSelection();
         }
 
         private void ChooseClip(AnimationClip clip)
@@ -390,12 +386,6 @@ namespace Ee4v.FaceExpression
             SetClip(clip);
         }
 
-        private void RefreshAssignmentSelection()
-        {
-            if (_disposed || _clip != null) { return; }
-            _view?.SetSelectedAssignment(_assignments.SelectedAssignment.Clip, _avatar != null);
-        }
-
         private void RefreshSaveNotification()
         {
             _view?.SetUnsavedChanges(HasUnsavedChanges, _saveFailed);
@@ -410,7 +400,12 @@ namespace Ee4v.FaceExpression
         {
             if (!HasUnsavedChanges || _view == null) { return true; }
             StopPlayback();
-            _view.ShowUnsavedChangesOverlay(host, TrySavePendingChanges, TryDiscardPendingChanges, continueNavigation);
+            _view.ShowUnsavedChangesOverlay(host, TrySavePendingChanges, () =>
+            {
+                if (!TryDiscardPendingChanges()) { return false; }
+                SetClip(null);
+                return true;
+            }, continueNavigation);
             return false;
         }
 
@@ -505,7 +500,6 @@ namespace Ee4v.FaceExpression
                 _saveAttemptNeedsRollback = false;
                 ClearThumbnails();
                 RefreshClip();
-                RefreshAssignmentSelection();
                 RefreshSaveNotification();
                 return true;
             }
@@ -624,7 +618,6 @@ namespace Ee4v.FaceExpression
                     ? 1f
                     : clip.length;
                 RefreshClip();
-                RefreshAssignmentSelection();
             }
             finally
             {
@@ -669,7 +662,6 @@ namespace Ee4v.FaceExpression
             RefreshValidation();
             FaceExpressionGroupSession.UpdateChannels(_channels);
             _preview?.SetChannels(_channels);
-            RefreshAssignmentSelection();
         }
 
         private void ChangeChannel(BlendShapeChannel channel)
@@ -1043,7 +1035,6 @@ namespace Ee4v.FaceExpression
                 ScheduleAssignmentRefresh();
             }
             RefreshClip();
-            RefreshAssignmentSelection();
             InvalidatePoseThumbnails(false);
         }
 
@@ -1412,7 +1403,6 @@ namespace Ee4v.FaceExpression
         {
             _view?.SetAvatar(_avatar);
             _view?.SetClip(_clip);
-            RefreshAssignmentSelection();
             UpdateAnimationView();
             ApplyGroupFilter();
             _preview?.SetChannels(_channels);
@@ -1448,6 +1438,7 @@ namespace Ee4v.FaceExpression
                 ResetView = I18N.Get("action.resetView"),
                 PreviewBackground = I18N.Get("action.previewBackground"),
                 BackToLibrary = I18N.Get("action.backToLibrary"),
+                BackToAssignments = I18N.Get("action.backToAssignments"),
                 SearchPlaceholder = I18N.Get("search.placeholder"),
                 SearchTooltip = I18N.Get("search.tooltip"),
                 ClearSearchTooltip = I18N.Get("search.clearTooltip"),
