@@ -122,6 +122,8 @@ Project の保存では `ProjectSettings` フォルダがなければ作成し�
 
 標準 drawer は `bool`、`int`、`float`、`double`、`string`、`Color`、enum に対応します。未対応型は警告用 `HelpBox` を表示します。
 
+文字列設定の入力欄はラベルを除いた利用可能幅へ伸縮し、長いDBパスも入力欄の中で編集します。入力欄の余白を含む左クリックで内部のTextFieldへフォーカスします。
+
 独自 drawer は `SettingDrawerContext<T>` の `Value` を表示し、変更時に `NotifyValueChanged` を呼びます。通知された値は通常の `ISettingsService.Set` と同じ検証と保存を通ります。
 
 現行の Unity 2022.3 実装では、文字を持つ Settings UI を `UiTextFactory` 経由で作成します。

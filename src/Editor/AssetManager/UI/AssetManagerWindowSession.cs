@@ -4,6 +4,7 @@ using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Infrastructure;
 using Ee4v.AssetProtection;
 using Ee4v.Core.EditorIntegration;
+using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
@@ -146,62 +147,78 @@ namespace Ee4v.AssetManager.UI
             }
 
             SessionState.SetBool(StartupSyncSessionKey, true);
-            var datasourceRequest = AssetManagerSettings.DatasourceRequest;
-            var datasourcePath = ExistingDirectory(datasourceRequest.LibraryPath);
-            var syncDatasource = AssetManagerSettings.AutoSyncDatasourceOnStartup &&
-                datasourcePath != null;
-            if (!syncDatasource)
+            if (!AssetManagerSettings.AutoSyncDatasourceOnStartup)
             {
                 return;
             }
 
+            SyncSelectedDatasource();
+        }
+
+        internal static void SyncSelectedDatasource(IAssetManager manager = null)
+        {
             try
             {
-                var manager = GetManager();
-                if (syncDatasource)
+                var request = AssetManagerSettings.DatasourceRequest;
+                request.LibraryPath = RequireSyncPath(request.LibraryPath, false);
+                if (request.Kind == AssetDatasourceKind.BoothLibraryManager)
                 {
-                    ReportSyncErrors(
-                        datasourceRequest.Kind.ToString(),
-                        ((IAssetDatasourceManager)manager).SyncDatasource(datasourceRequest));
+                    request.DatabasePath = RequireSyncPath(request.DatabasePath, true);
+                }
+
+                var result = ((IAssetDatasourceManager)(manager ?? GetManager()))
+                    .SyncDatasource(request);
+                if (result != null && result.ErrorCount > 0)
+                {
+                    NotifySyncFailure(string.Join(Environment.NewLine, result.ErrorMessages));
                 }
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
+                NotifySyncFailure(exception.Message);
             }
         }
 
-        private static string ExistingDirectory(string value)
+        private static string RequireSyncPath(string value, bool database)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
-                return null;
+                throw new IOException(I18N.Get(
+                    database ? "notice.syncDatabaseRequired" : "notice.syncFolderRequired"));
             }
 
-            try
+            var path = Path.GetFullPath(Environment.ExpandEnvironmentVariables(value));
+            if (database ? !File.Exists(path) : !Directory.Exists(path))
             {
-                var path = Path.GetFullPath(
-                    Environment.ExpandEnvironmentVariables(value));
-                return Directory.Exists(path) ? path : null;
+                throw new IOException(I18N.Get(
+                    database ? "notice.syncDatabaseMissing" : "notice.syncFolderMissing",
+                    new object[] { path }));
             }
-            catch (Exception)
-            {
-                return null;
-            }
+            return path;
         }
 
-        private static void ReportSyncErrors(
-            string source,
-            AssetSyncResult result)
+        private static void NotifySyncFailure(string error)
         {
-            if (result.ErrorCount == 0)
+            var message = I18N.Get("notice.syncFailed",
+                new object[] { error });
+            Debug.LogWarning(message);
+            var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+            var notified = false;
+            foreach (var window in windows)
             {
-                return;
+                if (window is AssetManagerPaneWindow || window is AssetManagerLibraryWindow ||
+                    window is AssetModificationWorkflowWindow)
+                {
+                    window.ShowNotification(UiTextFactory.CreateGuiContent(message), 10d);
+                    notified = true;
+                }
             }
-
-            Debug.LogWarning(
-                "AssetManager startup " + source + " sync: " +
-                string.Join(Environment.NewLine, result.ErrorMessages));
+            if (!notified && EditorWindow.focusedWindow != null)
+            {
+                EditorWindow.focusedWindow.ShowNotification(
+                    UiTextFactory.CreateGuiContent(message), 10d);
+            }
         }
     }
 

@@ -37,6 +37,12 @@
     min-height: var(--ee4v-control-height-compact);
 }
 
+.ee4v-settings__field.ee4v-ui-input-field {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+}
+
 .ee4v-settings__label {
     color: var(--ee4v-color-text-primary);
 }

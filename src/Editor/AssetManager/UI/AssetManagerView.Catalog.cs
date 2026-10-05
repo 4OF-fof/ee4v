@@ -87,10 +87,9 @@ namespace Ee4v.AssetManager.UI
             _defersManagerRefresh = true;
             try
             {
-                if (_manager is IAssetDatasourceManager datasourceManager)
+                if (_manager is IAssetDatasourceManager)
                 {
-                    SyncSource(AssetManagerSettings.SelectedDatasource.ToString(),
-                        () => datasourceManager.SyncDatasource(AssetManagerSettings.DatasourceRequest));
+                    AssetManagerWindowSession.SyncSelectedDatasource(_manager);
                 }
             }
             finally
@@ -99,26 +98,6 @@ namespace Ee4v.AssetManager.UI
                 _managerRefreshPending = false;
                 RefreshAfterManagerChange();
             }
-        }
-
-        private void SyncSource(
-            string sourceName,
-            Func<AssetSyncResult> synchronize)
-        {
-            Run(() =>
-            {
-                var result = synchronize();
-                if (result == null || result.ErrorCount == 0)
-                {
-                    return;
-                }
-
-                Debug.LogWarning(
-                    "Asset Manager " + sourceName + " sync: " +
-                    string.Join(
-                        Environment.NewLine,
-                        result.ErrorMessages));
-            }, refresh: false);
         }
 
         private void BuildItems()

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
+using Ee4v.AssetManager.Infrastructure.BoothLibraryManager;
 using Ee4v.Core.Settings;
 using UnityEditor;
 
@@ -20,7 +21,7 @@ namespace Ee4v.AssetManager.UI
         private static readonly SettingDefinition<string> BlmDatabase =
             new SettingDefinition<string>("assetManager.blmDatabasePath", SettingScope.User,
                 "AssetManager", "settings.section.assetManager.paths", "settings.blmDatabase.label",
-                "settings.blmDatabase.tooltip", string.Empty, order: 4);
+                "settings.blmDatabase.tooltip", BoothLibraryManagerApi.GetDefaultDatabasePath(), order: 4);
         private static readonly SettingDefinition<bool> AutoSyncDatasource =
             new SettingDefinition<bool>("assetManager.autoSyncDatasourceOnStartup", SettingScope.User,
                 "AssetManager", "settings.section.assetManager.source", "settings.autoSyncDatasource.label",

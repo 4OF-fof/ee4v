@@ -1,8 +1,8 @@
 {
   "settings": {
-    "datasource": { "label": "Datasource", "tooltip": "Select exactly one datasource: ee4v, BoothLibraryManager or Eagle." },
-    "folderLibrary": { "label": "BLM folder library path", "tooltip": "Explicit directory for BLM registered item folders. ee4v uses the global data directory." },
-    "blmDatabase": { "label": "BLM database path", "tooltip": "Explicit path to the BLM data.db. Read only; never modified." },
+    "datasource": { "label": "Datasource", "tooltip": "Select exactly one datasource: ee4v, BOOTH Library Manager or Eagle." },
+    "folderLibrary": { "label": "BOOTH Library Manager folder library path", "tooltip": "Directory for BOOTH Library Manager registered item folders. Empty by default. ee4v uses the global data directory." },
+    "blmDatabase": { "label": "BOOTH Library Manager database path", "tooltip": "Path to the BOOTH Library Manager data.db. Defaults to %APPDATA%/pm.booth.library-manager/data.db. Read only; never modified." },
     "autoSyncDatasource": { "label": "Sync datasource on startup", "tooltip": "Synchronize only the selected datasource at editor startup." },
     "section": {
       "assetManager": {
