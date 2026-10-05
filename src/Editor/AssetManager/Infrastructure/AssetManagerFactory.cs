@@ -16,8 +16,20 @@ namespace Ee4v.AssetManager.Infrastructure
         private static IAssetManager _variantSessionAssetManager;
         private static IAssetVariantManager _variantSessionManager;
 
+        public static IAssetManager OpenSession(string databasePath)
+        {
+            if (string.IsNullOrWhiteSpace(databasePath))
+            {
+                throw new ArgumentException("Database path is required.", nameof(databasePath));
+            }
+            var path = System.IO.Path.GetFullPath(databasePath);
+            return OpenSession(path, _sessionManager != null &&
+                string.Equals(_sessionDatabasePath, path, StringComparison.Ordinal)
+                    ? _sessionDatasource : AssetDatasourceKind.Eagle);
+        }
+
         public static IAssetManager OpenSession(string databasePath,
-            AssetDatasourceKind datasource = AssetDatasourceKind.Eagle)
+            AssetDatasourceKind datasource)
         {
             if (string.IsNullOrWhiteSpace(databasePath))
             {

@@ -2,6 +2,8 @@
 
 外部Sourceは設定 `assetManager.datasource` の `Eagle`、`BoothLibraryManager`、`Custom` から1つだけ選択します。設定画面の文字はCoreのUiTextFactory対応rendererを使用します。Factoryで開いたmanagerは選択したSource以外の同期を拒否し、起動時と再読込も選択したSourceだけを同期します。ee4vの手動保存・登録Fileは共存します。設定を切り替えるとWindowのmanagerを再作成します。既にDBへ保存した別SourceのItemを切替時に削除する処理はありません。
 
+`OpenSession(databasePath, datasource)` はSourceを明示してsessionを選択し、`OpenSession(databasePath)` は同じDBの選択済みsessionを再利用します。MCPとUIは同じmanagerの更新通知を共有します。MCPの名・説明編集も外部Sourceを事前拒否します。
+
 Source由来の名・説明・File配置は元Sourceが正本です。同期のsnapshotにはSource固有のIDを使い、`item.source_type`、`file.source_type`、`item_source_tag.source_type`へ `eagle`、`ee4v`、`blm`、`custom` を保存します。外部Source由来Tagとee4v編集Tagは別に保持します。DB schemaはv1、新規生成を前提とし、自動migrationと後方互換layerはありません。
 
 ## BLM
