@@ -28,6 +28,7 @@ namespace Ee4v.AssetManager.UI
 
         static AssetManagerWindowSession()
         {
+            AssetManagerSettings.DatasourceChanged += InvalidateManager;
             GlobalDataSettings.PathChanged -=
                 InvalidateManager;
             GlobalDataSettings.PathChanged +=
@@ -77,7 +78,7 @@ namespace Ee4v.AssetManager.UI
             _manager = AssetManagerFactory.OpenSession(Path.Combine(
                 Environment.ExpandEnvironmentVariables(
                     AssetManagerSettings.Ee4vLibraryPath),
-                "asset-manager-v1.db"));
+                "asset-manager-v1.db"), AssetManagerSettings.SelectedDatasource);
             AssetProtectionModule.Configure(_manager);
             return _manager;
         }
@@ -124,6 +125,7 @@ namespace Ee4v.AssetManager.UI
         private static void InitializeProtection()
         {
             EditorApplication.delayCall -= InitializeProtection;
+            if (Application.isBatchMode) { return; }
             try
             {
                 GetManager();
@@ -144,17 +146,16 @@ namespace Ee4v.AssetManager.UI
             }
 
             SessionState.SetBool(StartupSyncSessionKey, true);
-            var eaglePath = ExistingDirectory(
-                AssetManagerSettings.EagleLibraryPath);
+            var datasourceRequest = AssetManagerSettings.DatasourceRequest;
+            var datasourcePath = ExistingDirectory(datasourceRequest.LibraryPath);
             var ee4vPath = ExistingDirectory(
                 AssetManagerSettings.Ee4vLibraryPath);
-            var syncEagle =
-                AssetManagerSettings.AutoSyncEagleOnStartup &&
-                eaglePath != null;
+            var syncDatasource = AssetManagerSettings.AutoSyncDatasourceOnStartup &&
+                datasourcePath != null;
             var syncEe4v =
                 AssetManagerSettings.AutoSyncEe4vOnStartup &&
                 ee4vPath != null;
-            if (!syncEagle && !syncEe4v)
+            if (!syncDatasource && !syncEe4v)
             {
                 return;
             }
@@ -162,13 +163,11 @@ namespace Ee4v.AssetManager.UI
             try
             {
                 var manager = GetManager();
-                if (syncEagle)
+                if (syncDatasource)
                 {
                     ReportSyncErrors(
-                        "Eagle",
-                        manager.SyncEagle(new EagleSyncRequest(
-                            eaglePath,
-                            AssetManagerSettings.EagleTargetRoot)));
+                        datasourceRequest.Kind.ToString(),
+                        ((IAssetDatasourceManager)manager).SyncDatasource(datasourceRequest));
                 }
 
                 if (syncEe4v)

@@ -87,11 +87,11 @@ namespace Ee4v.AssetManager.UI
             _defersManagerRefresh = true;
             try
             {
-                SyncSource(
-                    "Eagle",
-                    () => _manager.SyncEagle(new EagleSyncRequest(
-                        AssetManagerSettings.EagleLibraryPath,
-                        AssetManagerSettings.EagleTargetRoot)));
+                if (_manager is IAssetDatasourceManager datasourceManager)
+                {
+                    SyncSource(AssetManagerSettings.SelectedDatasource.ToString(),
+                        () => datasourceManager.SyncDatasource(AssetManagerSettings.DatasourceRequest));
+                }
                 SyncSource(
                     "ee4v",
                     () => _manager.SyncEe4v(new Ee4vSyncRequest(

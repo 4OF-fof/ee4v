@@ -3,7 +3,9 @@ namespace Ee4v.AssetManager.Contracts
     public enum AssetSourceType
     {
         Eagle,
-        Ee4v
+        Ee4v,
+        BoothLibraryManager,
+        Custom
     }
 
     public enum AssetFileAnalysisKind

@@ -1,5 +1,9 @@
 {
   "settings": {
+    "datasource": { "label": "データソース", "tooltip": "Eagle・BoothLibraryManager・Customから1つを選択します。" },
+    "folderLibrary": { "label": "フォルダーライブラリ", "tooltip": "BLMの登録Itemフォルダー、または独自bridgeのItemsフォルダーの親を明示指定します。" },
+    "blmDatabase": { "label": "BLMデータベース", "tooltip": "BLMのdata.dbを明示指定します。読取専用です。" },
+    "autoSyncDatasource": { "label": "起動時にデータソース同期", "tooltip": "選択した外部データソースだけをEditor起動時に同期します。" },
     "section": {
       "assetManager": {
         "paths": "AssetManager パス",
@@ -18,10 +22,6 @@
     "ee4vGlobalPath": {
       "label": "ee4v 共通データの保存先",
       "tooltip": "AssetManagerのDBやBlendShapeプリセットなど、ee4vの共通データを保存するフォルダーです。既定値はDocuments/ee4vです。"
-    },
-    "autoSyncEagleOnStartup": {
-      "label": "起動時に Eagle を自動同期",
-      "tooltip": "Unity エディターのセッション開始時に、設定済みの Eagle ライブラリを1回同期します。"
     },
     "autoSyncEe4vOnStartup": {
       "label": "起動時に ee4v を自動同期",

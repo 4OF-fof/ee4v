@@ -11,11 +11,13 @@ namespace Ee4v.AssetManager.Infrastructure
     {
         private static string _sessionDatabasePath;
         private static IAssetManager _sessionManager;
+        private static AssetDatasourceKind _sessionDatasource;
         private static string _variantSessionDatabasePath;
         private static IAssetManager _variantSessionAssetManager;
         private static IAssetVariantManager _variantSessionManager;
 
-        public static IAssetManager OpenSession(string databasePath)
+        public static IAssetManager OpenSession(string databasePath,
+            AssetDatasourceKind datasource = AssetDatasourceKind.Eagle)
         {
             if (string.IsNullOrWhiteSpace(databasePath))
             {
@@ -23,17 +25,24 @@ namespace Ee4v.AssetManager.Infrastructure
             }
 
             var path = System.IO.Path.GetFullPath(databasePath);
-            if (_sessionManager == null || !string.Equals(_sessionDatabasePath, path, StringComparison.Ordinal))
+            if (_sessionManager == null || _sessionDatasource != datasource ||
+                !string.Equals(_sessionDatabasePath, path, StringComparison.Ordinal))
             {
-                _sessionManager = Open(path);
+                _sessionManager = Open(path, datasource);
+                _sessionDatasource = datasource;
                 _sessionDatabasePath = path;
             }
 
             return _sessionManager;
         }
 
-        public static IAssetManager Open(string databasePath)
+        public static IAssetManager Open(string databasePath,
+            AssetDatasourceKind datasource = AssetDatasourceKind.Eagle)
         {
+            if (!Enum.IsDefined(typeof(AssetDatasourceKind), datasource))
+            {
+                throw new ArgumentOutOfRangeException(nameof(datasource));
+            }
             if (string.IsNullOrWhiteSpace(databasePath))
             {
                 throw new ArgumentException(
@@ -47,7 +56,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 new Ee4vAssetSource(),
                 new AssetTargetImporter(),
                 new AssetFileAnalyzer(databasePath),
-                new AssetThumbnailProvider(databasePath));
+                new AssetThumbnailProvider(databasePath),
+                new ExternalAssetSource(), datasource);
         }
 
         public static IAssetVariantManager OpenVariants(string databasePath, IAssetManager manager)

@@ -1143,7 +1143,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                                 file);
                         }
 
-                        if (sourceType == AssetSourceType.Eagle)
+                        if (sourceType != AssetSourceType.Ee4v)
                         {
                             ReplaceSourceItemTags(connection, transaction,
                                 itemId, source, item.Tags ?? Array.Empty<string>());
@@ -1346,7 +1346,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     updated_at TEXT NOT NULL,
                     CHECK((source_type IS NULL) = (source_id IS NULL)),
                     CHECK(source_type IS NULL OR source_type IN(
-                      'eagle', 'ee4v'))
+                      'eagle', 'ee4v', 'blm', 'custom'))
                   )",
                 @"CREATE UNIQUE INDEX IF NOT EXISTS ux_item_source
                     ON item(source_type, source_id)
@@ -1364,7 +1364,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     file_name TEXT NOT NULL CHECK(trim(file_name) <> ''),
                     extension TEXT,
                     source_type TEXT NOT NULL CHECK(source_type IN(
-                      'eagle', 'ee4v')),
+                      'eagle', 'ee4v', 'blm', 'custom')),
                     source_id TEXT NOT NULL,
                     source_path TEXT,
                     is_archived INTEGER NOT NULL DEFAULT 0
@@ -1538,7 +1538,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     tag_id TEXT NOT NULL REFERENCES tag(id)
                       ON DELETE CASCADE,
                     source_type TEXT NOT NULL CHECK(source_type IN (
-                      'eagle', 'ee4v')),
+                      'eagle', 'ee4v', 'blm', 'custom')),
                     PRIMARY KEY(item_id, tag_id, source_type)
                   )",
                 @"CREATE INDEX IF NOT EXISTS ix_item_source_tag_reverse
@@ -2718,16 +2718,26 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
 
         private static string ToSourceType(AssetSourceType sourceType)
         {
-            return sourceType == AssetSourceType.Ee4v
-                ? "ee4v"
-                : "eagle";
+            switch (sourceType)
+            {
+                case AssetSourceType.Eagle: return "eagle";
+                case AssetSourceType.Ee4v: return "ee4v";
+                case AssetSourceType.BoothLibraryManager: return "blm";
+                case AssetSourceType.Custom: return "custom";
+                default: throw new ArgumentOutOfRangeException(nameof(sourceType));
+            }
         }
 
         private static AssetSourceType ParseSourceType(string value)
         {
-            return value == "ee4v"
-                ? AssetSourceType.Ee4v
-                : AssetSourceType.Eagle;
+            switch (value)
+            {
+                case "eagle": return AssetSourceType.Eagle;
+                case "ee4v": return AssetSourceType.Ee4v;
+                case "blm": return AssetSourceType.BoothLibraryManager;
+                case "custom": return AssetSourceType.Custom;
+                default: throw new ArgumentException("Unknown source type: " + value);
+            }
         }
 
         private static string NodeType(AssetFilterNodeType type)

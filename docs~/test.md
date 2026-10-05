@@ -10,6 +10,8 @@
 
 ## AssetManager
 
+Eagle・BLM・独自datasourceの契約は [datasources.md](./datasources.md) を参照してください。新規テストケースを追加せず、既存AssetManagerApiTestsと新規隔離DBへの手動取り込み・loopback疎通で確認します。
+
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
 | `CollectionSearch_EvaluatesNestedLogicAndHierarchicalTags` | SQLite検索が入れ子条件と階層Tagを評価する | Collection結果の誤りは通常の単純検索では検出できない |

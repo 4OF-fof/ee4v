@@ -91,6 +91,11 @@ namespace Ee4v.AssetManager.Application.Ports
             string sourceId);
     }
 
+    internal interface IExternalAssetSource
+    {
+        AssetSourceSnapshot Read(AssetDatasourceRequest request);
+    }
+
     internal interface IEagleAssetSource
     {
         AssetSourceSnapshot Read(EagleSyncRequest request);
