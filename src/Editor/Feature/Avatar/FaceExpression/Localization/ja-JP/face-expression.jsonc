@@ -100,6 +100,8 @@
     "sectionBody": "Body"
   },
   "search": {
+    "libraryPlaceholder": "表情ライブラリを検索",
+    "libraryTooltip": "現在のフォルダー内の表情・フォルダー名で絞り込みます",
     "placeholder": "BlendShape を検索",
     "tooltip": "BlendShape 名で絞り込みます",
     "clearTooltip": "検索をクリア"
@@ -159,7 +161,6 @@
     "resetView": "表示をリセット",
     "previewBackground": "背景の明暗を切り替え",
     "backToLibrary": "戻る",
-    "apply": "アバターに適用",
     "addMenuExpression": "メニュー専用表情を追加",
     "remove": "削除",
     "addMesh": "メッシュ追加",

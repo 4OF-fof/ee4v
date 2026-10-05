@@ -100,7 +100,8 @@ namespace Ee4v.FaceExpression
         private FaceExpressionPreview _preview;
         private FaceExpressionView _view;
         private GestureAssignmentView _assignmentView;
-        private readonly GestureAssignmentSession _assignments = new GestureAssignmentSession();
+        private readonly GestureAssignmentSession _assignments = new GestureAssignmentSession(true);
+        private bool _initiallyInstalled;
         private readonly VrchatFaceExpressionGateway _gateway = new VrchatFaceExpressionGateway();
         private ISettingsService _settings;
         private IBlendShapePresetStore _presetStore;
@@ -130,6 +131,7 @@ namespace Ee4v.FaceExpression
             new AnimationClipThumbnailCache();
         private double _poseThumbnailRefreshAt = -1d;
         private double _validationRefreshAt = -1d;
+        private double _assignmentRefreshAt = -1d;
         private readonly VisualElement _root;
         private readonly Action _repaint;
         private readonly bool _avatarLocked;
@@ -155,6 +157,7 @@ namespace Ee4v.FaceExpression
             FaceExpressionGroupSession.Changed += ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged += RefreshClip;
             _assignments.Changed += RefreshAssignmentSelection;
+            _assignments.ConfigurationChanged += ApplyAssignments;
             _preview = new FaceExpressionPreview(RequestRepaint);
             Undo.undoRedoPerformed += OnUndoRedo;
             EditorApplication.projectChanged += RefreshLibrary;
@@ -170,6 +173,7 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
+            if (_assignmentRefreshAt >= 0d) { ApplyAssignments(); }
             _disposed = true;
             StopPlayback();
             if (_settings != null)
@@ -191,7 +195,8 @@ namespace Ee4v.FaceExpression
             FaceExpressionGroupSession.Changed -= ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged -= RefreshClip;
             _assignments.Changed -= RefreshAssignmentSelection;
-            _assignments.Deactivate();
+            _assignments.ConfigurationChanged -= ApplyAssignments;
+            _assignments.Dispose();
             ClearThumbnails();
             _preview?.Dispose();
             _preview = null;
@@ -279,11 +284,7 @@ namespace Ee4v.FaceExpression
             _view.LoopChanged += SetLooping;
             _assignmentView = new GestureAssignmentView(
                 GestureAssignmentWindow.CreateText(), DrawLibraryThumbnail, false, _assignments);
-            _assignmentView.ApplyRequested += ApplyAssignments;
             _assignmentView.SetAvatar(_avatar);
-            var canApply = _gateway.TryRead(_avatar, out _);
-            _assignmentView.SetApplyEnabled(canApply,
-                canApply ? null : I18N.Get("status.descriptorMissing"));
             _view.SetAssignmentContent(_assignmentView,
                 new GestureAssignmentSettingsView(GestureAssignmentWindow.CreateText(), _settings, _assignments));
             RenderLibrary();
@@ -293,8 +294,11 @@ namespace Ee4v.FaceExpression
 
         private void SetAvatar(GameObject avatar)
         {
+            if (_assignmentRefreshAt >= 0d) { ApplyAssignments(); }
             _assignments.ResetSynchronization();
             _avatar = avatar;
+            _initiallyInstalled = avatar != null && avatar.transform.Find(
+                FaceExpressionGenerationPaths.Create(avatar).RootName) != null;
             _clip = null;
             _poseTimes = Array.Empty<float>();
             _poseSources = Array.Empty<AnimationClip>();
@@ -310,11 +314,9 @@ namespace Ee4v.FaceExpression
             FaceExpressionGroupSession.SetAvatar(avatar);
             _view?.SetAvatar(avatar);
             _assignmentView?.SetAvatar(avatar);
-            var canApply = _gateway.TryRead(avatar, out var configuration);
+            _gateway.TryRead(avatar, out var configuration);
             _assignments.SetConfiguration(configuration);
             _assignments.Activate();
-            _assignmentView?.SetApplyEnabled(canApply,
-                canApply ? null : I18N.Get("status.descriptorMissing"));
             FaceExpressionSettings.EnsureNamePreset(
                 avatar,
                 _settings,
@@ -359,19 +361,24 @@ namespace Ee4v.FaceExpression
 
         private void ApplyAssignments()
         {
-            if (_gateway.TryApply(_avatar, _assignments.CreateConfiguration(),
-                out var controller, out var error))
+            _assignmentRefreshAt = -1d;
+            if (_disposed || _avatar == null) { return; }
+            using (new FaceExpressionGenerationUndo())
             {
-                EditorGUIUtility.PingObject(controller);
-                RefreshValidation();
-                return;
+                if (_gateway.TryApply(_avatar, _assignments.CreateConfiguration(),
+                    out _, out var error))
+                {
+                    RefreshValidation();
+                    return;
+                }
+                _view?.SetValidation(new MessagePanelState(
+                    I18N.Get("status." + (error ?? "applyFailed")), severity: MessageSeverity.Error));
             }
-            _view?.SetValidation(new MessagePanelState(
-                I18N.Get("status." + (error ?? "applyFailed")), severity: MessageSeverity.Error));
         }
 
         private void SetClip(AnimationClip clip)
         {
+            if (_assignmentRefreshAt >= 0d) { ApplyAssignments(); }
             _changingClip = true;
             try
             {
@@ -712,6 +719,7 @@ namespace Ee4v.FaceExpression
         {
             FaceExpressionClipEditor.SetLooping(_clip, looping);
             UpdateAnimationView();
+            ScheduleAssignmentRefresh();
         }
 
         private void UpdatePlayback()
@@ -728,6 +736,10 @@ namespace Ee4v.FaceExpression
             {
                 _validationRefreshAt = -1d;
                 RefreshValidation();
+            }
+            if (_assignmentRefreshAt >= 0d && now >= _assignmentRefreshAt)
+            {
+                ApplyAssignments();
             }
 
             if (!_playing || _clip == null)
@@ -768,20 +780,43 @@ namespace Ee4v.FaceExpression
             var refreshAt = EditorApplication.timeSinceStartup + 0.15d;
             _poseThumbnailRefreshAt = refreshAt;
             _validationRefreshAt = refreshAt;
+            ScheduleAssignmentRefresh();
         }
 
-        private void InvalidatePoseThumbnails()
+        private void ScheduleAssignmentRefresh()
+        {
+            if (_clip != null && (_initiallyInstalled || !_assignments.IsInitialConfiguration))
+            {
+                _assignmentRefreshAt = EditorApplication.timeSinceStartup + 0.15d;
+            }
+        }
+
+        private void InvalidatePoseThumbnails(bool refreshAssignments = true)
         {
             _poseThumbnailRefreshAt = -1d;
             _poseThumbnails.Invalidate(_clip);
             RequestRepaint();
+            if (refreshAssignments) { ScheduleAssignmentRefresh(); }
         }
 
         private void OnUndoRedo()
         {
+            _assignmentRefreshAt = -1d;
+            if (_assignments.RestoreUndo())
+            {
+                if (_assignments.IsInitialConfiguration && !_initiallyInstalled)
+                {
+                    VrchatFaceExpressionGateway.RemoveGeneratedInstallation(_avatar);
+                }
+                else { ApplyAssignments(); }
+            }
+            else if (_clip != null && (_initiallyInstalled || !_assignments.IsInitialConfiguration))
+            {
+                ApplyAssignments();
+            }
             RefreshClip();
             RefreshAssignmentSelection();
-            InvalidatePoseThumbnails();
+            InvalidatePoseThumbnails(false);
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
@@ -1004,6 +1039,7 @@ namespace Ee4v.FaceExpression
         {
             if (HasClipReference)
             {
+                ApplyAssignments();
                 SetClip(null);
                 return;
             }
@@ -1121,6 +1157,11 @@ namespace Ee4v.FaceExpression
             object sender,
             SettingChangedEventArgs args)
         {
+            if (ReferenceEquals(args.Definition, FaceExpressionSettings.MenuIconsDisabled))
+            {
+                if (_initiallyInstalled || !_assignments.IsInitialConfiguration) { ApplyAssignments(); }
+                return;
+            }
             if (ReferenceEquals(
                     args.Definition,
                     FaceExpressionSettings.BlendShapeSeparators))
@@ -1176,6 +1217,8 @@ namespace Ee4v.FaceExpression
                 SearchPlaceholder = I18N.Get("search.placeholder"),
                 SearchTooltip = I18N.Get("search.tooltip"),
                 ClearSearchTooltip = I18N.Get("search.clearTooltip"),
+                LibrarySearchPlaceholder = I18N.Get("search.libraryPlaceholder"),
+                LibrarySearchTooltip = I18N.Get("search.libraryTooltip"),
                 BlendShapes = I18N.Get("section.blendShapes"),
                 Library = I18N.Get("section.library"),
                 ClipOnly = I18N.Get("filter.clipOnly"),

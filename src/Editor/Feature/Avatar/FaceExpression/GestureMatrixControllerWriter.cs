@@ -295,8 +295,8 @@ namespace Ee4v.FaceExpression
 
             var stateMachine = new AnimatorStateMachine { name = LayerName };
             AssetDatabase.AddObjectToAsset(stateMachine, controller);
-            Undo.RegisterCreatedObjectUndo(stateMachine, "Create Face Expression Layer");
-            controller.AddLayer(new AnimatorControllerLayer
+            FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(stateMachine, "Create Face Expression Layer");
+            FaceExpressionGenerationUndo.AddLayer(controller, new AnimatorControllerLayer
             {
                 name = LayerName,
                 defaultWeight = 1f,
@@ -398,7 +398,7 @@ namespace Ee4v.FaceExpression
             FaceExpressionAssignment storedAssignment,
             FaceExpressionAssignment effectiveAssignment)
         {
-            var state = stateMachine.AddState(
+            var state = FaceExpressionGenerationUndo.AddState(stateMachine,
                 ((int)combination.Left).ToString("00") + "-" +
                 ((int)combination.Right).ToString("00") + " " +
                 combination.Left + " + " + combination.Right);
@@ -414,18 +414,18 @@ namespace Ee4v.FaceExpression
             AnimatorState state,
             GestureCombination combination)
         {
-            var transition = stateMachine.AddAnyStateTransition(state);
+            var transition = FaceExpressionGenerationUndo.AddAnyStateTransition(stateMachine, state);
             ConfigureTransition(transition);
             transition.canTransitionToSelf = false;
-            transition.AddCondition(
+            FaceExpressionGenerationUndo.AddCondition(transition,
                 AnimatorConditionMode.Equals,
                 (int)combination.Left,
                 GestureLeft);
-            transition.AddCondition(
+            FaceExpressionGenerationUndo.AddCondition(transition,
                 AnimatorConditionMode.Equals,
                 (int)combination.Right,
                 GestureRight);
-            transition.AddCondition(AnimatorConditionMode.Equals, 0f, MenuParameter);
+            FaceExpressionGenerationUndo.AddCondition(transition, AnimatorConditionMode.Equals, 0f, MenuParameter);
         }
 
         private static void AddMenuStates(
@@ -463,21 +463,21 @@ namespace Ee4v.FaceExpression
                     outputFolder,
                     mouthMotions,
                     usedGeneratedClipPaths);
-                var state = stateMachine.AddState(
+                var state = FaceExpressionGenerationUndo.AddState(stateMachine,
                     "M" + value.ToString("000") + " " + item.Entry.Name);
                 state.motion = motion;
                 state.writeDefaultValues = false;
                 state.tag = CreateMenuTag(item);
                 ConfigureTracking(state, item.Entry.Assignment);
 
-                var activate = stateMachine.AddAnyStateTransition(state);
+                var activate = FaceExpressionGenerationUndo.AddAnyStateTransition(stateMachine, state);
                 ConfigureTransition(activate);
                 activate.canTransitionToSelf = false;
-                activate.AddCondition(AnimatorConditionMode.Equals, value, MenuParameter);
+                FaceExpressionGenerationUndo.AddCondition(activate, AnimatorConditionMode.Equals, value, MenuParameter);
 
-                var reset = state.AddTransition(neutral);
+                var reset = FaceExpressionGenerationUndo.AddTransition(state, neutral);
                 ConfigureTransition(reset);
-                reset.AddCondition(AnimatorConditionMode.Equals, 0f, MenuParameter);
+                FaceExpressionGenerationUndo.AddCondition(reset, AnimatorConditionMode.Equals, 0f, MenuParameter);
             }
         }
 
@@ -506,12 +506,12 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            controller.AddParameter(name, type);
+            FaceExpressionGenerationUndo.AddParameter(controller, name, type);
         }
 
         private static void RemoveOwnedLayer(AnimatorController controller)
         {
-            Undo.RegisterCompleteObjectUndo(controller, "Update Face Expression Layer");
+            FaceExpressionGenerationUndo.RegisterCompleteObjectUndo(controller, "Update Face Expression Layer");
             for (var index = controller.layers.Length - 1; index >= 0; index--)
             {
                 var layer = controller.layers[index];
@@ -520,10 +520,10 @@ namespace Ee4v.FaceExpression
                     continue;
                 }
 
-                controller.RemoveLayer(index);
-                if (layer.stateMachine != null)
+                FaceExpressionGenerationUndo.RemoveLayer(controller, index);
+                if (FaceExpressionGenerationUndo.Enabled && layer.stateMachine != null)
                 {
-                    Undo.DestroyObjectImmediate(layer.stateMachine);
+                    FaceExpressionGenerationUndo.DestroyObjectImmediate(layer.stateMachine);
                 }
             }
         }
@@ -592,7 +592,7 @@ namespace Ee4v.FaceExpression
                              "ee4v Mouth Morph ",
                              StringComparison.Ordinal)))
             {
-                Undo.DestroyObjectImmediate(tree);
+                FaceExpressionGenerationUndo.DestroyObjectImmediate(tree);
             }
         }
 
@@ -644,11 +644,11 @@ namespace Ee4v.FaceExpression
                     frameRate = 60f
                 };
                 AssetDatabase.CreateAsset(generated, assetPath);
-                Undo.RegisterCreatedObjectUndo(generated, "Create Face Expression Clip");
+                FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(generated, "Create Face Expression Clip");
             }
             else
             {
-                Undo.RecordObject(generated, "Update Face Expression Clip");
+                FaceExpressionGenerationUndo.RecordObject(generated, "Update Face Expression Clip");
                 foreach (var oldBinding in AnimationUtility.GetCurveBindings(generated))
                 {
                     AnimationUtility.SetEditorCurve(generated, oldBinding, null);
@@ -865,7 +865,7 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            var behaviour = state.AddStateMachineBehaviour(type);
+            var behaviour = FaceExpressionGenerationUndo.AddBehaviour(state, type);
             SetTrackingField(
                 behaviour,
                 "trackingEyes",
@@ -958,7 +958,7 @@ namespace Ee4v.FaceExpression
             tree.AddChild(neutralized, VoiceThreshold + VoiceThresholdStep);
             tree.AddChild(neutralized, 1f);
             AssetDatabase.AddObjectToAsset(tree, controller);
-            Undo.RegisterCreatedObjectUndo(tree, "Create Mouth Morph Blend Tree");
+            FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(tree, "Create Mouth Morph Blend Tree");
             EditorUtility.SetDirty(tree);
             motions.Add(normalized, tree);
             return tree;
@@ -977,13 +977,13 @@ namespace Ee4v.FaceExpression
             {
                 generated = new AnimationClip();
                 AssetDatabase.CreateAsset(generated, assetPath);
-                Undo.RegisterCreatedObjectUndo(
+                FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(
                     generated,
                     "Create Mouth Neutral Face Expression Clip");
             }
             else
             {
-                Undo.RecordObject(generated, "Update Mouth Neutral Face Expression Clip");
+                FaceExpressionGenerationUndo.RecordObject(generated, "Update Mouth Neutral Face Expression Clip");
             }
 
             EditorUtility.CopySerialized(source, generated);

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Ee4v.FaceExpression
@@ -36,6 +38,88 @@ namespace Ee4v.FaceExpression
         private FaceExpressionMenuEntry _selectedMenuEntry;
 
         internal event Action Changed;
+        internal event Action ConfigurationChanged;
+        private GestureAssignmentUndoState _undoState;
+        private int _revision;
+        private int _nextRevision;
+        private readonly bool _enableUndo;
+        internal GestureAssignmentSession(bool enableUndo = false) { _enableUndo = enableUndo; }
+        internal bool IsInitialConfiguration => _revision == 0;
+
+        private void RecordChange()
+        {
+            if (!_enableUndo) { return; }
+            if (_undoState == null)
+            {
+                _undoState = ScriptableObject.CreateInstance<GestureAssignmentUndoState>();
+                _undoState.hideFlags = HideFlags.HideAndDontSave;
+                SaveUndoState();
+            }
+            Undo.IncrementCurrentGroup();
+            Undo.RegisterCompleteObjectUndo(_undoState, "Change Face Expression Assignment");
+        }
+
+        private void NotifyConfigurationChanged()
+        {
+            _revision = ++_nextRevision;
+            SaveUndoState();
+            Changed?.Invoke();
+            ConfigurationChanged?.Invoke();
+        }
+
+        private void SaveUndoState()
+        {
+            if (_undoState == null) { return; }
+            _undoState.revision = _revision;
+            _undoState.assignments = Assignments.Select(pair => new GestureAssignmentUndoEntry
+            {
+                left = pair.Key.Left, right = pair.Key.Right, clip = pair.Value.Clip,
+                blink = pair.Value.EnableBlink, mouth = pair.Value.FixMouth, menuName = pair.Value.MenuName
+            }).ToArray();
+            _undoState.menu = Entries.Select(entry => new GestureAssignmentUndoEntry
+            {
+                clip = entry.Assignment.Clip, blink = entry.Assignment.EnableBlink,
+                mouth = entry.Assignment.FixMouth, name = entry.Name, menuName = entry.Assignment.MenuName
+            }).ToArray();
+            _undoState.left = SyncedLeftGestures.ToArray();
+            _undoState.right = SyncedRightGestures.ToArray();
+            EditorUtility.SetDirty(_undoState);
+        }
+
+        internal bool RestoreUndo()
+        {
+            if (_undoState == null || _undoState.revision == _revision) { return false; }
+            var selectedIndex = Entries.IndexOf(_selectedMenuEntry);
+            _revision = _undoState.revision;
+            Assignments.Clear();
+            foreach (var entry in _undoState.assignments)
+            {
+                Assignments[new GestureCombination(entry.left, entry.right)] = entry.Assignment;
+            }
+            Entries.Clear();
+            foreach (var entry in _undoState.menu)
+            {
+                Entries.Add(new FaceExpressionMenuEntry(entry.name, entry.Assignment));
+            }
+            _selectedMenuEntry = selectedIndex >= 0 && selectedIndex < Entries.Count ? Entries[selectedIndex] : null;
+            SyncedLeftGestures.Clear();
+            SyncedLeftGestures.UnionWith(_undoState.left);
+            SyncedRightGestures.Clear();
+            SyncedRightGestures.UnionWith(_undoState.right);
+            Changed?.Invoke();
+            return true;
+        }
+
+        internal void Dispose()
+        {
+            Deactivate();
+            if (_undoState != null)
+            {
+                Undo.ClearUndo(_undoState);
+                UnityEngine.Object.DestroyImmediate(_undoState);
+                _undoState = null;
+            }
+        }
 
         internal IReadOnlyList<FaceExpressionMenuEntry> MenuEntries => Entries;
         internal GestureCombination SelectedCombination => _selectedCombination;
@@ -53,6 +137,8 @@ namespace Ee4v.FaceExpression
 
         internal void SetConfiguration(FaceExpressionConfiguration configuration)
         {
+            if (_undoState != null) { Undo.ClearUndo(_undoState); }
+            _revision = 0;
             Assignments.Clear();
             var source = configuration?.Assignments;
             foreach (FaceGesture left in Enum.GetValues(typeof(FaceGesture)))
@@ -78,6 +164,7 @@ namespace Ee4v.FaceExpression
             }
 
             _selectedMenuEntry = null;
+            SaveUndoState();
             Changed?.Invoke();
         }
 
@@ -127,6 +214,8 @@ namespace Ee4v.FaceExpression
             AnimationClip clip)
         {
             var current = GetAssignment(combination);
+            if (current.Clip == clip) { Select(combination); return; }
+            RecordChange();
             SetAssignment(combination, new FaceExpressionAssignment(
                 clip,
                 current.EnableBlink,
@@ -134,7 +223,7 @@ namespace Ee4v.FaceExpression
                 current.MenuName));
             _selectedCombination = combination;
             _selectedMenuEntry = null;
-            Changed?.Invoke();
+            NotifyConfigurationChanged();
         }
 
         internal void SetClip(
@@ -146,18 +235,22 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
+            if (entry.Assignment.Clip == clip) { Select(entry); return; }
+            RecordChange();
             entry.Assignment = new FaceExpressionAssignment(
                 clip,
                 entry.Assignment.EnableBlink,
                 entry.Assignment.FixMouth,
                 entry.Assignment.MenuName);
             _selectedMenuEntry = entry;
-            Changed?.Invoke();
+            NotifyConfigurationChanged();
         }
 
         internal void UpdateSelection(bool enableBlink, bool fixMouth)
         {
             var current = SelectedAssignment;
+            if (current.EnableBlink == enableBlink && current.FixMouth == fixMouth) { return; }
+            RecordChange();
             var assignment = new FaceExpressionAssignment(
                 current.Clip,
                 enableBlink,
@@ -172,15 +265,18 @@ namespace Ee4v.FaceExpression
                 SetAssignment(_selectedCombination, assignment);
             }
 
-            Changed?.Invoke();
+            NotifyConfigurationChanged();
         }
 
         internal void SetSelectedMenuName(string name)
         {
+            name = name ?? string.Empty;
+            if (SelectedMenuName == name) { return; }
+            RecordChange();
             if (_selectedMenuEntry != null)
             {
                 _selectedMenuEntry.Name = name ?? string.Empty;
-                Changed?.Invoke();
+                NotifyConfigurationChanged();
                 return;
             }
 
@@ -190,7 +286,7 @@ namespace Ee4v.FaceExpression
                 current.EnableBlink,
                 current.FixMouth,
                 name));
-            Changed?.Invoke();
+            NotifyConfigurationChanged();
         }
 
         internal void SetSelectedLeftSynchronized(bool synchronized)
@@ -200,6 +296,8 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
+            if (IsSelectedLeftSynced == synchronized) { return; }
+            RecordChange();
             if (synchronized)
             {
                 SyncedLeftGestures.Add(_selectedCombination.Left);
@@ -212,7 +310,7 @@ namespace Ee4v.FaceExpression
                 SyncedLeftGestures.Remove(_selectedCombination.Left);
             }
 
-            Changed?.Invoke();
+            NotifyConfigurationChanged();
         }
 
         internal void SetSelectedRightSynchronized(bool synchronized)
@@ -222,6 +320,8 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
+            if (IsSelectedRightSynced == synchronized) { return; }
+            RecordChange();
             if (synchronized)
             {
                 SyncedRightGestures.Add(_selectedCombination.Right);
@@ -234,7 +334,7 @@ namespace Ee4v.FaceExpression
                 SyncedRightGestures.Remove(_selectedCombination.Right);
             }
 
-            Changed?.Invoke();
+            NotifyConfigurationChanged();
         }
 
         internal void ResetSynchronization()
@@ -291,23 +391,27 @@ namespace Ee4v.FaceExpression
 
         internal void AddMenuExpression()
         {
+            RecordChange();
             var entry = new FaceExpressionMenuEntry(
                 string.Empty,
                 FaceExpressionAssignment.Default);
             Entries.Add(entry);
             _selectedMenuEntry = entry;
-            Changed?.Invoke();
+            NotifyConfigurationChanged();
         }
 
         internal void RemoveSelectedMenuExpression()
         {
-            if (_selectedMenuEntry == null || !Entries.Remove(_selectedMenuEntry))
+            if (_selectedMenuEntry == null || !Entries.Contains(_selectedMenuEntry))
             {
                 return;
             }
 
+            RecordChange();
+            Entries.Remove(_selectedMenuEntry);
             _selectedMenuEntry = null;
-            Changed?.Invoke();
+            NotifyConfigurationChanged();
         }
     }
+
 }

@@ -32,7 +32,6 @@ namespace Ee4v.FaceExpression
             return new GestureAssignmentViewText
             {
                 Avatar = I18N.Get("field.avatar"),
-                Apply = I18N.Get("action.apply"),
                 LibraryHint = I18N.Get("assignments.libraryHint"),
                 LeftHand = I18N.Get("assignments.leftHand"),
                 RightHand = I18N.Get("assignments.rightHand"),

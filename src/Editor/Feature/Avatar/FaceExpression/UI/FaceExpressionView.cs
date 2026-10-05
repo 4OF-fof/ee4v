@@ -25,6 +25,8 @@ namespace Ee4v.FaceExpression
         public string SearchPlaceholder { get; set; }
         public string SearchTooltip { get; set; }
         public string ClearSearchTooltip { get; set; }
+        public string LibrarySearchPlaceholder { get; set; }
+        public string LibrarySearchTooltip { get; set; }
         public string BlendShapes { get; set; }
         public string Library { get; set; }
         public string ClipOnly { get; set; }
@@ -68,6 +70,10 @@ namespace Ee4v.FaceExpression
         private readonly VisualElement _editorContent;
         private readonly VisualElement _conversionPane;
         private readonly SearchField _search;
+        private readonly SearchField _librarySearch;
+        private IReadOnlyList<string> _libraryFolders;
+        private IReadOnlyList<AnimationClip> _libraryClips;
+        private Action<AnimationClip, Rect> _drawLibraryPreview;
         private readonly SectionHeader _sectionHeader;
         private readonly UiButton _backToLibrary;
         private readonly Toggle _clipOnly;
@@ -246,14 +252,13 @@ namespace Ee4v.FaceExpression
                     ClipChanged?.Invoke(evt.newValue as AnimationClip);
                 }
             });
-            var clipControl = new FormInput(text.Clip, _clipField);
-            clipControl.AddToClassList("ee4v-face-expression__clip-field");
-            editorPane.Add(clipControl);
             _editAssignment = new UiButton(_edit, () =>
                 EditClipRequested?.Invoke(_clipField.value as AnimationClip));
             _editAssignment.AddToClassList("ee4v-face-expression__edit-assignment");
             _editAssignment.style.display = DisplayStyle.None;
-            editorPane.Add(_editAssignment);
+            var clipControl = new FormInput(text.Clip, _clipField, _editAssignment);
+            clipControl.AddToClassList("ee4v-face-expression__clip-field");
+            editorPane.Add(clipControl);
 
             _validation = new MessagePanel();
             _validation.AddToClassList("ee4v-face-expression__validation");
@@ -345,6 +350,12 @@ namespace Ee4v.FaceExpression
             };
             _blendShapeList.AddToClassList("ee4v-face-expression__blend-shapes");
             editorPane.Add(_blendShapeList);
+            _librarySearch = new SearchField(new SearchFieldState(
+                placeholder: text.LibrarySearchPlaceholder,
+                searchTooltip: text.LibrarySearchTooltip,
+                clearTooltip: text.ClearSearchTooltip));
+            _librarySearch.ValueChanged += _ => RenderLibraryItems();
+            editorPane.Add(_librarySearch);
             _library = new ScrollView(ScrollViewMode.Vertical);
             _library.AddToClassList("ee4v-face-expression__library");
             _library.contentContainer.AddToClassList(
@@ -876,8 +887,19 @@ namespace Ee4v.FaceExpression
             bool canNavigateBack,
             Action<AnimationClip, Rect> drawPreview)
         {
-            _library.Clear();
             _canNavigateLibraryBack = canNavigateBack;
+            _libraryFolders = folders;
+            _libraryClips = clips;
+            _drawLibraryPreview = drawPreview;
+            RenderLibraryItems();
+        }
+
+        private void RenderLibraryItems()
+        {
+            _library.Clear();
+            var folders = _libraryFolders;
+            var clips = _libraryClips;
+            var query = (_librarySearch.Value ?? string.Empty).Trim();
             var items = new List<VisualElement>
             {
                 CreateIconLibraryItem(
@@ -900,6 +922,7 @@ namespace Ee4v.FaceExpression
                     var name = separatorIndex >= 0
                         ? folder.Substring(separatorIndex + 1)
                         : folder;
+                    if (name.IndexOf(query, StringComparison.OrdinalIgnoreCase) < 0) { continue; }
                     items.Add(CreateIconLibraryItem(
                         name,
                         "folder.png",
@@ -911,10 +934,10 @@ namespace Ee4v.FaceExpression
             if (clips != null)
             {
                 items.AddRange(clips
-                    .Where(clip => clip != null)
+                    .Where(clip => clip != null && clip.name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
                     .Select(clip => CreateClipLibraryItem(
                         clip,
-                        drawPreview)));
+                        _drawLibraryPreview)));
             }
 
             for (var firstIndex = 0;
@@ -964,10 +987,29 @@ namespace Ee4v.FaceExpression
             });
             preview.AddToClassList("ee4v-face-expression__library-preview");
             preview.pickingMode = PickingMode.Ignore;
+            var dragging = false;
+            var dragStart = Vector2.zero;
             var item = CreateLibraryItem(
                 clip.name,
-                () => ClipChanged?.Invoke(clip),
+                () => { if (!dragging) { ClipChanged?.Invoke(clip); } },
                 preview);
+            item.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0) { return; }
+                dragging = false;
+                dragStart = evt.position;
+            }, TrickleDown.TrickleDown);
+            item.RegisterCallback<PointerMoveEvent>(evt =>
+            {
+                if ((evt.pressedButtons & 1) == 0 || dragging ||
+                    ((Vector2)evt.position - dragStart).sqrMagnitude < 36f) { return; }
+                dragging = true;
+                DragAndDrop.PrepareStartDrag();
+                DragAndDrop.objectReferences = new UnityEngine.Object[] { clip };
+                if (item.HasPointerCapture(evt.pointerId)) { item.ReleasePointer(evt.pointerId); }
+                DragAndDrop.StartDrag(clip.name);
+                evt.StopImmediatePropagation();
+            }, TrickleDown.TrickleDown);
             item.RegisterCallback<ContextClickEvent>(evt =>
             {
                 var menu = new GenericMenu();
@@ -1106,6 +1148,7 @@ namespace Ee4v.FaceExpression
             _search.style.display = _hasClip
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
+            _librarySearch.style.display = _hasClip ? DisplayStyle.None : DisplayStyle.Flex;
             _animationControls.style.display = _hasClip
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;

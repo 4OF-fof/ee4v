@@ -116,7 +116,6 @@
 
 .ee4v-face-expression__edit-assignment {
     flex-shrink: 0;
-    margin-bottom: var(--ee4v-space-sm);
 }
 
 .ee4v-face-expression__editor-content > .ee4v-ui-search-field {
@@ -790,10 +789,6 @@
     align-self: center;
     margin-top: 0;
     margin-bottom: 0;
-}
-
-.ee4v-gesture-assignment__apply {
-    flex-shrink: 0;
 }
 
 .ee4v-gesture-assignment__matrix {

@@ -11,7 +11,6 @@ namespace Ee4v.FaceExpression
     internal sealed class GestureAssignmentViewText
     {
         public string Avatar { get; set; }
-        public string Apply { get; set; }
         public string LibraryHint { get; set; }
         public string LeftHand { get; set; }
         public string RightHand { get; set; }
@@ -42,7 +41,6 @@ namespace Ee4v.FaceExpression
         private const float CellHeight = 128f;
 
         private readonly ObjectField _avatarField;
-        private readonly UiButton _applyButton;
         private readonly VisualElement _extraRow;
         private readonly Dictionary<GestureCombination, GestureAssignmentCell> _cells =
             new Dictionary<GestureCombination, GestureAssignmentCell>();
@@ -88,11 +86,6 @@ namespace Ee4v.FaceExpression
                 hint.SetWhiteSpace(WhiteSpace.Normal);
                 toolbar.Leading.Add(hint);
             }
-            _applyButton = new UiButton(
-                _text.Apply,
-                () => ApplyRequested?.Invoke());
-            _applyButton.AddToClassList("ee4v-gesture-assignment__apply");
-            toolbar.Actions.Add(_applyButton);
             Add(toolbar);
 
             var matrix = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
@@ -142,7 +135,6 @@ namespace Ee4v.FaceExpression
         }
 
         public event Action<GameObject> AvatarChanged;
-        public event Action ApplyRequested;
 
         public void SetAvatar(GameObject avatar)
         {
@@ -156,12 +148,6 @@ namespace Ee4v.FaceExpression
         public void SetConfiguration(FaceExpressionConfiguration configuration)
         {
             _session.SetConfiguration(configuration);
-        }
-
-        public void SetApplyEnabled(bool enabled, string tooltip = null)
-        {
-            _applyButton.SetEnabled(enabled);
-            _applyButton.tooltip = tooltip ?? string.Empty;
         }
 
         private void Subscribe()

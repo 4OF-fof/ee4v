@@ -252,6 +252,8 @@ namespace Ee4v.FaceExpression
                     SearchPlaceholder = "Search BlendShapes",
                     SearchTooltip = "Filter BlendShapes by name",
                     ClearSearchTooltip = "Clear search",
+                    LibrarySearchPlaceholder = "Search expression library",
+                    LibrarySearchTooltip = "Filter expressions and folders by name",
                     BlendShapes = "BlendShapes",
                     Library = "Expression Library",
                     ClipOnly = "In clip only",
@@ -383,7 +385,6 @@ namespace Ee4v.FaceExpression
                 new GestureAssignmentViewText
                 {
                     Avatar = "Avatar",
-                    Apply = "Apply to avatar",
                     LeftHand = "Left hand",
                     RightHand = "Right hand",
                     Selection = "Selected",

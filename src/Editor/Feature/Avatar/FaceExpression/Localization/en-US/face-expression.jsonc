@@ -100,6 +100,8 @@
     "sectionBody": "Body"
   },
   "search": {
+    "libraryPlaceholder": "Search expression library",
+    "libraryTooltip": "Filter expressions and folders in the current folder by name",
     "placeholder": "Search BlendShapes",
     "tooltip": "Filter BlendShapes by name",
     "clearTooltip": "Clear search"
@@ -159,7 +161,6 @@
     "resetView": "Reset view",
     "previewBackground": "Toggle background brightness",
     "backToLibrary": "Back",
-    "apply": "Apply to Avatar",
     "addMenuExpression": "Add menu-only expression",
     "remove": "Remove",
     "addMesh": "Add mesh",

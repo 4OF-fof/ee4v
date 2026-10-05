@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -7,6 +8,30 @@ namespace Ee4v.FaceExpression
 {
     internal sealed class VrchatFaceExpressionGateway
     {
+        internal static void RemoveGeneratedInstallation(GameObject avatar)
+        {
+            if (avatar == null) { return; }
+            var rootName = FaceExpressionGenerationPaths.Create(avatar).RootName;
+            if (!EditorUtility.IsPersistent(avatar))
+            {
+                var root = avatar.transform.Find(rootName);
+                if (root != null) { UnityEngine.Object.DestroyImmediate(root.gameObject); }
+                return;
+            }
+            var path = AssetDatabase.GetAssetPath(avatar);
+            var contents = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                var root = contents.transform.Find(rootName);
+                if (root != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(root.gameObject);
+                    PrefabUtility.SaveAsPrefabAsset(contents, path);
+                }
+            }
+            finally { PrefabUtility.UnloadPrefabContents(contents); }
+        }
+
         public bool TryRead(
             GameObject avatar,
             out FaceExpressionConfiguration configuration)
@@ -129,10 +154,114 @@ namespace Ee4v.FaceExpression
                 name = System.IO.Path.GetFileNameWithoutExtension(assetPath)
             };
             AssetDatabase.CreateAsset(controller, assetPath);
-            Undo.RegisterCreatedObjectUndo(
+            FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(
                 controller,
                 "Create Face Expression Controller");
             return controller;
+        }
+    }
+
+    // Automatic generation is derived from the session's undoable configuration.
+    // Rebuilding assets during Undo/Redo must not add Undo entries or discard Redo.
+    internal sealed class FaceExpressionGenerationUndo : IDisposable
+    {
+        private readonly bool _previous;
+        internal static bool Enabled { get; private set; } = true;
+        internal FaceExpressionGenerationUndo()
+        {
+            _previous = Enabled;
+            Enabled = false;
+        }
+        public void Dispose() { Enabled = _previous; }
+        internal static void RegisterCreatedObjectUndo(UnityEngine.Object target, string label)
+        {
+            if (Enabled) { Undo.RegisterCreatedObjectUndo(target, label); }
+        }
+        internal static void RegisterCompleteObjectUndo(UnityEngine.Object target, string label)
+        {
+            if (Enabled) { Undo.RegisterCompleteObjectUndo(target, label); }
+        }
+        internal static void RecordObject(UnityEngine.Object target, string label)
+        {
+            if (Enabled) { Undo.RecordObject(target, label); }
+        }
+        internal static void DestroyObjectImmediate(UnityEngine.Object target)
+        {
+            if (Enabled) { Undo.DestroyObjectImmediate(target); }
+            else { UnityEngine.Object.DestroyImmediate(target, true); }
+        }
+        internal static AnimatorState AddState(AnimatorStateMachine machine, string name)
+        {
+            if (Enabled) { return machine.AddState(name); }
+            var state = new AnimatorState { name = name, hideFlags = HideFlags.HideInHierarchy };
+            AssetDatabase.AddObjectToAsset(state, machine);
+            machine.states = machine.states.Concat(new[] { new ChildAnimatorState
+                { state = state, position = new Vector3(200f, machine.states.Length * 70f, 0f) } }).ToArray();
+            return state;
+        }
+        internal static AnimatorStateTransition AddAnyStateTransition(AnimatorStateMachine machine, AnimatorState state)
+        {
+            if (Enabled) { return machine.AddAnyStateTransition(state); }
+            var transition = new AnimatorStateTransition { destinationState = state, hideFlags = HideFlags.HideInHierarchy };
+            AssetDatabase.AddObjectToAsset(transition, machine);
+            machine.anyStateTransitions = machine.anyStateTransitions.Concat(new[] { transition }).ToArray();
+            return transition;
+        }
+        internal static AnimatorStateTransition AddTransition(AnimatorState state, AnimatorState destination)
+        {
+            if (Enabled) { return state.AddTransition(destination); }
+            var transition = new AnimatorStateTransition { destinationState = destination, hideFlags = HideFlags.HideInHierarchy };
+            AssetDatabase.AddObjectToAsset(transition, state);
+            state.transitions = state.transitions.Concat(new[] { transition }).ToArray();
+            return transition;
+        }
+        internal static void AddCondition(AnimatorStateTransition transition, AnimatorConditionMode mode, float threshold, string parameter)
+        {
+            if (Enabled) { transition.AddCondition(mode, threshold, parameter); return; }
+            transition.conditions = transition.conditions.Concat(new[] { new AnimatorCondition
+            { mode = mode, threshold = threshold, parameter = parameter } }).ToArray();
+        }
+        internal static void AddLayer(AnimatorController controller, AnimatorControllerLayer layer)
+        {
+            if (Enabled) { controller.AddLayer(layer); }
+            else { controller.layers = controller.layers.Concat(new[] { layer }).ToArray(); }
+        }
+        internal static void AddParameter(AnimatorController controller, string name, AnimatorControllerParameterType type)
+        {
+            if (Enabled) { controller.AddParameter(name, type); }
+            else { controller.parameters = controller.parameters.Concat(new[] { new AnimatorControllerParameter
+            { name = name, type = type } }).ToArray(); }
+        }
+        internal static StateMachineBehaviour AddBehaviour(AnimatorState state, Type type)
+        {
+            if (Enabled) { return state.AddStateMachineBehaviour(type); }
+            var behaviour = (StateMachineBehaviour)ScriptableObject.CreateInstance(type);
+            behaviour.hideFlags = HideFlags.HideInHierarchy;
+            AssetDatabase.AddObjectToAsset(behaviour, state);
+            state.behaviours = state.behaviours.Concat(new[] { behaviour }).ToArray();
+            return behaviour;
+        }
+        internal static void RemoveLayer(AnimatorController controller, int index)
+        {
+            if (Enabled) { controller.RemoveLayer(index); return; }
+            var machine = controller.layers[index].stateMachine;
+            controller.layers = controller.layers.Where((_, i) => i != index).ToArray();
+            DestroyGraph(machine);
+        }
+        private static void DestroyGraph(AnimatorStateMachine machine)
+        {
+            if (machine == null) { return; }
+            foreach (var child in machine.stateMachines) { DestroyGraph(child.stateMachine); }
+            foreach (var child in machine.states)
+            {
+                foreach (var transition in child.state.transitions) { DestroyObjectImmediate(transition); }
+                foreach (var behaviour in child.state.behaviours) { DestroyObjectImmediate(behaviour); }
+                DestroyObjectImmediate(child.state);
+            }
+            foreach (var transition in machine.anyStateTransitions) { DestroyObjectImmediate(transition); }
+            foreach (var transition in machine.entryTransitions) { DestroyObjectImmediate(transition); }
+            foreach (var behaviour in machine.behaviours) { DestroyObjectImmediate(behaviour); }
+            DestroyObjectImmediate(machine);
         }
     }
 }
