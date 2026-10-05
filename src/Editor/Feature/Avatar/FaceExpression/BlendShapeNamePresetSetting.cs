@@ -7,7 +7,6 @@ using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Ee4v.FaceExpression
 {
@@ -62,40 +61,12 @@ namespace Ee4v.FaceExpression
         {
             SettingDrawerApi.Register(definition, context =>
             {
-                var root = new VisualElement();
-
-                void Rebuild()
+                return new UiButton(
+                    I18N.Get("settings.blendShapePresets.openFolder"),
+                    storage.OpenDirectory)
                 {
-                    root.Clear();
-                    var presets = storage.Load().presets;
-                    root.Add(new ListField<BlendShapeFbxPreset>(
-                        new ListFieldState<BlendShapeFbxPreset>(
-                            presets,
-                            (preset, _) =>
-                                new InputField(
-                                    new InputFieldState(preset.name))
-                                {
-                                    IsReadOnly = true
-                                },
-                            tooltip: context.Tooltip)));
-
-                    var openFolder = new UiButton(
-                        I18N.Get("settings.blendShapePresets.openFolder"),
-                        storage.OpenDirectory);
-                    openFolder.tooltip = context.Tooltip ?? string.Empty;
-                    root.Add(openFolder);
-                }
-
-                void OnStorageChanged()
-                {
-                    root.schedule.Execute(Rebuild);
-                }
-
-                storage.Changed += OnStorageChanged;
-                root.RegisterCallback<DetachFromPanelEvent>(
-                    _ => storage.Changed -= OnStorageChanged);
-                Rebuild();
-                return root;
+                    tooltip = context.Tooltip ?? string.Empty
+                };
             });
         }
 

@@ -41,7 +41,7 @@
     },
     "blendShapePresets": {
       "label": "BlendShape presets by FBX",
-      "tooltip": "Shows saved BlendShape presets for each base FBX.",
+      "tooltip": "Opens the storage folder for BlendShape presets by base FBX.",
       "openFolder": "Open storage folder"
     },
     "menuIconsDisabled": {

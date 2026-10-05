@@ -41,7 +41,7 @@
     },
     "blendShapePresets": {
       "label": "FBX別BlendShapeプリセット",
-      "tooltip": "ベースFBXごとの保存済みBlendShapeプリセットを表示します。",
+      "tooltip": "ベースFBXごとのBlendShapeプリセットの保存フォルダーを開きます。",
       "openFolder": "保存先をエクスプローラーで開く"
     },
     "menuIconsDisabled": {

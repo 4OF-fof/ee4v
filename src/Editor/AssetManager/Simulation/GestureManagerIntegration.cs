@@ -3,37 +3,13 @@ using System.Linq;
 using System.Reflection;
 using BlackStartX.GestureManager;
 using BlackStartX.GestureManager.Editor.Modules.Vrc3;
-using BlackStartX.GestureManager.Modules;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using VRC.SDK3.Avatars.Components;
 
 namespace Ee4v.AssetManager.Simulation
 {
     public static class GestureManagerIntegration
     {
-        private const string PrefabPath =
-            "Packages/vrchat.blackstartx.gesture-manager/GestureManager.prefab";
-
-        public static GameObject PlaceInScene(Scene scene, GameObject avatar)
-        {
-            var existing = FindManager(avatar);
-            if (existing != null) { return existing.gameObject; }
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            if (prefab == null)
-            {
-                throw new InvalidOperationException("GestureManager prefab is unavailable.");
-            }
-            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
-            var manager = instance.GetComponent<GestureManager>();
-            manager.settings = manager.settings ?? new ModuleSettings();
-            manager.settings.favourite = avatar.GetComponent<VRCAvatarDescriptor>();
-            EditorUtility.SetDirty(manager);
-            PrefabUtility.RecordPrefabInstancePropertyModifications(manager);
-            return instance;
-        }
-
         internal static GestureManager FindManager(GameObject avatar)
         {
             if (avatar == null || !avatar.scene.IsValid()) { return null; }

@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Ee4v.AssetManager.Infrastructure;
-using Ee4v.AssetManager.Simulation;
 using Ee4v.Core.EditorIntegration;
+using Ee4v.Core.Preview;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -406,12 +406,11 @@ namespace Ee4v.AssetManager.UI
                 scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
                 if (!(PrefabUtility.InstantiatePrefab(prefab, scene)
-                      is GameObject avatar))
+                      is GameObject))
                 {
                     throw new InvalidOperationException(
                         "The Variant Prefab could not be placed in the Scene.");
                 }
-                GestureManagerIntegration.PlaceInScene(scene, avatar);
                 if (!EditorSceneManager.SaveScene(scene, scenePath))
                 {
                     throw new InvalidOperationException(
@@ -443,8 +442,37 @@ namespace Ee4v.AssetManager.UI
             var scene = SceneManager.GetSceneByPath(scenePath);
             if (!scene.IsValid() || !scene.isLoaded)
             {
+                var modifiedScenes = Enumerable.Range(0, SceneManager.sceneCount)
+                    .Select(SceneManager.GetSceneAt)
+                    .Where(candidate => candidate.isLoaded && candidate.isDirty &&
+                        !AvatarPreviewRenderer.IsPreviewScene(candidate)).ToArray();
+                if (!EditorApplication.isPlayingOrWillChangePlaymode && modifiedScenes.Length > 0 &&
+                    !EditorSceneManager.SaveModifiedScenesIfUserWantsTo(modifiedScenes))
+                {
+                    throw new OperationCanceledException("Opening the Variant working Scene was cancelled.");
+                }
                 scene = EditorSceneManager.OpenScene(
-                    scenePath, OpenSceneMode.Additive);
+                    scenePath, OpenSceneMode.Single);
+            }
+            else if (!EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                var otherScenes = Enumerable.Range(0, SceneManager.sceneCount)
+                    .Select(SceneManager.GetSceneAt)
+                    .Where(candidate => candidate != scene && candidate.isLoaded &&
+                        !AvatarPreviewRenderer.IsPreviewScene(candidate)).ToArray();
+                var modifiedScenes = otherScenes.Where(candidate => candidate.isDirty).ToArray();
+                if (modifiedScenes.Length > 0 &&
+                    !EditorSceneManager.SaveModifiedScenesIfUserWantsTo(modifiedScenes))
+                {
+                    throw new OperationCanceledException("Opening the Variant working Scene was cancelled.");
+                }
+                foreach (var otherScene in otherScenes)
+                {
+                    if (!EditorSceneManager.CloseScene(otherScene, true))
+                    {
+                        throw new InvalidOperationException("Another Scene could not be closed.");
+                    }
+                }
             }
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             var root = scene.GetRootGameObjects().FirstOrDefault(candidate =>

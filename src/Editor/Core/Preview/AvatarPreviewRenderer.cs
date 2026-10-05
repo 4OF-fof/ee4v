@@ -4,13 +4,18 @@ using System.Collections.Immutable;
 using System.Linq;
 using nadena.dev.ndmf.preview;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace Ee4v.Core.Preview
 {
     public sealed partial class AvatarPreviewRenderer : IDisposable
     {
+        public static bool IsPreviewScene(Scene scene) =>
+            EditorSceneManager.IsPreviewScene(scene) || NDMFPreviewSceneManager.IsPreviewScene(scene);
+
         private readonly PreviewRenderUtility _utility;
         private readonly PreviewFilter _filter;
         private readonly Dictionary<Renderer, Renderer> _frameProxies = new Dictionary<Renderer, Renderer>();

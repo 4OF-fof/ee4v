@@ -111,6 +111,7 @@ namespace Ee4v.AssetManager.UI
                 throw new InvalidOperationException(
                     "The selected Prefab has no asset path.");
             }
+            var root = DerivedAssetCreator.OpenWorkingScene(path);
             if (!WorkingScenes.TryGetValue(path, out var session) ||
                 session.Root == null)
             {
@@ -126,7 +127,6 @@ namespace Ee4v.AssetManager.UI
                 }
                 else
                 {
-                    var root = DerivedAssetCreator.OpenWorkingScene(path);
                     session = new WorkingSceneSession
                     {
                         Root = root,

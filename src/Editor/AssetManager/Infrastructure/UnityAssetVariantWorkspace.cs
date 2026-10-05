@@ -6,7 +6,6 @@ using System.Security.Cryptography;
 using System.Text;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
-using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 
@@ -290,18 +289,7 @@ namespace Ee4v.AssetManager.Infrastructure
                     PackagesManifest = ReadProjectFile("Packages/manifest.json"),
                     PackagesLock = ReadProjectFile("Packages/packages-lock.json")
                 };
-                snapshot.ContentHash = HashBytes(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new
-                {
-                    snapshot.Variant.Id, snapshot.Variant.SourcePrefabGuid,
-                    snapshot.Variant.Name, snapshot.Variant.Description,
-                    snapshot.Variant.ParentItemId, snapshot.Variant.RootAssetPath, snapshot.Assets,
-                    Dependencies = snapshot.Dependencies.Select(dependency => new
-                    {
-                        dependency.SourceType, dependency.SourceId,
-                        dependency.TargetPaths, dependency.AssetGuids
-                    }),
-                    snapshot.UnityVersion, snapshot.PackagesManifest, snapshot.PackagesLock
-                })));
+                snapshot.ContentHash = GitAssetVariantRepository.ComputeContentHash(snapshot);
                 return new AssetVariantCapture { Snapshot = snapshot, StagingPath = staging };
             }
             catch

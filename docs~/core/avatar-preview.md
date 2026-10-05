@@ -4,6 +4,8 @@
 
 ## 対象と描画
 
+`IsPreviewScene`はUnityのPreview SceneとNDMFのProxy Sceneを判定します。AssetManagerは作業Scene以外の通常Sceneを閉じるときにこのAPIを使用し、Preview Sceneを閉じる対象から除外します。NDMFのScene検索・生成や変更は行いません。
+
 - 通常SceneのAvatarはそのまま参照し、表示用Avatarを複製しません。
 - Edit Modeでは`PreviewSession.Current.Fork`へ最終段の`IRenderFilter`を登録し、専用Cameraへ接続します。親sessionがまだなければ空のsessionから開始し、親が利用可能になった時点で接続し直します。NDMFの加工結果と元Rendererの対応は公開フィルターAPIの`OnFrame`から取得します。
 - 親sessionのフィルターと表示設定を継承し、NDMF Preview対応のMA・Avatar Optimizerなどの加工結果を表示します。親sessionの差し替え時はforkを更新します。forkは独自のProxy資源を持ち、Scene ViewとProxyを共有する保証はありません。

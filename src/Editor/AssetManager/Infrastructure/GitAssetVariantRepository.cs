@@ -661,8 +661,29 @@ namespace Ee4v.AssetManager.Infrastructure
                 ValidateId(asset.Guid);
             }
             ValidateAssetPath(snapshot.Variant.RootAssetPath);
+            snapshot.ContentHash = ComputeContentHash(snapshot);
             snapshot.Revision.CommitId = commit;
             return snapshot;
+        }
+
+        internal static string ComputeContentHash(AssetVariantSnapshot snapshot)
+        {
+            var content = JsonConvert.SerializeObject(new
+            {
+                snapshot.Variant.Id, snapshot.Variant.SourcePrefabGuid,
+                snapshot.Variant.Name, snapshot.Variant.Description,
+                snapshot.Variant.ParentItemId, snapshot.Variant.RootAssetPath, snapshot.Assets,
+                Dependencies = snapshot.Dependencies.Select(dependency => new
+                {
+                    dependency.SourceType, dependency.SourceId,
+                    dependency.TargetPaths, dependency.AssetGuids
+                })
+            });
+            using (var hash = SHA256.Create())
+            {
+                return BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(content)))
+                    .Replace("-", string.Empty).ToLowerInvariant();
+            }
         }
 
         internal static void ValidateAssetPath(string path)

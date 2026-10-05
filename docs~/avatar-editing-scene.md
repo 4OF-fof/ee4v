@@ -1,6 +1,6 @@
 # アバター改変用Scene
 
-同梱のSceneテンプレートと環境設定用Assetは、Editor共通の`src/Editor/Template`に配置します。AssetManagerの`DerivedAssetCreator.EnsureWorkingScene`は、`src/Editor/Template/AvatarEditing.unity`を複製して作業Sceneを生成します。アバターやGestureManagerの特定バージョンへの参照はテンプレートに含めず、複製後にVariant Prefabと外部GestureManager Prefabを配置します。
+同梱のSceneテンプレートと環境設定用Assetは、Editor共通の`src/Editor/Template`に配置します。AssetManagerの`DerivedAssetCreator.EnsureWorkingScene`は、`src/Editor/Template/AvatarEditing.unity`を複製して作業Sceneを生成します。テンプレートには必須外部パッケージのGestureManager Prefabを接続した状態で含め、複製後はVariant Prefabだけを配置します。プログラムからGestureManagerを追加したり、`settings.favourite`へアバター参照を書き込んだりしません。Play Modeの接続時に作業Scene内のGestureManagerを検索し、対象アバターのModuleを接続します。
 
 ## VRChat向けの判断
 
@@ -11,7 +11,7 @@
 
 ## テンプレートの構成
 
-`Editing Environment`をSceneの独立したrootとし、その子に`Main Camera`と`Directional Light`を置きます。環境rootには`EditorOnly`タグを付け、アバターの子にはしません。アバターのPrefab保存時に環境を取り込まない構成です。追加Script、SDK component、床、Light Probe Group、Reflection Probe、Post Processingは含めません。
+`Editing Environment`をSceneの独立したrootとし、その子に`Main Camera`、`Directional Light`とGestureManager Prefabを置きます。環境rootには`EditorOnly`タグを付け、アバターの子にはしません。アバターのPrefab保存時に環境を取り込まない構成です。GestureManager以外の追加Script、SDK component、床、Light Probe Group、Reflection Probe、Post Processingは含めません。
 
 | 対象 | 初期設定 | 意図 |
 | --- | --- | --- |
@@ -31,7 +31,9 @@ Camera、Light、LightingSettingsとCubemapはUnity 2022.3で作成・保存し�
 
 生成時は`AssetDatabase.CopyAsset`で名前付きScene Assetを先に作り、同期Import後にAdditiveで開きます。無名・未保存Sceneを含む他のSceneの内容、dirty状態とactive Sceneを維持します。生成途中のSceneは完了後に閉じ、生成に失敗した場合は途中の出力Sceneを削除します。テンプレートがなければ明示的に失敗し、空Sceneへのfallbackは行いません。既存ファイルや`Assets/`外の生成先へは書き込みません。
 
-改変画面への接続時は、既存のセッション処理で作業Sceneをactiveにし、そのSceneの環境設定を使用します。Additiveで開いた他SceneのCamera・AudioListener・Lightも存在するため、描画、音声、照明を単独で確認するときは他Sceneを閉じるか該当componentを無効にします。Scene ViewではScene Lightingを有効にするとSceneの照明を確認できます。
+Variantの内容差分はPrefab、Material、作業Sceneなどの保存対象Asset・metadataと依存素材で判定します。Unity version、`Packages/manifest.json`と`packages-lock.json`は保存版の環境情報として保持しますが、内容ハッシュには含めません。復元で維持する現在の環境との差だけで保存ボタンを有効にせず、環境の違いは復元時の警告で案内します。保存版を読むときも現在の内容ハッシュの定義で計算します。
+
+改変画面への接続時は作業SceneをSingleで開き、作業Sceneだけを通常の編集Sceneとして保持します。既に作業Sceneが開いている場合も他の通常Sceneを閉じ、対象内の未保存変更は保持します。他Sceneに未保存変更がある場合はUnity標準の保存確認を使用し、キャンセルした場合は接続を中止します。破棄後にUnityが作成するUntitled Sceneも作業Sceneの再読み込みで置き換えます。UnityのPreview SceneとPlay Mode中のScene構成は変更しません。既存のセッション処理で作業Sceneをactiveにし、そのSceneの環境設定を使用します。Scene ViewではScene Lightingを有効にするとSceneの照明を確認できます。
 
 ee4v中央Previewは`AvatarPreviewRenderer`の専用Cameraと照明を使用します。テンプレートのCamera・LightはScene View／Game View向けで、中央Previewと同じ見え方を保証する設定ではありません。生成後の環境設定変更は各VariantのSceneへ保存され、テンプレートの更新を既存Sceneへ自動反映しません。
 
