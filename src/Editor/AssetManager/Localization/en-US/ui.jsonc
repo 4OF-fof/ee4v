@@ -12,6 +12,7 @@
     },
     "windowTitle": "ee4v",
     "category": {
+      "expressionMenu": "Expression Menu",
       "lighting": "Lighting check",
       "menuAndGestures": "Controls",
       "overview": "Overview",

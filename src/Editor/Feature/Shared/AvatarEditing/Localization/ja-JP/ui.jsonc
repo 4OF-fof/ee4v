@@ -1,5 +1,6 @@
 {
   "avatarEditor": {
+    "expressionMenuTitle": "Expression Menu",
     "prefab": "Prefabインスタンス",
     "save": "Prefabに保存",
     "revert": "変更を戻す",

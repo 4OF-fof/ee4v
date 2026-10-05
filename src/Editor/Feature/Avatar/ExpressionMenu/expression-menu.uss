@@ -1,0 +1,16 @@
+.ee4v-expression-menu { flex-grow: 1; padding: 8px; }
+.ee4v-expression-menu__toolbar { flex-direction: row; margin-top: 6px; margin-bottom: 6px; }
+.ee4v-expression-menu__ring { width: 320px; height: 320px; align-self: center; margin-top: 8px; margin-bottom: 8px; flex-shrink: 0; }
+.ee4v-expression-menu__slot { position: absolute; width: 86px; height: 74px; flex-direction: column; justify-content: center; border-radius: 12px; background-color: rgba(100, 100, 100, 0.15); }
+.ee4v-expression-menu__slot Image { width: 30px; height: 30px; align-self: center; }
+.ee4v-expression-menu__slot .ee4v-ui-button__label { max-width: 80px; flex-shrink: 1; }
+.ee4v-expression-menu__slot--selected { border-width: 2px; border-color: rgb(78, 155, 235); }
+.ee4v-expression-menu__slot-0 { left: 117px; top: 0; }
+.ee4v-expression-menu__slot-1 { left: 207px; top: 39px; }
+.ee4v-expression-menu__slot-2 { left: 234px; top: 123px; }
+.ee4v-expression-menu__slot-3 { left: 207px; top: 207px; }
+.ee4v-expression-menu__slot-4 { left: 117px; top: 246px; }
+.ee4v-expression-menu__slot-5 { left: 27px; top: 207px; }
+.ee4v-expression-menu__slot-6 { left: 0; top: 123px; }
+.ee4v-expression-menu__slot-7 { left: 27px; top: 39px; }
+.ee4v-expression-menu__back { position: absolute; left: 117px; top: 137px; width: 86px; height: 46px; }

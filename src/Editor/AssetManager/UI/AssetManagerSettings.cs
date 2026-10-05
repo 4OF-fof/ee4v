@@ -120,13 +120,21 @@ namespace Ee4v.AssetManager.UI
 
         private static ISettingsService _registeredSettings;
 
+        private static readonly SettingDefinition<string> ExcludedItemNamePrefixes =
+            new SettingDefinition<string>("assetManager.excludedItemNamePrefixes", SettingScope.User,
+                "AssetManager", "settings.section.assetManager.view",
+                "settings.excludedItemNamePrefixes.label", "settings.excludedItemNamePrefixes.tooltip",
+                string.Empty, order: 2, keywords: new[] { "item", "exclude", "prefab" });
+
         internal static event Action ProjectThumbnailImportChanged;
         internal static event Action PartListExclusionsChanged;
+        internal static event Action ItemListExclusionsChanged;
 
         static AssetManagerSettings()
         {
             CommaSeparatedListSettingDrawer.Register(
                 ExcludedPartNamePrefixes);
+            CommaSeparatedListSettingDrawer.Register(ExcludedItemNamePrefixes);
             EnsureRegistered();
         }
 
@@ -151,6 +159,8 @@ namespace Ee4v.AssetManager.UI
         internal static IReadOnlyList<string> ExcludedPartPrefixes =>
             CommaSeparatedListSettingDrawer.ParseItems(
                 Get(ExcludedPartNamePrefixes));
+        internal static IReadOnlyList<string> ExcludedItemPrefixes =>
+            CommaSeparatedListSettingDrawer.ParseItems(Get(ExcludedItemNamePrefixes));
 
         private static T Get<T>(SettingDefinition<T> definition)
         {
@@ -177,6 +187,7 @@ namespace Ee4v.AssetManager.UI
             settings.Register(AutoSyncEe4v);
             settings.Register(ApplyProjectThumbnailOnImport);
             settings.Register(ExcludedPartNamePrefixes);
+            settings.Register(ExcludedItemNamePrefixes);
             settings.Changed += OnSettingChanged;
             _registeredSettings = settings;
             return settings;
@@ -198,6 +209,8 @@ namespace Ee4v.AssetManager.UI
             {
                 PartListExclusionsChanged?.Invoke();
             }
+            if (ReferenceEquals(args.Definition, ExcludedItemNamePrefixes))
+                ItemListExclusionsChanged?.Invoke();
         }
     }
 }

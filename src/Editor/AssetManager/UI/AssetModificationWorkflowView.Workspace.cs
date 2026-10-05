@@ -654,7 +654,7 @@ namespace Ee4v.AssetManager.UI
             _faceExpressionEditor?.StopPlayback();
             _overviewContent?.RemoveFromHierarchy();
             _overviewContent = null;
-            if (category == WorkflowCategory.Overview)
+            if (category == WorkflowCategory.Overview || category == WorkflowCategory.ExpressionMenu)
             {
                 _appearanceHeader.style.display = DisplayStyle.None;
                 foreach (var cachedControls in _appearanceControlsCache.Values)
@@ -664,7 +664,9 @@ namespace Ee4v.AssetManager.UI
                 }
                 _avatarContext.Preview?.FocusBodyPart(null, preservePreviewCamera);
                 _avatarContext.Preview?.SetListSelection(null, null);
-                _overviewContent = BuildOverviewControls();
+                _overviewContent = category == WorkflowCategory.ExpressionMenu
+                    ? new Ee4v.ExpressionMenu.ExpressionMenuView(_avatarContext)
+                    : BuildOverviewControls();
                 _avatarContext.ControlsHost.Add(_overviewContent);
                 if (categoryChanged)
                 {

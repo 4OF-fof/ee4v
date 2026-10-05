@@ -1,5 +1,9 @@
 # AssetManager
 
+## Editor ModeのExpression Menu
+
+Editor ModeのExpression Menuカテゴリは、DescriptorとModular Avatarの合成メニューを表示し、編集元を確認したうえで項目の設定・削除を行います。追加項目はアバター内の専用MA Prefabへ保存し、このPrefabを上部item一覧から除外します。ユーザー設定の`assetManager.excludedItemNamePrefixes`で上部item一覧の追加除外を指定できます。詳細は[Expression Menu](features/expression-menu.md)を参照してください。
+
 AssetManager は Item、File、Import Target、依存関係、Tag、Collection、取り込み済み Asset GUID と派生アセットを管理します。MCP の公開操作と入力境界は [mcp.md](./mcp.md) を参照してください。
 
 ## PlayModeの操作確認

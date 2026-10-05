@@ -1,5 +1,9 @@
 {
   "settings": {
+    "excludedItemNamePrefixes": {
+      "label": "item一覧から除外する名前の接頭辞",
+      "tooltip": "アバター直下のPrefabのうち、名前が指定の接頭辞で始まるものを上部item一覧から除外します。大文字と小文字を区別しません。生成したExpression Menu専用Prefabは常に除外します。"
+    },
     "section": {
       "assetManager": {
         "paths": "AssetManager パス",

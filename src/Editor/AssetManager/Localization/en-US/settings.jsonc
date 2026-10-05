@@ -1,5 +1,9 @@
 {
   "settings": {
+    "excludedItemNamePrefixes": {
+      "label": "Name prefixes excluded from the item list",
+      "tooltip": "Hide matching direct child Prefabs from the avatar item tabs, ignoring case. Generated Expression Menu Prefabs are always excluded."
+    },
     "section": {
       "assetManager": {
         "paths": "AssetManager paths",

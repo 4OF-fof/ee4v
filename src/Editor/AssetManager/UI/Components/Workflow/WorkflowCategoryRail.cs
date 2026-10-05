@@ -40,6 +40,8 @@ namespace Ee4v.AssetManager.UI
                 WorkflowCategory.ExpressionAnimation,
                 "workflow.category.expressionAnimation",
                 "star.png");
+            AddCategoryButton(WorkflowCategory.ExpressionMenu,
+                "workflow.category.expressionMenu", "arrow_clockwise.png");
         }
 
         private void AddCategoryButton(
@@ -78,6 +80,8 @@ namespace Ee4v.AssetManager.UI
             {
                 expression.SetEnabled(!selected);
             }
+            if (_buttons.TryGetValue(WorkflowCategory.ExpressionMenu, out var menu))
+                menu.SetEnabled(!selected);
         }
     }
 }

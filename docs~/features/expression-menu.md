@@ -1,0 +1,29 @@
+# Expression Menu
+
+`src/Editor/Feature/Avatar/ExpressionMenu`の`Ee4v.ExpressionMenu.Editor`は、Unity 2022.3 / VRChatのExpression MenuをEdit Modeで表示・編集します。AssetManagerのEditor Modeカテゴリと単独の`ee4v/Window/Avatar/Expression Menu`が同じ`ExpressionMenuView`を使用します。Play ModeのControlsは既存GestureManagerによる動作確認を使用します。
+
+## 表示と出所
+
+初期表示はDescriptorのExpression MenuへModular AvatarのMenu Installer、Menu Item、Menu Group、Menu Install Targetを解決した構成です。アイコンと名前を8方向へ配置し、項目選択で設定を開き、サブメニューと戻る操作で階層を辿ります。8項目を超える合成メニューは7項目とNextへ分割して表示します。ページ移動は表示だけの操作で、元assetを分割しません。パラメーターを動かしてアバターを再生する操作はPlay ModeのControlsで行います。
+
+「表示・編集元」からDescriptorとMA Installerの参照するメニューasset、MA Menu Itemを直接選択できます。合成表示の項目は名前・型・アイコン・値・パラメーター・Puppet軸・ラベル・サブメニューから元を照合します。候補が複数ある場合は合成表示からの変更を禁止し、編集元の選択で確定します。外部の編集で元のControlが差し替わった場合も変更を拒否して再読み込みを促します。
+
+設定欄は編集元のObjectとasset pathまたはHierarchy pathを表示します。「この編集元を確認し、変更する」を有効にしてから適用・削除・サブメニューassetの生成を行います。編集元が共有assetの場合、使用するすべてのアバターへ影響することを画面に明記します。名前、アイコン、ControlType、parameter、value、subMenu、PuppetのsubParametersと方向ラベル・アイコンを設定できます。MA Menu Itemでは同期・値保存・既定項目・自動値割り当ても設定できます。MA Childrenサブメニューでは子構造を保持し、subMenu assetへの置換は行いません。
+
+## MA専用Prefab
+
+追加はアバター直下の`ee4v Expression Menu`へ配置したMA専用Prefabを使用します。保存先は対象Prefabと同じディレクトリの`<Prefab名>.ExpressionMenu/ExpressionMenu.prefab`、メニューassetは同フォルダー内です。1つの追加元メニューは8項目までとし、合成メニューへさらに追加する場合は別のMenu Installerを作成します。既存assetのサブメニューへ追加するときは`installTargetMenu`を使用し、MA ChildrenのサブメニューにはMenu Install Targetをその子へ追加して専用Prefab内のInstallerを参照させます。追加した項目の編集元を自動選択します。
+
+対象は書き込み可能な通常SceneのAvatar Prefabインスタンスです。元の共有メニューへ項目を直接追加しません。生成フォルダー内のメニューへ追加する場合はそのassetを使用します。生成Prefabは上部item一覧から必ず除外します。AssetManager設定の`assetManager.excludedItemNamePrefixes`は大文字小文字を区別しない名前接頭辞リストで、アバター直下のPrefabを追加除外します。空の既定値では追加除外しません。除外は表示対象の指定で、GameObjectの削除・非アクティブ化は行いません。
+
+## 保存と依存
+
+設定の適用・削除はUndoへ記録します。メニューassetの変更は「メニューassetを保存」で保存し、Scene内MA Componentと生成Prefab配置は既存ホストのAvatar Prefab保存を使用します。生成メニュー追加時は生成assetと専用Prefabを保存します。Scene、Git、DBは機能側で保存しません。AssetManagerのVariant保存と単独WindowのPrefab保存は従来のホストが所有します。
+
+Coreの公開Localization、UI、共有AvatarEditingの編集許可・変更通知・単独Windowに依存します。AvatarEditingを使用する理由は統合版と単独版の対象・保存契約を揃えるためです。他のAvatar機能への参照はありません。VRChat SDKとModular Avatar runtimeの実際に使うassemblyのみ参照します。
+
+MAは`src/package.json`の対応範囲（1.18.2以上2.0.0未満）を前提に、内部Editor resolver `VirtualMenu.ForAvatar`、`RootMenuNode`、Childrenのnode key、内部Menu Install Targetへアクセスします。バージョン依存箇所はModelとInstallerへ隔離します。resolverが取得できない、解決できない場合はエラーと再読み込みを表示し、不完全な合成メニューへの編集へ代替しません。対応範囲でもMA内部API変更時には確認が必要です。
+
+## 手動確認
+
+隔離Unity 2022.3でDescriptorメニュー、root/指定サブメニューへのMA Installer、MA Childrenサブメニューを含むアバターを使用します。合成表示、階層移動、出所確認前の適用・削除無効、確認後の適用・削除とUndo、追加専用Prefabの配置、item一覧の必須除外と設定除外、単独Windowの対象切り替えを確認します。新規自動テストは追加しません。

@@ -1,5 +1,6 @@
 {
   "avatarEditor": {
+    "expressionMenuTitle": "Expression Menu",
     "prefab": "Prefab instance",
     "save": "Save to Prefab",
     "revert": "Revert Changes",

@@ -18,7 +18,8 @@
     "Ee4v.AvatarEditing.Editor",
     "Ee4v.AvatarParts.Editor",
     "Ee4v.AvatarMaterials.Editor",
-    "Ee4v.AvatarInfo.Editor"
+    "Ee4v.AvatarInfo.Editor",
+    "Ee4v.ExpressionMenu.Editor"
   ],
   "includePlatforms": [
     "Editor"

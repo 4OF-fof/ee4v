@@ -7,7 +7,8 @@ namespace Ee4v.AssetManager.UI
         ShapeParts,
         Material,
         ExpressionAnimation,
-        Lighting
+        Lighting,
+        ExpressionMenu
     }
 
     internal static class WorkflowCategories

@@ -283,6 +283,7 @@ namespace Ee4v.AssetManager.UI
                 OnPartListExclusionsChanged;
             AssetManagerSettings.PartListExclusionsChanged +=
                 OnPartListExclusionsChanged;
+            AssetManagerSettings.ItemListExclusionsChanged += OnItemListExclusionsChanged;
             EditorApplication.projectChanged += OnProjectChanged;
             AvatarPlayModePerformanceCache.Changed += OnPlayModePerformanceChanged;
             AvatarBuildSizeCache.Changed += OnPlayModePerformanceChanged;
@@ -311,6 +312,7 @@ namespace Ee4v.AssetManager.UI
                 OnBlendShapePresetChanged;
             AssetManagerSettings.PartListExclusionsChanged -=
                 OnPartListExclusionsChanged;
+            AssetManagerSettings.ItemListExclusionsChanged -= OnItemListExclusionsChanged;
             EditorApplication.projectChanged -= OnProjectChanged;
             AvatarPlayModePerformanceCache.Changed -= OnPlayModePerformanceChanged;
             AvatarBuildSizeCache.Changed -= OnPlayModePerformanceChanged;
@@ -475,6 +477,19 @@ namespace Ee4v.AssetManager.UI
             {
                 Rebuild();
             }
+        }
+
+        private void OnItemListExclusionsChanged()
+        {
+            _parts.EndBodyScaleDrag();
+            _parts.SaveBodyScalePrefab();
+            if (_parts.BodyScaleDirty || !_parts.FlushPendingPartVisibility()) return;
+            _avatarContext.SelectedPrefabSiblingIndex = null;
+            _avatarContext.SelectedPrefabName = string.Empty;
+            _avatarContext.SelectedBodyPart = null;
+            _avatarContext.SelectedPartKey = null;
+            _avatarContext.SelectedMaterial = null;
+            Rebuild();
         }
 
         private void OnBlendShapePresetChanged()

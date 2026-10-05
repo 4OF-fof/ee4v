@@ -424,10 +424,14 @@ namespace Ee4v.AssetManager.UI
             var root = _avatarContext.Root;
             {
                 var children = new List<AssetChildEntry>();
+                var excludedPrefixes = AssetManagerSettings.ExcludedItemPrefixes;
                 for (var index = 0; index < root.transform.childCount; index++)
                 {
                     var child = root.transform.GetChild(index).gameObject;
-                    if (!PrefabUtility.IsAnyPrefabInstanceRoot(child))
+                    if (!PrefabUtility.IsAnyPrefabInstanceRoot(child) ||
+                        Ee4v.ExpressionMenu.ExpressionMenuInstaller.IsGeneratedPrefab(child) ||
+                        excludedPrefixes.Any(prefix =>
+                            child.name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
                     {
                         continue;
                     }

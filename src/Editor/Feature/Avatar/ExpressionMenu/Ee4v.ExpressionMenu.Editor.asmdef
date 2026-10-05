@@ -1,0 +1,12 @@
+{
+  "name": "Ee4v.ExpressionMenu.Editor",
+  "rootNamespace": "Ee4v.ExpressionMenu",
+  "references": [
+    "Ee4v.Core.Presentation.Editor",
+    "Ee4v.UI.Editor",
+    "Ee4v.AvatarEditing.Editor",
+    "nadena.dev.modular-avatar.core"
+  ],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}
