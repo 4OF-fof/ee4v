@@ -121,6 +121,8 @@ Variant作成時は同じVariantフォルダーに`<Variant名>.prefab`と`<Vari
 
 カテゴリの並びは「体型・パーツ」「マテリアル」「表情」です。上部アセットタブの非表示設定はカテゴリ間で維持します。
 
+表情画面の未保存通知と保存・破棄はFace Expressionが所有します。表情から別カテゴリへ移動する場合と上部Prefabタブを切り替える場合、公開`FaceExpressionEmbeddedView.TryConfirmNavigation`へ移動先の処理を渡します。未保存の変更があると不透明な通知カードのoverlayを表示し、「保存」は保存成功後、「破棄」は未保存分の復元成功後に切り替え、「編集を続ける」は元の画面へ戻ります。保存・破棄が失敗した場合は元のタブに留まります。通常の上部通知は割当画面だけに表示し、メッセージの右側へ保存ボタンを配置します。詳細は[Face Expression](./features/face-expression.md)を参照します。
+
 Shader別の視覚的なpreset、表情presetと左右連動、Avatarへの一括適用と検証、workflow session永続化は未実装です。
 
 #### Materialの差し替えと読み取り専用編集

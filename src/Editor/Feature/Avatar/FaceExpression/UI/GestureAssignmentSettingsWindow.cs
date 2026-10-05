@@ -18,12 +18,14 @@ namespace Ee4v.FaceExpression
         private void OnEnable()
         {
             I18N.Reloaded += Rebuild;
+            GestureAssignmentSession.ActiveChanged += Rebuild;
             ConfigureWindow();
         }
 
         private void OnDisable()
         {
             I18N.Reloaded -= Rebuild;
+            GestureAssignmentSession.ActiveChanged -= Rebuild;
         }
 
         private void CreateGUI()
@@ -50,7 +52,7 @@ namespace Ee4v.FaceExpression
                 root,
                 "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
             root.Add(new GestureAssignmentSettingsView(
-                GestureAssignmentWindow.CreateText()));
+                GestureAssignmentWindow.CreateText(), session: GestureAssignmentSession.Active));
         }
 
         private void ConfigureWindow()

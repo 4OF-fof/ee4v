@@ -19,15 +19,20 @@ namespace Ee4v.FaceExpression
         private static void Open()
         {
             ShowWindow();
-            FaceExpressionGroupWindow.ShowWindow();
         }
 
         internal static void ShowWindow()
         {
             var window = GetWindow<FaceExpressionWindow>();
             window.RefreshTitle();
-            window.minSize = new Vector2(720f, 600f);
+            window.minSize = new Vector2(1000f, 680f);
             window.Show();
+        }
+
+        internal static void ShowFor(GameObject avatar)
+        {
+            ShowWindow();
+            GetWindow<FaceExpressionWindow>()._editor?.Initialize(avatar);
         }
 
         private void OnEnable()
@@ -80,6 +85,11 @@ namespace Ee4v.FaceExpression
             _editor.StopPlayback();
         }
 
+        public bool TryConfirmNavigation(VisualElement host, Action continueNavigation)
+        {
+            return _editor.TryConfirmNavigation(host, continueNavigation);
+        }
+
         public void Dispose()
         {
             _editor.Dispose();
@@ -94,6 +104,10 @@ namespace Ee4v.FaceExpression
 
         private FaceExpressionPreview _preview;
         private FaceExpressionView _view;
+        private GestureAssignmentView _assignmentView;
+        private readonly GestureAssignmentSession _assignments = new GestureAssignmentSession(true);
+        private bool _initiallyInstalled;
+        private readonly VrchatFaceExpressionGateway _gateway = new VrchatFaceExpressionGateway();
         private ISettingsService _settings;
         private IBlendShapePresetStore _presetStore;
         private GameObject _avatar;
@@ -122,13 +136,25 @@ namespace Ee4v.FaceExpression
             new AnimationClipThumbnailCache();
         private double _poseThumbnailRefreshAt = -1d;
         private double _validationRefreshAt = -1d;
+        private readonly HashSet<AnimationClip> _editedClips = new HashSet<AnimationClip>();
+        private readonly Dictionary<AnimationClip, ClipEditSnapshot> _clipSnapshots =
+            new Dictionary<AnimationClip, ClipEditSnapshot>();
+        private FaceExpressionConfiguration _savedConfiguration;
+        private bool _savedInstallationPresent;
+        private int _savedAssignmentRevision;
+        private bool _assignmentAssetsDirty;
+        private bool _saveFailed;
+        private bool _saveAttemptNeedsRollback;
         private readonly VisualElement _root;
         private readonly Action _repaint;
         private readonly bool _avatarLocked;
         private bool _disposed;
+        private bool _initialized;
 
         private bool HasClipReference => !ReferenceEquals(_clip, null);
         private bool IsClipMissing => HasClipReference && _clip == null;
+        private bool HasUnsavedChanges => _assignmentAssetsDirty ||
+            _assignments.Revision != _savedAssignmentRevision || _editedClips.Count > 0 || _saveAttemptNeedsRollback;
 
         internal FaceExpressionEditor(
             VisualElement root,
@@ -145,10 +171,13 @@ namespace Ee4v.FaceExpression
             _presetStore.Changed += RefreshClip;
             FaceExpressionGroupSession.Changed += ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged += RefreshClip;
+            _assignments.ConfigurationChanged += RefreshSaveNotification;
             _preview = new FaceExpressionPreview(RequestRepaint);
             Undo.undoRedoPerformed += OnUndoRedo;
             EditorApplication.projectChanged += RefreshLibrary;
             EditorApplication.update += UpdatePlayback;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            AssemblyReloadEvents.beforeAssemblyReload += SavePendingChanges;
             I18N.Reloaded += Rebuild;
         }
 
@@ -159,6 +188,9 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
+            SavePendingChanges();
+            _view?.CloseUnsavedChangesOverlay();
+            ReleaseClipSnapshots();
             _disposed = true;
             StopPlayback();
             if (_settings != null)
@@ -175,9 +207,13 @@ namespace Ee4v.FaceExpression
             Undo.undoRedoPerformed -= OnUndoRedo;
             EditorApplication.projectChanged -= RefreshLibrary;
             EditorApplication.update -= UpdatePlayback;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            AssemblyReloadEvents.beforeAssemblyReload -= SavePendingChanges;
             I18N.Reloaded -= Rebuild;
             FaceExpressionGroupSession.Changed -= ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged -= RefreshClip;
+            _assignments.ConfigurationChanged -= RefreshSaveNotification;
+            _assignments.Dispose();
             ClearThumbnails();
             _preview?.Dispose();
             _preview = null;
@@ -187,8 +223,9 @@ namespace Ee4v.FaceExpression
         {
             BuildContent();
             RefreshLibrary();
-            if (_avatarLocked || (_avatar == null && avatar != null))
+            if (!_initialized || _avatar != avatar)
             {
+                _initialized = true;
                 SetAvatar(avatar);
             }
             else
@@ -216,6 +253,7 @@ namespace Ee4v.FaceExpression
 
         private void BuildContent()
         {
+            _view?.CloseUnsavedChangesOverlay();
             var root = _root;
             root.Clear();
             UiComposition.Prepare(
@@ -227,9 +265,15 @@ namespace Ee4v.FaceExpression
                 rect => _preview?.Draw(rect),
                 DrawPoseThumbnail,
                 !_avatarLocked);
+            _view.RegisterCallback<MouseDownEvent>(_ => _assignments.Activate());
+            _view.RegisterCallback<FocusInEvent>(_ => _assignments.Activate());
             _view.SetAvatarEditable(!_avatarLocked);
             _view.AvatarChanged += SetAvatar;
-            _view.ClipChanged += SetClip;
+            _view.SaveRequested += SavePendingChanges;
+            _view.AssignmentSelectionCleared += _assignments.ClearSelection;
+            _view.ClipChanged += ChooseClip;
+            _view.LibraryClipSelected += AssignClip;
+            _view.EditClipRequested += EditClip;
             _view.NewClipRequested += CreateClip;
             _view.CopyClipRequested += CopyClip;
             _view.ConversionRequested += () =>
@@ -259,13 +303,28 @@ namespace Ee4v.FaceExpression
             _view.PlaybackChanged += TogglePlayback;
             _view.TimeChanged += SetCurrentTime;
             _view.LoopChanged += SetLooping;
+            _assignmentView = new GestureAssignmentView(
+                GestureAssignmentWindow.CreateText(), DrawLibraryThumbnail, false, _assignments);
+            _assignmentView.SetAvatar(_avatar);
+            _view.SetAssignmentContent(_assignmentView,
+                new GestureAssignmentSettingsView(GestureAssignmentWindow.CreateText(), _settings, _assignments));
             RenderLibrary();
+            RefreshSaveNotification();
             root.Add(_view);
         }
 
         private void SetAvatar(GameObject avatar)
         {
+            if (!TrySavePendingChanges())
+            {
+                _view?.SetAvatar(_avatar);
+                return;
+            }
+            _assignments.ResetSynchronization();
+            ReleaseClipSnapshots();
             _avatar = avatar;
+            _initiallyInstalled = avatar != null && avatar.transform.Find(
+                FaceExpressionGenerationPaths.Create(avatar).RootName) != null;
             _clip = null;
             _poseTimes = Array.Empty<float>();
             _poseSources = Array.Empty<AnimationClip>();
@@ -280,11 +339,268 @@ namespace Ee4v.FaceExpression
             RenderLibrary();
             FaceExpressionGroupSession.SetAvatar(avatar);
             _view?.SetAvatar(avatar);
+            _assignmentView?.SetAvatar(avatar);
+            _gateway.TryRead(avatar, out var configuration);
+            _assignments.SetConfiguration(configuration);
+            _savedConfiguration = _assignments.CreateConfiguration();
+            _savedInstallationPresent = _initiallyInstalled;
+            _saveAttemptNeedsRollback = false;
+            _savedAssignmentRevision = _assignments.Revision;
+            _assignmentAssetsDirty = false;
+            _editedClips.Clear();
+            _saveFailed = false;
+            RefreshSaveNotification();
+            _assignments.Activate();
             FaceExpressionSettings.EnsureNamePreset(
                 avatar,
                 _settings,
                 _presetStore);
             RefreshValidation();
+            RefreshClip();
+        }
+
+        private void ChooseClip(AnimationClip clip)
+        {
+            if (_clip != null || !_assignments.HasSelection) { SetClip(clip); }
+            else { AssignClip(clip); }
+        }
+
+        private void AssignClip(AnimationClip clip)
+        {
+            if (_avatar == null || !_assignments.HasSelection) { return; }
+            _assignments.Activate();
+            if (_assignments.IsMenuSelection)
+            {
+                _assignments.SetClip(_assignments.SelectedMenuEntry, clip);
+            }
+            else
+            {
+                _assignments.SetClip(_assignments.SelectedCombination, clip);
+            }
+        }
+
+        private void EditClip(AnimationClip clip)
+        {
+            if (_avatar == null || clip == null) { return; }
+            AssignClip(clip);
+            SetClip(clip);
+        }
+
+        private void RefreshSaveNotification()
+        {
+            _view?.SetUnsavedChanges(HasUnsavedChanges, _saveFailed);
+        }
+
+        private void SavePendingChanges()
+        {
+            TrySavePendingChanges();
+        }
+
+        internal bool TryConfirmNavigation(VisualElement host, Action continueNavigation)
+        {
+            if (!HasUnsavedChanges || _view == null) { return true; }
+            StopPlayback();
+            _view.ShowUnsavedChangesOverlay(host, TrySavePendingChanges, () =>
+            {
+                if (!TryDiscardPendingChanges()) { return false; }
+                SetClip(null);
+                return true;
+            }, continueNavigation);
+            return false;
+        }
+
+        private bool TrySavePendingChanges()
+        {
+            if (_disposed || !HasUnsavedChanges) { return true; }
+            try
+            {
+                _saveAttemptNeedsRollback = true;
+                foreach (var clip in _editedClips)
+                {
+                    if (clip == null) { continue; }
+                    foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(clip)))
+                    {
+                        AssetDatabase.SaveAssetIfDirty(asset);
+                    }
+                }
+                if (_assignmentAssetsDirty || _assignments.Revision != _savedAssignmentRevision)
+                {
+                    using (new FaceExpressionGenerationUndo())
+                    {
+                        if (_assignments.IsInitialConfiguration && !_initiallyInstalled)
+                        {
+                            VrchatFaceExpressionGateway.RemoveGeneratedInstallation(_avatar);
+                        }
+                        else if (!_gateway.TryApply(_avatar, _assignments.CreateConfiguration(),
+                            out _, out var error))
+                        {
+                            _saveFailed = true;
+                            RefreshSaveNotification();
+                            _view?.SetValidation(new MessagePanelState(
+                                I18N.Get("status." + (error ?? "applyFailed")), severity: MessageSeverity.Error));
+                            return false;
+                        }
+                    }
+                }
+                _savedAssignmentRevision = _assignments.Revision;
+                _savedConfiguration = _assignments.CreateConfiguration();
+                _savedInstallationPresent = _avatar != null && _avatar.transform.Find(
+                    FaceExpressionGenerationPaths.Create(_avatar).RootName) != null;
+                ReleaseClipSnapshots();
+                CaptureClipSnapshot(_clip);
+                _saveAttemptNeedsRollback = false;
+                _assignmentAssetsDirty = false;
+                _editedClips.Clear();
+                _saveFailed = false;
+                RefreshSaveNotification();
+                RefreshValidation();
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                _saveFailed = true;
+                RefreshSaveNotification();
+                return false;
+            }
+        }
+
+        private bool TryDiscardPendingChanges()
+        {
+            if (_disposed || !HasUnsavedChanges) { return true; }
+            try
+            {
+                StopPlayback();
+                foreach (var clip in _editedClips)
+                {
+                    if (clip == null) { continue; }
+                    if (!_clipSnapshots.TryGetValue(clip, out var snapshot))
+                    {
+                        throw new InvalidOperationException("The expression clip has no saved edit snapshot.");
+                    }
+                    snapshot.Restore(_saveAttemptNeedsRollback);
+                }
+                if (_saveAttemptNeedsRollback)
+                {
+                    using (new FaceExpressionGenerationUndo())
+                    {
+                        if (!_savedInstallationPresent) { VrchatFaceExpressionGateway.RemoveGeneratedInstallation(_avatar); }
+                        else if (!_gateway.TryApply(_avatar, _savedConfiguration, out _, out _)) { return false; }
+                    }
+                }
+                _assignments.ResetSynchronization();
+                _assignments.SetConfiguration(_savedConfiguration);
+                _savedAssignmentRevision = _assignments.Revision;
+                _initiallyInstalled = _savedInstallationPresent;
+                _assignmentAssetsDirty = false;
+                _editedClips.Clear();
+                _saveFailed = false;
+                ReleaseClipSnapshots();
+                CaptureClipSnapshot(_clip);
+                _saveAttemptNeedsRollback = false;
+                ClearThumbnails();
+                RefreshClip();
+                RefreshSaveNotification();
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                return false;
+            }
+        }
+
+        private void CaptureClipSnapshot(AnimationClip clip)
+        {
+            if (clip != null && !_clipSnapshots.ContainsKey(clip))
+            {
+                _clipSnapshots.Add(clip, new ClipEditSnapshot(clip));
+            }
+        }
+
+        private void ReleaseClipSnapshots()
+        {
+            foreach (var snapshot in _clipSnapshots.Values) { snapshot.Dispose(); }
+            _clipSnapshots.Clear();
+        }
+
+        private sealed class ClipEditSnapshot : IDisposable
+        {
+            private readonly AnimationClip _clip;
+            private readonly AnimationClip _savedClip;
+            private readonly bool _clipWasDirty;
+            private readonly (FaceExpressionSequenceData Original, FaceExpressionSequenceData Saved, bool WasDirty)[] _sequence;
+
+            internal ClipEditSnapshot(AnimationClip clip)
+            {
+                _clip = clip;
+                _clipWasDirty = EditorUtility.IsDirty(clip);
+                _savedClip = UnityEngine.Object.Instantiate(clip);
+                _savedClip.name = clip.name;
+                _savedClip.hideFlags = HideFlags.HideAndDontSave;
+                _sequence = AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(clip))
+                    .OfType<FaceExpressionSequenceData>().Select(data =>
+                    {
+                        var saved = UnityEngine.Object.Instantiate(data);
+                        saved.name = data.name;
+                        saved.hideFlags = HideFlags.HideAndDontSave;
+                        return (Original: data, Saved: saved, WasDirty: EditorUtility.IsDirty(data));
+                    }).ToArray();
+            }
+
+            internal void Restore(bool writeToDisk)
+            {
+                var path = AssetDatabase.GetAssetPath(_clip);
+                foreach (var data in AssetDatabase.LoadAllAssetsAtPath(path).OfType<FaceExpressionSequenceData>())
+                {
+                    if (_sequence.Any(item => item.Original == data)) { continue; }
+                    Undo.ClearUndo(data);
+                    AssetDatabase.RemoveObjectFromAsset(data);
+                    UnityEngine.Object.DestroyImmediate(data, true);
+                }
+                for (var index = 0; index < _sequence.Length; index++)
+                {
+                    var item = _sequence[index];
+                    var original = item.Original;
+                    if (original == null)
+                    {
+                        original = ScriptableObject.CreateInstance<FaceExpressionSequenceData>();
+                        original.hideFlags = HideFlags.HideInHierarchy;
+                        AssetDatabase.AddObjectToAsset(original, _clip);
+                        _sequence[index] = (original, item.Saved, item.WasDirty);
+                    }
+                    RestoreObject(item.Saved, original, writeToDisk || item.WasDirty);
+                }
+                RestoreObject(_savedClip, _clip, writeToDisk || _clipWasDirty);
+                if (writeToDisk)
+                {
+                    foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(path)) { AssetDatabase.SaveAssetIfDirty(asset); }
+                }
+            }
+
+            private static void RestoreObject(UnityEngine.Object saved, UnityEngine.Object original, bool keepDirty)
+            {
+                var flags = original.hideFlags;
+                Undo.ClearUndo(original);
+                EditorUtility.CopySerialized(saved, original);
+                original.hideFlags = flags;
+                if (keepDirty) { EditorUtility.SetDirty(original); }
+                else { EditorUtility.ClearDirty(original); }
+            }
+
+            public void Dispose()
+            {
+                UnityEngine.Object.DestroyImmediate(_savedClip);
+                foreach (var item in _sequence) { UnityEngine.Object.DestroyImmediate(item.Saved); }
+            }
+        }
+
+        private void MarkAssignmentAssetsDirty()
+        {
+            if (_disposed || _avatar == null) { return; }
+            _assignmentAssetsDirty = true;
+            _saveFailed = false;
+            RefreshSaveNotification();
         }
 
         private void SetClip(AnimationClip clip)
@@ -295,6 +611,7 @@ namespace Ee4v.FaceExpression
                 StopPlayback();
                 _poseThumbnails.Clear();
                 _clip = clip;
+                CaptureClipSnapshot(clip);
                 _selectedPoseIndex = 0;
                 _currentTime = 0f;
                 _timelineDuration = clip == null || clip.length <= 0f
@@ -527,6 +844,7 @@ namespace Ee4v.FaceExpression
             }
 
             RefreshClip();
+            ScheduleAssignmentRefresh();
         }
 
         private void RemovePose(int poseIndex)
@@ -627,6 +945,7 @@ namespace Ee4v.FaceExpression
         {
             FaceExpressionClipEditor.SetLooping(_clip, looping);
             UpdateAnimationView();
+            ScheduleAssignmentRefresh();
         }
 
         private void UpdatePlayback()
@@ -683,19 +1002,55 @@ namespace Ee4v.FaceExpression
             var refreshAt = EditorApplication.timeSinceStartup + 0.15d;
             _poseThumbnailRefreshAt = refreshAt;
             _validationRefreshAt = refreshAt;
+            ScheduleAssignmentRefresh();
         }
 
-        private void InvalidatePoseThumbnails()
+        private void ScheduleAssignmentRefresh()
+        {
+            if (_clip == null) { return; }
+            _editedClips.Add(_clip);
+            if (_initiallyInstalled || !_assignments.IsInitialConfiguration)
+            {
+                MarkAssignmentAssetsDirty();
+            }
+            RefreshSaveNotification();
+        }
+
+        private void InvalidatePoseThumbnails(bool refreshAssignments = true)
         {
             _poseThumbnailRefreshAt = -1d;
             _poseThumbnails.Invalidate(_clip);
             RequestRepaint();
+            if (refreshAssignments) { ScheduleAssignmentRefresh(); }
         }
 
         private void OnUndoRedo()
         {
+            if (_assignments.RestoreUndo())
+            {
+                RefreshSaveNotification();
+            }
+            else if (_clip != null)
+            {
+                ScheduleAssignmentRefresh();
+            }
             RefreshClip();
-            InvalidatePoseThumbnails();
+            InvalidatePoseThumbnails(false);
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode && !TrySavePendingChanges())
+            {
+                EditorApplication.isPlaying = false;
+            }
+            StopPlayback();
+            if (state != PlayModeStateChange.EnteredEditMode &&
+                state != PlayModeStateChange.EnteredPlayMode) { return; }
+            ClearThumbnails();
+            _preview?.SetAvatar(_avatar);
+            _previewRendererPaths = FaceExpressionClipEditor.GetRendererPaths(_avatar);
+            _preview?.SetChannels(_channels);
         }
 
         private void UpdateAnimationView()
@@ -794,6 +1149,7 @@ namespace Ee4v.FaceExpression
             }
 
             Selection.activeObject = clip;
+            AssignClip(clip);
             SetClip(clip);
         }
 
@@ -816,6 +1172,7 @@ namespace Ee4v.FaceExpression
             }
 
             Selection.activeObject = clip;
+            AssignClip(clip);
             SetClip(clip);
         }
 
@@ -1022,6 +1379,11 @@ namespace Ee4v.FaceExpression
             object sender,
             SettingChangedEventArgs args)
         {
+            if (ReferenceEquals(args.Definition, FaceExpressionSettings.MenuIconsDisabled))
+            {
+                if (_initiallyInstalled || !_assignments.IsInitialConfiguration) { MarkAssignmentAssetsDirty(); }
+                return;
+            }
             if (ReferenceEquals(
                     args.Definition,
                     FaceExpressionSettings.BlendShapeSeparators))
@@ -1067,14 +1429,21 @@ namespace Ee4v.FaceExpression
             {
                 Avatar = I18N.Get("field.avatar"),
                 Clip = I18N.Get("field.clip"),
+                UnsavedChanges = I18N.Get("assignments.unsavedChanges"),
+                Save = I18N.Get("assignments.save"),
+                SaveFailed = I18N.Get("assignments.saveFailed"),
                 NewClip = I18N.Get("action.newClip"),
                 CopyAndEdit = I18N.Get("action.copyAndEdit"),
+                Edit = I18N.Get("action.edit"),
                 ResetView = I18N.Get("action.resetView"),
                 PreviewBackground = I18N.Get("action.previewBackground"),
                 BackToLibrary = I18N.Get("action.backToLibrary"),
+                BackToAssignments = I18N.Get("action.backToAssignments"),
                 SearchPlaceholder = I18N.Get("search.placeholder"),
                 SearchTooltip = I18N.Get("search.tooltip"),
                 ClearSearchTooltip = I18N.Get("search.clearTooltip"),
+                LibrarySearchPlaceholder = I18N.Get("search.libraryPlaceholder"),
+                LibrarySearchTooltip = I18N.Get("search.libraryTooltip"),
                 BlendShapes = I18N.Get("section.blendShapes"),
                 Library = I18N.Get("section.library"),
                 ClipOnly = I18N.Get("filter.clipOnly"),

@@ -52,7 +52,7 @@ namespace Ee4v.FaceExpression
                     dependencies: new[] { "UiButton", "UiTextFactory" },
                     usageLocations: new[]
                     {
-                        "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentWindow.cs"
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionWindow.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -63,8 +63,8 @@ namespace Ee4v.FaceExpression
                     "gesture-assignment-settings",
                     "Domain/FaceExpression",
                     "Gesture Assignment Settings",
-                    "選択したGestureと全体設定を編集する独立画面です。",
-                    "GestureAssignmentSettingsWindowが使用する実際の設定Viewを、保存しないメモリ上の設定で表示します。",
+                    "選択したGestureと全体設定を編集する画面です。",
+                    "表情画面とGestureAssignmentSettingsWindowが使用する実際の設定Viewを、保存しないメモリ上の設定で表示します。",
                     BuildAssignmentSettings,
                     dependencies: new[]
                     {
@@ -73,6 +73,7 @@ namespace Ee4v.FaceExpression
                     },
                     usageLocations: new[]
                     {
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionWindow.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentSettingsWindow.cs"
                     },
                     styleSheetPaths: new[]
@@ -244,12 +245,16 @@ namespace Ee4v.FaceExpression
                     Clip = "Expression clip",
                     NewClip = "New expression",
                     CopyAndEdit = "Copy and edit",
+                    Edit = "Edit",
                     ResetView = "Reset view",
                     PreviewBackground = "Toggle background brightness",
                     BackToLibrary = "Back",
+                    BackToAssignments = "Back to assignments",
                     SearchPlaceholder = "Search BlendShapes",
                     SearchTooltip = "Filter BlendShapes by name",
                     ClearSearchTooltip = "Clear search",
+                    LibrarySearchPlaceholder = "Search expression library",
+                    LibrarySearchTooltip = "Filter expressions and folders by name",
                     BlendShapes = "BlendShapes",
                     Library = "Expression Library",
                     ClipOnly = "In clip only",
@@ -381,7 +386,6 @@ namespace Ee4v.FaceExpression
                 new GestureAssignmentViewText
                 {
                     Avatar = "Avatar",
-                    Apply = "Apply to avatar",
                     LeftHand = "Left hand",
                     RightHand = "Right hand",
                     Selection = "Selected",

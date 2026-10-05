@@ -42,7 +42,7 @@ namespace Ee4v.FaceExpression
             }
             else
             {
-                Undo.RecordObject(container, "Update Face Expression Menu");
+                FaceExpressionGenerationUndo.RecordObject(container, "Update Face Expression Menu");
                 GetControls(container).Clear();
                 foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
                 {

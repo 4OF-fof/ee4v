@@ -20,7 +20,7 @@
     "targetChanged": "The avatar has changed. Reopen the conversion screen."
   },
   "window": {
-    "title": "Face Expression Editor"
+    "title": "Face Expressions"
   },
   "assignmentWindow": {
     "title": "Gesture Assignments"
@@ -100,6 +100,8 @@
     "sectionBody": "Body"
   },
   "search": {
+    "libraryPlaceholder": "Search expression library",
+    "libraryTooltip": "Filter expressions and folders in the current folder by name",
     "placeholder": "Search BlendShapes",
     "tooltip": "Filter BlendShapes by name",
     "clearTooltip": "Clear search"
@@ -130,9 +132,16 @@
     "timelineTooltip": "Preview or scrub the expression sequence. Scrubbing never creates a pose."
   },
   "assignments": {
+    "unsavedChanges": "You have unsaved changes.",
+    "save": "Save",
+    "saveFailed": "Saving failed. Your changes are still unsaved.",
+    "continueEditing": "Continue editing",
+    "discard": "Discard",
+    "discardFailed": "Changes could not be discarded. Continue editing in the current screen.",
     "leftHand": "Left hand",
     "rightHand": "Right hand",
     "selection": "Selected",
+    "noSelection": "None",
     "expressionSettings": "Selected expression settings",
     "synchronization": "Synchronization",
     "synchronizeLeft": "Synchronize combinations with the same left hand",
@@ -142,7 +151,7 @@
     "fixMouth": "Fix mouth movement",
     "unassigned": "Unassigned",
     "menuOnly": "Extra (menu only)",
-    "menuOnlyHint": "Menu-only expressions. Select a cell below the divider to edit it in the settings window.",
+    "menuOnlyHint": "Menu-only expressions. Select a cell below the divider to assign and configure it on the right.",
     "menuName": "Menu name",
     "disableMenuIcons": "Disable preview menu icons"
   },
@@ -154,10 +163,11 @@
     "resetBlendShapeTooltip": "Restore the avatar's initial value ({0}%)",
     "newClip": "New expression",
     "copyAndEdit": "Copy and edit",
+    "edit": "Edit",
     "resetView": "Reset view",
     "previewBackground": "Toggle background brightness",
     "backToLibrary": "Back",
-    "apply": "Apply to Avatar",
+    "backToAssignments": "Back to assignments",
     "addMenuExpression": "Add menu-only expression",
     "remove": "Remove",
     "addMesh": "Add mesh",

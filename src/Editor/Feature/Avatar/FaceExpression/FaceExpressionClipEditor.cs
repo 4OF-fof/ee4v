@@ -393,7 +393,6 @@ namespace Ee4v.FaceExpression
             }
 
             EditorUtility.SetDirty(data);
-            SaveSequenceData(data);
             return true;
         }
 
@@ -425,7 +424,6 @@ namespace Ee4v.FaceExpression
 
                 Undo.RecordObject(data, "Clear Face Expression Pose Source");
                 ClearPoseSource(data, clip, poseTimes[poseIndex]);
-                SaveSequenceData(data);
                 return true;
             }
 
@@ -511,7 +509,6 @@ namespace Ee4v.FaceExpression
             SetPoseSource(data, clip, targetTime, source);
             clip.frameRate = 60f;
             EditorUtility.SetDirty(clip);
-            SaveSequenceData(data);
             return true;
         }
 
@@ -615,7 +612,6 @@ namespace Ee4v.FaceExpression
                     clip,
                     time => time > selectedTime + tolerance,
                     shift);
-                SaveSequenceData(data);
             }
 
             EditorUtility.SetDirty(clip);
@@ -690,7 +686,6 @@ namespace Ee4v.FaceExpression
                     }
 
                     EditorUtility.SetDirty(data);
-                    SaveSequenceData(data);
                 }
             }
 
@@ -1178,7 +1173,6 @@ namespace Ee4v.FaceExpression
 
             Undo.RecordObject(data, "Move Face Expression Pose Sources");
             ShiftPoseSources(data, clip, shouldShift, delta);
-            SaveSequenceData(data);
         }
 
         private static void ShiftPoseSources(
@@ -1231,14 +1225,6 @@ namespace Ee4v.FaceExpression
             }
 
             EditorUtility.SetDirty(destinationData);
-        }
-
-        private static void SaveSequenceData(FaceExpressionSequenceData data)
-        {
-            if (data != null)
-            {
-                AssetDatabase.SaveAssetIfDirty(data);
-            }
         }
 
         internal static bool TryGetHeader(
