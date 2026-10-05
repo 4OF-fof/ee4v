@@ -20,7 +20,7 @@
     "targetChanged": "アバターの構成が変更されています。変換画面を開き直してください。"
   },
   "window": {
-    "title": "表情エディター"
+    "title": "表情"
   },
   "assignmentWindow": {
     "title": "ジェスチャー割り当て"
@@ -130,6 +130,7 @@
     "timelineTooltip": "表情シーケンスの再生位置を確認または移動します。ここを動かしてもポーズは追加されません。"
   },
   "assignments": {
+    "libraryHint": "セルを選び、表情ライブラリから割り当て",
     "leftHand": "左手",
     "rightHand": "右手",
     "selection": "選択中",
@@ -142,7 +143,7 @@
     "fixMouth": "口の動きを固定",
     "unassigned": "未割り当て",
     "menuOnly": "Extra（メニュー限定）",
-    "menuOnlyHint": "メニューからだけ選ぶ表情です。太線より下のセルを選ぶと設定ウィンドウで編集できます。",
+    "menuOnlyHint": "メニューからだけ選ぶ表情です。太線より下のセルを選ぶと右側で割り当てと設定を編集できます。",
     "menuName": "メニュー名",
     "disableMenuIcons": "プレビューアイコンを無効化"
   },
@@ -154,6 +155,7 @@
     "resetBlendShapeTooltip": "アバターの初期値（{0}%）へ戻す",
     "newClip": "新規表情",
     "copyAndEdit": "コピーして編集",
+    "edit": "編集",
     "resetView": "表示をリセット",
     "previewBackground": "背景の明暗を切り替え",
     "backToLibrary": "戻る",

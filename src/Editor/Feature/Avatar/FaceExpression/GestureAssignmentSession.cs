@@ -4,37 +4,54 @@ using UnityEngine;
 
 namespace Ee4v.FaceExpression
 {
-    internal static class GestureAssignmentSession
+    internal sealed class GestureAssignmentSession
     {
-        private static readonly Dictionary<GestureCombination, FaceExpressionAssignment>
+        internal static GestureAssignmentSession Active { get; private set; } = new GestureAssignmentSession();
+        internal static event Action ActiveChanged;
+
+        internal void Activate()
+        {
+            if (ReferenceEquals(Active, this)) { return; }
+            Active = this;
+            ActiveChanged?.Invoke();
+        }
+
+        internal void Deactivate()
+        {
+            if (!ReferenceEquals(Active, this)) { return; }
+            Active = new GestureAssignmentSession();
+            ActiveChanged?.Invoke();
+        }
+
+        private readonly Dictionary<GestureCombination, FaceExpressionAssignment>
             Assignments = new Dictionary<GestureCombination, FaceExpressionAssignment>();
-        private static readonly List<FaceExpressionMenuEntry> Entries =
+        private readonly List<FaceExpressionMenuEntry> Entries =
             new List<FaceExpressionMenuEntry>();
-        private static readonly HashSet<FaceGesture> SyncedLeftGestures =
+        private readonly HashSet<FaceGesture> SyncedLeftGestures =
             new HashSet<FaceGesture>();
-        private static readonly HashSet<FaceGesture> SyncedRightGestures =
+        private readonly HashSet<FaceGesture> SyncedRightGestures =
             new HashSet<FaceGesture>();
-        private static GestureCombination _selectedCombination =
+        private GestureCombination _selectedCombination =
             new GestureCombination(FaceGesture.Neutral, FaceGesture.Neutral);
-        private static FaceExpressionMenuEntry _selectedMenuEntry;
+        private FaceExpressionMenuEntry _selectedMenuEntry;
 
-        internal static event Action Changed;
+        internal event Action Changed;
 
-        internal static IReadOnlyList<FaceExpressionMenuEntry> MenuEntries => Entries;
-        internal static GestureCombination SelectedCombination => _selectedCombination;
-        internal static FaceExpressionMenuEntry SelectedMenuEntry => _selectedMenuEntry;
-        internal static bool IsMenuSelection => _selectedMenuEntry != null;
-        internal static bool IsSelectedLeftSynced =>
+        internal IReadOnlyList<FaceExpressionMenuEntry> MenuEntries => Entries;
+        internal GestureCombination SelectedCombination => _selectedCombination;
+        internal FaceExpressionMenuEntry SelectedMenuEntry => _selectedMenuEntry;
+        internal bool IsMenuSelection => _selectedMenuEntry != null;
+        internal bool IsSelectedLeftSynced =>
             !IsMenuSelection && SyncedLeftGestures.Contains(_selectedCombination.Left);
-        internal static bool IsSelectedRightSynced =>
+        internal bool IsSelectedRightSynced =>
             !IsMenuSelection && SyncedRightGestures.Contains(_selectedCombination.Right);
-        internal static string SelectedMenuName =>
+        internal string SelectedMenuName =>
             _selectedMenuEntry?.Name ?? SelectedAssignment.MenuName;
 
-        internal static FaceExpressionAssignment SelectedAssignment =>
+        internal FaceExpressionAssignment SelectedAssignment =>
             _selectedMenuEntry?.Assignment ?? GetAssignment(_selectedCombination);
 
-        internal static void SetConfiguration(FaceExpressionConfiguration configuration)
+        internal void SetConfiguration(FaceExpressionConfiguration configuration)
         {
             Assignments.Clear();
             var source = configuration?.Assignments;
@@ -64,7 +81,7 @@ namespace Ee4v.FaceExpression
             Changed?.Invoke();
         }
 
-        internal static FaceExpressionConfiguration CreateConfiguration()
+        internal FaceExpressionConfiguration CreateConfiguration()
         {
             var entries = new FaceExpressionMenuEntry[Entries.Count];
             for (var index = 0; index < Entries.Count; index++)
@@ -79,7 +96,7 @@ namespace Ee4v.FaceExpression
                 entries);
         }
 
-        internal static FaceExpressionAssignment GetAssignment(
+        internal FaceExpressionAssignment GetAssignment(
             GestureCombination combination)
         {
             return Assignments.TryGetValue(combination, out var assignment)
@@ -87,14 +104,14 @@ namespace Ee4v.FaceExpression
                 : FaceExpressionAssignment.Default;
         }
 
-        internal static void Select(GestureCombination combination)
+        internal void Select(GestureCombination combination)
         {
             _selectedCombination = combination;
             _selectedMenuEntry = null;
             Changed?.Invoke();
         }
 
-        internal static void Select(FaceExpressionMenuEntry entry)
+        internal void Select(FaceExpressionMenuEntry entry)
         {
             if (entry == null || !Entries.Contains(entry))
             {
@@ -105,7 +122,7 @@ namespace Ee4v.FaceExpression
             Changed?.Invoke();
         }
 
-        internal static void SetClip(
+        internal void SetClip(
             GestureCombination combination,
             AnimationClip clip)
         {
@@ -120,7 +137,7 @@ namespace Ee4v.FaceExpression
             Changed?.Invoke();
         }
 
-        internal static void SetClip(
+        internal void SetClip(
             FaceExpressionMenuEntry entry,
             AnimationClip clip)
         {
@@ -138,7 +155,7 @@ namespace Ee4v.FaceExpression
             Changed?.Invoke();
         }
 
-        internal static void UpdateSelection(bool enableBlink, bool fixMouth)
+        internal void UpdateSelection(bool enableBlink, bool fixMouth)
         {
             var current = SelectedAssignment;
             var assignment = new FaceExpressionAssignment(
@@ -158,7 +175,7 @@ namespace Ee4v.FaceExpression
             Changed?.Invoke();
         }
 
-        internal static void SetSelectedMenuName(string name)
+        internal void SetSelectedMenuName(string name)
         {
             if (_selectedMenuEntry != null)
             {
@@ -176,7 +193,7 @@ namespace Ee4v.FaceExpression
             Changed?.Invoke();
         }
 
-        internal static void SetSelectedLeftSynchronized(bool synchronized)
+        internal void SetSelectedLeftSynchronized(bool synchronized)
         {
             if (_selectedMenuEntry != null)
             {
@@ -198,7 +215,7 @@ namespace Ee4v.FaceExpression
             Changed?.Invoke();
         }
 
-        internal static void SetSelectedRightSynchronized(bool synchronized)
+        internal void SetSelectedRightSynchronized(bool synchronized)
         {
             if (_selectedMenuEntry != null)
             {
@@ -220,13 +237,13 @@ namespace Ee4v.FaceExpression
             Changed?.Invoke();
         }
 
-        internal static void ResetSynchronization()
+        internal void ResetSynchronization()
         {
             SyncedLeftGestures.Clear();
             SyncedRightGestures.Clear();
         }
 
-        private static void SetAssignment(
+        private void SetAssignment(
             GestureCombination combination,
             FaceExpressionAssignment assignment)
         {
@@ -234,7 +251,7 @@ namespace Ee4v.FaceExpression
             SynchronizeAssignment(combination, assignment);
         }
 
-        private static void SynchronizeAssignment(
+        private void SynchronizeAssignment(
             GestureCombination source,
             FaceExpressionAssignment assignment)
         {
@@ -272,7 +289,7 @@ namespace Ee4v.FaceExpression
             }
         }
 
-        internal static void AddMenuExpression()
+        internal void AddMenuExpression()
         {
             var entry = new FaceExpressionMenuEntry(
                 string.Empty,
@@ -282,7 +299,7 @@ namespace Ee4v.FaceExpression
             Changed?.Invoke();
         }
 
-        internal static void RemoveSelectedMenuExpression()
+        internal void RemoveSelectedMenuExpression()
         {
             if (_selectedMenuEntry == null || !Entries.Remove(_selectedMenuEntry))
             {

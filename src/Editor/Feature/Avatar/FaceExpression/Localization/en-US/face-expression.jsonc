@@ -20,7 +20,7 @@
     "targetChanged": "The avatar has changed. Reopen the conversion screen."
   },
   "window": {
-    "title": "Face Expression Editor"
+    "title": "Face Expressions"
   },
   "assignmentWindow": {
     "title": "Gesture Assignments"
@@ -130,6 +130,7 @@
     "timelineTooltip": "Preview or scrub the expression sequence. Scrubbing never creates a pose."
   },
   "assignments": {
+    "libraryHint": "Select a cell, then assign from the expression library",
     "leftHand": "Left hand",
     "rightHand": "Right hand",
     "selection": "Selected",
@@ -142,7 +143,7 @@
     "fixMouth": "Fix mouth movement",
     "unassigned": "Unassigned",
     "menuOnly": "Extra (menu only)",
-    "menuOnlyHint": "Menu-only expressions. Select a cell below the divider to edit it in the settings window.",
+    "menuOnlyHint": "Menu-only expressions. Select a cell below the divider to assign and configure it on the right.",
     "menuName": "Menu name",
     "disableMenuIcons": "Disable preview menu icons"
   },
@@ -154,6 +155,7 @@
     "resetBlendShapeTooltip": "Restore the avatar's initial value ({0}%)",
     "newClip": "New expression",
     "copyAndEdit": "Copy and edit",
+    "edit": "Edit",
     "resetView": "Reset view",
     "previewBackground": "Toggle background brightness",
     "backToLibrary": "Back",
