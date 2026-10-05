@@ -141,6 +141,7 @@ namespace Ee4v.Core.Settings
 
             var fieldLayout = new FormInput(labelText, field);
             fieldLayout.AddToClassList(FieldLayoutClassName);
+            fieldLayout.EnableInClassList("ee4v-settings__field-layout--path", field is PathField);
             fieldLayout.LabelText.AddToClassList(LabelClassName);
             fieldLayout.LabelText.tooltip = tooltip;
             if (ValidationMessages.TryGetValue(definition.Key, out var error))

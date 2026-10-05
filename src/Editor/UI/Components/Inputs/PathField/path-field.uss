@@ -1,0 +1,60 @@
+.ee4v-ui-path-field {
+    flex-direction: row;
+    align-items: center;
+    align-self: stretch;
+    flex-grow: 0;
+    flex-shrink: 1;
+    flex-basis: auto;
+    min-width: 240px;
+    max-width: 100%;
+    height: var(--ee4v-control-height-default);
+    min-height: var(--ee4v-control-height-default);
+    padding-right: var(--ee4v-space-xs);
+    border-bottom-width: var(--ee4v-border-emphasis);
+    border-bottom-color: var(--ee4v-color-border-active);
+}
+
+.ee4v-ui-path-field:hover,
+.ee4v-ui-path-field--focused {
+    border-bottom-color: var(--ee4v-color-focus);
+}
+
+.ee4v-ui-path-field__input {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: auto;
+    min-width: 0;
+    margin-bottom: var(--ee4v-space-none);
+}
+
+.ee4v-ui-path-field__browse.ee4v-ui-button {
+    flex-shrink: 0;
+    width: var(--ee4v-size-20);
+    min-width: var(--ee4v-size-20);
+    height: var(--ee4v-size-20);
+    min-height: var(--ee4v-size-20);
+    padding: var(--ee4v-space-none);
+    border-width: 0;
+    border-radius: 0;
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-path-field .ee4v-ui-path-field__browse.ee4v-ui-button:focus {
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-path-field__input .ee4v-ui-input-field__field-container {
+    height: 100%;
+    min-height: 0;
+    border-bottom-width: 0;
+}
+
+.ee4v-ui-path-field__input .unity-base-field__input {
+    min-width: 0;
+    flex-shrink: 1;
+}
+
+.ee4v-ui-path-field__measurement {
+    position: absolute;
+    visibility: hidden;
+}

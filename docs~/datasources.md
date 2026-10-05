@@ -2,7 +2,7 @@
 
 Sourceは設定 `assetManager.datasource` の `Ee4v`、`BoothLibraryManager`、`Eagle` から1つだけ選択します。設定画面の文字はCoreのUiTextFactory対応rendererを使用します。Sourceを明示したmanagerは選択したSource以外の同期を拒否し、起動時と再読込も選択したSourceだけを同期します。設定を切り替えるとWindowのmanagerと表示状態を再作成します。既にDBへ保存した別SourceのItemを切替時に削除する処理はありません。
 
-起動時の自動同期と再読込は同じUI同期処理を使用します。同期前に環境変数を展開した保存先フォルダーと、BOOTH Library Manager選択時のDBファイルの存在を確認します。空欄・不正なパス・存在しない保存先、同期結果のエラー、同期中の例外はConsoleとUnity標準のオーバーレイ通知へ理由を表示します。通知は開いているAssetManagerのWindowへ10秒間表示し、Windowがなければフォーカス中のEditorWindowへ表示します。パスの不備ではsnapshotを適用せず、既存DBの取り込みデータを維持します。
+起動時の自動同期と再読込は同じUI同期処理を使用します。同期前に環境変数を展開した保存先フォルダーと、BOOTH Library Manager選択時のDBファイルの存在を確認します。空欄・不正なパス・存在しない保存先、同期結果のエラー、同期中の例外はConsoleへ理由を出力します。パスの不備ではsnapshotを適用せず、既存DBの取り込みデータを維持します。
 
 表示Catalogも選択したSourceだけに限定します。Item一覧・検索・Collectionの検索結果と一致判定はSQLiteの件数計算とページ分割の前にSourceで絞ります。拡張子条件も選択中SourceのFileだけを評価します。Tag一覧・編集候補は選択中SourceのItemに付いたSource由来Tagと手動編集Tagだけを返します。File一覧とItem検索結果内のFileも選択中Sourceに限定し、未所属Fileにも同じ条件を適用します。派生アセット一覧は選択中Sourceの親Itemを持つものだけを表示します。Sourceなしの手動Itemはee4vのCatalogに含めます。他SourceのデータはDBに保持し、元のSourceへ戻すと再表示します。
 
@@ -17,6 +17,8 @@ Source由来の名・説明・File配置は元Sourceが正本です。同期のs
 `Infrastructure/BoothLibraryManager/BoothLibraryManagerApi` は `GetItemById`、`TryGetItemById`、`DatabaseExists`、`GetRegisteredItems` を公開します。lookupはBOOTH商品ID、同期は `registered_items.id` を識別子とします。BLMの `booth_items`、`shops`、`overwritten_booth_items`、通常Tagと上書きTag、`registered_items`、`user_item_info`を読みます。上書き名・説明はCOALESCE、上書きTagがあれば通常Tagより優先します。商品未登録のlookupはnull/falseです。
 
 BOOTH Library Manager DBは `SQLiteOpenFlags.ReadOnly` で開き、一つのread transactionでWALを含む整合したsnapshotを取得します。入力DBをコピー・更新せず、preferencesやcredentialsも読みません。設定画面は正式名称の`BOOTH Library Manager`を表示します。DBパスの初期値はAPIと共通の `%APPDATA%/pm.booth.library-manager/data.db` を展開した絶対パスです。folderlibraryの初期値は空欄で、同期にはその保存先の指定が必要です。
+
+Eagleライブラリ、ee4v共通データ、BOOTH Library Managerのfolderlibraryは共通`PathField`でフォルダーを選択します。BOOTH Library Manager DBは`.db`ファイルを選択します。手入力も可能です。Eagleの同期対象ルートはライブラリ内のフォルダー名を表すため通常の文字列入力です。
 
 Fileは指定folderlibrary直下の `<registered_items.id>/` 以下の実ファイルを再帰列挙します。この配置は過去connector (`142a6558` の `new/Editor/AssetManager/api/connecter/blm/BlmConnectorApi.cs`、`ReadRegisteredItemFiles`) の `Path.Combine(itemDirectoryPath, registeredItemId)` と一致します。directoryをFileにしない現構成の制約に合わせて実Fileだけを再帰列挙します。フォルダーが未配置でもメタデータItemは取り込めます。symlink/junctionと相対path traversalは拒否します。rootは明示指定し、BLM preferencesの自動読取は行いません。実ユーザーDBや実File配置は検証で参照しません。
 

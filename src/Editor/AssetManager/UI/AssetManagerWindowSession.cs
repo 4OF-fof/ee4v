@@ -170,13 +170,13 @@ namespace Ee4v.AssetManager.UI
                     .SyncDatasource(request);
                 if (result != null && result.ErrorCount > 0)
                 {
-                    NotifySyncFailure(string.Join(Environment.NewLine, result.ErrorMessages));
+                    ReportSyncFailure(string.Join(Environment.NewLine, result.ErrorMessages));
                 }
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                NotifySyncFailure(exception.Message);
+                ReportSyncFailure(exception.Message);
             }
         }
 
@@ -198,27 +198,11 @@ namespace Ee4v.AssetManager.UI
             return path;
         }
 
-        private static void NotifySyncFailure(string error)
+        private static void ReportSyncFailure(string error)
         {
             var message = I18N.Get("notice.syncFailed",
                 new object[] { error });
             Debug.LogWarning(message);
-            var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
-            var notified = false;
-            foreach (var window in windows)
-            {
-                if (window is AssetManagerPaneWindow || window is AssetManagerLibraryWindow ||
-                    window is AssetModificationWorkflowWindow)
-                {
-                    window.ShowNotification(UiTextFactory.CreateGuiContent(message), 10d);
-                    notified = true;
-                }
-            }
-            if (!notified && EditorWindow.focusedWindow != null)
-            {
-                EditorWindow.focusedWindow.ShowNotification(
-                    UiTextFactory.CreateGuiContent(message), 10d);
-            }
         }
     }
 

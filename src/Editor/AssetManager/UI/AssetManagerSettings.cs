@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Infrastructure.BoothLibraryManager;
 using Ee4v.Core.Settings;
+using Ee4v.UI;
 using UnityEditor;
 
 namespace Ee4v.AssetManager.UI
@@ -118,6 +119,9 @@ namespace Ee4v.AssetManager.UI
 
         static AssetManagerSettings()
         {
+            PathSettingDrawer.Register(EagleLibrary);
+            PathSettingDrawer.Register(FolderLibrary);
+            PathSettingDrawer.Register(BlmDatabase, PathFieldKind.File, "db");
             CommaSeparatedListSettingDrawer.Register(
                 ExcludedPartNamePrefixes);
             EnsureRegistered();
