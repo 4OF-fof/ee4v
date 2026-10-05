@@ -157,6 +157,11 @@ namespace Ee4v.Core.Preview
             }
             private void CopyBone(Transform source, Transform target)
             {
+                if ((_owner._rotations.Count > 0 || _owner._scales.Count > 0) && _owner._poseBindings.ContainsKey(source))
+                {
+                    SetLocalMatrix(target, _owner.GetPoseLocalMatrix(source));
+                    return;
+                }
                 target.localPosition = source.localPosition;
                 target.localRotation = _owner._rotations.TryGetValue(source, out var rotation) ? rotation : source.localRotation;
                 target.localScale = _owner._scales.TryGetValue(source, out var scale) ? scale : source.localScale;

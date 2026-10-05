@@ -151,8 +151,9 @@ namespace Ee4v.UI
             _viewToggle.Add(_secondaryViewButton);
             _viewport.FeatureOverlay.Add(_viewToggle);
             _poseToggleButton = new UiButton(
-                UiLocalization.Get("ui.prefabPreview.tPose"),
+                string.Empty,
                 () => SetTPose(!_tPose),
+                icon: FluentUiIcons.CreateState("accessibility.png", UiSizeTokens.Size18),
                 variant: UiButtonVariant.Ghost);
             _poseToggleButton.AddToClassList("ee4v-ui-prefab-scene-preview__pose-toggle");
             _viewport.FeatureOverlay.Add(_poseToggleButton);
@@ -740,6 +741,8 @@ namespace Ee4v.UI
                 "ee4v-ui-prefab-scene-preview__pose-toggle--active", _tPose);
             _poseToggleButton.tooltip = UiLocalization.Get(_tPose
                 ? "ui.prefabPreview.usePartPose" : "ui.prefabPreview.useTPose");
+            _poseToggleButton.SetIcon(FluentUiIcons.CreateState(
+                "accessibility.png", UiSizeTokens.Size18, _poseToggleButton.tooltip));
             RequestPreviewRepaint();
         }
 

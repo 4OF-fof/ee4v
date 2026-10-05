@@ -20,7 +20,6 @@
     "prefabPreview": {
       "reset": "Reset preview view",
       "background": "Toggle preview background",
-      "tPose": "T-pose",
       "useTPose": "Switch to T-pose",
       "usePartPose": "Switch to the focused body part pose",
       "hideHighlight": "Hide selection highlight",

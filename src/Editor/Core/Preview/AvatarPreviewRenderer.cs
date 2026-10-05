@@ -25,6 +25,7 @@ namespace Ee4v.Core.Preview
         private readonly Dictionary<Transform, Vector3> _scales = new Dictionary<Transform, Vector3>();
         private readonly Dictionary<Transform, Quaternion> _rotations = new Dictionary<Transform, Quaternion>();
         private readonly Dictionary<Transform, Quaternion> _temporaryRotations = new Dictionary<Transform, Quaternion>();
+        private readonly Dictionary<Transform, Vector3> _temporaryPositions = new Dictionary<Transform, Vector3>();
         private readonly Dictionary<GameObject, bool> _activeStates = new Dictionary<GameObject, bool>();
         private readonly Dictionary<Transform, Vector3> _temporaryScales = new Dictionary<Transform, Vector3>();
         private readonly Dictionary<GameObject, bool> _temporaryActiveStates = new Dictionary<GameObject, bool>();
@@ -55,6 +56,7 @@ namespace Ee4v.Core.Preview
                 staging.SetActive(false);
                 _utility.AddSingleGO(staging);
                 Root = Object.Instantiate(source, staging.transform, true);
+                RefreshPoseBindings();
                 foreach (var behaviour in Root.GetComponentsInChildren<MonoBehaviour>(true))
                     if (behaviour != null) Object.DestroyImmediate(behaviour);
                 foreach (var animator in Root.GetComponentsInChildren<Animator>(true)) animator.enabled = false;
@@ -98,6 +100,7 @@ namespace Ee4v.Core.Preview
         public void RefreshHierarchy()
         {
             _sourceRenderers = Root == null ? Array.Empty<Renderer>() : Root.GetComponentsInChildren<Renderer>(true);
+            if (!_ownsRoot && Root != null) RefreshPoseBindings();
             _hierarchyDirty = true;
         }
 
@@ -240,6 +243,10 @@ namespace Ee4v.Core.Preview
         {
             if (_ownsRoot)
             {
+                var attachments = _rotations.Count > 0 || _scales.Count > 0
+                    ? _poseBindings.Keys.Where(source => source != null)
+                        .ToDictionary(source => source, GetPoseLocalMatrix)
+                    : new Dictionary<Transform, Matrix4x4>();
                 foreach (var pair in _activeStates)
                 {
                     if (pair.Key == null) continue;
@@ -257,6 +264,16 @@ namespace Ee4v.Core.Preview
                     if (pair.Key == null) continue;
                     _temporaryRotations[pair.Key] = pair.Key.localRotation;
                     pair.Key.localRotation = pair.Value;
+                }
+                foreach (var pair in attachments)
+                {
+                    var source = pair.Key;
+                    _temporaryPositions[source] = source.localPosition;
+                    if (!_temporaryRotations.ContainsKey(source)) _temporaryRotations[source] = source.localRotation;
+                    if (!_temporaryScales.ContainsKey(source)) _temporaryScales[source] = source.localScale;
+                    source.localPosition = pair.Value.GetColumn(3);
+                    source.localRotation = pair.Value.rotation;
+                    source.localScale = pair.Value.lossyScale;
                 }
                 foreach (var pair in _shapes)
                 {
@@ -345,6 +362,8 @@ namespace Ee4v.Core.Preview
             _temporaryScales.Clear();
             foreach (var pair in _temporaryRotations) if (pair.Key != null) pair.Key.localRotation = pair.Value;
             _temporaryRotations.Clear();
+            foreach (var pair in _temporaryPositions) if (pair.Key != null) pair.Key.localPosition = pair.Value;
+            _temporaryPositions.Clear();
             foreach (var pair in _temporaryShapes) if (pair.Key.Item1 != null) pair.Key.Item1.SetBlendShapeWeight(pair.Key.Item2, pair.Value);
             _temporaryShapes.Clear();
             foreach (var pair in _materialStates)

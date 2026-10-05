@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Linq;
+using nadena.dev.modular_avatar.core;
 using UnityEditor;
 using UnityEngine;
 
@@ -6,6 +8,37 @@ namespace Ee4v.Core.Preview
 {
     public sealed partial class AvatarPreviewRenderer
     {
+        private readonly Dictionary<Transform, (Transform Target, BoneProxyAttachmentMode Mode, bool MatchScale)> _poseBindings =
+            new Dictionary<Transform, (Transform, BoneProxyAttachmentMode, bool)>();
+
+        private void RefreshPoseBindings()
+        {
+            _poseBindings.Clear();
+            foreach (var merge in Root.GetComponentsInChildren<ModularAvatarMergeArmature>(true))
+            {
+                if (merge.mergeTargetObject == null) continue;
+                AddPoseBinding(merge.transform, merge.mergeTargetObject.transform, BoneProxyAttachmentMode.AsChildKeepWorldPose);
+                var mapping = merge.GetBonesMapping();
+                if (mapping == null) continue;
+                foreach (var pair in mapping)
+                    AddPoseBinding(pair.Item2, pair.Item1, BoneProxyAttachmentMode.AsChildKeepWorldPose);
+            }
+            foreach (var proxy in Root.GetComponentsInChildren<ModularAvatarBoneProxy>(true))
+                AddPoseBinding(proxy.transform, proxy.target, proxy.attachmentMode, proxy.matchScale);
+        }
+
+        private void AddPoseBinding(Transform source, Transform target, BoneProxyAttachmentMode mode, bool matchScale = false)
+        {
+            if (source == null || target == null || !target.IsChildOf(Root.transform)) return;
+            var visited = new HashSet<Transform>();
+            for (var current = target; current != null;)
+            {
+                if (current == source || !visited.Add(current)) return;
+                current = _poseBindings.TryGetValue(current, out var binding) ? binding.Target : current.parent;
+            }
+            _poseBindings[source] = (target, mode, matchScale);
+        }
+
         public bool SupportsHumanoidPose => Root != null && Root.GetComponentsInChildren<Animator>(true)
             .Any(animator => animator.avatar != null && animator.avatar.isValid && animator.isHuman);
 
@@ -45,11 +78,28 @@ namespace Ee4v.Core.Preview
         private Matrix4x4 GetPoseMatrix(Transform source)
         {
             if (source == null) return Matrix4x4.identity;
+            if ((_rotations.Count > 0 || _scales.Count > 0) && _poseBindings.TryGetValue(source, out var binding) && binding.Target != null)
+            {
+                var relative = binding.Target.worldToLocalMatrix * source.localToWorldMatrix;
+                if (binding.Mode == BoneProxyAttachmentMode.AsChildKeepWorldPose && !binding.MatchScale)
+                    return GetPoseMatrix(binding.Target) * relative;
+                var keepPosition = binding.Mode == BoneProxyAttachmentMode.AsChildKeepWorldPose ||
+                    binding.Mode == BoneProxyAttachmentMode.AsChildKeepPosition;
+                var keepRotation = binding.Mode == BoneProxyAttachmentMode.AsChildKeepWorldPose ||
+                    binding.Mode == BoneProxyAttachmentMode.AsChildKeepRotation;
+                return GetPoseMatrix(binding.Target) * Matrix4x4.TRS(
+                    keepPosition ? (Vector3)relative.GetColumn(3) : Vector3.zero,
+                    keepRotation ? relative.rotation : Quaternion.identity,
+                    binding.MatchScale ? Vector3.one : relative.lossyScale);
+            }
             var local = Matrix4x4.TRS(source.localPosition,
                 _rotations.TryGetValue(source, out var rotation) ? rotation : source.localRotation,
                 _scales.TryGetValue(source, out var scale) ? scale : source.localScale);
             return GetPoseMatrix(source.parent) * local;
         }
+
+        private Matrix4x4 GetPoseLocalMatrix(Transform source) =>
+            GetPoseMatrix(source.parent).inverse * GetPoseMatrix(source);
 
         private void AlignBone(Transform bone, Transform child, Vector3 direction)
         {

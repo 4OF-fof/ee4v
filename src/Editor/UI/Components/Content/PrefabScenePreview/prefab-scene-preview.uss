@@ -38,9 +38,13 @@
 
 .ee4v-ui-prefab-scene-preview__pose-toggle.ee4v-ui-button {
     position: absolute;
-    top: var(--ee4v-space-lg);
-    right: 96px;
-    min-height: 28px;
+    bottom: var(--ee4v-space-lg);
+    right: var(--ee4v-space-lg);
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: var(--ee4v-space-none);
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
     border-radius: var(--ee4v-radius-xl);
