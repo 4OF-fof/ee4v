@@ -23,6 +23,8 @@ namespace Ee4v.Core.Preview
         private readonly Dictionary<Renderer, bool> _renderingStates = new Dictionary<Renderer, bool>();
         private readonly Dictionary<Renderer, Material[]> _materialStates = new Dictionary<Renderer, Material[]>();
         private readonly Dictionary<Transform, Vector3> _scales = new Dictionary<Transform, Vector3>();
+        private readonly Dictionary<Transform, Quaternion> _rotations = new Dictionary<Transform, Quaternion>();
+        private readonly Dictionary<Transform, Quaternion> _temporaryRotations = new Dictionary<Transform, Quaternion>();
         private readonly Dictionary<GameObject, bool> _activeStates = new Dictionary<GameObject, bool>();
         private readonly Dictionary<Transform, Vector3> _temporaryScales = new Dictionary<Transform, Vector3>();
         private readonly Dictionary<GameObject, bool> _temporaryActiveStates = new Dictionary<GameObject, bool>();
@@ -162,6 +164,7 @@ namespace Ee4v.Core.Preview
         public void ClearOverrides()
         {
             _scales.Clear();
+            _rotations.Clear();
             _shapes.Clear();
             _activeStates.Clear();
         }
@@ -249,6 +252,12 @@ namespace Ee4v.Core.Preview
                     _temporaryScales[pair.Key] = pair.Key.localScale;
                     pair.Key.localScale = pair.Value;
                 }
+                foreach (var pair in _rotations)
+                {
+                    if (pair.Key == null) continue;
+                    _temporaryRotations[pair.Key] = pair.Key.localRotation;
+                    pair.Key.localRotation = pair.Value;
+                }
                 foreach (var pair in _shapes)
                 {
                     if (pair.Key == null || pair.Key.sharedMesh == null) continue;
@@ -334,6 +343,8 @@ namespace Ee4v.Core.Preview
             _temporaryActiveStates.Clear();
             foreach (var pair in _temporaryScales) if (pair.Key != null) pair.Key.localScale = pair.Value;
             _temporaryScales.Clear();
+            foreach (var pair in _temporaryRotations) if (pair.Key != null) pair.Key.localRotation = pair.Value;
+            _temporaryRotations.Clear();
             foreach (var pair in _temporaryShapes) if (pair.Key.Item1 != null) pair.Key.Item1.SetBlendShapeWeight(pair.Key.Item2, pair.Value);
             _temporaryShapes.Clear();
             foreach (var pair in _materialStates)

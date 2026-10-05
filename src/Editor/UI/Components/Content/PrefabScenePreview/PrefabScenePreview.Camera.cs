@@ -125,7 +125,7 @@ namespace Ee4v.UI
                 if (head != null && foot != null)
                 {
                     var height = Vector3.Dot(
-                        head.position - foot.position,
+                        _utility.GetTransformPosition(head) - _utility.GetTransformPosition(foot),
                         _instance.transform.up) + 0.18f;
                     if (height > 0.3f)
                     {
@@ -273,14 +273,14 @@ namespace Ee4v.UI
                 points = GetFocusBones(part, leftSide)
                     .Select(animator.GetBoneTransform)
                     .Where(bone => bone != null && IsInFocusScope(bone))
-                    .Select(bone => bone.position)
+                    .Select(_utility.GetTransformPosition)
                     .ToArray();
                 if (points.Length == 0)
                 {
                     points = GetFocusBones(part, !leftSide)
                         .Select(animator.GetBoneTransform)
                         .Where(bone => bone != null && IsInFocusScope(bone))
-                        .Select(bone => bone.position)
+                        .Select(_utility.GetTransformPosition)
                         .ToArray();
                 }
             }
@@ -288,13 +288,13 @@ namespace Ee4v.UI
             {
                 points = GetSkinnedFocusBones(
                         _instance, part, IsInFocusScope, leftSide)
-                    .Select(bone => bone.position)
+                    .Select(_utility.GetTransformPosition)
                     .ToArray();
                 if (points.Length == 0)
                 {
                     points = GetSkinnedFocusBones(
                             _instance, part, IsInFocusScope, !leftSide)
-                        .Select(bone => bone.position)
+                        .Select(_utility.GetTransformPosition)
                         .ToArray();
                 }
             }

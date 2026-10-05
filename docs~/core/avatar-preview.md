@@ -21,6 +21,14 @@ CameraはPreview Sceneの描画資源と照明を使用し、NDMFのProxy Scene�
 
 `ResolveRenderer`は元Rendererから直近の描画に使った加工後Rendererを取得します。`GetBounds`は描画対象のboundsを返し、範囲が未初期化の場合はSkinnedMeshRendererの共有Mesh、またはMeshFilterを持つMeshRendererの共有MeshとTransformから範囲を求めます。MeshFilterを持たないMeshRendererやParticleSystemRendererなどはRenderer自身のboundsを使用します。クリック選択には加工後Meshを使い、通知には元のHierarchyとMaterialの識別情報を返します。NDMFが非同期で構築中の場合は元Rendererを表示し、準備が整った後の描画からProxyを使用します。
 
+## 部位フォーカスのポーズ
+
+`PrefabScenePreview.FocusBodyPart`は頭・胸・全身などの部位フォーカスと描画用ポーズを連動させます。現時点では全部位に共通の仮ポーズ（両腕を水平から60度下げる）を使用します。Preview右上の「Tポーズ」で基準姿勢へ切り替え、再度押すと部位ポーズへ戻します。切替状態は部位・左右・前後の移動やPreview再構築で保持します。`SetTPose`は同じ操作を公開APIから行います。
+
+Coreの`SetHumanoidPose`は有効なHumanoid Avatarの基準骨格回転を使用し、上腕と前腕を左右の水平（Tポーズ）または仮ポーズの方向へ合わせます。Scene本体、Prefab、AnimationClipへ書き込まず、NDMF描画用骨へ回転を適用します。隔離Previewでは描画中だけ回転を変更して復元します。骨格スケールとBlendShapeのoverrideは併用できます。`GetTransformPosition`は描画用回転・スケールを含む位置を返し、腕・手などのフォーカスも現在のポーズへ追従します。
+
+Humanoidを持たない対象、Play Mode、部位フォーカスを開始していないPreviewではポーズを適用しません。`SetViewToggleVisible(false)`ではポーズ操作も非表示になります。NDMF Proxyが構築されるまでは元Rendererの姿勢を表示します。
+
 ## ライフサイクルと制約
 
 同じ対象の構造更新とscope・目アイコンの変更ではsessionを再生成しません。UIから離れたとき、対象の変更時、Play Mode移行時に`Dispose`し、Camera override・event購読・Proxy session・描画資源を解放します。表示中の再描画頻度はUIが所有します。

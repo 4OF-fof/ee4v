@@ -75,7 +75,7 @@ namespace Ee4v.Core.Preview
                     }
                     skinned.forceMatrixRecalculationPerRender = true;
                 }
-                if (_owner._scales.Count == 0) return;
+                if (_owner._scales.Count == 0 && _owner._rotations.Count == 0 && _bones.Count == 0) return;
                 _boneScene = proxy.gameObject.scene;
                 var desired = GetBone(original.transform);
                 UpdateBones();
@@ -158,7 +158,7 @@ namespace Ee4v.Core.Preview
             private void CopyBone(Transform source, Transform target)
             {
                 target.localPosition = source.localPosition;
-                target.localRotation = source.localRotation;
+                target.localRotation = _owner._rotations.TryGetValue(source, out var rotation) ? rotation : source.localRotation;
                 target.localScale = _owner._scales.TryGetValue(source, out var scale) ? scale : source.localScale;
             }
             private static void SetMatrix(Transform target, Matrix4x4 matrix)

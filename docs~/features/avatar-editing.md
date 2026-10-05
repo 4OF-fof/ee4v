@@ -28,6 +28,8 @@
 
 `AvatarPrefabEditorWindow`はHierarchyのPrefabインスタンス入力、Preview、部位選択とPrefabへの保存を共有します。AvatarPartsには「変更を戻す」を表示し、AvatarMaterialsには表示しません。WindowはAssetManagerのDB・Variant一覧・専用作業Sceneや他のWindowを必要としません。
 
+部位選択を表示する単独Windowは、初期の全身表示から部位ポーズを適用します。頭・胸・手などの移動ではCameraとポーズを連動させ、共通Previewの「Tポーズ」で基準姿勢と部位ポーズを切り替えます。全部位の仮ポーズとHumanoidの対応範囲は[Previewの契約](../core/avatar-preview.md)に従います。
+
 AvatarInfoは同じホストで情報表示、Unity内の名前編集とBlueprint IDの選択補助を提供します。部位選択と変更を戻すボタンは表示せず、ID等のPrefab overrideの保存に共通の「Prefabに保存」を使います。Prefab rootの名前はdefault overrideなのでScene保存で保持します。
 
 入力は通常Scene上の接続済みPrefabインスタンスです。子を指定した場合は最寄りのPrefabインスタンスrootへ正規化します。ProjectのPrefabアセット、Prefab Mode、接続が失われたインスタンスは受け付けません。初回はHierarchyの選択から対象を設定できます。対象はそのまま編集し、独立したPrefab contentsへ読み込まないため、Hierarchyや統合Windowが同じインスタンスを使っていれば変更を共有します。Previewは同じSceneインスタンスをCoreの[AvatarPreviewRenderer](../core/avatar-preview.md)で描画します。描画用の表示切替と未確定の編集値は対象へ保存しません。

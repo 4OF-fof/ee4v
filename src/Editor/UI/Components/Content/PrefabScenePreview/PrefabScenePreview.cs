@@ -48,6 +48,9 @@ namespace Ee4v.UI
         private readonly VisualElement _viewToggle;
         private readonly UiButton _primaryViewButton;
         private readonly UiButton _secondaryViewButton;
+        private readonly UiButton _poseToggleButton;
+        private bool _bodyPartPoseEnabled;
+        private bool _tPose;
         private readonly VisualElement _selectionOverlay;
         private readonly UiTextElement _selectionLabel;
         private readonly UiButton _selectionHighlightButton;
@@ -147,6 +150,12 @@ namespace Ee4v.UI
             _viewToggle.Add(_primaryViewButton);
             _viewToggle.Add(_secondaryViewButton);
             _viewport.FeatureOverlay.Add(_viewToggle);
+            _poseToggleButton = new UiButton(
+                UiLocalization.Get("ui.prefabPreview.tPose"),
+                () => SetTPose(!_tPose),
+                variant: UiButtonVariant.Ghost);
+            _poseToggleButton.AddToClassList("ee4v-ui-prefab-scene-preview__pose-toggle");
+            _viewport.FeatureOverlay.Add(_poseToggleButton);
             _selectionOverlay = new VisualElement
             {
                 pickingMode = PickingMode.Position
@@ -499,6 +508,8 @@ namespace Ee4v.UI
         public void FocusBodyPart(BodyPartCategory? part, bool preserveView = false)
         {
             _focusedBodyPart = part;
+            _bodyPartPoseEnabled = true;
+            ApplyBodyPartPose();
             RefreshViewToggle();
             if (preserveView)
             {
@@ -585,6 +596,9 @@ namespace Ee4v.UI
 
         private void RefreshViewToggle()
         {
+            _poseToggleButton.style.display = _viewToggleVisible && _bodyPartPoseEnabled &&
+                _utility != null && _utility.SupportsHumanoidPose &&
+                !EditorApplication.isPlayingOrWillChangePlaymode ? DisplayStyle.Flex : DisplayStyle.None;
             var sideSelection = _focusedBodyPart ==
                     BodyPartCategory.Shoulders ||
                 _focusedBodyPart == BodyPartCategory.Arms ||
@@ -708,6 +722,27 @@ namespace Ee4v.UI
             RefreshViewToggle();
         }
 
+        public void SetTPose(bool tPose)
+        {
+            _tPose = tPose;
+            ApplyBodyPartPose();
+            FrameCurrentSelection(true);
+            RequestPreviewRepaint();
+        }
+
+        private void ApplyBodyPartPose()
+        {
+            if (_bodyPartPoseEnabled && _utility != null)
+            {
+                _utility.SetHumanoidPose(_tPose);
+            }
+            _poseToggleButton.EnableInClassList(
+                "ee4v-ui-prefab-scene-preview__pose-toggle--active", _tPose);
+            _poseToggleButton.tooltip = UiLocalization.Get(_tPose
+                ? "ui.prefabPreview.usePartPose" : "ui.prefabPreview.useTPose");
+            RequestPreviewRepaint();
+        }
+
         public void SetFullBodyFraming(bool fitWholeAvatar)
         {
             _fitWholeAvatar = fitWholeAvatar;
@@ -730,6 +765,7 @@ namespace Ee4v.UI
                 _pendingBlendShapeWeights.Clear();
                 _renderers = _instance.GetComponentsInChildren<Renderer>(true);
                 RebuildPreviewTargets();
+                ApplyBodyPartPose();
                 RebuildHiddenPartRenderers();
                 RefreshBounds();
                 ApplyRequestedSelection();
@@ -751,6 +787,7 @@ namespace Ee4v.UI
                 _renderers = _instance.GetComponentsInChildren<Renderer>(true);
                 RebuildHiddenPartRenderers();
                 RebuildPreviewTargets();
+                ApplyBodyPartPose();
                 RefreshBounds();
                 ApplyRequestedSelection();
                 SetPreviewAvailable(true);

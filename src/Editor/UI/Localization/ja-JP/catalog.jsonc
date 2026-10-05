@@ -20,6 +20,9 @@
     "prefabPreview": {
       "reset": "プレビュー表示をリセット",
       "background": "プレビュー背景の明暗を切り替え",
+      "tPose": "Tポーズ",
+      "useTPose": "Tポーズに切り替え",
+      "usePartPose": "フォーカス部位のポーズに切り替え",
       "hideHighlight": "選択時のハイライトを隠す",
       "showHighlight": "選択時のハイライトを表示",
       "left": "左",
