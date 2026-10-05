@@ -132,10 +132,16 @@
     "timelineTooltip": "表情シーケンスの再生位置を確認または移動します。ここを動かしてもポーズは追加されません。"
   },
   "assignments": {
-    "libraryHint": "セルを選び、表情ライブラリから割り当て",
+    "unsavedChanges": "未保存の変更があります。",
+    "save": "保存",
+    "saveFailed": "保存できませんでした。変更は未保存のままです。",
+    "continueEditing": "編集を続ける",
+    "discard": "破棄",
+    "discardFailed": "変更を破棄できませんでした。元の画面で編集を続けてください。",
     "leftHand": "左手",
     "rightHand": "右手",
     "selection": "選択中",
+    "noSelection": "未選択",
     "expressionSettings": "選択中の表情設定",
     "synchronization": "同期",
     "synchronizeLeft": "同じ左手の組み合わせを同期",

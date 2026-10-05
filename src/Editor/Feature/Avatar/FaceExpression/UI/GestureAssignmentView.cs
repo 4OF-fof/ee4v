@@ -11,10 +11,10 @@ namespace Ee4v.FaceExpression
     internal sealed class GestureAssignmentViewText
     {
         public string Avatar { get; set; }
-        public string LibraryHint { get; set; }
         public string LeftHand { get; set; }
         public string RightHand { get; set; }
         public string Selection { get; set; }
+        public string NoSelection { get; set; }
         public string ExpressionSettings { get; set; }
         public string Synchronization { get; set; }
         public string SynchronizeLeft { get; set; }
@@ -79,14 +79,8 @@ namespace Ee4v.FaceExpression
             if (showAvatarField)
             {
                 toolbar.Leading.Add(_avatarField);
+                Add(toolbar);
             }
-            else
-            {
-                var hint = UiTextFactory.Create(_text.LibraryHint);
-                hint.SetWhiteSpace(WhiteSpace.Normal);
-                toolbar.Leading.Add(hint);
-            }
-            Add(toolbar);
 
             var matrix = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
             matrix.AddToClassList("ee4v-gesture-assignment__matrix");
@@ -131,6 +125,18 @@ namespace Ee4v.FaceExpression
 
             RegisterCallback<AttachToPanelEvent>(_ => Subscribe());
             RegisterCallback<DetachFromPanelEvent>(_ => Unsubscribe());
+            RegisterCallback<ClickEvent>(evt =>
+            {
+                if (evt.button != 0) { return; }
+                for (var element = evt.target as VisualElement; element != null && element != this; element = element.parent)
+                {
+                    if (element is GestureAssignmentCell || element is Button || element is ObjectField || element is Scroller)
+                    {
+                        return;
+                    }
+                }
+                _session.ClearSelection();
+            });
             RefreshState();
         }
 
@@ -182,7 +188,7 @@ namespace Ee4v.FaceExpression
                 pair.Value.SetClipEnabled(_hasAvatar);
                 pair.Value.EnableInClassList(
                     "ee4v-gesture-assignment__cell--selected",
-                    !_session.IsMenuSelection &&
+                    _session.HasSelection && !_session.IsMenuSelection &&
                     pair.Key.Equals(_session.SelectedCombination));
             }
 
@@ -517,7 +523,7 @@ namespace Ee4v.FaceExpression
             var assignment = _session.SelectedAssignment;
             var isExtra = _session.IsMenuSelection;
             _rendering = true;
-            _selectionLabel.SetText(isExtra
+            _selectionLabel.SetText(!_session.HasSelection ? _text.Selection + ": " + _text.NoSelection : isExtra
                 ? _text.Selection + ": " + _text.MenuOnly
                 : _text.Selection + ": " +
                   GetGestureName(_session.SelectedCombination.Left) +
@@ -531,12 +537,15 @@ namespace Ee4v.FaceExpression
                 : DisplayStyle.None;
             _blinkToggle.SetValueWithoutNotify(assignment.EnableBlink);
             _mouthToggle.SetValueWithoutNotify(assignment.FixMouth);
+            _menuNameField.SetEnabled(_session.HasSelection);
+            _blinkToggle.SetEnabled(_session.HasSelection);
+            _mouthToggle.SetEnabled(_session.HasSelection);
             _synchronizeLeftToggle.SetValueWithoutNotify(
                 _session.IsSelectedLeftSynced);
             _synchronizeRightToggle.SetValueWithoutNotify(
                 _session.IsSelectedRightSynced);
-            _synchronizeLeftToggle.SetEnabled(!isExtra);
-            _synchronizeRightToggle.SetEnabled(!isExtra);
+            _synchronizeLeftToggle.SetEnabled(_session.HasSelection && !isExtra);
+            _synchronizeRightToggle.SetEnabled(_session.HasSelection && !isExtra);
             _menuIconsToggle.SetValueWithoutNotify(
                 FaceExpressionSettings.GetMenuIconsDisabled(_settings));
             _rendering = false;

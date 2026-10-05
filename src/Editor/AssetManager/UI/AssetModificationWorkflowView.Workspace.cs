@@ -541,7 +541,8 @@ namespace Ee4v.AssetManager.UI
         private void ShowCategory(
             WorkflowCategory category,
             bool clearFeedback = true,
-            bool preservePreviewCamera = false)
+            bool preservePreviewCamera = false,
+            bool confirmExpressionChanges = true)
         {
             if (EditorApplication.isPlaying && !category.IsPlayMode()) { category = WorkflowCategory.MenuAndGestures; }
             else if (!EditorApplication.isPlaying && category.IsPlayMode()) { category = _editingCategory; }
@@ -561,6 +562,14 @@ namespace Ee4v.AssetManager.UI
                 category != WorkflowCategory.Material)
             {
                 category = WorkflowCategory.ShapeParts;
+            }
+            if (confirmExpressionChanges && _currentCategory == WorkflowCategory.ExpressionAnimation &&
+                category != _currentCategory && _faceExpressionEditor != null &&
+                !_faceExpressionEditor.TryConfirmNavigation(this,
+                    () => ShowCategory(category, clearFeedback, preservePreviewCamera, false)))
+            {
+                _categoryRail?.SetSelected(_currentCategory);
+                return;
             }
             if (_currentCategory == WorkflowCategory.ShapeParts &&
                 _parts.Section == ShapePartsSection.Shape &&

@@ -132,10 +132,16 @@
     "timelineTooltip": "Preview or scrub the expression sequence. Scrubbing never creates a pose."
   },
   "assignments": {
-    "libraryHint": "Select a cell, then assign from the expression library",
+    "unsavedChanges": "You have unsaved changes.",
+    "save": "Save",
+    "saveFailed": "Saving failed. Your changes are still unsaved.",
+    "continueEditing": "Continue editing",
+    "discard": "Discard",
+    "discardFailed": "Changes could not be discarded. Continue editing in the current screen.",
     "leftHand": "Left hand",
     "rightHand": "Right hand",
     "selection": "Selected",
+    "noSelection": "None",
     "expressionSettings": "Selected expression settings",
     "synchronization": "Synchronization",
     "synchronizeLeft": "Synchronize combinations with the same left hand",

@@ -36,6 +36,7 @@ namespace Ee4v.FaceExpression
         private GestureCombination _selectedCombination =
             new GestureCombination(FaceGesture.Neutral, FaceGesture.Neutral);
         private FaceExpressionMenuEntry _selectedMenuEntry;
+        private bool _hasSelection;
 
         internal event Action Changed;
         internal event Action ConfigurationChanged;
@@ -45,6 +46,7 @@ namespace Ee4v.FaceExpression
         private readonly bool _enableUndo;
         internal GestureAssignmentSession(bool enableUndo = false) { _enableUndo = enableUndo; }
         internal bool IsInitialConfiguration => _revision == 0;
+        internal int Revision => _revision;
 
         private void RecordChange()
         {
@@ -90,6 +92,7 @@ namespace Ee4v.FaceExpression
         {
             if (_undoState == null || _undoState.revision == _revision) { return false; }
             var selectedIndex = Entries.IndexOf(_selectedMenuEntry);
+            var wasMenuSelection = IsMenuSelection;
             _revision = _undoState.revision;
             Assignments.Clear();
             foreach (var entry in _undoState.assignments)
@@ -102,6 +105,7 @@ namespace Ee4v.FaceExpression
                 Entries.Add(new FaceExpressionMenuEntry(entry.name, entry.Assignment));
             }
             _selectedMenuEntry = selectedIndex >= 0 && selectedIndex < Entries.Count ? Entries[selectedIndex] : null;
+            if (wasMenuSelection && _selectedMenuEntry == null) { _hasSelection = false; }
             SyncedLeftGestures.Clear();
             SyncedLeftGestures.UnionWith(_undoState.left);
             SyncedRightGestures.Clear();
@@ -124,16 +128,17 @@ namespace Ee4v.FaceExpression
         internal IReadOnlyList<FaceExpressionMenuEntry> MenuEntries => Entries;
         internal GestureCombination SelectedCombination => _selectedCombination;
         internal FaceExpressionMenuEntry SelectedMenuEntry => _selectedMenuEntry;
-        internal bool IsMenuSelection => _selectedMenuEntry != null;
+        internal bool HasSelection => _hasSelection;
+        internal bool IsMenuSelection => _hasSelection && _selectedMenuEntry != null;
         internal bool IsSelectedLeftSynced =>
-            !IsMenuSelection && SyncedLeftGestures.Contains(_selectedCombination.Left);
+            HasSelection && !IsMenuSelection && SyncedLeftGestures.Contains(_selectedCombination.Left);
         internal bool IsSelectedRightSynced =>
-            !IsMenuSelection && SyncedRightGestures.Contains(_selectedCombination.Right);
+            HasSelection && !IsMenuSelection && SyncedRightGestures.Contains(_selectedCombination.Right);
         internal string SelectedMenuName =>
             _selectedMenuEntry?.Name ?? SelectedAssignment.MenuName;
 
         internal FaceExpressionAssignment SelectedAssignment =>
-            _selectedMenuEntry?.Assignment ?? GetAssignment(_selectedCombination);
+            HasSelection ? _selectedMenuEntry?.Assignment ?? GetAssignment(_selectedCombination) : FaceExpressionAssignment.Default;
 
         internal void SetConfiguration(FaceExpressionConfiguration configuration)
         {
@@ -164,6 +169,7 @@ namespace Ee4v.FaceExpression
             }
 
             _selectedMenuEntry = null;
+            _hasSelection = false;
             SaveUndoState();
             Changed?.Invoke();
         }
@@ -193,6 +199,7 @@ namespace Ee4v.FaceExpression
 
         internal void Select(GestureCombination combination)
         {
+            _hasSelection = true;
             _selectedCombination = combination;
             _selectedMenuEntry = null;
             Changed?.Invoke();
@@ -205,7 +212,16 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
+            _hasSelection = true;
             _selectedMenuEntry = entry;
+            Changed?.Invoke();
+        }
+
+        internal void ClearSelection()
+        {
+            if (!HasSelection) { return; }
+            _hasSelection = false;
+            _selectedMenuEntry = null;
             Changed?.Invoke();
         }
 
@@ -223,6 +239,7 @@ namespace Ee4v.FaceExpression
                 current.MenuName));
             _selectedCombination = combination;
             _selectedMenuEntry = null;
+            _hasSelection = true;
             NotifyConfigurationChanged();
         }
 
@@ -243,11 +260,13 @@ namespace Ee4v.FaceExpression
                 entry.Assignment.FixMouth,
                 entry.Assignment.MenuName);
             _selectedMenuEntry = entry;
+            _hasSelection = true;
             NotifyConfigurationChanged();
         }
 
         internal void UpdateSelection(bool enableBlink, bool fixMouth)
         {
+            if (!HasSelection) { return; }
             var current = SelectedAssignment;
             if (current.EnableBlink == enableBlink && current.FixMouth == fixMouth) { return; }
             RecordChange();
@@ -270,6 +289,7 @@ namespace Ee4v.FaceExpression
 
         internal void SetSelectedMenuName(string name)
         {
+            if (!HasSelection) { return; }
             name = name ?? string.Empty;
             if (SelectedMenuName == name) { return; }
             RecordChange();
@@ -291,7 +311,7 @@ namespace Ee4v.FaceExpression
 
         internal void SetSelectedLeftSynchronized(bool synchronized)
         {
-            if (_selectedMenuEntry != null)
+            if (!HasSelection || _selectedMenuEntry != null)
             {
                 return;
             }
@@ -315,7 +335,7 @@ namespace Ee4v.FaceExpression
 
         internal void SetSelectedRightSynchronized(bool synchronized)
         {
-            if (_selectedMenuEntry != null)
+            if (!HasSelection || _selectedMenuEntry != null)
             {
                 return;
             }
@@ -397,6 +417,7 @@ namespace Ee4v.FaceExpression
                 FaceExpressionAssignment.Default);
             Entries.Add(entry);
             _selectedMenuEntry = entry;
+            _hasSelection = true;
             NotifyConfigurationChanged();
         }
 
@@ -410,6 +431,7 @@ namespace Ee4v.FaceExpression
             RecordChange();
             Entries.Remove(_selectedMenuEntry);
             _selectedMenuEntry = null;
+            _hasSelection = false;
             NotifyConfigurationChanged();
         }
     }
