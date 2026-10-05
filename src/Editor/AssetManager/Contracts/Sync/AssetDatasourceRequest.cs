@@ -1,6 +1,6 @@
 namespace Ee4v.AssetManager.Contracts
 {
-    public enum AssetDatasourceKind { Eagle, BoothLibraryManager, Custom }
+    public enum AssetDatasourceKind { Eagle, BoothLibraryManager, Ee4v }
 
     public sealed class AssetDatasourceRequest
     {

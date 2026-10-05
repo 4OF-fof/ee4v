@@ -956,7 +956,11 @@ namespace Ee4v.AssetManager.UI
                     }
                 }
             }
-            return project.Values.ToArray();
+            var visibleItemIds = new HashSet<string>(
+                _manager.SearchItems(new AssetItemQuery { IncludeArchived = true })
+                    .Items.Select(item => item.Id), StringComparer.Ordinal);
+            return project.Values.Where(variant =>
+                visibleItemIds.Contains(variant.ParentItemId)).ToArray();
         }
 
         private async void RestoreVariant(string variantId, string revisionId, bool confirm = true)

@@ -1,9 +1,9 @@
 {
   "settings": {
-    "datasource": { "label": "データソース", "tooltip": "Eagle・BoothLibraryManager・Customから1つを選択します。" },
-    "folderLibrary": { "label": "フォルダーライブラリ", "tooltip": "BLMの登録Itemフォルダー、または独自bridgeのItemsフォルダーの親を明示指定します。" },
+    "datasource": { "label": "データソース", "tooltip": "ee4v・BoothLibraryManager・Eagleから1つを選択します。" },
+    "folderLibrary": { "label": "BLMフォルダーライブラリ", "tooltip": "BLMの登録Itemフォルダーの保存先を明示指定します。ee4vは共通データの保存先を使用します。" },
     "blmDatabase": { "label": "BLMデータベース", "tooltip": "BLMのdata.dbを明示指定します。読取専用です。" },
-    "autoSyncDatasource": { "label": "起動時にデータソース同期", "tooltip": "選択した外部データソースだけをEditor起動時に同期します。" },
+    "autoSyncDatasource": { "label": "起動時にデータソース同期", "tooltip": "選択したデータソースだけをEditor起動時に同期します。" },
     "section": {
       "assetManager": {
         "paths": "AssetManager パス",
@@ -22,10 +22,6 @@
     "ee4vGlobalPath": {
       "label": "ee4v 共通データの保存先",
       "tooltip": "AssetManagerのDBやBlendShapeプリセットなど、ee4vの共通データを保存するフォルダーです。既定値はDocuments/ee4vです。"
-    },
-    "autoSyncEe4vOnStartup": {
-      "label": "起動時に ee4v を自動同期",
-      "tooltip": "Unity エディターのセッション開始時に、設定済みの ee4v ソースを1回同期します。"
     },
     "applyProjectThumbnailOnImport": {
       "label": "Import時にサムネイルをProject Styleへ設定",

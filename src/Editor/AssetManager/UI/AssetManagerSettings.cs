@@ -31,7 +31,8 @@ namespace Ee4v.AssetManager.UI
         internal static AssetDatasourceRequest DatasourceRequest => new AssetDatasourceRequest
         {
             Kind = SelectedDatasource,
-            LibraryPath = SelectedDatasource == AssetDatasourceKind.Eagle ? EagleLibraryPath : Get(FolderLibrary),
+            LibraryPath = SelectedDatasource == AssetDatasourceKind.Eagle ? EagleLibraryPath
+                : SelectedDatasource == AssetDatasourceKind.Ee4v ? Ee4vLibraryPath : Get(FolderLibrary),
             DatabasePath = Get(BlmDatabase), TargetRoot = EagleTargetRoot
         };
         internal static bool AutoSyncDatasourceOnStartup => Get(AutoSyncDatasource);
@@ -69,24 +70,6 @@ namespace Ee4v.AssetManager.UI
                     "eagle",
                     "target",
                     "root"
-                });
-
-        private static readonly SettingDefinition<bool> AutoSyncEe4v =
-            new SettingDefinition<bool>(
-                "assetManager.autoSyncEe4vOnStartup",
-                SettingScope.User,
-                "AssetManager",
-                "settings.section.assetManager.source",
-                "settings.autoSyncEe4vOnStartup.label",
-                "settings.autoSyncEe4vOnStartup.tooltip",
-                true,
-                order: 1,
-                keywords: new[]
-                {
-                    "asset manager",
-                    "ee4v",
-                    "sync",
-                    "startup"
                 });
 
         private static readonly SettingDefinition<bool>
@@ -148,9 +131,6 @@ namespace Ee4v.AssetManager.UI
         internal static string Ee4vLibraryPath =>
             GlobalDataSettings.RootDirectory;
 
-        internal static bool AutoSyncEe4vOnStartup =>
-            Get(AutoSyncEe4v);
-
         internal static bool ApplyProjectThumbnailOnImportEnabled =>
             Get(ApplyProjectThumbnailOnImport);
 
@@ -183,7 +163,6 @@ namespace Ee4v.AssetManager.UI
             settings.Register(FolderLibrary);
             settings.Register(BlmDatabase);
             settings.Register(AutoSyncDatasource);
-            settings.Register(AutoSyncEe4v);
             settings.Register(ApplyProjectThumbnailOnImport);
             settings.Register(ExcludedPartNamePrefixes);
             settings.Changed += OnSettingChanged;

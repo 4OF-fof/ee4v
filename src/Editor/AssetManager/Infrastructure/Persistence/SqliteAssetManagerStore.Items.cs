@@ -12,7 +12,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         private const int ItemReadBatchSize = 400;
 
         private static IReadOnlyList<AssetItem> ReadItems(
-            SQLiteConnection connection, IReadOnlyList<ItemRow> rows)
+            SQLiteConnection connection, IReadOnlyList<ItemRow> rows, string catalogSource)
         {
             var items = rows.Select(MapItem).ToArray();
             for (var offset = 0; offset < items.Length; offset += ItemReadBatchSize)
@@ -27,7 +27,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     parameters);
                 var files = connection.Query<FileRow>(
                     FileSelect + " WHERE item_id IN (" + placeholders +
-                    ") ORDER BY file_name, id", parameters)
+                    ")" + (catalogSource == null ? string.Empty : " AND source_type = ?") +
+                    " ORDER BY file_name, id", catalogSource == null ? parameters :
+                        parameters.Concat(new object[] { catalogSource }).ToArray())
                     .Select(MapFile).ToLookup(file => file.ItemId, StringComparer.Ordinal);
                 var tags = connection.Query<TagRow>(
                     @"SELECT links.item_id AS ItemId, tag.id AS Id, tag.path AS Path,

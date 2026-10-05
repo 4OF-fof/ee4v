@@ -48,8 +48,19 @@ namespace Ee4v.AssetManager.Infrastructure
             return _sessionManager;
         }
 
+        public static IAssetManager Open(string databasePath)
+        {
+            return Open(databasePath, AssetDatasourceKind.Eagle, false);
+        }
+
         public static IAssetManager Open(string databasePath,
-            AssetDatasourceKind datasource = AssetDatasourceKind.Eagle)
+            AssetDatasourceKind datasource)
+        {
+            return Open(databasePath, datasource, true);
+        }
+
+        private static IAssetManager Open(string databasePath,
+            AssetDatasourceKind datasource, bool scopeCatalog)
         {
             if (!Enum.IsDefined(typeof(AssetDatasourceKind), datasource))
             {
@@ -63,13 +74,18 @@ namespace Ee4v.AssetManager.Infrastructure
             }
 
             return new AssetManagerService(
-                new SqliteAssetManagerStore(databasePath),
+                new SqliteAssetManagerStore(databasePath, scopeCatalog
+                    ? (AssetSourceType?)(datasource == AssetDatasourceKind.Eagle
+                        ? AssetSourceType.Eagle
+                        : datasource == AssetDatasourceKind.Ee4v
+                            ? AssetSourceType.Ee4v : AssetSourceType.BoothLibraryManager)
+                    : null),
                 new EagleAssetSource(),
                 new Ee4vAssetSource(),
                 new AssetTargetImporter(),
                 new AssetFileAnalyzer(databasePath),
                 new AssetThumbnailProvider(databasePath),
-                new ExternalAssetSource(), datasource);
+                new ExternalAssetSource(), scopeCatalog ? datasource : (AssetDatasourceKind?)null);
         }
 
         public static IAssetVariantManager OpenVariants(string databasePath, IAssetManager manager)

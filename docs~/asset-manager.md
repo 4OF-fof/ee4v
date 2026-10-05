@@ -2,7 +2,9 @@
 
 AssetManager は Item、File、Import Target、依存関係、Tag、Collection、取り込み済み Asset GUID と派生アセットを管理します。MCP の公開操作と入力境界は [mcp.md](./mcp.md) を参照してください。
 
-外部データソースはEagle・BLM・独自folderlibraryから排他的に選択します。読取API、待受server、userscript、保存形式は [datasources.md](./datasources.md) を参照してください。
+データソースはee4v・BLM・Eagleから排他的に選択します。読取API、待受server、userscript、保存形式は [datasources.md](./datasources.md) を参照してください。
+
+UIとMCPの共有sessionは選択中SourceだけをCatalogとして表示します。Item検索・Collection結果・Tag候補・File一覧をSourceで絞り、派生アセット一覧も選択中Sourceの親Itemを持つものだけを表示します。Sourceなしの手動Itemはee4vに含めます。他SourceのデータはDBに保持し、切替時に削除しません。単体ID参照と取り込み済みAssetの関連付けは保持します。
 
 ## PlayModeの操作確認
 
@@ -224,7 +226,7 @@ Item Gridでは検索欄の左にソートボタンを表示します。既定�
 
 ナビゲーションには独立した上部ツールバーを置かず、Import済み、全件、未所属、アーカイブ、タグの順に上部メニューを並べ、その下へコレクションを表示します。構造と操作は維持し、ナビゲーション内だけに専用のサイドバースタイルを適用します。背景は共通の標準パネル色`panel`とし、左右8px、上下12pxの余白を設けます。上部メニューとコレクションは32px高、角丸6px、行間4pxへ統一します。上部メニューの既存Fluentアイコンは14px、文字との間隔は10pxとし、通常時はアイコンと文字を控えめに、選択中は明るく表示します。hoverは薄い面、選択は青い面と2pxの左辺、クリック後とキーボードfocusは左辺のアクセントで示し、下線は表示しません。上部メニューの下は12pxの余白と細い区切り線、コレクション見出しの前は16pxの余白で区分します。見出しは11pxとし、「新規」はFluentのAddアイコンを添えた囲いのない小さな文字ボタンにします。スクロールバーは共通の細い表示を使用し、DarkとLightの配色トークンへ追従します。
 
-AssetManager画面にはデータソースと取り込みの専用ページを置きません。選択した外部Sourceとee4vの同期は再読み込み操作とセッション開始時に行い、取り込みや関連付け検索のAPIはUIと独立して提供します。
+AssetManager画面にはデータソースと取り込みの専用ページを置きません。選択したSourceの同期は再読み込み操作とセッション開始時に行い、取り込みや関連付け検索のAPIはUIと独立して提供します。
 
 ### 未所属File
 
@@ -330,7 +332,7 @@ SQLite接続はmasterと同じ`Ee4v.SQLite.Editor`境界とvendor済みの`sqlit
 | `CollectionsReordered` | `ReorderCollections` | 表示順の全Collection | なし |
 | `SourceSynchronized` | 成功した`SyncEagle`、`SyncEe4v`、`SyncDatasource` | 影響を受けたItem | 影響を受けたFile |
 
-`SourceSynchronized`は`SourceType`で`Eagle`、`Ee4v`、`BoothLibraryManager`、`Custom`を示し、作成・更新・削除されたItemとFileに加えて、依存関係の連鎖削除や未所属化で影響を受けたIDを1回の通知にまとめます。IDが空なら同期による変更はありません。同期の読み取りに失敗してDBを変更しなかった場合と、Target未設定または取り込み失敗でGUIDを変更しなかった場合は通知しません。読み取りAPIと`AnalyzeFile`も通知しません。
+`SourceSynchronized`は`SourceType`で`Eagle`、`Ee4v`、`BoothLibraryManager`を示し、作成・更新・削除されたItemとFileに加えて、依存関係の連鎖削除や未所属化で影響を受けたIDを1回の通知にまとめます。IDが空なら同期による変更はありません。同期の読み取りに失敗してDBを変更しなかった場合と、Target未設定または取り込み失敗でGUIDを変更しなかった場合は通知しません。読み取りAPIと`AnalyzeFile`も通知しません。
 
 アーカイブ、削除、Fileの所属変更、Tag設定は対象IDを複数指定できます。アーカイブは`is_archived`だけを変更し、`false`を指定すると復元します。通常のItem検索とFile一覧はアーカイブ済みを除外し、必要な場合だけ明示的に含めます。
 
@@ -362,7 +364,7 @@ Eagle同期で作成したItemの名前と説明はEagleを正本とし、`Updat
 
 AssetManager UIは`Preferences/4OF/ee4v`のUser Settingsから、Eagleライブラリのパス、Eagleの同期対象ルート、ee4v共通データの保存先を操作時に読み取ります。設定値はAssetManager内へ複製しません。ee4v共通データの保存先を変更した場合はmanagerと共有表示状態を破棄し、開いているAssetManager Windowを新しいDBで再構築します。公開APIを直接利用する場合は、各requestへパスを指定できます。
 
-Unityエディターのセッション開始時には、存在する選択済み外部Sourceとee4vのSourceを1回ずつ自動同期します。スクリプトの再コンパイルでは同じセッション中の同期を繰り返しません。各Sourceの自動同期はUser Settingsで個別に無効化できます。バッチモードでは利用者のDBを変更しないため実行しません。
+Unityエディターのセッション開始時には、保存先が存在する選択済みSourceを1回だけ自動同期します。スクリプトの再コンパイルでは同じセッション中の同期を繰り返しません。自動同期はUser Settingsで無効化できます。バッチモードでは利用者のDBを変更しないため実行しません。
 
 既定ではEagle library内の`VRCAsset`以下を同期対象とします。BoothMetaを直接含むEagle folderを1つのItemに対応させますが、Eagle folderはee4vのfolderへ同期しません。Itemの安定IDにはEagle folder ID、Fileの安定IDにはEagle item IDを使用するため、名前やpathの変更ではDB内のIDを維持します。Itemの名前、説明、サムネイル取得元とBooth商品・ストア情報は同期のたびにEagleの値へ合わせます。BoothMetaはEagle itemの`BoothMeta`タグとJSONの`boothItemId`で判定します。同一folderにBoothMetaが複数あれば同期を失敗させます。BoothMeta JSONアイテムに付いたその他のTagはEagle由来として同期し、AssetManagerで設定したTagは維持します。同じEagle itemが複数folderに属する場合は、1つのFileが複数Itemに属さないよう最初のItemだけへ関連付けます。商品folder以外のFileは未所属Fileとして同期します。完全同期で見つからなくなったItem、FileとEagle由来Tagの関連はDBから削除します。削除されたItemへ別Source由来のFileが所属していた場合、そのFileは削除せず未所属へ戻します。directory payloadとBooth metadata JSONはFileとして登録しません。Eagleのfolder metadataはUnityのシリアライズ深度制限を受けないJSONパーサーで読み込み、10階層を超えるfolderも同期対象にします。
 
@@ -477,7 +479,7 @@ collection ── 1..* collection_node
 | `name` | Item名 | 空白不可 |
 | `description` | Item説明 | NULL不可。未設定は空文字 |
 | `thumbnail_url` | サムネイル取得元URL | NULL可 |
-| `source_type` | Itemを作成したSource | NULL可。`eagle`、`ee4v`、`blm`、`custom` |
+| `source_type` | Itemを作成したSource | NULL可。`ee4v`、`blm`、`eagle` |
 | `source_id` | Source内の安定ID | NULL可 |
 | `is_archived` | 論理削除状態 | `0`または`1` |
 | `created_at` | 作成時刻 | UTC |
@@ -494,7 +496,7 @@ collection ── 1..* collection_node
 | `shop_name` | Boothストア名 | NULL可 |
 | `shop_url` | BoothストアURL | NULL可 |
 
-外部SourceのBooth metadataがあるItemだけに保存します。再同期でBooth情報がなくなった場合は行を削除します。
+SourceのBooth metadataがあるItemだけに保存します。ee4vのdownload Itemも対象です。再同期でBooth情報がなくなった場合は行を削除します。
 
 ### `file`
 
@@ -504,7 +506,7 @@ collection ── 1..* collection_node
 | `item_id` | 所属Item ID | NULL可。Item FK |
 | `file_name` | File名 | 空白不可 |
 | `extension` | 拡張子 | NULL可 |
-| `source_type` | FileのSource | NULL不可。`eagle`、`ee4v`、`blm`、`custom` |
+| `source_type` | FileのSource | NULL不可。`ee4v`、`blm`、`eagle` |
 | `source_id` | Source内の安定ID | NULL不可 |
 | `source_path` | 現在の実体path | NULL可 |
 | `is_archived` | 論理削除状態 | `0`または`1` |

@@ -148,14 +148,9 @@ namespace Ee4v.AssetManager.UI
             SessionState.SetBool(StartupSyncSessionKey, true);
             var datasourceRequest = AssetManagerSettings.DatasourceRequest;
             var datasourcePath = ExistingDirectory(datasourceRequest.LibraryPath);
-            var ee4vPath = ExistingDirectory(
-                AssetManagerSettings.Ee4vLibraryPath);
             var syncDatasource = AssetManagerSettings.AutoSyncDatasourceOnStartup &&
                 datasourcePath != null;
-            var syncEe4v =
-                AssetManagerSettings.AutoSyncEe4vOnStartup &&
-                ee4vPath != null;
-            if (!syncDatasource && !syncEe4v)
+            if (!syncDatasource)
             {
                 return;
             }
@@ -168,13 +163,6 @@ namespace Ee4v.AssetManager.UI
                     ReportSyncErrors(
                         datasourceRequest.Kind.ToString(),
                         ((IAssetDatasourceManager)manager).SyncDatasource(datasourceRequest));
-                }
-
-                if (syncEe4v)
-                {
-                    ReportSyncErrors(
-                        "ee4v",
-                        manager.SyncEe4v(new Ee4vSyncRequest(ee4vPath)));
                 }
             }
             catch (Exception exception)

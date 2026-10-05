@@ -1,9 +1,9 @@
 {
   "settings": {
-    "datasource": { "label": "Datasource", "tooltip": "Select exactly one external datasource: Eagle, BoothLibraryManager or Custom." },
-    "folderLibrary": { "label": "Folder library path", "tooltip": "Explicit directory for BLM registered item folders or the Custom bridge Items directory parent." },
+    "datasource": { "label": "Datasource", "tooltip": "Select exactly one datasource: ee4v, BoothLibraryManager or Eagle." },
+    "folderLibrary": { "label": "BLM folder library path", "tooltip": "Explicit directory for BLM registered item folders. ee4v uses the global data directory." },
     "blmDatabase": { "label": "BLM database path", "tooltip": "Explicit path to the BLM data.db. Read only; never modified." },
-    "autoSyncDatasource": { "label": "Sync datasource on startup", "tooltip": "Synchronize only the selected external datasource at editor startup." },
+    "autoSyncDatasource": { "label": "Sync datasource on startup", "tooltip": "Synchronize only the selected datasource at editor startup." },
     "section": {
       "assetManager": {
         "paths": "AssetManager paths",
@@ -22,10 +22,6 @@
     "ee4vGlobalPath": {
       "label": "ee4v global data path",
       "tooltip": "Directory for shared ee4v data, including the AssetManager database and BlendShape presets. The default is Documents/ee4v."
-    },
-    "autoSyncEe4vOnStartup": {
-      "label": "Sync ee4v on startup",
-      "tooltip": "Synchronize the configured ee4v source once when the Unity editor session starts."
     },
     "applyProjectThumbnailOnImport": {
       "label": "Set thumbnails in Project Style on import",

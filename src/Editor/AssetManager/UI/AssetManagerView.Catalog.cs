@@ -92,10 +92,6 @@ namespace Ee4v.AssetManager.UI
                     SyncSource(AssetManagerSettings.SelectedDatasource.ToString(),
                         () => datasourceManager.SyncDatasource(AssetManagerSettings.DatasourceRequest));
                 }
-                SyncSource(
-                    "ee4v",
-                    () => _manager.SyncEe4v(new Ee4vSyncRequest(
-                        AssetManagerSettings.Ee4vLibraryPath)));
             }
             finally
             {
