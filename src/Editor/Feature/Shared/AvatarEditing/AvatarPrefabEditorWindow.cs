@@ -21,6 +21,7 @@ namespace Ee4v.AvatarEditing
         private UiButton _revert;
         private HelpBox _feedback;
         private VisualElement _body;
+        private BodyPartSelector _bodyPartSelector;
         protected AvatarEditingContext Context { get; private set; }
         protected VisualElement FeatureHeader { get; private set; }
         protected abstract string TitleKey { get; }
@@ -107,6 +108,7 @@ namespace Ee4v.AvatarEditing
             var sidebar = new VisualElement();
             sidebar.AddToClassList("ee4v-avatar-prefab-editor__sidebar");
             FeatureHeader = new VisualElement();
+            _bodyPartSelector = null;
             sidebar.Add(FeatureHeader);
             var controls = new ScrollView(ScrollViewMode.Vertical);
             controls.AddToClassList("ee4v-avatar-prefab-editor__controls");
@@ -183,7 +185,10 @@ namespace Ee4v.AvatarEditing
         protected void Render()
         {
             if (Context == null) return;
-            FeatureHeader.Clear();
+            foreach (var child in FeatureHeader.Children().ToArray())
+            {
+                if (child != _bodyPartSelector) { child.RemoveFromHierarchy(); }
+            }
             Context.ControlsHost.Clear();
             _body.style.display = Context.Root == null ? DisplayStyle.None : DisplayStyle.Flex;
             RefreshSaveButtons();
@@ -205,15 +210,20 @@ namespace Ee4v.AvatarEditing
                     Context.SelectedMaterial = null;
                     Context.Preview.FocusBodyPart(null, true);
                 }
-                FeatureHeader.Add(new BodyPartSelector(Context.SelectedBodyPart,
-                    IsAvailable, part =>
-                    {
-                        if (!FlushFeatureChanges()) return;
-                        Context.SelectedBodyPart = part;
-                        ClearFeatureData();
-                        Context.Preview.FocusBodyPart(part);
-                        Render();
-                    }));
+                if (_bodyPartSelector == null)
+                {
+                    _bodyPartSelector = new BodyPartSelector(Context.SelectedBodyPart,
+                        IsAvailable, part =>
+                        {
+                            if (!FlushFeatureChanges()) return;
+                            Context.SelectedBodyPart = part;
+                            ClearFeatureData();
+                            Context.Preview.FocusBodyPart(part);
+                            Render();
+                        });
+                    FeatureHeader.Add(_bodyPartSelector);
+                }
+                _bodyPartSelector.Refresh(Context.SelectedBodyPart, IsAvailable);
             }
             if (ShowsSaveButton && !CanEditPrefab()) ShowMessage(I18N.Get("avatarEditor.readOnly"), HelpBoxMessageType.Info);
             else _feedback.style.display = DisplayStyle.None;

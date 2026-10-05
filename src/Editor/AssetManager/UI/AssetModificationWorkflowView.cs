@@ -122,6 +122,8 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement _appearanceHeader;
 
+        private BodyPartSelector _bodyPartSelector;
+
         private PreviewPane _previewPane;
 
         private WorkflowCategory _currentCategory =

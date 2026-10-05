@@ -64,6 +64,7 @@ namespace Ee4v.AssetManager.UI
             root.Add(_editorLayout);
             _customizerHost = _editorLayout.AppearanceHost;
             _appearanceHeader = _editorLayout.AppearanceHeader;
+            _bodyPartSelector = null;
             _avatarContext.ControlsHost = _editorLayout.Controls;
             _faceExpressionHost = _editorLayout.FaceExpressionHost;
             _executionHost = _editorLayout.ExecutionHost;
@@ -655,7 +656,6 @@ namespace Ee4v.AssetManager.UI
             _overviewContent = null;
             if (category == WorkflowCategory.Overview)
             {
-                _appearanceHeader.Clear();
                 _appearanceHeader.style.display = DisplayStyle.None;
                 foreach (var cachedControls in _appearanceControlsCache.Values)
                 {
@@ -679,19 +679,23 @@ namespace Ee4v.AssetManager.UI
                 _avatarContext.SelectedBodyPart = null;
                 _avatarContext.Preview?.FocusBodyPart(null, preservePreviewCamera);
             }
-            _appearanceHeader.Clear();
+            foreach (var child in _appearanceHeader.Children().ToArray())
+            {
+                if (child != _bodyPartSelector) { child.RemoveFromHierarchy(); }
+            }
             _appearanceHeader.style.display = DisplayStyle.Flex;
+            if (_bodyPartSelector == null)
+            {
+                _bodyPartSelector = BuildBodyPartSelector();
+                _appearanceHeader.Add(_bodyPartSelector);
+            }
+            _bodyPartSelector.Refresh(_avatarContext.SelectedBodyPart, HasAvailableBodyPart);
+            _bodyPartSelector.EnableInClassList(
+                "ee4v-ui-body-part-selector--standalone",
+                category != WorkflowCategory.ShapeParts);
             if (category == WorkflowCategory.ShapeParts)
             {
-                _appearanceHeader.Add(BuildBodyPartSelector());
                 _appearanceHeader.Add(_parts.BuildShapePartsTabs());
-            }
-            else
-            {
-                var selector = BuildBodyPartSelector();
-                selector.AddToClassList(
-                    "ee4v-ui-body-part-selector--standalone");
-                _appearanceHeader.Add(selector);
             }
             var appearancePanel = category == WorkflowCategory.Material
                 ? AppearancePanel.Material

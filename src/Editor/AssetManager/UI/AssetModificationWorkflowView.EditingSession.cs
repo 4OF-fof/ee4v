@@ -12,7 +12,7 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed partial class AssetModificationWorkflowView
     {
-        private VisualElement BuildBodyPartSelector()
+        private BodyPartSelector BuildBodyPartSelector()
         {
             return new BodyPartSelector(_avatarContext.SelectedBodyPart, HasAvailableBodyPart, part =>
             {

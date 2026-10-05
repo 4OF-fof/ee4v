@@ -38,6 +38,17 @@ namespace Ee4v.UI
             }
         }
 
+        public void Refresh(BodyPartCategory? selected,
+            Func<BodyPartCategory, bool> available)
+        {
+            SetSelected(selected);
+            foreach (var pair in _buttons)
+            {
+                pair.Button.SetEnabled(!pair.Part.HasValue ||
+                    available == null || available(pair.Part.Value));
+            }
+        }
+
         private void AddPart(BodyPartCategory? part, string label,
             bool enabled, Action<BodyPartCategory?> select)
         {

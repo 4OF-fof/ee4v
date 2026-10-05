@@ -27,7 +27,7 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 - `InputGroup`はfieldset風の外枠へ開閉可能な必須見出しを重ね、1個以上の`FormInput`をまとめる入力グループです。見出しから内容を開閉し、閉状態は高さとシェブロンで示します。枠の内外と見出し背景は通常色へ揃え、シェブロンと文字の領域だけをホバー対象として外枠の色を変えます。枠内の内容上や子孫入力のフォーカスでは外観を変えません。展開状態の変更を通知し、各`FormInput`のラベルは省略できます。
 - `NavigationItem`は`ItemRow`へクリックと選択状態を加えた操作項目です。
 - `SelectionTab`は名称と選択状態を持つタブです。通常と強調用の`SelectionTabVariant`を持ち、クリック時の操作は利用側が接続します。
-- `BodyPartSelector`はCoreの`BodyPartCategory`を使う部位選択です。選択通知と利用可否の判定は利用側が渡します。
+- `BodyPartSelector`はCoreの`BodyPartCategory`を使う部位選択です。選択通知と利用可否の判定は利用側が渡します。`Refresh`は既存のボタンと文字要素を保持し、選択状態と利用可否だけを更新します。
 - `PrefabSelector`は候補Prefabの選択とドラッグの受け入れを行います。`ShowPicker`は同じ候補を検索付きの一覧・Gridから選択する入口で、候補取得や保存は行いません。PickerのWindowは内部実装です。
 - `TagPill`は任意の選択操作と削除操作を持つタグ入力です。pill形と薄い面を保ち、境界線と選択操作にはInputFieldと同じフォーカス色を使用します。
 
