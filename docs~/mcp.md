@@ -100,7 +100,7 @@ AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_exp
 | Prefab調査 | `ee4v_asset_inspect_prefab`、`ee4v_asset_render_prefab_preview` |
 | Variant改変 | `ee4v_asset_list_variants`、`ee4v_asset_create_variant`、`ee4v_asset_add_prefab_to_variant`、`ee4v_asset_create_material_variant`、`ee4v_asset_save_variant` |
 
-`ee4v_asset_edit_items`は`itemIds`に1件以上を渡し、`name`、`description`、`tags`、`archived`、`targets`のうち変更する項目だけを指定する。未指定項目は保持する。空のdescriptionは消去、空のtags／targets配列は全解除、`archived: false`はArchive解除を意味する。targets変更は1 Itemだけを対象とし、各要素はfileId、targetPath、任意のgroupNameを持つ。groupNameを省略すると既存Groupを保持し、空文字はGroup解除を意味する。Eagle由来Itemの名前・説明は変更できず、Eagle由来Tagは維持する。名前・説明・Tag・Archiveの一括指定も可能。複合編集は複数の公開APIを順に実行するため全体transactionではなく、途中失敗時はerrorの`details.appliedChanges`に完了した編集を返す。
+`ee4v_asset_edit_items`は`itemIds`に1件以上を渡し、`name`、`description`、`tags`、`archived`、`targets`のうち変更する項目だけを指定する。未指定項目は保持する。空のdescriptionは消去、空のtags／targets配列は全解除、`archived: false`はArchive解除を意味する。targets変更は1 Itemだけを対象とし、各要素はfileId、targetPath、任意のgroupNameを持つ。groupNameを省略すると既存Groupを保持し、空文字はGroup解除を意味する。外部Source由来Itemの名前・説明は変更できず、外部Source由来Tagは維持する。名前・説明・Tag・Archiveの一括指定も可能。複合編集は複数の公開APIを順に実行するため全体transactionではなく、途中失敗時はerrorの`details.appliedChanges`に完了した編集を返す。
 
 ```json
 {"itemIds":["item-id"],"description":"更新する説明","tags":["avatar/example"],"archived":false}

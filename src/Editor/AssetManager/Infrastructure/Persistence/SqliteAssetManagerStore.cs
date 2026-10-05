@@ -30,10 +30,17 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                      created_at AS CreatedAt, updated_at AS UpdatedAt
               FROM file";
         private readonly string _databasePath;
+        private readonly string _catalogSource;
+        private string CatalogItemCondition => _catalogSource == "ee4v"
+            ? "(item.source_type = ? OR item.source_type IS NULL)"
+            : "item.source_type = ?";
 
-        internal SqliteAssetManagerStore(string databasePath)
+        internal SqliteAssetManagerStore(string databasePath,
+            AssetSourceType? catalogSource = null)
         {
             _databasePath = Path.GetFullPath(databasePath);
+            _catalogSource = catalogSource.HasValue
+                ? ToSourceType(catalogSource.Value) : null;
             InitializeDatabase();
         }
 
@@ -46,6 +53,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     query = query ?? new AssetItemQuery();
                     var parameters = new List<object>();
                     var conditions = new List<string>();
+                    if (_catalogSource != null)
+                    {
+                        conditions.Add(CatalogItemCondition);
+                        parameters.Add(_catalogSource);
+                    }
                     if (!query.IncludeArchived)
                     {
                         conditions.Add("item.is_archived = 0");
@@ -76,7 +88,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                             pageParameters.ToArray());
                     return new AssetSearchResult
                     {
-                        Items = ReadItems(connection, rows),
+                        Items = ReadItems(connection, rows, _catalogSource),
                         TotalCount = total
                     };
                 }
@@ -93,6 +105,12 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 {
                     RequireItem(connection, itemId, null);
                     var parameters = new List<object> { itemId };
+                    var sourceCondition = string.Empty;
+                    if (_catalogSource != null)
+                    {
+                        sourceCondition = " AND " + CatalogItemCondition;
+                        parameters.Add(_catalogSource);
+                    }
                     var condition = filter == null
                         ? "1"
                         : BuildFilterSql(filter, parameters);
@@ -101,7 +119,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                             SELECT 1 FROM item
                             WHERE item.id = ?
                               AND item.is_archived = 0
-                              AND " + condition + ")",
+                              " + sourceCondition + " AND " + condition + ")",
                         parameters.ToArray()) != 0;
                 }
             });
@@ -342,10 +360,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     RequireItem(connection, itemId, null);
                     return ReadFiles(
                         connection,
-                        includeArchived
+                        (includeArchived
                             ? "item_id = @p0"
-                            : "item_id = @p0 AND is_archived = 0",
-                        itemId);
+                            : "item_id = @p0 AND is_archived = 0") +
+                        (_catalogSource == null ? string.Empty : " AND source_type = @p1"),
+                        _catalogSource == null
+                            ? new object[] { itemId }
+                            : new object[] { itemId, _catalogSource });
                 }
             });
         }
@@ -359,9 +380,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 {
                     return ReadFiles(
                         connection,
-                        includeArchived
+                        (includeArchived
                             ? "item_id IS NULL"
-                            : "item_id IS NULL AND is_archived = 0");
+                            : "item_id IS NULL AND is_archived = 0") +
+                        (_catalogSource == null ? string.Empty : " AND source_type = @p0"),
+                        _catalogSource == null ? Array.Empty<object>() : new object[] { _catalogSource });
                 }
             });
         }
@@ -837,7 +860,22 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             {
                 using (var connection = OpenConnection())
                 {
-                    return ReadTags(connection, null, null);
+                    if (_catalogSource == null)
+                    {
+                        return ReadTags(connection, null, null);
+                    }
+
+                    return connection.Query<TagRow>(
+                        @"SELECT tag.id AS Id, tag.path AS Path FROM tag
+                          WHERE EXISTS(
+                            SELECT 1 FROM item_tag link JOIN item ON item.id = link.item_id
+                            WHERE link.tag_id = tag.id AND " + CatalogItemCondition + @")
+                            OR EXISTS(
+                            SELECT 1 FROM item_source_tag link JOIN item ON item.id = link.item_id
+                            WHERE link.tag_id = tag.id AND " + CatalogItemCondition + @")
+                          ORDER BY tag.path", _catalogSource, _catalogSource)
+                        .Select(row => new AssetTag { Id = row.Id, Path = row.Path })
+                        .ToArray();
                 }
             });
         }
@@ -1143,13 +1181,15 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                                 file);
                         }
 
-                        if (sourceType == AssetSourceType.Eagle)
+                        if (sourceType != AssetSourceType.Ee4v)
                         {
                             ReplaceSourceItemTags(connection, transaction,
                                 itemId, source, item.Tags ?? Array.Empty<string>());
                         }
                         else if (item.Tags != null)
                         {
+                            ReplaceSourceItemTags(connection, transaction,
+                                itemId, source, Array.Empty<string>());
                             ReplaceItemTags(
                                 connection,
                                 transaction,
@@ -1346,7 +1386,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     updated_at TEXT NOT NULL,
                     CHECK((source_type IS NULL) = (source_id IS NULL)),
                     CHECK(source_type IS NULL OR source_type IN(
-                      'eagle', 'ee4v'))
+                      'eagle', 'ee4v', 'blm'))
                   )",
                 @"CREATE UNIQUE INDEX IF NOT EXISTS ux_item_source
                     ON item(source_type, source_id)
@@ -1364,7 +1404,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     file_name TEXT NOT NULL CHECK(trim(file_name) <> ''),
                     extension TEXT,
                     source_type TEXT NOT NULL CHECK(source_type IN(
-                      'eagle', 'ee4v')),
+                      'eagle', 'ee4v', 'blm')),
                     source_id TEXT NOT NULL,
                     source_path TEXT,
                     is_archived INTEGER NOT NULL DEFAULT 0
@@ -1538,7 +1578,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     tag_id TEXT NOT NULL REFERENCES tag(id)
                       ON DELETE CASCADE,
                     source_type TEXT NOT NULL CHECK(source_type IN (
-                      'eagle', 'ee4v')),
+                      'eagle', 'ee4v', 'blm')),
                     PRIMARY KEY(item_id, tag_id, source_type)
                   )",
                 @"CREATE INDEX IF NOT EXISTS ix_item_source_tag_reverse
@@ -1620,7 +1660,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             ExecuteVariantSchema(connection);
         }
 
-        private static string BuildFilterSql(
+        private string BuildFilterSql(
             AssetFilterNode node,
             ICollection<object> parameters)
         {
@@ -1642,7 +1682,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             }
         }
 
-        private static string BuildFilterGroup(
+        private string BuildFilterGroup(
             AssetFilterNode node,
             string separator,
             ICollection<object> parameters)
@@ -1654,7 +1694,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     .ToArray()) + ")";
         }
 
-        private static string BuildFilterCondition(
+        private string BuildFilterCondition(
             AssetFilterNode node,
             ICollection<object> parameters)
         {
@@ -1684,11 +1724,17 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                                filter_tag.path LIKE ? ESCAPE '\'))";
                 case AssetFilterConditionType.HasFileExtension:
                     parameters.Add(NormalizeExtensionFilter(node.Value));
+                    var fileSourceCondition = string.Empty;
+                    if (_catalogSource != null)
+                    {
+                        fileSourceCondition = " AND filter_file.source_type = ?";
+                        parameters.Add(_catalogSource);
+                    }
                     return @"EXISTS(
                         SELECT 1 FROM file filter_file
                         WHERE filter_file.item_id = item.id
                           AND filter_file.is_archived = 0
-                          AND filter_file.extension = ?)";
+                          AND filter_file.extension = ?" + fileSourceCondition + ")";
                 default:
                     throw new InvalidOperationException(
                         "Unsupported asset filter condition.");
@@ -2718,16 +2764,24 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
 
         private static string ToSourceType(AssetSourceType sourceType)
         {
-            return sourceType == AssetSourceType.Ee4v
-                ? "ee4v"
-                : "eagle";
+            switch (sourceType)
+            {
+                case AssetSourceType.Eagle: return "eagle";
+                case AssetSourceType.Ee4v: return "ee4v";
+                case AssetSourceType.BoothLibraryManager: return "blm";
+                default: throw new ArgumentOutOfRangeException(nameof(sourceType));
+            }
         }
 
         private static AssetSourceType ParseSourceType(string value)
         {
-            return value == "ee4v"
-                ? AssetSourceType.Ee4v
-                : AssetSourceType.Eagle;
+            switch (value)
+            {
+                case "eagle": return AssetSourceType.Eagle;
+                case "ee4v": return AssetSourceType.Ee4v;
+                case "blm": return AssetSourceType.BoothLibraryManager;
+                default: throw new ArgumentException("Unknown source type: " + value);
+            }
         }
 
         private static string NodeType(AssetFilterNodeType type)

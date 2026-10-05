@@ -87,15 +87,10 @@ namespace Ee4v.AssetManager.UI
             _defersManagerRefresh = true;
             try
             {
-                SyncSource(
-                    "Eagle",
-                    () => _manager.SyncEagle(new EagleSyncRequest(
-                        AssetManagerSettings.EagleLibraryPath,
-                        AssetManagerSettings.EagleTargetRoot)));
-                SyncSource(
-                    "ee4v",
-                    () => _manager.SyncEe4v(new Ee4vSyncRequest(
-                        AssetManagerSettings.Ee4vLibraryPath)));
+                if (_manager is IAssetDatasourceManager)
+                {
+                    AssetManagerWindowSession.SyncSelectedDatasource(_manager);
+                }
             }
             finally
             {
@@ -103,26 +98,6 @@ namespace Ee4v.AssetManager.UI
                 _managerRefreshPending = false;
                 RefreshAfterManagerChange();
             }
-        }
-
-        private void SyncSource(
-            string sourceName,
-            Func<AssetSyncResult> synchronize)
-        {
-            Run(() =>
-            {
-                var result = synchronize();
-                if (result == null || result.ErrorCount == 0)
-                {
-                    return;
-                }
-
-                Debug.LogWarning(
-                    "Asset Manager " + sourceName + " sync: " +
-                    string.Join(
-                        Environment.NewLine,
-                        result.ErrorMessages));
-            }, refresh: false);
         }
 
         private void BuildItems()

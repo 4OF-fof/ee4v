@@ -1,5 +1,9 @@
 {
   "ui": {
+    "pathField": {
+      "selectFolder": "Select a folder",
+      "selectFile": "Select a file"
+    },
     "search": {
       "placeholder": "Search",
       "tooltip": "Search"

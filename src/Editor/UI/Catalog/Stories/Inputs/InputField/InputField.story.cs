@@ -38,6 +38,7 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/UI/Components/Inputs/ListField/ListField.cs",
+                        "Editor/UI/Components/Inputs/PathField/PathField.cs",
                         "Editor/UI/Catalog/helper/Controls.cs",
                         "Editor/AssetManager/UI/AssetManagerView.Items.cs",
                         "Editor/AssetManager/UI/AssetVariantSaveOverlay.cs",

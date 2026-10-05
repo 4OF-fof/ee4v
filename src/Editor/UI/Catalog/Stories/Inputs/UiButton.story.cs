@@ -35,6 +35,7 @@ namespace Ee4v.UI
                         "Editor/Feature/Project/ProjectTabs/UI/ProjectTabsView.cs",
                         "Editor/Feature/Shared/ItemStyle/ItemStyleEditor.cs",
                         "Editor/UI/Components/Inputs/InputGroup/InputGroup.cs",
+                        "Editor/UI/Components/Inputs/PathField/PathField.cs",
                         "Editor/UI/Components/Content/TagPill/TagPill.cs",
                         "Editor/UI/Components/Overlays/CustomPopup/CustomPopup.cs"
                     }));

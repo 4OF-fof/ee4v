@@ -37,6 +37,26 @@
     min-height: var(--ee4v-control-height-compact);
 }
 
+.ee4v-settings__field.ee4v-ui-input-field {
+    flex-grow: 0;
+    flex-shrink: 1;
+    flex-basis: auto;
+    min-width: 120px;
+    max-width: 100%;
+}
+
+.ee4v-settings__field.ee4v-ui-path-field {
+    flex-grow: 0;
+    flex-shrink: 1;
+    flex-basis: auto;
+    min-width: 240px;
+    max-width: 100%;
+}
+
+.ee4v-settings__field-layout--path {
+    flex-wrap: wrap;
+}
+
 .ee4v-settings__label {
     color: var(--ee4v-color-text-primary);
 }

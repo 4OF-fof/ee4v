@@ -32,6 +32,7 @@ namespace Ee4v.Core.Settings
 
         static GlobalDataSettings()
         {
+            PathSettingDrawer.Register(RootPath);
             EnsureRegistered();
         }
 

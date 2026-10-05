@@ -10,6 +10,8 @@
 
 ## AssetManager
 
+ee4v・BLM・Eagleの契約は [datasources.md](./datasources.md) を参照してください。新規テストケースを追加せず、既存AssetManagerApiTestsと新規隔離DBへの手動取り込み・loopback疎通で確認します。Catalogの排他表示は3SourceとSourceなしのItem・Tag・Fileを同じ隔離DBへ入れ、検索件数・ページ分割・Collection一致・Tag候補・所属/未所属Fileを確認します。手動Itemはee4vだけに表示し、Fileの拡張子条件とアーカイブ表示もSourceを越えないこと、切替後も全データを保持することを確認します。ee4vでは手動pairと複数downloadのItemが同じ同期で共存すること、metadata編集、部分File削除の退避・復元・確定を隔離ライブラリで確認します。
+
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
 | `CollectionSearch_EvaluatesNestedLogicAndHierarchicalTags` | SQLite検索が入れ子条件と階層Tagを評価する | Collection結果の誤りは通常の単純検索では検出できない |
