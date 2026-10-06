@@ -7,6 +7,7 @@
     "saveAssets": "メニューassetを保存",
     "sourceNotice": "設定の適用・削除は表示した編集元へ反映します。共有メニューassetは、それを使用するすべてのアバターへ影響します。Undoで戻せます。メニューassetの保存はアバターPrefabの保存とは別です。",
     "add": "Modular Avatarで項目を追加",
+    "addItem": "追加",
     "settings": "項目の設定",
     "source": "編集元",
     "confirmSource": "この編集元を確認し、変更する",

@@ -1,16 +1,40 @@
 .ee4v-expression-menu { flex-grow: 1; padding: 8px; }
 .ee4v-expression-menu__toolbar { flex-direction: row; margin-top: 6px; margin-bottom: 6px; }
-.ee4v-expression-menu__ring { width: 320px; height: 320px; align-self: center; margin-top: 8px; margin-bottom: 8px; flex-shrink: 0; }
-.ee4v-expression-menu__slot { position: absolute; width: 86px; height: 74px; flex-direction: column; justify-content: center; border-radius: 12px; background-color: rgba(100, 100, 100, 0.15); }
-.ee4v-expression-menu__slot Image { width: 30px; height: 30px; align-self: center; }
-.ee4v-expression-menu__slot .ee4v-ui-button__label { max-width: 80px; flex-shrink: 1; }
-.ee4v-expression-menu__slot--selected { border-width: 2px; border-color: rgb(78, 155, 235); }
-.ee4v-expression-menu__slot-0 { left: 117px; top: 0; }
-.ee4v-expression-menu__slot-1 { left: 207px; top: 39px; }
-.ee4v-expression-menu__slot-2 { left: 234px; top: 123px; }
-.ee4v-expression-menu__slot-3 { left: 207px; top: 207px; }
-.ee4v-expression-menu__slot-4 { left: 117px; top: 246px; }
-.ee4v-expression-menu__slot-5 { left: 27px; top: 207px; }
-.ee4v-expression-menu__slot-6 { left: 0; top: 123px; }
-.ee4v-expression-menu__slot-7 { left: 27px; top: 39px; }
-.ee4v-expression-menu__back { position: absolute; left: 117px; top: 137px; width: 86px; height: 46px; }
+.ee4v-expression-menu__ring { width: 300px; height: 300px; align-self: center; margin-top: 8px; margin-bottom: 8px; flex-shrink: 0; }
+.ee4v-expression-menu__slice { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; }
+.ee4v-expression-menu__slice-visual { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.ee4v-expression-menu__line-holder { position: absolute; left: 50%; top: 50%; }
+.ee4v-expression-menu__labels { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: visible; }
+.ee4v-expression-menu .ee4v-expression-menu__slot,
+.ee4v-expression-menu .ee4v-expression-menu__slot:hover,
+.ee4v-ui .ee4v-expression-menu Button.ee4v-expression-menu__slot:focus,
+.ee4v-expression-menu .ee4v-expression-menu__slot:active {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-radius: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+.ee4v-expression-menu__slot-content {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    margin-left: -50px;
+    margin-top: -50px;
+    flex-direction: column;
+}
+.ee4v-expression-menu__slot:disabled { opacity: 1; }
+.ee4v-expression-menu__slot-content Image { width: 50px; height: 50px; flex-shrink: 0; }
+.ee4v-expression-menu__slot-content .ee4v-ui-button__label { width: 100px; min-height: 18px; flex-shrink: 0; overflow: visible; }
+.ee4v-expression-menu__sub-icon { position: absolute; left: 60px; top: 43px; width: 25px; height: 25px; background-color: rgb(56, 61, 69); border-radius: 15px; align-items: center; justify-content: center; }
+.ee4v-expression-menu__sub-icon Image { width: 20px; height: 20px; }
+.ee4v-expression-menu__center {
+    position: absolute;
+    left: 100px;
+    top: 100px;
+}

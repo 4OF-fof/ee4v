@@ -5,7 +5,9 @@
     "Ee4v.Core.Presentation.Editor",
     "Ee4v.UI.Editor",
     "Ee4v.AvatarEditing.Editor",
-    "nadena.dev.modular-avatar.core"
+    "nadena.dev.modular-avatar.core",
+    "vrchat.blackstartx.gesture-manager",
+    "vrchat.blackstartx.gesture-manager.editor"
   ],
   "includePlatforms": ["Editor"],
   "autoReferenced": true

@@ -7,6 +7,7 @@
     "saveAssets": "Save menu assets",
     "sourceNotice": "Apply and Remove edit the displayed source. Shared menu assets affect every avatar using them. Use Undo to revert. Save menu assets separately from the avatar Prefab.",
     "add": "Add control through Modular Avatar",
+    "addItem": "Add",
     "settings": "Control settings",
     "source": "Source",
     "confirmSource": "I have checked this source and want to edit it",
