@@ -667,6 +667,8 @@ namespace Ee4v.UI
             {
                 case BodyPartCategory.Chest:
                     return 0.82f;
+                case BodyPartCategory.Legs:
+                    return 0.68f;
                 case BodyPartCategory.Waist:
                 case BodyPartCategory.Shoulders:
                 case BodyPartCategory.Arms:

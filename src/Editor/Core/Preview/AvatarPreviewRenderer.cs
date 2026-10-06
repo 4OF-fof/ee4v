@@ -243,9 +243,10 @@ namespace Ee4v.Core.Preview
         {
             if (_ownsRoot)
             {
+                var poseMatrices = new Dictionary<Transform, Matrix4x4>();
                 var attachments = _rotations.Count > 0 || _scales.Count > 0
                     ? _poseBindings.Keys.Where(source => source != null)
-                        .ToDictionary(source => source, GetPoseLocalMatrix)
+                        .ToDictionary(source => source, source => GetPoseLocalMatrix(source, poseMatrices))
                     : new Dictionary<Transform, Matrix4x4>();
                 foreach (var pair in _activeStates)
                 {

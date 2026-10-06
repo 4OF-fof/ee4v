@@ -35,6 +35,7 @@ namespace Ee4v.Core.Preview
             private readonly AvatarPreviewRenderer _owner;
             private readonly Dictionary<Transform, Transform> _bones = new Dictionary<Transform, Transform>();
             private readonly Dictionary<Transform, Transform> _adjustedBones = new Dictionary<Transform, Transform>();
+            private readonly Dictionary<Transform, Matrix4x4> _poseMatrices = new Dictionary<Transform, Matrix4x4>();
             private readonly Dictionary<SkinnedMeshRenderer, Transform[]> _boneArrays = new Dictionary<SkinnedMeshRenderer, Transform[]>();
             private readonly Dictionary<Transform, (Transform Parent, Vector3 Position, Quaternion Rotation, Vector3 Scale,
                 Vector3 OutputPosition, Quaternion OutputRotation, Vector3 OutputScale)> _transforms =
@@ -45,6 +46,13 @@ namespace Ee4v.Core.Preview
             private GameObject _boneRoot;
             internal PreviewNode(AvatarPreviewRenderer owner) => _owner = owner;
             public RenderAspects WhatChanged => RenderAspects.Shapes;
+            public void OnFrameGroup()
+            {
+                _poseMatrices.Clear();
+                if (_owner._disposed || EditorApplication.isPlaying) return;
+                // Shared bones are updated once before the renderer callbacks for this group.
+                UpdateBones();
+            }
             public void OnFrame(Renderer original, Renderer proxy)
             {
                 if (_owner._disposed || original == null || proxy == null) return;
@@ -78,7 +86,6 @@ namespace Ee4v.Core.Preview
                 if (_owner._scales.Count == 0 && _owner._rotations.Count == 0 && _bones.Count == 0) return;
                 _boneScene = proxy.gameObject.scene;
                 var desired = GetBone(original.transform);
-                UpdateBones();
                 if (proxy is MeshRenderer)
                 {
                     var relative = original.transform.worldToLocalMatrix * proxy.transform.localToWorldMatrix;
@@ -101,7 +108,6 @@ namespace Ee4v.Core.Preview
                 var upstreamBones = target.bones;
                 foreach (var bone in sourceBones) if (bone != null) GetBone(bone);
                 if (source.rootBone != null) GetBone(source.rootBone);
-                UpdateBones();
                 if (!_boneArrays.TryGetValue(target, out var output) || output.Length != upstreamBones.Length)
                     _boneArrays[target] = output = new Transform[upstreamBones.Length];
                 for (var index = 0; index < upstreamBones.Length; index++)
@@ -159,7 +165,7 @@ namespace Ee4v.Core.Preview
             {
                 if ((_owner._rotations.Count > 0 || _owner._scales.Count > 0) && _owner._poseBindings.ContainsKey(source))
                 {
-                    SetLocalMatrix(target, _owner.GetPoseLocalMatrix(source));
+                    SetLocalMatrix(target, _owner.GetPoseLocalMatrix(source, _poseMatrices));
                     return;
                 }
                 target.localPosition = source.localPosition;

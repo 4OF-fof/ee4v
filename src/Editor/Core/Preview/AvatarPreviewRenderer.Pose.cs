@@ -75,19 +75,27 @@ namespace Ee4v.Core.Preview
         public Vector3 GetTransformPosition(Transform source) => source == null
             ? Vector3.zero : GetPoseMatrix(source).MultiplyPoint3x4(Vector3.zero);
 
-        private Matrix4x4 GetPoseMatrix(Transform source)
+        private Matrix4x4 GetPoseMatrix(Transform source, Dictionary<Transform, Matrix4x4> matrices = null)
         {
             if (source == null) return Matrix4x4.identity;
+            if (matrices != null && matrices.TryGetValue(source, out var cached)) return cached;
+            var matrix = CalculatePoseMatrix(source, matrices);
+            if (matrices != null) matrices[source] = matrix;
+            return matrix;
+        }
+
+        private Matrix4x4 CalculatePoseMatrix(Transform source, Dictionary<Transform, Matrix4x4> matrices)
+        {
             if ((_rotations.Count > 0 || _scales.Count > 0) && _poseBindings.TryGetValue(source, out var binding) && binding.Target != null)
             {
                 var relative = binding.Target.worldToLocalMatrix * source.localToWorldMatrix;
                 if (binding.Mode == BoneProxyAttachmentMode.AsChildKeepWorldPose && !binding.MatchScale)
-                    return GetPoseMatrix(binding.Target) * relative;
+                    return GetPoseMatrix(binding.Target, matrices) * relative;
                 var keepPosition = binding.Mode == BoneProxyAttachmentMode.AsChildKeepWorldPose ||
                     binding.Mode == BoneProxyAttachmentMode.AsChildKeepPosition;
                 var keepRotation = binding.Mode == BoneProxyAttachmentMode.AsChildKeepWorldPose ||
                     binding.Mode == BoneProxyAttachmentMode.AsChildKeepRotation;
-                return GetPoseMatrix(binding.Target) * Matrix4x4.TRS(
+                return GetPoseMatrix(binding.Target, matrices) * Matrix4x4.TRS(
                     keepPosition ? (Vector3)relative.GetColumn(3) : Vector3.zero,
                     keepRotation ? relative.rotation : Quaternion.identity,
                     binding.MatchScale ? Vector3.one : relative.lossyScale);
@@ -95,11 +103,11 @@ namespace Ee4v.Core.Preview
             var local = Matrix4x4.TRS(source.localPosition,
                 _rotations.TryGetValue(source, out var rotation) ? rotation : source.localRotation,
                 _scales.TryGetValue(source, out var scale) ? scale : source.localScale);
-            return GetPoseMatrix(source.parent) * local;
+            return GetPoseMatrix(source.parent, matrices) * local;
         }
 
-        private Matrix4x4 GetPoseLocalMatrix(Transform source) =>
-            GetPoseMatrix(source.parent).inverse * GetPoseMatrix(source);
+        private Matrix4x4 GetPoseLocalMatrix(Transform source, Dictionary<Transform, Matrix4x4> matrices = null) =>
+            GetPoseMatrix(source.parent, matrices).inverse * GetPoseMatrix(source, matrices);
 
         private void AlignBone(Transform bone, Transform child, Vector3 direction)
         {
