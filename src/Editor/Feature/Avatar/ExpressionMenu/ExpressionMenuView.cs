@@ -18,6 +18,7 @@ namespace Ee4v.ExpressionMenu
     public sealed class ExpressionMenuView : VisualElement
     {
         private readonly AvatarEditingContext _context;
+        private readonly bool _showsEditSource;
         private readonly List<int> _path = new List<int>();
         private List<MenuPage> _sources;
         private MenuPage _root;
@@ -28,11 +29,13 @@ namespace Ee4v.ExpressionMenu
         private int _selected = -1;
         private string _error;
         private bool _selectAddedControl;
+        private ModularAvatarMenuItem _selectAddedSource;
         private static string T(string key) => I18N.Get("expressionMenu." + key);
 
-        public ExpressionMenuView(AvatarEditingContext context)
+        public ExpressionMenuView(AvatarEditingContext context, bool showsEditSource = false)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _showsEditSource = showsEditSource;
             UiComposition.Prepare(this, "Editor/Feature/Avatar/ExpressionMenu/expression-menu.uss");
             AddToClassList("ee4v-expression-menu");
             Refresh();
@@ -54,6 +57,11 @@ namespace Ee4v.ExpressionMenu
                     if (index < 0) { _path.Clear(); _offset = 0; _selected = -1; }
                 }
                 if (_source > _sources.Count) _source = 0;
+                if (_selectAddedSource != null)
+                {
+                    LocateSource(_selectAddedSource);
+                    _selectAddedSource = null;
+                }
                 _page = _source == 0 ? _root : _sources[_source - 1];
                 _submenuEntry = null;
                 foreach (var index in _path.ToArray())
@@ -83,16 +91,19 @@ namespace Ee4v.ExpressionMenu
         private void Build()
         {
             Add(UiTextFactory.Create(T("title"), UiClassNames.SectionTitle));
-            var choices = new List<string> { T("effective") };
-            choices.AddRange(_sources.Select((page, i) => (i + 1) + ": " + page.Name));
-            var source = UiTextFactory.CreatePopupField(T("view"), choices, _source);
-            source.RegisterValueChangedCallback(evt =>
+            if (_showsEditSource)
             {
-                _source = choices.IndexOf(evt.newValue);
-                _path.Clear(); _offset = 0; _selected = -1; Refresh();
-            });
-            Add(source);
-            Add(UiTextFactory.Create(_page.Name, UiClassNames.SecondaryText));
+                var choices = new List<string> { T("effective") };
+                choices.AddRange(_sources.Select((page, i) => (i + 1) + ": " + page.Name));
+                var source = UiTextFactory.CreatePopupField(T("view"), choices, _source);
+                source.RegisterValueChangedCallback(evt =>
+                {
+                    _source = choices.IndexOf(evt.newValue);
+                    _path.Clear(); _offset = 0; _selected = -1; Refresh();
+                });
+                Add(source);
+                Add(UiTextFactory.Create(_page.Name, UiClassNames.SecondaryText));
+            }
             var toolbar = new VisualElement();
             toolbar.AddToClassList("ee4v-expression-menu__toolbar");
             toolbar.Add(new UiButton(T("refresh"), Refresh, variant: UiButtonVariant.Ghost));
@@ -102,7 +113,6 @@ namespace Ee4v.ExpressionMenu
                     if (ExpressionMenuModel.CanWrite(asset)) AssetDatabase.SaveAssetIfDirty(asset);
             }), variant: UiButtonVariant.Ghost));
             Add(toolbar);
-            Add(UiTextFactory.CreateHelpBox(T("sourceNotice"), HelpBoxMessageType.Info));
             if (!string.IsNullOrEmpty(_error))
                 Add(UiTextFactory.CreateHelpBox(_error, HelpBoxMessageType.Error));
             BuildRadial();
@@ -166,7 +176,7 @@ namespace Ee4v.ExpressionMenu
                     variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SecondaryText);
                 PlaceSlot(ring, labels, next, count + 1, slices, FluentUiIcons.LoadTexture("arrow_right.png"));
             }
-            var add = new UiButton(T("addItem"), () => Run(AddControl), tooltip: T("add"), variant: UiButtonVariant.Ghost,
+            var add = new UiButton(T("addItem"), ShowTemplates, tooltip: T("add"), variant: UiButtonVariant.Ghost,
                 labelTypographyClassName: UiClassNames.SecondaryText);
             var addSlice = PlaceSlot(ring, labels, add, addSlot, slices, FluentUiIcons.LoadTexture("add.png"));
             addSlice.SetEnabled(_context.Edits.CanEditPrefab() && !EditorApplication.isPlayingOrWillChangePlaymode);
@@ -211,6 +221,40 @@ namespace Ee4v.ExpressionMenu
             _selected = index;
             _error = null;
             Refresh();
+        }
+
+        private void LocateSource(UnityEngine.Object source)
+        {
+            if (_root == null || source == null) return;
+            var visited = new HashSet<MenuPage>();
+            var path = new List<int>();
+            int selected = -1;
+            bool Find(MenuPage page)
+            {
+                if (!visited.Add(page)) return false;
+                for (var i = 0; i < page.Entries.Count; i++)
+                {
+                    var entry = page.Entries[i];
+                    if (entry.Owner == source)
+                    {
+                        selected = i;
+                        return true;
+                    }
+                    if (entry.Submenu == null) continue;
+                    path.Add(i);
+                    if (Find(entry.Submenu)) return true;
+                    path.RemoveAt(path.Count - 1);
+                }
+                return false;
+            }
+            if (!Find(_root)) return;
+            _source = 0;
+            _path.Clear();
+            _path.AddRange(path);
+            _selected = selected;
+            var page = _root;
+            foreach (var index in path) page = page.Entries[index].Submenu;
+            _offset = page.Entries.Count > 8 ? selected / 7 * 7 : 0;
         }
 
         private void OpenSubmenu(int index)
@@ -333,7 +377,7 @@ namespace Ee4v.ExpressionMenu
                 var index = _selected;
                 Add(new UiButton(T("openSubmenu"), () => OpenSubmenu(index)));
             }
-            var canEdit = entry.CanEdit && _context.Edits.CanEditPrefab();
+            var canEdit = entry.CanEdit && _context.Edits.CanEditPrefab() && !EditorApplication.isPlayingOrWillChangePlaymode;
             if (!canEdit) Add(UiTextFactory.CreateHelpBox(T("readOnly"), HelpBoxMessageType.Info));
             var settingsStart = childCount;
             var draft = ExpressionMenuModel.Copy(entry.Control);
@@ -449,6 +493,13 @@ namespace Ee4v.ExpressionMenu
             type.RegisterValueChangedCallback(evt =>
             { draft.type = (VRCExpressionsMenu.Control.ControlType)evt.newValue; BuildDetails(); });
             BuildDetails();
+            if (maSource != null && ExpressionMenuTemplateModel.Effects(maSource).Length > 0)
+            {
+                var templateEditor = new ExpressionMenuTemplateEditor(_context, maSource);
+                templateEditor.SetEnabled(false);
+                confirmed.RegisterValueChangedCallback(evt => templateEditor.SetEnabled(evt.newValue && canEdit));
+                Add(templateEditor);
+            }
             var apply = new UiButton(T("apply"), () => Run(() =>
             {
                 ApplyDraft();
@@ -501,6 +552,27 @@ namespace Ee4v.ExpressionMenu
             EditorUtility.SetDirty(target);
             AssetDatabase.SaveAssetIfDirty(target);
             _selectAddedControl = true; NotifyChanged();
+        }
+
+        private void ShowTemplates()
+        {
+            var choices = new GenericMenu();
+            choices.AddItem(UiTextFactory.CreateGuiContent(T("plainTemplate")), false, () => Run(AddControl));
+            choices.AddSeparator("");
+            foreach (MenuTemplateKind kind in Enum.GetValues(typeof(MenuTemplateKind)))
+            {
+                var template = kind;
+                choices.AddItem(UiTextFactory.CreateGuiContent(TemplateText.Get("kind" + template)), false,
+                    () => Run(() => AddTemplate(template)));
+            }
+            choices.ShowAsContext();
+        }
+
+        private void AddTemplate(MenuTemplateKind template)
+        {
+            _selectAddedSource = ExpressionMenuTemplateModel.Create(_context, template,
+                TemplateText.Get("new" + template), _page.Asset, _page.ChildRoot);
+            NotifyChanged();
         }
 
         private void NotifyChanged()

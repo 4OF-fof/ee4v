@@ -2,7 +2,7 @@
 
 ## Editor ModeのExpression Menu
 
-Editor ModeのExpression Menuカテゴリは、DescriptorとModular Avatarの合成メニューを表示し、編集元を確認したうえで項目の設定・削除を行います。追加項目はアバター内の専用MA Prefabへ保存し、このPrefabを上部item一覧から除外します。ユーザー設定の`assetManager.excludedItemNamePrefixes`で上部item一覧の追加除外を指定できます。詳細は[Expression Menu](features/expression-menu.md)を参照してください。
+Editor Modeの「Expression Menu」カテゴリは、DescriptorとModular Avatarの合成メニューと項目設定を表示します。新規項目の追加時に通常項目、MA Object Toggle、Material Swap、Material Setter、Shape Changerのテンプレートを選べます。MA設定は対応するメニュー項目の設定欄で編集します。メニュー項目の設定・削除も行います。追加項目はアバター内の専用MA Prefabへ配置し、生成Prefabを上部item一覧から除外します。3Dプレビューは表示しません。ユーザー設定の`assetManager.excludedItemNamePrefixes`で上部item一覧の追加除外を指定できます。詳細は[Expression Menu](features/expression-menu.md)を参照してください。
 
 AssetManager は Item、File、Import Target、依存関係、Tag、Collection、取り込み済み Asset GUID と派生アセットを管理します。MCP の公開操作と入力境界は [mcp.md](./mcp.md) を参照してください。
 
@@ -53,7 +53,7 @@ UIとMCPの追加Material Variantは`DerivedAssetCreator`の共通生成処理�
 | `PrefabSelector` | 共通UI / Inputs | 利用側が渡した候補Prefabの選択、Pickerとドラッグへの接続 |
 | `PrefabThumbnail` | 共通UI / Displays | UnityのAssetPreviewを取得するPrefabサムネイル |
 | `PrefabScenePreview` | 共通UI / Displays | 編集用3Dプレビュー、対象の複製、選択判定とカメラ操作 |
-| `WorkflowEditorLayout` | AssetManager / Domain/AssetManager/Containers | カテゴリ、プレビュー、編集ペインと表情・操作確認の専用領域の切り替え |
+| `WorkflowEditorLayout` | AssetManager / Domain/AssetManager/Containers | カテゴリ、プレビュー、編集ペインと表情・操作確認の専用領域の切り替え。Expression Menuではプレビューを非表示にし、編集ペインを残りの横幅へ広げる |
 | `WorkflowCategoryRail` | AssetManager / Domain/AssetManager/Inputs | モードに応じたカテゴリ一覧、選択表示とPrefab選択中の操作可否 |
 | `AvatarPartsEditor` | Feature/Avatar/AvatarParts / Domain/AvatarParts/Containers | パーツ階層・体型編集、保留変更と機能内キャッシュ |
 | `AvatarMaterialsEditor` | Feature/Avatar/AvatarMaterials / Domain/AvatarMaterials/Containers | Material使用箇所、表示切り替えと割り当ての編集 |

@@ -182,7 +182,11 @@ namespace Ee4v.ExpressionMenu
                 EditorUtility.SetDirty(asset);
             }
             else if (entry.Owner is ModularAvatarMenuItem item)
-                Undo.DestroyObjectImmediate(item);
+            {
+                if (ExpressionMenuTemplateModel.IsOwned(item.gameObject))
+                    Undo.DestroyObjectImmediate(item.gameObject);
+                else Undo.DestroyObjectImmediate(item);
+            }
         }
 
         private static void ValidateEntry(MenuEntry entry)

@@ -53,6 +53,12 @@
     background-color: var(--ee4v-color-surface-subtle);
 }
 
+.ee4v-modification-workflow__controls-column--without-preview {
+    width: auto;
+    flex-grow: 1;
+    border-left-width: 0;
+}
+
 .ee4v-modification-workflow__appearance-header {
     min-width: 0;
     flex-shrink: 0;

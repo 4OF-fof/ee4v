@@ -17,7 +17,9 @@ namespace Ee4v.ExpressionMenu
         {
             if (target == null) return false;
             var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(target) ?? string.Empty;
-            return path.EndsWith(".ExpressionMenu/" + PrefabName, StringComparison.OrdinalIgnoreCase);
+            return path.EndsWith(".ExpressionMenu/" + PrefabName, StringComparison.OrdinalIgnoreCase) ||
+                path.IndexOf(".ExpressionMenu/Gimmicks/", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                path.EndsWith("/Gimmick.prefab", StringComparison.OrdinalIgnoreCase);
         }
 
         internal static VRCExpressionsMenu EnsureMenu(GameObject avatar, GameObject prefab,
@@ -27,7 +29,9 @@ namespace Ee4v.ExpressionMenu
                 !ExpressionMenuModel.CanWrite(prefab))
                 throw new InvalidOperationException("An editable avatar Prefab instance is required.");
             var existingRoot = avatar.transform.Cast<Transform>()
-                .Select(t => t.gameObject).FirstOrDefault(IsGeneratedPrefab);
+                .Select(t => t.gameObject).FirstOrDefault(go =>
+                    (PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go) ?? string.Empty)
+                    .EndsWith(".ExpressionMenu/" + PrefabName, StringComparison.OrdinalIgnoreCase));
             if (existingRoot != null && !ExpressionMenuModel.CanWrite(
                     PrefabUtility.GetCorrespondingObjectFromSource(existingRoot)))
                 throw new InvalidOperationException("The generated Expression Menu Prefab is read-only.");

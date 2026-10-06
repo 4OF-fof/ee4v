@@ -1,6 +1,6 @@
 # Avatar編集の共有境界
 
-ExpressionMenuも共有AvatarEditingを使用します。統合版と単独WindowでPrefabインスタンスの入力、編集許可、変更通知とPrefab保存を揃えるためです。独自メニューassetの保存とMA専用Prefabの生成はExpressionMenuが所有し、SceneとVariantの保存は既存ホストが所有します。詳細は[Expression Menu](expression-menu.md)を参照してください。
+ExpressionMenuも共有AvatarEditingを使用します。統合版と単独WindowでPrefabインスタンスの入力、編集許可、変更通知とPrefab保存を揃えるためです。独自メニューassetの保存とMAテンプレート項目を含む専用Prefabの生成はExpressionMenuが所有し、SceneとVariantの保存は既存ホストが所有します。詳細は[Expression Menu](expression-menu.md)を参照してください。
 
 `src/Editor/Feature/Shared/AvatarEditing`の`Ee4v.AvatarEditing.Editor`をAvatarParts、AvatarMaterials、AvatarInfo、FaceExpressionとAssetManagerの統合ホストが使用します。PartsとMaterialsは同じ対象・選択・Preview・変更通知を共有し、AvatarInfoは単独Windowの対象入力とPreviewのライフサイクルを共有するために使用します。FaceExpressionは自身が所有するBlendShapeプリセットを中立な名前分類の契約へ提供するために使用します。
 
@@ -29,6 +29,8 @@ ExpressionMenuも共有AvatarEditingを使用します。統合版と単独Windo
 ## 単独Prefab編集
 
 `AvatarPrefabEditorWindow`はHierarchyのPrefabインスタンス入力、Preview、部位選択とPrefabへの保存を共有します。AvatarPartsには「変更を戻す」を表示し、AvatarMaterialsには表示しません。WindowはAssetManagerのDB・Variant一覧・専用作業Sceneや他のWindowを必要としません。
+
+`ShowsPreview`は既定で有効です。ExpressionMenuの単独Windowは無効にし、Previewを生成せず設定欄をWindowの横幅へ広げます。この場合`Context.Preview`はnullで、対象更新、Undo、保存後の再表示と破棄もPreviewを必要としません。
 
 AvatarInfoは同じホストで情報表示、Unity内の名前編集とBlueprint IDの選択補助を提供します。部位選択と変更を戻すボタンは表示せず、ID等のPrefab overrideの保存に共通の「Prefabに保存」を使います。Prefab rootの名前はdefault overrideなのでScene保存で保持します。
 

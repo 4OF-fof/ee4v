@@ -26,6 +26,7 @@
 | module | 所有する振る舞い | 実装 | 契約 |
 |---|---|---|---|
 | Face Expression | BlendShape表情の作成、表情Group、preset、Gesture割り当てを扱う。 | `Feature/Avatar/FaceExpression` | [Face Expression](./face-expression.md) |
+| Expression Menu | Expression Menuの編集と、新規項目のMA Object Toggle・Material Swap・Material Setter・Shape Changerテンプレートを扱う。 | `Feature/Avatar/ExpressionMenu` | [Expression Menu](./expression-menu.md) |
 | AvatarParts | パーツ階層、表示と体型・BlendShapeを編集する。 | `Feature/Avatar/AvatarParts` | [AvatarParts](./avatar-parts.md) |
 | AvatarMaterials | Materialの使用箇所、表示、割り当てとInspectorを扱う。 | `Feature/Avatar/AvatarMaterials` | [AvatarMaterials](./avatar-materials.md) |
 | AvatarInfo | 統合版と単独Windowで詳細、装着警告とNDMFビルド後の性能結果を扱う。 | `Feature/Avatar/AvatarInfo` | [AvatarInfo](./avatar-info.md) |

@@ -1,4 +1,12 @@
 .ee4v-expression-menu { flex-grow: 1; padding: 8px; }
+.ee4v-menu-template { margin-top: 12px; margin-bottom: 12px; }
+.ee4v-menu-template__row { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.ee4v-menu-template__row > * { margin-right: 6px; margin-bottom: 6px; }
+.ee4v-menu-template__change { margin-bottom: 8px; padding: 10px; border-width: 1px; border-color: var(--ee4v-color-border-default); border-radius: 4px; }
+.ee4v-menu-template__change > * { margin-bottom: 6px; }
+.ee4v-menu-template__entry { margin-top: 8px; padding: 8px; background-color: var(--ee4v-color-surface-subtle); border-radius: 4px; }
+.ee4v-menu-template__entry > * { margin-bottom: 6px; }
+.ee4v-menu-template__hidden { display: none; }
 .ee4v-expression-menu__toolbar { flex-direction: row; margin-top: 6px; margin-bottom: 6px; }
 .ee4v-expression-menu__ring { width: 300px; height: 300px; align-self: center; margin-top: 8px; margin-bottom: 8px; flex-shrink: 0; }
 .ee4v-expression-menu__slice { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; }

@@ -26,6 +26,7 @@ namespace Ee4v.AvatarEditing
         protected VisualElement FeatureHeader { get; private set; }
         protected abstract string TitleKey { get; }
         protected virtual bool UsesBodyPartSelector => true;
+        protected virtual bool ShowsPreview => true;
         protected virtual bool ShowsSaveButton => true;
         protected virtual bool ShowsRevertButton => true;
         protected virtual bool HasPendingFeatureChanges => false;
@@ -57,7 +58,7 @@ namespace Ee4v.AvatarEditing
         private void ConfigureWindow()
         {
             titleContent = UiTextFactory.CreateGuiContent(I18N.Get(TitleKey));
-            minSize = new Vector2(800f, 560f);
+            minSize = new Vector2(ShowsPreview ? 800f : 420f, 560f);
             hasUnsavedChanges = false;
         }
 
@@ -69,6 +70,7 @@ namespace Ee4v.AvatarEditing
             UiComposition.Prepare(rootVisualElement,
                 "Editor/Feature/Shared/AvatarEditing/avatar-prefab-editor.uss");
             rootVisualElement.AddToClassList("ee4v-avatar-prefab-editor");
+            rootVisualElement.EnableInClassList("ee4v-avatar-prefab-editor--without-preview", !ShowsPreview);
             var toolbar = new VisualElement();
             toolbar.AddToClassList("ee4v-avatar-prefab-editor__toolbar");
             _prefabField = UiTextFactory.CreateObjectField(I18N.Get("avatarEditor.prefab"));
@@ -98,13 +100,17 @@ namespace Ee4v.AvatarEditing
             _body = new VisualElement();
             _body.AddToClassList("ee4v-avatar-prefab-editor__body");
             rootVisualElement.Add(_body);
-            var pane = new PreviewPane(I18N.Get("avatarEditor.preview"));
-            pane.AddToClassList("ee4v-avatar-prefab-editor__preview");
-            var preview = new PrefabScenePreview();
-            preview.SetFlexibleLayout(true);
-            preview.SetFullBodyFraming(true);
-            pane.Content.Add(preview);
-            _body.Add(pane);
+            PrefabScenePreview preview = null;
+            if (ShowsPreview)
+            {
+                var pane = new PreviewPane(I18N.Get("avatarEditor.preview"));
+                pane.AddToClassList("ee4v-avatar-prefab-editor__preview");
+                preview = new PrefabScenePreview();
+                preview.SetFlexibleLayout(true);
+                preview.SetFullBodyFraming(true);
+                pane.Content.Add(preview);
+                _body.Add(pane);
+            }
             var sidebar = new VisualElement();
             sidebar.AddToClassList("ee4v-avatar-prefab-editor__sidebar");
             FeatureHeader = new VisualElement();
@@ -128,10 +134,13 @@ namespace Ee4v.AvatarEditing
                 UiRoot = rootVisualElement, ControlsHost = controls, Preview = preview,
                 Root = _instance, PrefabAsset = _prefab
             };
-            preview.PreviewObjectClicked += SelectPreview;
-            preview.PreviewSelectionCleared += ClearPreviewSelection;
+            if (preview != null)
+            {
+                preview.PreviewObjectClicked += SelectPreview;
+                preview.PreviewSelectionCleared += ClearPreviewSelection;
+            }
             CreateFeature();
-            preview.SetPrefab(_instance);
+            preview?.SetPrefab(_instance);
             Render();
             toolbar.schedule.Execute(RefreshSaveButtons).Every(500);
         }
@@ -208,7 +217,7 @@ namespace Ee4v.AvatarEditing
                     Context.SelectedBodyPart = null;
                     Context.SelectedPartKey = null;
                     Context.SelectedMaterial = null;
-                    Context.Preview.FocusBodyPart(null, true);
+                    Context.Preview?.FocusBodyPart(null, true);
                 }
                 if (_bodyPartSelector == null)
                 {
@@ -218,7 +227,7 @@ namespace Ee4v.AvatarEditing
                             if (!FlushFeatureChanges()) return;
                             Context.SelectedBodyPart = part;
                             ClearFeatureData();
-                            Context.Preview.FocusBodyPart(part);
+                            Context.Preview?.FocusBodyPart(part);
                             Render();
                         });
                     FeatureHeader.Add(_bodyPartSelector);
@@ -234,11 +243,11 @@ namespace Ee4v.AvatarEditing
         protected void RefreshTarget()
         {
             ClearFeatureData();
-            Context.Preview.ReloadPrefabPreservingView(Context.Root);
+            Context.Preview?.ReloadPrefabPreservingView(Context.Root);
             Render();
         }
 
-        protected void SyncPreviewSelection() => Context?.Preview.SetListSelection(
+        protected void SyncPreviewSelection() => Context?.Preview?.SetListSelection(
             Context.SelectedPartKey, Context.SelectedMaterial);
 
         private void RefreshSaveButtons()
@@ -348,7 +357,7 @@ namespace Ee4v.AvatarEditing
             if (Context == null) return;
             FlushFeatureChanges();
             DisposeFeature();
-            Context.Preview.Dispose();
+            Context.Preview?.Dispose();
             Context = null;
         }
         protected void OnDisable()
