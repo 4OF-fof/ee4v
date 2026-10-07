@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 
 namespace Ee4v.ExpressionMenu
 {
-    internal enum MenuBehaviorMode { Unselected, Toggle, Radial }
+    internal enum MenuBehaviorMode { Toggle = 1, Radial = 2 }
 
     [Serializable]
     internal sealed class MenuClipAction
@@ -56,36 +56,47 @@ namespace Ee4v.ExpressionMenu
         [SerializeField] internal List<MenuClipAction> Actions = new List<MenuClipAction>();
         [SerializeField] internal List<MenuRadialShapeAction> RadialShapes = new List<MenuRadialShapeAction>();
         [SerializeField] internal List<MenuReactiveAction> ReactiveActions = new List<MenuReactiveAction>();
-        [SerializeField] internal MenuBehaviorMode Mode;
+        [SerializeField] internal MenuBehaviorMode Mode = MenuBehaviorMode.Toggle;
         [SerializeField] internal float InitialValue;
         [SerializeField] private AnimatorController _controller;
 
         internal static MenuBehaviorMode EffectiveMode(ModularAvatarMenuItem item)
         {
             var recipe = Find(item);
-            if (recipe != null && recipe.Mode != MenuBehaviorMode.Unselected) return recipe.Mode;
-            if (item.PortableControl.Type == PortableControlType.RadialPuppet) return MenuBehaviorMode.Radial;
-            return ExpressionMenuTemplateModel.Effects(item).Length > 0 || recipe != null && recipe.Actions.Count + recipe.ReactiveActions.Count > 0 ?
-                MenuBehaviorMode.Toggle : MenuBehaviorMode.Unselected;
+            if (recipe != null && (recipe.Mode == MenuBehaviorMode.Toggle || recipe.Mode == MenuBehaviorMode.Radial)) return recipe.Mode;
+            return item.PortableControl.Type == PortableControlType.RadialPuppet ? MenuBehaviorMode.Radial : MenuBehaviorMode.Toggle;
         }
 
         private static string Parameter(ModularAvatarMenuItem item) =>
             !string.IsNullOrEmpty(item.PortableControl.Parameter) ? item.PortableControl.Parameter :
                 item.Control.subParameters?.FirstOrDefault()?.name ?? "";
 
-        internal static void SetMode(AvatarEditingContext context, ModularAvatarMenuItem item, MenuBehaviorMode mode)
+        internal static bool HasSettingsToDiscard(ModularAvatarMenuItem item)
+        {
+            var recipe = Find(item);
+            return ExpressionMenuTemplateModel.Effects(item).Length > 0 ||
+                recipe != null && (recipe.Actions.Count > 0 || recipe.RadialShapes.Count > 0 ||
+                    recipe.ReactiveActions.Count > 0) ||
+                (EffectiveMode(item) == MenuBehaviorMode.Radial ? recipe != null && recipe.InitialValue != 0 : item.isDefault);
+        }
+
+        internal static void SetModeDiscardingSettings(AvatarEditingContext context, ModularAvatarMenuItem item, MenuBehaviorMode mode)
         {
             var recipe = Find(item);
             if (recipe == null || !ExpressionMenuTemplateModel.IsOwned(item.gameObject))
                 throw new InvalidOperationException(TemplateText.Get("readOnly"));
-            if (mode == MenuBehaviorMode.Radial && (ExpressionMenuTemplateModel.Effects(item).Length > 0 || recipe.ReactiveActions.Count > 0) ||
-                mode != MenuBehaviorMode.Radial && recipe.RadialShapes.Count > 0 ||
-                mode == MenuBehaviorMode.Unselected && (recipe.Actions.Count + recipe.ReactiveActions.Count > 0 || ExpressionMenuTemplateModel.Effects(item).Length > 0))
-                throw new InvalidOperationException(TemplateText.Get("incompatibleMode"));
+            if (mode != MenuBehaviorMode.Toggle && mode != MenuBehaviorMode.Radial)
+                throw new ArgumentOutOfRangeException(nameof(mode));
+            if (EffectiveMode(item) == mode) return;
             Change(context, item, () =>
             {
                 var parameter = Parameter(item);
                 Undo.RecordObject(item, "Change behavior type");
+                recipe.Actions.Clear();
+                recipe.RadialShapes.Clear();
+                recipe.ReactiveActions.Clear();
+                recipe.InitialValue = 0;
+                item.isDefault = false;
                 recipe.Mode = mode;
                 item.PortableControl.Type = mode == MenuBehaviorMode.Radial ? PortableControlType.RadialPuppet : PortableControlType.Toggle;
                 item.PortableControl.Parameter = mode == MenuBehaviorMode.Radial ? "" : parameter;
@@ -96,6 +107,7 @@ namespace Ee4v.ExpressionMenu
                 item.PortableControl.Value = mode == MenuBehaviorMode.Radial ? 0 : 1;
                 EditorUtility.SetDirty(item);
                 PrefabUtility.RecordPrefabInstancePropertyModifications(item);
+                foreach (var effect in ExpressionMenuTemplateModel.Effects(item)) Undo.DestroyObjectImmediate(effect);
             });
         }
 
@@ -146,6 +158,30 @@ namespace Ee4v.ExpressionMenu
                 Undo.RevertAllDownToGroup(group);
                 throw;
             }
+        }
+
+        internal static void SetClip(AvatarEditingContext context, ModularAvatarMenuItem item, int index,
+            AnimationClip clip, bool on)
+        {
+            if (!CanEdit(context, item))
+                throw new InvalidOperationException(TemplateText.Get("readOnly"));
+            var recipe = Find(item);
+            var current = recipe.Actions[index];
+            var proposed = new MenuClipAction
+            {
+                Synced = current.Synced,
+                On = on ? clip : current.On,
+                Off = on ? current.Off : clip
+            };
+            // Reject incompatible clips before starting an Undo transaction or changing saved authoring data.
+            ValidateClip(context, clip);
+            var prepared = recipe.PrepareClips(context, item, index, proposed);
+            DestroyTemporaryClips(prepared);
+            Change(context, item, () =>
+            {
+                if (on) recipe.Actions[index].On = clip;
+                else recipe.Actions[index].Off = clip;
+            });
         }
 
         internal static bool CanEdit(AvatarEditingContext context, ModularAvatarMenuItem item)
@@ -287,27 +323,25 @@ namespace Ee4v.ExpressionMenu
             }
         }
 
-        private void Build(AvatarEditingContext context, ModularAvatarMenuItem item)
+        private List<(AnimationClip on, AnimationClip off, bool synced)> PrepareClips(
+            AvatarEditingContext context, ModularAvatarMenuItem item, int replacedIndex = -1, MenuClipAction replacement = null)
         {
             var clips = new List<(AnimationClip on, AnimationClip off, bool synced)>();
             var used = new HashSet<(string, Type, string)>();
             var radial = EffectiveMode(item) == MenuBehaviorMode.Radial;
             try
             {
-                foreach (var action in Actions)
+                for (var index = 0; index < Actions.Count; index++)
                 {
+                    var action = index == replacedIndex ? replacement : Actions[index];
                     if (action.On == null) continue;
+                    ValidateClip(context, action.On);
+                    if (!radial) ValidateClip(context, action.Off);
                     var bindings = Bindings(action.On).Concat(radial ? Array.Empty<EditorCurveBinding>() : Bindings(action.Off)).Distinct().ToArray();
                     foreach (var binding in bindings)
                     {
                         if (!used.Add((binding.path, binding.type, binding.propertyName)))
                             throw new InvalidOperationException(TemplateText.Get("overlappingClips"));
-                        var target = AnimationUtility.GetAnimatedObject(context.Root, binding);
-                        if (target == null ||
-                            binding.path == "" && binding.type == typeof(GameObject) && binding.propertyName == "m_IsActive")
-                            throw new InvalidOperationException(TemplateText.Get("invalidClipTarget") + " " + binding.path + "/" + binding.propertyName);
-                        var gameObject = target is GameObject go ? go : (target as Component)?.gameObject;
-                        if (gameObject != null) ExpressionMenuTemplateModel.Reference(context, gameObject);
                     }
                     var on = CopyClip(context, action.On, bindings, "ON");
                     clips.Add((on, null, action.Synced));
@@ -357,6 +391,21 @@ namespace Ee4v.ExpressionMenu
                     var off = CopyClip(context, null, bindings, "OFF");
                     clips[clips.Count - 1] = action.Inverted ? (off, on, action.Synced) : (on, off, action.Synced);
                 }
+                return clips;
+            }
+            catch
+            {
+                DestroyTemporaryClips(clips);
+                throw;
+            }
+        }
+
+        private void Build(AvatarEditingContext context, ModularAvatarMenuItem item)
+        {
+            var clips = PrepareClips(context, item);
+            var radial = EffectiveMode(item) == MenuBehaviorMode.Radial;
+            try
+            {
                 ConfigureParameters(item);
                 var merge = item.GetComponents<ModularAvatarMergeAnimator>().FirstOrDefault(component =>
                     _controller != null && component.animator == _controller);
@@ -461,11 +510,16 @@ namespace Ee4v.ExpressionMenu
             }
             finally
             {
-                foreach (var pair in clips)
-                {
-                    if (pair.on != null && !EditorUtility.IsPersistent(pair.on)) DestroyImmediate(pair.on);
-                    if (pair.off != null && !EditorUtility.IsPersistent(pair.off)) DestroyImmediate(pair.off);
-                }
+                DestroyTemporaryClips(clips);
+            }
+        }
+
+        private static void DestroyTemporaryClips(IEnumerable<(AnimationClip on, AnimationClip off, bool synced)> clips)
+        {
+            foreach (var pair in clips)
+            {
+                if (pair.on != null && !EditorUtility.IsPersistent(pair.on)) DestroyImmediate(pair.on);
+                if (pair.off != null && !EditorUtility.IsPersistent(pair.off)) DestroyImmediate(pair.off);
             }
         }
 
@@ -521,9 +575,10 @@ namespace Ee4v.ExpressionMenu
                 }
                 else foreach (var target in action.Shapes)
                 {
+                    if (string.IsNullOrEmpty(target.Object?.referencePath) || string.IsNullOrEmpty(target.ShapeName)) continue;
                     var gameObject = target.Object?.Get(item);
-                    var renderer = gameObject?.GetComponent<SkinnedMeshRenderer>();
-                    if (renderer?.sharedMesh == null || renderer.sharedMesh.GetBlendShapeIndex(target.ShapeName) < 0)
+                    var renderer = gameObject != null ? gameObject.GetComponent<SkinnedMeshRenderer>() : null;
+                    if (renderer == null || renderer.sharedMesh == null || renderer.sharedMesh.GetBlendShapeIndex(target.ShapeName) < 0)
                         throw new InvalidOperationException(TemplateText.Get("missingShape"));
                     ValidatePercent(target.Value);
                     Float(gameObject, typeof(SkinnedMeshRenderer), "blendShape." + target.ShapeName, target.Value);
@@ -533,9 +588,15 @@ namespace Ee4v.ExpressionMenu
             catch { DestroyImmediate(clip); throw; }
         }
 
-        internal static SkinnedMeshRenderer ResolveRenderer(AvatarEditingContext context, MenuRadialShapeTarget target) =>
-            target.Path == null ? null : (target.Path.Length == 0 ? context.Root.transform :
-                context.Root.transform.Find(target.Path))?.GetComponent<SkinnedMeshRenderer>();
+        internal static SkinnedMeshRenderer ResolveRenderer(AvatarEditingContext context, MenuRadialShapeTarget target)
+        {
+            if (target.Path == null) return null;
+            var transform = target.Path.Length == 0 ? context.Root.transform : context.Root.transform.Find(target.Path);
+            if (transform == null) return null;
+            var renderer = transform.GetComponent<SkinnedMeshRenderer>();
+            // Unity can return a missing-component wrapper; return an actual null for absent renderers.
+            return renderer != null ? renderer : null;
+        }
 
         internal static void ValidatePercent(float value)
         {
@@ -553,6 +614,37 @@ namespace Ee4v.ExpressionMenu
         private static EditorCurveBinding[] Bindings(AnimationClip clip) => clip == null ? Array.Empty<EditorCurveBinding>() :
             AnimationUtility.GetCurveBindings(clip).Concat(AnimationUtility.GetObjectReferenceCurveBindings(clip)).ToArray();
 
+        private static void ValidateClip(AvatarEditingContext context, AnimationClip clip)
+        {
+            if (clip == null) return;
+            if (clip.legacy || clip.isHumanMotion)
+                throw new InvalidOperationException(TemplateText.Get("unsupportedClip"));
+            foreach (var binding in Bindings(clip)) ValidateBinding(context, binding, clip.name);
+        }
+
+        private static void ValidateBinding(AvatarEditingContext context, EditorCurveBinding binding, string clipName)
+        {
+            var path = binding.path ?? "";
+            var transform = path.Length == 0 ? context.Root.transform : context.Root.transform.Find(path);
+            var error = TemplateText.Get("invalidClipTarget") + " " + clipName + ": " +
+                (path.Length == 0 ? context.Root.name : path) + " [" + binding.type?.Name + "] " + binding.propertyName;
+            if (transform == null || binding.type == null ||
+                path.Length == 0 && binding.type == typeof(GameObject) && binding.propertyName == "m_IsActive")
+                throw new InvalidOperationException(error);
+            ExpressionMenuTemplateModel.Reference(context, transform.gameObject);
+            // Native animation access can return a missing-component wrapper. Resolve the component first.
+            Object target = binding.type == typeof(GameObject) ? transform.gameObject :
+                typeof(Component).IsAssignableFrom(binding.type) ? transform.GetComponent(binding.type) : null;
+            if (target == null) throw new InvalidOperationException(error);
+            if (target is SkinnedMeshRenderer renderer && binding.propertyName.StartsWith("blendShape.", StringComparison.Ordinal))
+                if (renderer.sharedMesh == null || renderer.sharedMesh.GetBlendShapeIndex(binding.propertyName.Substring(11)) < 0)
+                    throw new InvalidOperationException(error);
+            var readable = binding.isPPtrCurve
+                ? AnimationUtility.GetObjectReferenceValue(context.Root, binding, out _)
+                : AnimationUtility.GetFloatValue(context.Root, binding, out _);
+            if (!readable) throw new InvalidOperationException(error);
+        }
+
         private static AnimationClip CopyClip(AvatarEditingContext context, AnimationClip source,
             EditorCurveBinding[] bindings, string name)
         {
@@ -564,6 +656,7 @@ namespace Ee4v.ExpressionMenu
             {
                 foreach (var binding in bindings)
                 {
+                    ValidateBinding(context, binding, source != null ? source.name : name);
                     if (binding.isPPtrCurve)
                     {
                         if (AnimationUtility.GetObjectReferenceCurve(clip, binding)?.Length > 0) continue;

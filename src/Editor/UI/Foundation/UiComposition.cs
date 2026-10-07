@@ -9,6 +9,7 @@ namespace Ee4v.UI
         private const string LightThemeClassName = "ee4v-ui--light";
         private static readonly string[] ComponentStyleSheetPaths =
         {
+            "Editor/UI/Components/Overlays/ConfirmationOverlay/confirmation-overlay.uss",
             "Editor/UI/Components/Overlays/StatusOverlay/status-overlay.uss",
             "Editor/UI/Components/Overlays/CustomPopup/custom-popup.uss",
             "Editor/UI/Components/Inputs/ui-button.uss",

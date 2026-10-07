@@ -44,71 +44,12 @@
     min-height: var(--ee4v-size-32);
 }
 
-.ee4v-face-expression__unsaved-overlay {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.45);
-}
-
-.ee4v-face-expression__unsaved-card.ee4v-ui-message-panel {
-    width: 80%;
-    max-width: 480px;
-    flex-wrap: wrap;
-    background-color: var(--ee4v-color-panel);
-}
-
-.ee4v-face-expression__unsaved-card > .ee4v-ui-message-panel__content {
-    flex-basis: 0;
-}
-
-.ee4v-face-expression__unsaved-card > .ee4v-ui-message-panel__actions {
-    flex-basis: 100%;
-    flex-grow: 1;
-}
-
-.ee4v-face-expression__save-notification.ee4v-ui-message-panel--warning,
-.ee4v-face-expression__unsaved-card.ee4v-ui-message-panel--warning {
+.ee4v-face-expression__save-notification.ee4v-ui-message-panel--warning {
     background-color: var(--ee4v-color-warning-surface-soft-opaque);
 }
 
-.ee4v-face-expression__save-notification.ee4v-ui-message-panel--error,
-.ee4v-face-expression__unsaved-card.ee4v-ui-message-panel--error {
+.ee4v-face-expression__save-notification.ee4v-ui-message-panel--error {
     background-color: var(--ee4v-color-error-surface-soft-opaque);
-}
-
-.ee4v-face-expression__unsaved-card .ee4v-ui-message-panel__actions {
-    flex-direction: row;
-    justify-content: flex-end;
-    margin-top: var(--ee4v-space-lg);
-}
-
-.ee4v-face-expression__unsaved-card .ee4v-ui-message-panel__actions > .ee4v-ui-button {
-    min-width: 80px;
-    min-height: var(--ee4v-size-32);
-    margin-left: var(--ee4v-space-sm);
-}
-
-.ee4v-face-expression__unsaved-card .ee4v-ui-message-panel__actions > .ee4v-face-expression__discard-changes {
-    margin-left: 0;
-    margin-right: auto;
-    background-color: var(--ee4v-color-danger-action);
-    border-color: var(--ee4v-color-danger-action);
-}
-
-.ee4v-face-expression__unsaved-card .ee4v-ui-message-panel__actions > .ee4v-face-expression__discard-changes:enabled:hover,
-.ee4v-face-expression__unsaved-card .ee4v-ui-message-panel__actions > .ee4v-face-expression__discard-changes:enabled:focus {
-    background-color: var(--ee4v-color-danger-action-hover);
-    border-color: var(--ee4v-color-danger-action-hover);
-}
-
-.ee4v-face-expression__unsaved-card .ee4v-ui-message-panel__actions > .ee4v-face-expression__discard-changes:enabled:active {
-    background-color: var(--ee4v-color-danger-action-pressed);
-    border-color: var(--ee4v-color-danger-action-pressed);
 }
 
 .ee4v-face-expression__clip-field {

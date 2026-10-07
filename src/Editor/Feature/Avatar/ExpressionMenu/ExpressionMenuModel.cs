@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Ee4v.UI;
 using nadena.dev.modular_avatar.core;
 using nadena.dev.modular_avatar.core.menu;
 using UnityEditor;
@@ -144,7 +145,7 @@ namespace Ee4v.ExpressionMenu
                 .SequenceEqual((b.labels ?? Array.Empty<VRCExpressionsMenu.Control.Label>()).Select(l => (l.name, l.icon)));
 
         internal static Texture2D DisplayIcon(Texture2D icon) =>
-            icon != null ? icon : Resources.Load<Texture2D>("Vrc3/BSX_GM_Default");
+            icon != null ? icon : UiBuiltinIconResolver.LoadTexture(UiBuiltinIcon.GameObject) as Texture2D;
 
         internal static bool CanWrite(Object target)
         {

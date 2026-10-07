@@ -1,0 +1,82 @@
+.ee4v-ui-confirmation-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--ee4v-color-overlay-border);
+}
+
+.ee4v-ui-confirmation-overlay__card.ee4v-ui-message-panel {
+    width: 80%;
+    max-width: 480px;
+    flex-wrap: wrap;
+    padding: 0;
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-active);
+    background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-ui-confirmation-overlay__card > .ee4v-ui-message-panel__content {
+    flex-basis: 100%;
+    padding: 20px;
+}
+
+.ee4v-ui-confirmation-overlay__heading {
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-ui-confirmation-overlay__heading > .ee4v-ui-message-panel__icon {
+    margin-top: 0;
+    margin-right: var(--ee4v-space-md);
+}
+
+.ee4v-ui-confirmation-overlay__heading > .ee4v-ui-message-panel__title {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: var(--ee4v-size-18);
+    margin-bottom: 0;
+}
+
+.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__message {
+    margin-top: var(--ee4v-space-xl);
+}
+
+.ee4v-ui-confirmation-overlay__card > .ee4v-ui-message-panel__actions {
+    flex-basis: 100%;
+    flex-grow: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding: var(--ee4v-space-xl) 20px;
+    border-top-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-active);
+}
+
+.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__actions > .ee4v-ui-button {
+    min-width: 80px;
+    min-height: var(--ee4v-size-32);
+    margin-left: var(--ee4v-space-sm);
+}
+
+.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__actions > .ee4v-ui-confirmation-overlay__discard {
+    margin-left: 0;
+    margin-right: auto;
+    background-color: var(--ee4v-color-danger-action);
+    border-color: var(--ee4v-color-danger-action);
+}
+
+.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__actions > .ee4v-ui-confirmation-overlay__discard:enabled:hover,
+.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__actions > .ee4v-ui-confirmation-overlay__discard:enabled:focus {
+    background-color: var(--ee4v-color-danger-action-hover);
+    border-color: var(--ee4v-color-danger-action-hover);
+}
+
+.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__actions > .ee4v-ui-confirmation-overlay__discard:enabled:active {
+    background-color: var(--ee4v-color-danger-action-pressed);
+    border-color: var(--ee4v-color-danger-action-pressed);
+}

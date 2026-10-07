@@ -2,6 +2,8 @@
 
 ## Editor ModeのExpression Menu
 
+ExMenuの生成Prefabは、アバター直下の`<アバターPrefab名>_ExpressionMenu`へまとめます。このrootと各項目はitem一覧から除外し、生成Prefab内の変更だけを保存します。アバター全体のPrefab overrideの保存は版の「保存」で行います。
+
 Editor Modeの「Expression Menu」カテゴリは、DescriptorとModular Avatarの合成メニューと項目設定を表示します。左のギミックエディターで表示・Material・BlendShape・Animation Clipを組み合わせ、右の1項目へ登録します。通常項目の追加と各設定の編集・削除も行います。保護項目は円形プレビューでも無効化してグレーアウトします。参照先メニューassetの保護はMA Installerによる新規項目の追加を妨げません。root初期ページの上端は「編集を閉じる」で、左右の編集欄を閉じます。追加項目は専用Prefabへ配置し、生成Prefabを上部item一覧から除外します。3Dプレビューは表示しません。`assetManager.excludedItemNamePrefixes`で上部item一覧の追加除外を指定できます。詳細は[Expression Menu](features/expression-menu.md)を参照してください。
 
 AssetManager は Item、File、Import Target、依存関係、Tag、Collection、取り込み済み Asset GUID と派生アセットを管理します。MCP の公開操作と入力境界は [mcp.md](./mcp.md) を参照してください。

@@ -78,8 +78,7 @@ namespace Ee4v.FaceExpression
         private readonly string _saveFailed;
         private bool _hasUnsavedChanges;
         private bool _saveHasFailed;
-        private VisualElement _navigationOverlay;
-        private Action _closeNavigationOverlay;
+        private ConfirmationOverlay _navigationOverlay;
         private readonly UiButton _convert;
         private readonly VisualElement _editorContent;
         private readonly VisualElement _conversionPane;
@@ -453,73 +452,40 @@ namespace Ee4v.FaceExpression
         public void ShowUnsavedChangesOverlay(VisualElement host, Func<bool> save, Func<bool> discard, Action continueNavigation)
         {
             if (_navigationOverlay != null || host == null) { return; }
-            var previousFocus = host.panel?.focusController?.focusedElement as VisualElement;
-            var background = host.Children().Select(element => (Element: element, Enabled: element.enabledSelf)).ToArray();
-            var overlay = new VisualElement { focusable = true, tabIndex = -1 };
+            var overlay = new ConfirmationOverlay(host,
+                new MessagePanelState(_unsavedChanges, severity: MessageSeverity.Warning));
             _navigationOverlay = overlay;
-            UiComposition.Prepare(overlay, "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
-            overlay.AddToClassList("ee4v-face-expression__unsaved-overlay");
-            var notification = new MessagePanel(new MessagePanelState(_unsavedChanges,
-                severity: MessageSeverity.Warning));
-            notification.AddToClassList("ee4v-face-expression__unsaved-card");
-            var closed = false;
-            void Close()
-            {
-                if (closed) { return; }
-                closed = true;
-                foreach (var item in background) { item.Element.SetEnabled(item.Enabled); }
-                overlay.RemoveFromHierarchy();
-                _navigationOverlay = null;
-                _closeNavigationOverlay = null;
-                if (previousFocus?.panel != null && previousFocus.enabledInHierarchy) { previousFocus.Focus(); }
-            }
-            _closeNavigationOverlay = Close;
-            var discardButton = new UiButton(I18N.Get("assignments.discard"), () =>
+            overlay.Closed += () => _navigationOverlay = null;
+            var notification = overlay.Notification;
+            overlay.AddDiscardAction(I18N.Get("assignments.discard"), () =>
             {
                 if (!discard())
                 {
-                    notification.SetState(new MessagePanelState(I18N.Get("assignments.discardFailed"),
+                    overlay.SetState(new MessagePanelState(I18N.Get("assignments.discardFailed"),
                         severity: MessageSeverity.Error));
                     return;
                 }
-                Close();
+                overlay.Close();
                 continueNavigation();
             });
-            discardButton.AddToClassList("ee4v-face-expression__discard-changes");
-            discardButton.SetLabelColor(UiColorTokens.TextOnState);
-            notification.Actions.Add(discardButton);
-            notification.Actions.Add(new UiButton(I18N.Get("assignments.continueEditing"), Close,
-                variant: UiButtonVariant.Ghost));
+            notification.Actions.Add(new UiButton(I18N.Get("assignments.continueEditing"), overlay.Close));
             var saveButton = new UiButton(I18N.Get("assignments.save"), () =>
             {
                 if (!save())
                 {
-                    notification.SetState(new MessagePanelState(_saveFailed, severity: MessageSeverity.Error));
+                    overlay.SetState(new MessagePanelState(_saveFailed, severity: MessageSeverity.Error));
                     return;
                 }
-                Close();
+                overlay.Close();
                 continueNavigation();
             });
             saveButton.SetPrimaryActionEnabled(true);
             notification.Actions.Add(saveButton);
-            notification.Add(notification.Actions);
-            overlay.Add(notification);
-            overlay.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
-            overlay.RegisterCallback<WheelEvent>(evt => evt.StopPropagation());
-            overlay.RegisterCallback<KeyDownEvent>(evt =>
-            {
-                if (evt.keyCode == KeyCode.Escape) { Close(); evt.PreventDefault(); }
-                evt.StopPropagation();
-            });
-            overlay.RegisterCallback<DetachFromPanelEvent>(evt => { if (evt.target == overlay) { Close(); } });
-            foreach (var item in background) { item.Element.SetEnabled(false); }
-            host.Add(overlay);
-            overlay.schedule.Execute(overlay.Focus);
         }
 
         public void CloseUnsavedChangesOverlay()
         {
-            _closeNavigationOverlay?.Invoke();
+            _navigationOverlay?.Close();
         }
 
         public event Action<AnimationClip> ClipChanged;

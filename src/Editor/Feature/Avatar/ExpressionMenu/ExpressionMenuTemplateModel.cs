@@ -69,10 +69,35 @@ namespace Ee4v.ExpressionMenu
             var group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("Create Expression Menu Item");
             var root = new GameObject(label);
-            var registered = false;
+            string groupingFolder = null;
             try
             {
-                root.transform.SetParent((childRoot ?? context.Root).transform, false);
+                var parent = childRoot;
+                if (parent == null)
+                {
+                    parent = context.Root.transform.Cast<Transform>().Select(child => child.gameObject)
+                        .FirstOrDefault(ExpressionMenuInstaller.IsGroupingRoot);
+                    if (parent == null)
+                    {
+                        groupingFolder = ProjectAssetSettings.EnsureAssetFolder(
+                            "Animation/ExpressionMenu/" + avatarName + "/" + Guid.NewGuid().ToString("N"));
+                        parent = new GameObject(GameObjectUtility.GetUniqueNameForSibling(context.Root.transform,
+                            avatarName + "_ExpressionMenu"));
+                        parent.transform.SetParent(context.Root.transform, false);
+                        Undo.RegisterCreatedObjectUndo(parent, "Create Expression Menu Root");
+                        if (PrefabUtility.SaveAsPrefabAssetAndConnect(parent, groupingFolder + "/ExpressionMenu.prefab",
+                                InteractionMode.AutomatedAction) == null)
+                            throw new InvalidOperationException(TemplateText.Get("saveFailed"));
+                    }
+                    if (!CanEdit(context, parent)) throw new InvalidOperationException(TemplateText.Get("readOnly"));
+                    // Keep each registered menu subtree intact when collecting earlier direct placements.
+                    foreach (var child in context.Root.transform.Cast<Transform>().ToArray())
+                        if (IsOwned(child.gameObject) && CanEdit(context, child.gameObject) &&
+                            (!PrefabUtility.IsPartOfPrefabInstance(context.Root) ||
+                             PrefabUtility.IsAddedGameObjectOverride(child.gameObject)))
+                            Undo.SetTransformParent(child, parent.transform, "Group Expression Menu Items");
+                }
+                root.transform.SetParent(parent.transform, false);
                 var item = root.AddComponent<ModularAvatarMenuItem>();
                 item.PortableControl.Type = submenu ? PortableControlType.SubMenu : PortableControlType.Toggle;
                 item.PortableControl.Parameter = submenu ? "" : "ee4v/Menu/" + id;
@@ -92,20 +117,18 @@ namespace Ee4v.ExpressionMenu
                 var saved = PrefabUtility.SaveAsPrefabAssetAndConnect(root, folder + "/MenuItem.prefab", InteractionMode.AutomatedAction);
                 if (saved == null) throw new InvalidOperationException(TemplateText.Get("saveFailed"));
                 Undo.RegisterCreatedObjectUndo(root, "Create Expression Menu Item");
-                registered = true;
                 if (!submenu) ExpressionMenuAnimationRecipe.Ensure(item);
-                ExpressionMenuInstaller.SaveGeneratedPrefab(childRoot);
+                ExpressionMenuInstaller.SaveGeneratedPrefab(parent);
                 Undo.CollapseUndoOperations(group);
                 return item;
             }
             catch
             {
-                if (root != null)
-                {
-                    if (registered) Undo.DestroyObjectImmediate(root);
-                    else Object.DestroyImmediate(root);
-                }
+                Undo.FlushUndoRecordObjects();
+                Undo.RevertAllDownToGroup(group);
+                if (root != null) Object.DestroyImmediate(root);
                 AssetDatabase.DeleteAsset(folder);
+                if (groupingFolder != null) AssetDatabase.DeleteAsset(groupingFolder);
                 throw;
             }
         }
@@ -127,7 +150,7 @@ namespace Ee4v.ExpressionMenu
         {
             if (item == null || !CanEdit(context, item) || !IsOwned(item.gameObject))
                 throw new InvalidOperationException(TemplateText.Get("readOnly"));
-            if (!AvailableActions(item).Contains(kind)) throw new InvalidOperationException(TemplateText.Get("selectModeFirst"));
+            if (!AvailableActions(item).Contains(kind)) throw new InvalidOperationException(TemplateText.Get("incompatibleMode"));
             var recipe = ExpressionMenuAnimationRecipe.Ensure(item);
             if (kind == MenuTemplateKind.AnimationClip)
                 ExpressionMenuAnimationRecipe.Change(context, item, () => recipe.Actions.Add(new MenuClipAction()));
