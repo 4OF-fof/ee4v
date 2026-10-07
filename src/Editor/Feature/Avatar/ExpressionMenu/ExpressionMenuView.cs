@@ -198,6 +198,7 @@ namespace Ee4v.ExpressionMenu
             icon.tooltip = T("icon");
             icon.AddToClassList("ee4v-expression-menu__quick-icon");
             icon.SetValueWithoutNotify(entry.Control.icon);
+            icon.SetEnabled(CanInteract(entry));
             icon.RegisterValueChangedCallback(evt => Run(() =>
             {
                 try { Change(() => source.Control.icon = evt.newValue as Texture2D, () => draft.icon = evt.newValue as Texture2D); }
@@ -209,14 +210,16 @@ namespace Ee4v.ExpressionMenu
             row.Add(details);
             var name = new InputField(new InputFieldState(entry.Control.name)) { IsDelayed = true };
             name.tooltip = T("name");
+            name.SetEnabled(CanInteract(entry));
             name.ValueChanged += value => Run(() => Change(() => source.label = value, () => draft.name = value));
             details.Add(name);
             var actions = new VisualElement();
             actions.AddToClassList("ee4v-expression-menu__quick-actions");
             details.Add(actions);
             if (open != null) actions.Add(new UiButton(T("openSubmenu"), open));
-            actions.Add(new UiButton(T("editDetails"), edit));
-            row.SetEnabled(CanInteract(entry));
+            var editButton = new UiButton(T("editDetails"), edit);
+            editButton.SetEnabled(CanInteract(entry));
+            actions.Add(editButton);
         }
 
         private void BuildRadial(VisualElement host)
@@ -257,7 +260,8 @@ namespace Ee4v.ExpressionMenu
                 if (entry.Submenu != null)
                     button.AddManipulator(new ContextualMenuManipulator(evt =>
                     {
-                        if (CanInteract(entry)) evt.menu.AppendAction(T("settings"), _ => SelectControl(index));
+                        evt.menu.AppendAction(T("settings"), _ => SelectControl(index),
+                            _ => CanInteract(entry) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
                     }));
                 button.tooltip = entry.Control.name + "\n" + entry.Control.type + " / " +
                     (entry.Owner == null ? T("ambiguous") : entry.Owner.name);
@@ -271,7 +275,7 @@ namespace Ee4v.ExpressionMenu
                     indicator.Add(new Image { image = subIcon, scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore });
                     button.Content.Add(indicator);
                 }
-                slice.SetAvailable(CanInteract(entry), button);
+                slice.SetAvailable(entry.Submenu != null || CanInteract(entry), button);
             }
             if (hasNext)
             {
@@ -364,8 +368,7 @@ namespace Ee4v.ExpressionMenu
 
         private void OpenSubmenu(int index)
         {
-            if (index < 0 || index >= _page.Entries.Count || _page.Entries[index].Submenu == null ||
-                !CanInteract(_page.Entries[index])) return;
+            if (index < 0 || index >= _page.Entries.Count || _page.Entries[index].Submenu == null) return;
             _path.Add(index);
             _selected = -1;
             _editingCurrentSubmenu = false;

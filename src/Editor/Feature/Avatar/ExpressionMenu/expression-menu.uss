@@ -11,8 +11,8 @@
 .ee4v-expression-menu__items { flex-direction: row; flex-wrap: wrap; flex-basis: 640px; flex-grow: 1; min-width: 0; }
 .ee4v-expression-menu__items > .ee4v-expression-menu__quick-item { flex-basis: 320px; flex-grow: 1; max-width: 480px; min-width: 0; margin: 8px; }
 .ee4v-expression-menu__quick-item { flex-direction: row; align-items: center; padding: 8px; margin-top: 8px; border-width: 1px; border-color: var(--ee4v-color-border-default); border-radius: 4px; }
-.ee4v-expression-menu__quick-icon-host { width: 64px; flex-shrink: 0; margin-right: 12px; }
-.ee4v-expression-menu__quick-icon-preview { height: 64px; background-color: var(--ee4v-color-chrome-deep); }
+.ee4v-expression-menu__quick-icon-host { width: 96px; flex-shrink: 0; margin-right: 12px; }
+.ee4v-expression-menu__quick-icon-preview { height: 96px; background-color: var(--ee4v-color-chrome-deep); }
 .ee4v-expression-menu__quick-icon { margin: 0; min-width: 0; }
 .ee4v-expression-menu__quick-icon > .unity-base-field__label { display: none; }
 .ee4v-expression-menu__quick-details { flex-grow: 1; min-width: 0; }
