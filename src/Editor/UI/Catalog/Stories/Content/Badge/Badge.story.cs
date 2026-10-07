@@ -32,6 +32,8 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/AssetDetailComponents.cs",
+                        "Editor/Feature/Avatar/AvatarMaterials/AvatarMaterialsEditor.Materials.cs",
+                        "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionGroupView.cs",
                         "Editor/UI/Components/Content/InfoCard/InfoCard.cs"

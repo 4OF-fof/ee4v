@@ -12,7 +12,34 @@ using Object = UnityEngine.Object;
 
 namespace Ee4v.ExpressionMenu
 {
-    internal enum MenuBehaviorMode { Toggle = 1, Radial = 2 }
+    internal enum MenuBehaviorMode { Toggle = 1, Radial = 2, Button = 3, Puppet = 4 }
+
+    [Serializable]
+    internal sealed class MenuMaterialValueTarget
+    {
+        public string Path;
+        public string Property;
+        public float Minimum;
+        public float Maximum = 1;
+    }
+
+    [Serializable]
+    internal sealed class MenuMaterialValueAction
+    {
+        public bool Synced = true;
+        public List<MenuMaterialValueTarget> Targets = new List<MenuMaterialValueTarget>();
+    }
+
+    [Serializable]
+    internal sealed class MenuParameterAction
+    {
+        public bool Synced = true;
+        public string Parameter;
+        public AnimatorControllerParameterType NumericType = AnimatorControllerParameterType.Float;
+        public int Axis;
+        public float Off;
+        public float On = 1;
+    }
 
     [Serializable]
     internal sealed class MenuClipAction
@@ -35,6 +62,7 @@ namespace Ee4v.ExpressionMenu
     internal sealed class MenuRadialShapeAction
     {
         public bool Synced = true;
+        public int Axis;
         public List<MenuRadialShapeTarget> Targets = new List<MenuRadialShapeTarget>();
     }
 
@@ -56,55 +84,110 @@ namespace Ee4v.ExpressionMenu
         [SerializeField] internal List<MenuClipAction> Actions = new List<MenuClipAction>();
         [SerializeField] internal List<MenuRadialShapeAction> RadialShapes = new List<MenuRadialShapeAction>();
         [SerializeField] internal List<MenuReactiveAction> ReactiveActions = new List<MenuReactiveAction>();
+        [SerializeField] internal List<MenuParameterAction> ParameterActions = new List<MenuParameterAction>();
+        [SerializeField] internal List<MenuMaterialValueAction> MaterialValues = new List<MenuMaterialValueAction>();
         [SerializeField] internal MenuBehaviorMode Mode = MenuBehaviorMode.Toggle;
         [SerializeField] internal float InitialValue;
+        [SerializeField] private string _sharedParameter;
         [SerializeField] private AnimatorController _controller;
+
+        internal ExpressionMenuParameterCatalog.Entry[] ParameterChoices(AvatarEditingContext context, ModularAvatarMenuItem item) =>
+            ExpressionMenuParameterCatalog.Entries(context, _controller).Where(entry =>
+                (EffectiveMode(item) == MenuBehaviorMode.Button ? entry.Type == AnimatorControllerParameterType.Trigger && !entry.Expression :
+                    IsContinuous(item) ? entry.Type == AnimatorControllerParameterType.Float || entry.Type == AnimatorControllerParameterType.Int :
+                    entry.Type == AnimatorControllerParameterType.Bool) &&
+                !InputParameters(item).Contains(entry.Name) && entry.Name != Parameter(item) && entry.Name != Parameter(item) + "/CopyClock").ToArray();
+
+        private static AnimatorControllerParameterType ParameterType(ModularAvatarMenuItem item, MenuParameterAction action) =>
+            EffectiveMode(item) == MenuBehaviorMode.Button ? AnimatorControllerParameterType.Trigger :
+                IsContinuous(item) ? action.NumericType : AnimatorControllerParameterType.Bool;
+
+        internal static bool IsContinuous(ModularAvatarMenuItem item) =>
+            EffectiveMode(item) == MenuBehaviorMode.Radial || EffectiveMode(item) == MenuBehaviorMode.Puppet;
+
+        internal static int AxisCount(ModularAvatarMenuItem item) =>
+            EffectiveMode(item) == MenuBehaviorMode.Puppet ? (item.PortableControl.Type == PortableControlType.FourAxisPuppet ? 4 : 2) : 1;
+
+        private static readonly string[] TwoAxes = { "Horizontal", "Vertical" };
+        private static readonly string[] FourAxes = { "Up", "Right", "Down", "Left" };
+
+        internal static string[] AxisNames(ModularAvatarMenuItem item) => AxisCount(item) == 4 ? FourAxes : TwoAxes;
+
+        internal static float SourceMinimum(ModularAvatarMenuItem item) =>
+            EffectiveMode(item) == MenuBehaviorMode.Puppet && AxisCount(item) == 2 ? -1 : 0;
+
+        private static bool InitiallyEnabled(ModularAvatarMenuItem item) => EffectiveMode(item) == MenuBehaviorMode.Toggle && item.isDefault;
+
+        private static string[] InputParameters(ModularAvatarMenuItem item) => EffectiveMode(item) == MenuBehaviorMode.Puppet ?
+            AxisNames(item).Select(axis => Parameter(item) + "/" + axis).ToArray() : new[] { Parameter(item) };
+
+        private static string AxisParameter(ModularAvatarMenuItem item, int axis) => InputParameters(item)[axis];
 
         internal static MenuBehaviorMode EffectiveMode(ModularAvatarMenuItem item)
         {
             var recipe = Find(item);
-            if (recipe != null && (recipe.Mode == MenuBehaviorMode.Toggle || recipe.Mode == MenuBehaviorMode.Radial)) return recipe.Mode;
-            return item.PortableControl.Type == PortableControlType.RadialPuppet ? MenuBehaviorMode.Radial : MenuBehaviorMode.Toggle;
+            if (recipe != null && Enum.IsDefined(typeof(MenuBehaviorMode), recipe.Mode)) return recipe.Mode;
+            switch (item.PortableControl.Type)
+            {
+                case PortableControlType.RadialPuppet: return MenuBehaviorMode.Radial;
+                case PortableControlType.Button: return MenuBehaviorMode.Button;
+                case PortableControlType.TwoAxisPuppet:
+                case PortableControlType.FourAxisPuppet: return MenuBehaviorMode.Puppet;
+                default: return MenuBehaviorMode.Toggle;
+            }
         }
 
-        private static string Parameter(ModularAvatarMenuItem item) =>
-            !string.IsNullOrEmpty(item.PortableControl.Parameter) ? item.PortableControl.Parameter :
+        private static string Parameter(ModularAvatarMenuItem item)
+        {
+            var recipe = Find(item);
+            if (!string.IsNullOrEmpty(recipe?._sharedParameter)) return recipe._sharedParameter;
+            return !string.IsNullOrEmpty(item.PortableControl.Parameter) ? item.PortableControl.Parameter :
                 item.Control.subParameters?.FirstOrDefault()?.name ?? "";
+        }
 
         internal static bool HasSettingsToDiscard(ModularAvatarMenuItem item)
         {
             var recipe = Find(item);
             return ExpressionMenuTemplateModel.Effects(item).Length > 0 ||
                 recipe != null && (recipe.Actions.Count > 0 || recipe.RadialShapes.Count > 0 ||
-                    recipe.ReactiveActions.Count > 0) ||
-                (EffectiveMode(item) == MenuBehaviorMode.Radial ? recipe != null && recipe.InitialValue != 0 : item.isDefault);
+                    recipe.ReactiveActions.Count > 0 || recipe.ParameterActions.Count > 0 || recipe.MaterialValues.Count > 0) ||
+                (EffectiveMode(item) == MenuBehaviorMode.Radial ? recipe != null && recipe.InitialValue != 0 : InitiallyEnabled(item));
         }
 
-        internal static void SetModeDiscardingSettings(AvatarEditingContext context, ModularAvatarMenuItem item, MenuBehaviorMode mode)
+        internal static void SetModeDiscardingSettings(AvatarEditingContext context, ModularAvatarMenuItem item, MenuBehaviorMode mode, int puppetAxes = 2)
         {
             var recipe = Find(item);
             if (recipe == null || !ExpressionMenuTemplateModel.IsOwned(item.gameObject))
                 throw new InvalidOperationException(TemplateText.Get("readOnly"));
-            if (mode != MenuBehaviorMode.Toggle && mode != MenuBehaviorMode.Radial)
+            if (!Enum.IsDefined(typeof(MenuBehaviorMode), mode))
                 throw new ArgumentOutOfRangeException(nameof(mode));
-            if (EffectiveMode(item) == mode) return;
+            if (puppetAxes != 2 && puppetAxes != 4) throw new ArgumentOutOfRangeException(nameof(puppetAxes));
+            if (EffectiveMode(item) == mode && (mode != MenuBehaviorMode.Puppet || AxisCount(item) == puppetAxes)) return;
             Change(context, item, () =>
             {
                 var parameter = Parameter(item);
+                recipe._sharedParameter = parameter;
                 Undo.RecordObject(item, "Change behavior type");
                 recipe.Actions.Clear();
                 recipe.RadialShapes.Clear();
                 recipe.ReactiveActions.Clear();
+                recipe.ParameterActions.Clear();
+                recipe.MaterialValues.Clear();
                 recipe.InitialValue = 0;
                 item.isDefault = false;
                 recipe.Mode = mode;
-                item.PortableControl.Type = mode == MenuBehaviorMode.Radial ? PortableControlType.RadialPuppet : PortableControlType.Toggle;
-                item.PortableControl.Parameter = mode == MenuBehaviorMode.Radial ? "" : parameter;
-                item.Control.subParameters = mode == MenuBehaviorMode.Radial ? new[]
-                {
-                    new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu.Control.Parameter { name = parameter }
-                } : Array.Empty<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu.Control.Parameter>();
-                item.PortableControl.Value = mode == MenuBehaviorMode.Radial ? 0 : 1;
+                item.PortableControl.Type = mode == MenuBehaviorMode.Radial ? PortableControlType.RadialPuppet :
+                    mode == MenuBehaviorMode.Button ? PortableControlType.Button : mode == MenuBehaviorMode.Puppet ?
+                        (puppetAxes == 2 ? PortableControlType.TwoAxisPuppet : PortableControlType.FourAxisPuppet) : PortableControlType.Toggle;
+                item.PortableControl.Parameter = IsContinuous(item) ? "" : parameter;
+                item.Control.subParameters = IsContinuous(item) ? InputParameters(item).Select(name =>
+                    new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu.Control.Parameter { name = name }).ToArray() :
+                    Array.Empty<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu.Control.Parameter>();
+                item.Control.labels = mode == MenuBehaviorMode.Puppet ? FourAxes.Select(axis =>
+                    new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu.Control.Label { name = TemplateText.Get("axis" + axis) }).ToArray() :
+                    Array.Empty<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu.Control.Label>();
+                item.PortableControl.Value = IsContinuous(item) ? 0 : 1;
+                item.isSaved = mode != MenuBehaviorMode.Button;
                 EditorUtility.SetDirty(item);
                 PrefabUtility.RecordPrefabInstancePropertyModifications(item);
                 foreach (var effect in ExpressionMenuTemplateModel.Effects(item)) Undo.DestroyObjectImmediate(effect);
@@ -215,13 +298,13 @@ namespace Ee4v.ExpressionMenu
             var controller = recipe._controller;
             Undo.RegisterCompleteObjectUndo(controller, "Edit initial state");
             controller.parameters = recipe.ControllerParameters(item);
-            if (EffectiveMode(item) != MenuBehaviorMode.Radial) foreach (var layer in controller.layers)
+            if (!IsContinuous(item)) foreach (var layer in controller.layers)
             {
                 var machine = layer.stateMachine;
                 Undo.RecordObject(machine, "Edit initial state");
                 machine.defaultState = machine.states.Select(state => state.state).FirstOrDefault(state => state.name == "LocalOnly") ??
                     machine.states.Select(state => state.state)
-                    .FirstOrDefault(state => state.name == (item.isDefault ? "ON" : "OFF"));
+                    .FirstOrDefault(state => state.name == (InitiallyEnabled(item) ? "ON" : "OFF"));
                 EditorUtility.SetDirty(machine);
             }
             EditorUtility.SetDirty(controller);
@@ -232,12 +315,22 @@ namespace Ee4v.ExpressionMenu
         {
             name = Parameter(item),
             type = EffectiveMode(item) == MenuBehaviorMode.Radial ? AnimatorControllerParameterType.Float : AnimatorControllerParameterType.Bool,
-            defaultBool = item.isDefault,
+            defaultBool = InitiallyEnabled(item),
             defaultFloat = InitialValue / 100f
         };
 
-        private AnimatorControllerParameter[] ControllerParameters(ModularAvatarMenuItem item) =>
-            new[] { ControllerParameter(item), new AnimatorControllerParameter { name = "IsLocal", type = AnimatorControllerParameterType.Bool } };
+        private AnimatorControllerParameter[] ControllerParameters(ModularAvatarMenuItem item)
+        {
+            var parameters = EffectiveMode(item) == MenuBehaviorMode.Puppet ? InputParameters(item).Select(name =>
+                new AnimatorControllerParameter { name = name, type = AnimatorControllerParameterType.Float }).ToList() :
+                new List<AnimatorControllerParameter> { ControllerParameter(item) };
+            parameters.Add(new AnimatorControllerParameter { name = "IsLocal", type = AnimatorControllerParameterType.Bool });
+            foreach (var action in ParameterActions.Where(action => !string.IsNullOrEmpty(action.Parameter)))
+                parameters.Add(new AnimatorControllerParameter { name = action.Parameter, type = ParameterType(item, action) });
+            if (IsContinuous(item) && ParameterActions.Any(action => !string.IsNullOrEmpty(action.Parameter)))
+                parameters.Add(new AnimatorControllerParameter { name = Parameter(item) + "/CopyClock", type = AnimatorControllerParameterType.Float });
+            return parameters.ToArray();
+        }
 
         private void ImportEffects(AvatarEditingContext context, ModularAvatarMenuItem item)
         {
@@ -299,9 +392,11 @@ namespace Ee4v.ExpressionMenu
             var component = item.GetComponent<ModularAvatarParameters>();
             if (component != null && !ExpressionMenuModel.CanWrite(component))
                 throw new InvalidOperationException(TemplateText.Get("readOnly"));
-            var radial = EffectiveMode(item) == MenuBehaviorMode.Radial;
+            var radial = IsContinuous(item);
             var synced = Actions.Any(action => action.Synced) || RadialShapes.Any(action => action.Synced) ||
-                ReactiveActions.Any(action => action.Synced) || ExpressionMenuTemplateModel.Effects(item).Length > 0 && item.isSynced;
+                ReactiveActions.Any(action => action.Synced) || ParameterActions.Any(action => action.Synced) ||
+                MaterialValues.Any(action => action.Synced) ||
+                ExpressionMenuTemplateModel.Effects(item).Length > 0 && item.isSynced;
             Undo.RecordObject(item, "Edit action synchronization");
             item.isSynced = synced;
             EditorUtility.SetDirty(item);
@@ -309,12 +404,19 @@ namespace Ee4v.ExpressionMenu
             if (!radial && component == null) return;
             if (component == null) component = Undo.AddComponent<ModularAvatarParameters>(item.gameObject);
             Undo.RecordObject(component, "Edit behavior parameter");
-            component.parameters.RemoveAll(config => !config.isPrefix && config.nameOrPrefix == parameter);
-            if (radial) component.parameters.Add(new ParameterConfig
+            var generated = new[] { parameter }.Concat(TwoAxes.Concat(FourAxes).Select(axis => parameter + "/" + axis)).ToArray();
+            component.parameters.RemoveAll(config => !config.isPrefix && generated.Contains(config.nameOrPrefix));
+            if (radial) for (var axis = 0; axis < AxisCount(item); axis++)
             {
-                nameOrPrefix = parameter, syncType = ParameterSyncType.Float, localOnly = !item.isSynced,
-                saved = item.isSaved, hasExplicitDefaultValue = true, defaultValue = InitialValue / 100f
-            });
+                var axisSynced = EffectiveMode(item) != MenuBehaviorMode.Puppet ? item.isSynced :
+                    RadialShapes.Any(action => action.Axis == axis && action.Synced) || ParameterActions.Any(action => action.Axis == axis && action.Synced);
+                component.parameters.Add(new ParameterConfig
+                {
+                    nameOrPrefix = AxisParameter(item, axis), syncType = ParameterSyncType.Float, localOnly = !axisSynced,
+                    saved = item.isSaved, hasExplicitDefaultValue = true,
+                    defaultValue = EffectiveMode(item) == MenuBehaviorMode.Radial ? InitialValue / 100f : 0
+                });
+            }
             if (component.parameters.Count == 0) Undo.DestroyObjectImmediate(component);
             else
             {
@@ -323,12 +425,12 @@ namespace Ee4v.ExpressionMenu
             }
         }
 
-        private List<(AnimationClip on, AnimationClip off, bool synced)> PrepareClips(
+        private List<(AnimationClip on, AnimationClip off, bool synced, int axis)> PrepareClips(
             AvatarEditingContext context, ModularAvatarMenuItem item, int replacedIndex = -1, MenuClipAction replacement = null)
         {
-            var clips = new List<(AnimationClip on, AnimationClip off, bool synced)>();
+            var clips = new List<(AnimationClip on, AnimationClip off, bool synced, int axis)>();
             var used = new HashSet<(string, Type, string)>();
-            var radial = EffectiveMode(item) == MenuBehaviorMode.Radial;
+            var radial = IsContinuous(item);
             try
             {
                 for (var index = 0; index < Actions.Count; index++)
@@ -344,7 +446,7 @@ namespace Ee4v.ExpressionMenu
                             throw new InvalidOperationException(TemplateText.Get("overlappingClips"));
                     }
                     var on = CopyClip(context, action.On, bindings, "ON");
-                    clips.Add((on, null, action.Synced));
+                    clips.Add((on, null, action.Synced, 0));
                     if (radial)
                     {
                         var settings = AnimationUtility.GetAnimationClipSettings(on);
@@ -353,12 +455,13 @@ namespace Ee4v.ExpressionMenu
                         continue;
                     }
                     var off = CopyClip(context, action.Off, bindings, "OFF");
-                    clips[clips.Count - 1] = (on, off, action.Synced);
+                    clips[clips.Count - 1] = (on, off, action.Synced, 0);
                 }
                 if (radial) foreach (var action in RadialShapes)
                 {
+                    ValidateAxis(item, action.Axis);
                     var clip = new AnimationClip { name = "BlendShapes", frameRate = 60 };
-                    clips.Add((clip, null, action.Synced));
+                    clips.Add((clip, null, action.Synced, action.Axis));
                     foreach (var target in action.Targets)
                     {
                         if (string.IsNullOrEmpty(target.Shape)) continue;
@@ -380,16 +483,48 @@ namespace Ee4v.ExpressionMenu
                         DestroyImmediate(clip);
                     }
                 }
+                foreach (var action in MaterialValues)
+                {
+                    if (EffectiveMode(item) != MenuBehaviorMode.Toggle && EffectiveMode(item) != MenuBehaviorMode.Radial)
+                        throw new InvalidOperationException(TemplateText.Get("incompatibleMode"));
+                    var on = new AnimationClip { name = "Material Values", frameRate = 60 };
+                    clips.Add((on, null, action.Synced, 0));
+                    foreach (var target in action.Targets)
+                    {
+                        if (string.IsNullOrEmpty(target.Property)) continue;
+                        var renderer = ResolveMaterialRenderer(context, target);
+                        if (renderer == null || !MaterialProperties(renderer).Any(property => property.Name == target.Property))
+                            throw new InvalidOperationException(TemplateText.Get("missingMaterialProperty"));
+                        ValidateMaterialValue(target.Maximum);
+                        if (radial) ValidateMaterialValue(target.Minimum);
+                        ExpressionMenuTemplateModel.Reference(context, renderer.gameObject);
+                        var binding = MaterialBinding(renderer, target);
+                        ValidateBinding(context, binding, on.name);
+                        if (!used.Add((binding.path, binding.type, binding.propertyName)))
+                            throw new InvalidOperationException(TemplateText.Get("overlappingClips"));
+                        AnimationUtility.SetEditorCurve(on, binding, radial ?
+                            AnimationCurve.Linear(0, target.Minimum, 1, target.Maximum) :
+                            AnimationCurve.Constant(0, 1f / 60f, target.Maximum));
+                    }
+                    var bindings = Bindings(on);
+                    if (bindings.Length == 0)
+                    {
+                        clips.RemoveAt(clips.Count - 1);
+                        DestroyImmediate(on);
+                    }
+                    else if (!radial)
+                        clips[clips.Count - 1] = (on, CopyClip(context, null, bindings, "OFF"), action.Synced, 0);
+                }
                 foreach (var action in ReactiveActions)
                 {
                     var on = BuildReactiveClip(context, item, action);
-                    clips.Add((on, null, action.Synced));
+                    clips.Add((on, null, action.Synced, 0));
                     var bindings = Bindings(on);
                     foreach (var binding in bindings)
                         if (!used.Add((binding.path, binding.type, binding.propertyName)))
                             throw new InvalidOperationException(TemplateText.Get("overlappingClips"));
                     var off = CopyClip(context, null, bindings, "OFF");
-                    clips[clips.Count - 1] = action.Inverted ? (off, on, action.Synced) : (on, off, action.Synced);
+                    clips[clips.Count - 1] = action.Inverted ? (off, on, action.Synced, 0) : (on, off, action.Synced, 0);
                 }
                 return clips;
             }
@@ -402,8 +537,10 @@ namespace Ee4v.ExpressionMenu
 
         private void Build(AvatarEditingContext context, ModularAvatarMenuItem item)
         {
+            ValidateParameters(context, item);
             var clips = PrepareClips(context, item);
-            var radial = EffectiveMode(item) == MenuBehaviorMode.Radial;
+            var parameters = ParameterActions.Where(action => !string.IsNullOrEmpty(action.Parameter)).ToArray();
+            var radial = IsContinuous(item);
             try
             {
                 ConfigureParameters(item);
@@ -411,7 +548,7 @@ namespace Ee4v.ExpressionMenu
                     _controller != null && component.animator == _controller);
                 if (merge != null && !ExpressionMenuTemplateModel.CanEdit(context, merge))
                     throw new InvalidOperationException(TemplateText.Get("readOnly"));
-                if (clips.Count == 0 && _controller == null) return;
+                if (clips.Count == 0 && parameters.Length == 0 && _controller == null) return;
                 if (_controller == null)
                 {
                     _controller = new AnimatorController { name = "Gimmick" };
@@ -428,7 +565,7 @@ namespace Ee4v.ExpressionMenu
                     var pair = clips[index];
                     pair.on.name = "Action " + (index + 1) + (radial ? " Value" : " ON");
                     if (pair.off != null) pair.off.name = "Action " + (index + 1) + " OFF";
-                    AddAsset(pair.on);
+                    if (EffectiveMode(item) != MenuBehaviorMode.Puppet) AddAsset(pair.on);
                     if (pair.off != null) AddAsset(pair.off);
                     var machine = new AnimatorStateMachine { name = "Action " + (index + 1) };
                     AddAsset(machine);
@@ -443,11 +580,11 @@ namespace Ee4v.ExpressionMenu
                     if (radial)
                     {
                         var value = machine.AddState("Value");
-                        value.motion = pair.on;
+                        value.motion = EffectiveMode(item) == MenuBehaviorMode.Puppet ? BuildAxisMotion(item, pair.on, pair.axis) : pair.on;
                         value.writeDefaultValues = false;
                         value.timeParameter = Parameter(item);
-                        value.timeParameterActive = true;
-                        value.speed = 0;
+                        value.timeParameterActive = EffectiveMode(item) == MenuBehaviorMode.Radial;
+                        value.speed = EffectiveMode(item) == MenuBehaviorMode.Radial ? 0 : 1;
                         machine.defaultState = value;
                         if (local != null) LocalTransition(local, value);
                         Undo.RegisterCreatedObjectUndo(value, "Create gimmick animation");
@@ -460,7 +597,7 @@ namespace Ee4v.ExpressionMenu
                         off.motion = pair.off;
                         on.motion = pair.on;
                         off.writeDefaultValues = on.writeDefaultValues = false;
-                        machine.defaultState = item.isDefault ? on : off;
+                        machine.defaultState = InitiallyEnabled(item) ? on : off;
                         var enable = off.AddTransition(on);
                         var disable = on.AddTransition(off);
                         foreach (var transition in new[] { enable, disable })
@@ -488,7 +625,8 @@ namespace Ee4v.ExpressionMenu
                         name = machine.name, stateMachine = machine, defaultWeight = 1
                     });
                 }
-                if (clips.Count == 0)
+                for (var index = 0; index < parameters.Length; index++) BuildParameterLayer(item, parameters[index], index);
+                if (clips.Count == 0 && parameters.Length == 0)
                 {
                     if (merge != null) Undo.DestroyObjectImmediate(merge);
                 }
@@ -514,7 +652,202 @@ namespace Ee4v.ExpressionMenu
             }
         }
 
-        private static void DestroyTemporaryClips(IEnumerable<(AnimationClip on, AnimationClip off, bool synced)> clips)
+        internal static void ValidateMaterialValue(float value)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value))
+                throw new InvalidOperationException(TemplateText.Get("invalidMaterialValue"));
+        }
+
+        internal static Renderer ResolveMaterialRenderer(AvatarEditingContext context, MenuMaterialValueTarget target)
+        {
+            if (target.Path == null || context.Root == null) return null;
+            var transform = target.Path.Length == 0 ? context.Root.transform : context.Root.transform.Find(target.Path);
+            var renderer = transform != null ? transform.GetComponent<Renderer>() : null;
+            return renderer != null ? renderer : null;
+        }
+
+        internal static (string Name, string Label)[] MaterialProperties(Renderer renderer)
+        {
+            var properties = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (renderer != null) foreach (var material in renderer.sharedMaterials)
+            {
+                if (material == null || material.shader == null) continue;
+                var shader = material.shader;
+                for (var index = 0; index < shader.GetPropertyCount(); index++)
+                {
+                    var type = shader.GetPropertyType(index);
+                    if (type != UnityEngine.Rendering.ShaderPropertyType.Float && type != UnityEngine.Rendering.ShaderPropertyType.Range ||
+                        (shader.GetPropertyFlags(index) & UnityEngine.Rendering.ShaderPropertyFlags.HideInInspector) != 0) continue;
+                    var name = shader.GetPropertyName(index);
+                    if (!properties.ContainsKey(name)) properties.Add(name, shader.GetPropertyDescription(index) + " (" + name + ")");
+                }
+            }
+            return properties.Select(property => (property.Key, property.Value)).ToArray();
+        }
+
+        private static EditorCurveBinding MaterialBinding(Renderer renderer, MenuMaterialValueTarget target) =>
+            EditorCurveBinding.FloatCurve(target.Path, renderer.GetType(), "material." + target.Property);
+
+        internal static float MaterialCurrentValue(AvatarEditingContext context, MenuMaterialValueTarget target)
+        {
+            var renderer = ResolveMaterialRenderer(context, target);
+            return renderer != null && !string.IsNullOrEmpty(target.Property) &&
+                MaterialProperties(renderer).Any(property => property.Name == target.Property) &&
+                AnimationUtility.GetFloatValue(context.Root, MaterialBinding(renderer, target), out var value) ? value : 0;
+        }
+
+        private static void ValidateAxis(ModularAvatarMenuItem item, int axis)
+        {
+            if (axis < 0 || axis >= AxisCount(item)) throw new InvalidOperationException(TemplateText.Get("incompatibleMode"));
+        }
+
+        private Motion BuildAxisMotion(ModularAvatarMenuItem item, AnimationClip source, int axis)
+        {
+            var tree = new BlendTree
+            {
+                name = source.name + " Axis", blendType = BlendTreeType.Simple1D,
+                blendParameter = AxisParameter(item, axis), useAutomaticThresholds = false
+            };
+            AddAsset(tree);
+            AnimationClip Endpoint(float time)
+            {
+                var clip = new AnimationClip { name = source.name + (time == 0 ? " Minimum" : " Maximum"), frameRate = 60 };
+                foreach (var binding in AnimationUtility.GetCurveBindings(source))
+                    AnimationUtility.SetEditorCurve(clip, binding, AnimationCurve.Constant(0, 1,
+                        AnimationUtility.GetEditorCurve(source, binding).Evaluate(time * source.length)));
+                foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(source))
+                {
+                    var keys = AnimationUtility.GetObjectReferenceCurve(source, binding);
+                    var value = keys.LastOrDefault(key => key.time <= time * source.length).value;
+                    AnimationUtility.SetObjectReferenceCurve(clip, binding, new[] { new ObjectReferenceKeyframe { time = 0, value = value } });
+                }
+                AddAsset(clip);
+                return clip;
+            }
+            tree.children = new[]
+            {
+                new ChildMotion { motion = Endpoint(0), threshold = SourceMinimum(item), timeScale = 1 },
+                new ChildMotion { motion = Endpoint(1), threshold = 1, timeScale = 1 }
+            };
+            EditorUtility.SetDirty(tree);
+            return tree;
+        }
+
+        private void ValidateParameters(AvatarEditingContext context, ModularAvatarMenuItem item)
+        {
+            var used = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var action in ParameterActions)
+            {
+                var type = ParameterType(item, action);
+                ValidateAxis(item, action.Axis);
+                if (IsContinuous(item) && type != AnimatorControllerParameterType.Float && type != AnimatorControllerParameterType.Int)
+                    throw new InvalidOperationException(TemplateText.Get("parameterTypeMismatch"));
+                var hasName = !string.IsNullOrEmpty(action.Parameter);
+                if (hasName && (string.IsNullOrWhiteSpace(action.Parameter) || action.Parameter.Trim() != action.Parameter ||
+                    ExpressionMenuParameterCatalog.IsBuiltIn(action.Parameter) || InputParameters(item).Contains(action.Parameter) || action.Parameter == Parameter(item) ||
+                    action.Parameter == Parameter(item) + "/CopyClock"))
+                    throw new InvalidOperationException(TemplateText.Get("invalidParameter"));
+                if (hasName && !used.Add(action.Parameter)) throw new InvalidOperationException(TemplateText.Get("overlappingParameters"));
+                var known = hasName ? ExpressionMenuParameterCatalog.Find(context, _controller, action.Parameter) : null;
+                if (known != null && known.Type != type)
+                    throw new InvalidOperationException(TemplateText.Get("parameterTypeMismatch"));
+                if (type == AnimatorControllerParameterType.Trigger)
+                {
+                    if (known != null && known.Expression)
+                        throw new InvalidOperationException(TemplateText.Get("parameterTypeMismatch"));
+                    continue;
+                }
+                foreach (var value in new[] { action.Off, action.On })
+                {
+                    if (float.IsNaN(value) || float.IsInfinity(value) ||
+                        type != AnimatorControllerParameterType.Bool && type != AnimatorControllerParameterType.Int && type != AnimatorControllerParameterType.Float ||
+                        type == AnimatorControllerParameterType.Bool && value != 0 && value != 1 ||
+                        type == AnimatorControllerParameterType.Int && (value != Math.Floor(value) || value < int.MinValue || value >= 2147483648d) ||
+                        known != null && known.Expression && (type == AnimatorControllerParameterType.Float && (value < -1 || value > 1) ||
+                            type == AnimatorControllerParameterType.Int && (value < 0 || value > 255)))
+                        throw new InvalidOperationException(TemplateText.Get("invalidParameterValue"));
+                }
+            }
+        }
+
+        private void BuildParameterLayer(ModularAvatarMenuItem item, MenuParameterAction action, int index)
+        {
+            var radial = IsContinuous(item);
+            var trigger = EffectiveMode(item) == MenuBehaviorMode.Button;
+            var machine = new AnimatorStateMachine { name = "Parameter " + (index + 1) + " " + action.Parameter };
+            AddAsset(machine);
+            var off = machine.AddState(radial ? "Value" : "OFF");
+            var on = machine.AddState(radial ? "Refresh" : "ON");
+            off.writeDefaultValues = on.writeDefaultValues = false;
+            AnimatorState local = null;
+            if (!action.Synced)
+            {
+                local = machine.AddState("LocalOnly");
+                local.writeDefaultValues = false;
+                Undo.RegisterCreatedObjectUndo(local, "Create local parameter gate");
+                EditorUtility.SetDirty(local);
+            }
+            AnimationClip clock = null;
+            if (radial)
+            {
+                // Drivers run on state entry. Alternate timed states to copy the latest input continuously.
+                // Keep each state active for at least 0.02s, as recommended by the VRChat SDK.
+                clock = new AnimationClip { name = machine.name + " Clock", frameRate = 60 };
+                AnimationUtility.SetEditorCurve(clock, EditorCurveBinding.FloatCurve("", typeof(Animator), Parameter(item) + "/CopyClock"),
+                    AnimationCurve.Linear(0, 0, 0.02f, 1));
+                AddAsset(clock);
+            }
+            foreach (var state in new[] { off, on })
+            {
+                state.motion = clock;
+                if (!trigger || state == on)
+                {
+                    var driver = state.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+                    driver.localOnly = !action.Synced;
+                    driver.parameters.Add(new VRC.SDKBase.VRC_AvatarParameterDriver.Parameter
+                    {
+                        name = action.Parameter,
+                        type = radial ? VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType.Copy : VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType.Set,
+                        value = trigger ? 1 : state == on ? action.On : action.Off,
+                        source = radial ? AxisParameter(item, action.Axis) : "",
+                        convertRange = radial, sourceMin = SourceMinimum(item), sourceMax = 1, destMin = action.Off, destMax = action.On
+                    });
+                    Undo.RegisterCreatedObjectUndo(driver, "Create parameter driver");
+                    EditorUtility.SetDirty(driver);
+                }
+                Undo.RegisterCreatedObjectUndo(state, "Create parameter action");
+                EditorUtility.SetDirty(state);
+            }
+            var enable = off.AddTransition(on);
+            var disable = on.AddTransition(off);
+            foreach (var transition in new[] { enable, disable })
+            {
+                transition.hasExitTime = radial;
+                transition.exitTime = 1;
+                transition.duration = 0;
+                Undo.RegisterCreatedObjectUndo(transition, "Create parameter transition");
+                EditorUtility.SetDirty(transition);
+            }
+            if (!radial)
+            {
+                enable.AddCondition(AnimatorConditionMode.If, 0, Parameter(item));
+                disable.AddCondition(AnimatorConditionMode.IfNot, 0, Parameter(item));
+            }
+            if (local != null)
+            {
+                var enter = LocalTransition(local, off);
+                if (!radial)
+                {
+                    enter.AddCondition(AnimatorConditionMode.IfNot, 0, Parameter(item));
+                    LocalTransition(local, on).AddCondition(AnimatorConditionMode.If, 0, Parameter(item));
+                }
+            }
+            machine.defaultState = local ?? (!radial && InitiallyEnabled(item) ? on : off);
+            EditorUtility.SetDirty(machine);
+            _controller.AddLayer(new AnimatorControllerLayer { name = machine.name, stateMachine = machine, defaultWeight = 1 });
+        }
+
+        private static void DestroyTemporaryClips(IEnumerable<(AnimationClip on, AnimationClip off, bool synced, int axis)> clips)
         {
             foreach (var pair in clips)
             {

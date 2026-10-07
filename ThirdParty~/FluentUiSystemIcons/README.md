@@ -12,7 +12,7 @@ ee4vのEditor UIで使うMicrosoft Fluent UI System Iconsを、
 - Imported icons: `add`, `archive`, `arrow_clockwise`, `arrow_left`,
   `arrow_right`, `arrow_sort`, `checkmark`, `chevron_down`, `chevron_right`,
   `cube`, `dismiss`, `document`, `eye`, `eye_off`, `folder`, `folder_zip`,
-  `image`, `info`, `library`, `mail_inbox`, `pin`, `search`, `star`,
+  `image`, `info`, `library`, `mail_inbox`, `pin`, `re_order_dots_vertical`, `search`, `star`,
   `subtract`, `tag`, `weather_moon`, `weather_sunny`
 - Imported sizes: `selected-icons.txt`に生成PNGの一覧を記載します。
 

@@ -35,6 +35,9 @@ namespace Ee4v.ExpressionMenu
             if (!ExpressionMenuModel.CanWrite(source))
                 throw new InvalidOperationException(TemplateText.Get("readOnly"));
             Undo.FlushUndoRecordObjects();
+            // Applying component overrides changes the prefab asset as well as the instance.
+            // Record its hierarchy so Undo can restore removed generated components on both sides.
+            Undo.RegisterFullObjectHierarchyUndo(source, "Save Expression Menu prefab");
             // ApplyPrefabInstance targets the outermost Avatar Prefab, even when passed a nested root.
             // Save only overrides within this generated root, explicitly targeting its own asset.
             foreach (var node in root.GetComponentsInChildren<Transform>(true))

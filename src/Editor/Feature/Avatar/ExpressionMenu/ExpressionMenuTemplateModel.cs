@@ -11,7 +11,7 @@ using Object = UnityEngine.Object;
 
 namespace Ee4v.ExpressionMenu
 {
-    internal enum MenuTemplateKind { ObjectToggle, MaterialSwap, ShapeChanger, AnimationClip }
+    internal enum MenuTemplateKind { ObjectToggle = 0, MaterialSwap = 1, ShapeChanger = 2, ParameterValue = 4, MaterialValue = 5 }
 
     internal static class ExpressionMenuTemplateModel
     {
@@ -152,9 +152,14 @@ namespace Ee4v.ExpressionMenu
                 throw new InvalidOperationException(TemplateText.Get("readOnly"));
             if (!AvailableActions(item).Contains(kind)) throw new InvalidOperationException(TemplateText.Get("incompatibleMode"));
             var recipe = ExpressionMenuAnimationRecipe.Ensure(item);
-            if (kind == MenuTemplateKind.AnimationClip)
-                ExpressionMenuAnimationRecipe.Change(context, item, () => recipe.Actions.Add(new MenuClipAction()));
-            else if (ExpressionMenuAnimationRecipe.EffectiveMode(item) == MenuBehaviorMode.Radial)
+            if (kind == MenuTemplateKind.MaterialValue)
+                ExpressionMenuAnimationRecipe.Change(context, item, () => recipe.MaterialValues.Add(new MenuMaterialValueAction
+                {
+                    Targets = { new MenuMaterialValueTarget() }
+                }));
+            else if (kind == MenuTemplateKind.ParameterValue)
+                ExpressionMenuAnimationRecipe.Change(context, item, () => recipe.ParameterActions.Add(new MenuParameterAction()));
+            else if (ExpressionMenuAnimationRecipe.IsContinuous(item))
                 ExpressionMenuAnimationRecipe.Change(context, item, () => recipe.RadialShapes.Add(new MenuRadialShapeAction()));
             else
             {
@@ -174,7 +179,8 @@ namespace Ee4v.ExpressionMenu
             switch (ExpressionMenuAnimationRecipe.EffectiveMode(item))
             {
                 case MenuBehaviorMode.Toggle: return (MenuTemplateKind[])Enum.GetValues(typeof(MenuTemplateKind));
-                case MenuBehaviorMode.Radial: return new[] { MenuTemplateKind.ShapeChanger, MenuTemplateKind.AnimationClip };
+                case MenuBehaviorMode.Button: return new[] { MenuTemplateKind.ParameterValue };
+                case MenuBehaviorMode.Radial: return new[] { MenuTemplateKind.ShapeChanger, MenuTemplateKind.ParameterValue, MenuTemplateKind.MaterialValue };
                 default: return Array.Empty<MenuTemplateKind>();
             }
         }

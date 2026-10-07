@@ -49,6 +49,7 @@ mail_inbox_16
 pin
 pin_12
 pin_16
+re_order_dots_vertical
 search
 search_16
 star

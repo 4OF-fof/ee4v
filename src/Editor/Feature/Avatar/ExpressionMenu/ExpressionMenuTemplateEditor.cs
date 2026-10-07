@@ -55,9 +55,10 @@ namespace Ee4v.ExpressionMenu
             var settings = new VisualElement();
             settings.AddToClassList("ee4v-menu-template__settings");
             details.Add(settings);
-            var modes = new[] { MenuBehaviorMode.Toggle, MenuBehaviorMode.Radial };
-            var choices = new List<string> { T("modeToggle"), T("modeRadial") };
+            var modes = new[] { MenuBehaviorMode.Toggle, MenuBehaviorMode.Radial, MenuBehaviorMode.Button, MenuBehaviorMode.Puppet };
+            var choices = new List<string> { T("modeToggle"), T("modeRadial"), T("modeButton"), T("modePuppet") };
             var type = UiTextFactory.CreatePopupField("", choices, Array.IndexOf(modes, mode));
+            type.name = "menuBehaviorMode";
             type.tooltip = T("mode");
             type.SetEnabled(owned && canEdit);
             type.RegisterValueChangedCallback(evt =>
@@ -67,6 +68,21 @@ namespace Ee4v.ExpressionMenu
                 if (nextMode != ExpressionMenuAnimationRecipe.EffectiveMode(_item)) ConfirmModeChange(nextMode);
             });
             settings.Add(type);
+            if (mode == MenuBehaviorMode.Puppet)
+            {
+                var layouts = new List<string> { "2 Axis", "4 Axis" };
+                var layout = UiTextFactory.CreatePopupField("", layouts, ExpressionMenuAnimationRecipe.AxisCount(_item) == 4 ? 1 : 0);
+                layout.name = "puppetLayout";
+                layout.tooltip = T("puppetLayout");
+                layout.SetEnabled(owned && canEdit);
+                layout.RegisterValueChangedCallback(evt =>
+                {
+                    layout.SetValueWithoutNotify(evt.previousValue);
+                    var axes = layouts.IndexOf(evt.newValue) == 1 ? 4 : 2;
+                    if (axes != ExpressionMenuAnimationRecipe.AxisCount(_item)) ConfirmModeChange(MenuBehaviorMode.Puppet, axes);
+                });
+                settings.Add(layout);
+            }
             if (owned)
             {
                 if (mode == MenuBehaviorMode.Radial)
@@ -86,7 +102,7 @@ namespace Ee4v.ExpressionMenu
                     }));
                     settings.Add(initial);
                 }
-                else
+                else if (mode == MenuBehaviorMode.Toggle)
                 {
                     var initial = UiTextFactory.CreateToggle(T("initialEnabled"));
                     initial.SetValueWithoutNotify(_item.isDefault);
@@ -104,12 +120,15 @@ namespace Ee4v.ExpressionMenu
                 for (var index = 0; index < recipe.ReactiveActions.Count; index++) BuildReactive(_fields, recipe, index);
                 for (var index = 0; index < recipe.Actions.Count; index++) BuildAnimation(_fields, recipe, index);
                 for (var index = 0; index < recipe.RadialShapes.Count; index++) BuildRadialShapes(_fields, recipe, index);
+                for (var index = 0; index < recipe.ParameterActions.Count; index++) BuildParameter(_fields, recipe, index);
+                for (var index = 0; index < recipe.MaterialValues.Count; index++) BuildMaterialValues(_fields, recipe, index);
             }
             if (!owned) return;
+            var availableActions = ExpressionMenuTemplateModel.AvailableActions(_item);
             var add = new UiButton(T("addAction"), () =>
             {
                 var choices = new GenericMenu();
-                foreach (var kind in ExpressionMenuTemplateModel.AvailableActions(_item))
+                foreach (var kind in availableActions)
                 {
                     var template = kind;
                     choices.AddItem(UiTextFactory.CreateGuiContent(T("kind" + template)), false, () => Run(() =>
@@ -120,18 +139,18 @@ namespace Ee4v.ExpressionMenu
                 }
                 choices.ShowAsContext();
             }, icon: FluentUiIcons.CreateState("add.png"), variant: UiButtonVariant.Ghost);
-            add.SetEnabled(canEdit);
+            add.SetEnabled(canEdit && availableActions.Length > 0);
             actionsHeader.Actions.Add(add);
         }
 
-        private void ConfirmModeChange(MenuBehaviorMode mode)
+        private void ConfirmModeChange(MenuBehaviorMode mode, int puppetAxes = 2)
         {
             if (_modeOverlay != null) return;
             if (!ExpressionMenuAnimationRecipe.HasSettingsToDiscard(_item))
             {
                 Run(() =>
                 {
-                    ExpressionMenuAnimationRecipe.SetModeDiscardingSettings(_context, _item, mode);
+                    ExpressionMenuAnimationRecipe.SetModeDiscardingSettings(_context, _item, mode, puppetAxes);
                     _typeChanged();
                 });
                 return;
@@ -144,7 +163,7 @@ namespace Ee4v.ExpressionMenu
             overlay.Closed += () => _modeOverlay = null;
             overlay.AddDiscardAction(T("discardSettings"), () =>
             {
-                try { ExpressionMenuAnimationRecipe.SetModeDiscardingSettings(_context, _item, mode); }
+                try { ExpressionMenuAnimationRecipe.SetModeDiscardingSettings(_context, _item, mode, puppetAxes); }
                 catch (Exception exception)
                 {
                     overlay.SetState(new MessagePanelState(exception.GetBaseException().Message,
@@ -277,6 +296,144 @@ namespace Ee4v.ExpressionMenu
             card.SetEnabled(ExpressionMenuTemplateModel.CanEdit(_context, _item) && ExpressionMenuTemplateModel.CanEdit(_context, effect));
         }
 
+        private void BuildAxisSelection(VisualElement parent, int axis, Action<int> change)
+        {
+            if (ExpressionMenuAnimationRecipe.EffectiveMode(_item) != MenuBehaviorMode.Puppet) return;
+            var choices = ExpressionMenuAnimationRecipe.AxisNames(_item).Select(name => T("axis" + name)).ToList();
+            var field = UiTextFactory.CreatePopupField(T("puppetAxis"), choices, axis);
+            field.name = "puppetAxis";
+            field.RegisterValueChangedCallback(evt => Run(() =>
+            {
+                try { change(choices.IndexOf(evt.newValue)); }
+                catch { field.SetValueWithoutNotify(evt.previousValue); Refresh(); throw; }
+            }));
+            parent.Add(field);
+        }
+
+        private void BuildParameter(VisualElement parent, ExpressionMenuAnimationRecipe recipe, int index)
+        {
+            var action = recipe.ParameterActions[index];
+            var card = new VisualElement { name = "parameterAction" };
+            card.AddToClassList("ee4v-menu-template__change");
+            parent.Add(card);
+            var header = new SectionHeader(T("kindParameterValue"));
+            header.Actions.Add(new UiButton(T("removeAction"), () => Run(() =>
+            {
+                ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.ParameterActions.RemoveAt(index));
+                Refresh();
+            }), variant: UiButtonVariant.Ghost));
+            card.Add(header);
+            AddSync(card, action.Synced, value =>
+                ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.ParameterActions[index].Synced = value),
+                ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
+            BuildAxisSelection(card, action.Axis, value =>
+                ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.ParameterActions[index].Axis = value));
+            var options = recipe.ParameterChoices(_context, _item);
+            var parameter = new InputField(new InputFieldState(action.Parameter)) { name = "parameterName", IsDelayed = true };
+            void SelectParameter(string name)
+            {
+                try
+                {
+                    ExpressionMenuAnimationRecipe.Change(_context, _item, () =>
+                    {
+                        action.Parameter = name;
+                        var known = options.FirstOrDefault(entry => entry.Name == name);
+                        var type = known != null && known.Type == AnimatorControllerParameterType.Int ? AnimatorControllerParameterType.Int : AnimatorControllerParameterType.Float;
+                        if (action.NumericType != type)
+                        {
+                            action.NumericType = type;
+                            action.Off = 0;
+                            action.On = 1;
+                        }
+                    });
+                }
+                catch { Refresh(); throw; }
+                Refresh();
+            }
+            parameter.ValueChanged += value => Run(() =>
+            {
+                try { SelectParameter(value); }
+                catch { parameter.SetValueWithoutNotify(action.Parameter); throw; }
+            });
+            UiButton select = null;
+            if (options.Length > 0)
+                select = new UiButton(T("chooseParameter"), () =>
+                {
+                    var menu = new GenericMenu();
+                    foreach (var entry in options)
+                    {
+                        var option = entry;
+                        menu.AddItem(UiTextFactory.CreateGuiContent(option.Name + " (" + option.Type + ")"), action.Parameter == option.Name,
+                            () => Run(() => SelectParameter(option.Name)));
+                    }
+                    menu.ShowAsContext();
+                }, variant: UiButtonVariant.Ghost);
+            var trigger = ExpressionMenuAnimationRecipe.EffectiveMode(_item) == MenuBehaviorMode.Button;
+            card.Add(new FormInput(T("parameterName"), parameter, select));
+            if (trigger)
+            {
+                card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
+                return;
+            }
+            var radial = ExpressionMenuAnimationRecipe.IsContinuous(_item);
+            var values = new VisualElement { name = "parameterValues" };
+            values.AddToClassList("ee4v-menu-template__range");
+            card.Add(new FormInput(T(radial ? "valueRange" : "parameterValues"), values));
+            void SetEndpoint(bool on, float value) => ExpressionMenuAnimationRecipe.Change(_context, _item, () =>
+            {
+                if (on) action.On = value;
+                else action.Off = value;
+            });
+            void Endpoint(bool on)
+            {
+                var hint = T(radial ? (on ? "parameterAtHundred" : ExpressionMenuAnimationRecipe.SourceMinimum(_item) < 0 ?
+                    "parameterAtNegative" : "parameterAtZero") : (on ? "onValue" : "offValue"));
+                var value = on ? action.On : action.Off;
+                if (!radial)
+                {
+                    var field = UiTextFactory.CreateToggle("", "ee4v-menu-template__range-value");
+                    field.tooltip = hint;
+                    field.SetValueWithoutNotify(value != 0);
+                    field.RegisterValueChangedCallback(evt => Run(() =>
+                    {
+                        try { SetEndpoint(on, evt.newValue ? 1 : 0); }
+                        catch { field.SetValueWithoutNotify(evt.previousValue); Refresh(); throw; }
+                    }));
+                    values.Add(field);
+                }
+                else if (action.NumericType == AnimatorControllerParameterType.Int)
+                {
+                    var field = UiTextFactory.CreateIntegerField("", "ee4v-menu-template__range-value");
+                    field.tooltip = hint;
+                    field.isDelayed = true;
+                    field.SetValueWithoutNotify((int)value);
+                    field.RegisterValueChangedCallback(evt => Run(() =>
+                    {
+                        try { SetEndpoint(on, evt.newValue); }
+                        catch { field.SetValueWithoutNotify(evt.previousValue); Refresh(); throw; }
+                    }));
+                    values.Add(field);
+                }
+                else
+                {
+                    var field = UiTextFactory.CreateFloatField("", "ee4v-menu-template__range-value");
+                    field.tooltip = hint;
+                    field.isDelayed = true;
+                    field.SetValueWithoutNotify(value);
+                    field.RegisterValueChangedCallback(evt => Run(() =>
+                    {
+                        try { SetEndpoint(on, evt.newValue); }
+                        catch { field.SetValueWithoutNotify(evt.previousValue); Refresh(); throw; }
+                    }));
+                    values.Add(field);
+                }
+            }
+            Endpoint(false);
+            values.Add(UiTextFactory.Create(radial ? "〜" : "→", "ee4v-menu-template__range-separator"));
+            Endpoint(true);
+            card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
+        }
+
         private void BuildAnimation(VisualElement parent, ExpressionMenuAnimationRecipe recipe, int index)
         {
             var card = new VisualElement();
@@ -292,7 +449,7 @@ namespace Ee4v.ExpressionMenu
             AddSync(card, recipe.Actions[index].Synced, value =>
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.Actions[index].Synced = value),
                 ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
-            var radial = ExpressionMenuAnimationRecipe.EffectiveMode(_item) == MenuBehaviorMode.Radial;
+            var radial = ExpressionMenuAnimationRecipe.IsContinuous(_item);
             AddObject<AnimationClip>(card, T(radial ? "radialClip" : "onClip"), recipe.Actions[index].On, false, value =>
                 ExpressionMenuAnimationRecipe.SetClip(_context, _item, index, value, true));
             if (!radial) AddObject<AnimationClip>(card, T("offClip"), recipe.Actions[index].Off, false, value =>
@@ -305,7 +462,7 @@ namespace Ee4v.ExpressionMenu
             var card = new VisualElement();
             card.AddToClassList("ee4v-menu-template__change");
             parent.Add(card);
-            var header = new SectionHeader(T("newShapeChanger"));
+            var header = new SectionHeader(T("kindShapeChanger"));
             header.Actions.Add(new UiButton(T("removeAction"), () => Run(() =>
             {
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.RadialShapes.RemoveAt(index));
@@ -315,6 +472,8 @@ namespace Ee4v.ExpressionMenu
             AddSync(card, recipe.RadialShapes[index].Synced, value =>
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.RadialShapes[index].Synced = value),
                 ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
+            BuildAxisSelection(card, recipe.RadialShapes[index].Axis, value =>
+                ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.RadialShapes[index].Axis = value));
             for (var rowIndex = 0; rowIndex < recipe.RadialShapes[index].Targets.Count; rowIndex++)
             {
                 var targetIndex = rowIndex;
@@ -359,7 +518,7 @@ namespace Ee4v.ExpressionMenu
                     }));
                     range.Add(field);
                 }
-                AddEndpoint("atZero", Target().Minimum, value => Target().Minimum = value);
+                AddEndpoint(ExpressionMenuAnimationRecipe.SourceMinimum(_item) < 0 ? "atNegative" : "atZero", Target().Minimum, value => Target().Minimum = value);
                 range.Add(UiTextFactory.Create("〜", "ee4v-menu-template__range-separator"));
                 AddEndpoint("atHundred", Target().Maximum, value => Target().Maximum = value);
             }
@@ -368,6 +527,108 @@ namespace Ee4v.ExpressionMenu
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.RadialShapes[index].Targets.Add(new MenuRadialShapeTarget()));
                 Refresh();
             }), variant: UiButtonVariant.Ghost));
+            card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
+        }
+
+        private void BuildMaterialValues(VisualElement parent, ExpressionMenuAnimationRecipe recipe, int index)
+        {
+            var card = new VisualElement { name = "materialValueAction" };
+            card.AddToClassList("ee4v-menu-template__change");
+            parent.Add(card);
+            var header = new SectionHeader(T("kindMaterialValue"));
+            header.Actions.Add(new UiButton(T("removeAction"), () => Run(() =>
+            {
+                ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.MaterialValues.RemoveAt(index));
+                Refresh();
+            }), variant: UiButtonVariant.Ghost));
+            card.Add(header);
+            AddSync(card, recipe.MaterialValues[index].Synced, value =>
+                ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.MaterialValues[index].Synced = value),
+                ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
+            var radial = ExpressionMenuAnimationRecipe.EffectiveMode(_item) == MenuBehaviorMode.Radial;
+            void Change(Action change, bool rebuild = false)
+            {
+                try { ExpressionMenuAnimationRecipe.Change(_context, _item, change); }
+                catch { Refresh(); throw; }
+                if (rebuild) Refresh();
+            }
+            for (var rowIndex = 0; rowIndex < recipe.MaterialValues[index].Targets.Count; rowIndex++)
+            {
+                var targetIndex = rowIndex;
+                MenuMaterialValueTarget Target() => recipe.MaterialValues[index].Targets[targetIndex];
+                var row = Entry(card, () => Change(() => recipe.MaterialValues[index].Targets.RemoveAt(targetIndex), true));
+                var renderer = ExpressionMenuAnimationRecipe.ResolveMaterialRenderer(_context, Target());
+                AddObject<Renderer>(row, T("targetRenderer"), renderer, true, value =>
+                {
+                    if (value != null)
+                    {
+                        ExpressionMenuTemplateModel.Reference(_context, value.gameObject);
+                        if (value.gameObject.GetComponent<Renderer>() != value)
+                            throw new InvalidOperationException(T("ambiguousMaterialRenderer"));
+                    }
+                    Change(() =>
+                    {
+                        Target().Path = value == null ? null : AnimationUtility.CalculateTransformPath(value.transform, _context.Root.transform);
+                        Target().Property = ExpressionMenuAnimationRecipe.MaterialProperties(value).FirstOrDefault().Name;
+                        Target().Minimum = Target().Maximum = ExpressionMenuAnimationRecipe.MaterialCurrentValue(_context, Target());
+                    }, true);
+                });
+                var properties = ExpressionMenuAnimationRecipe.MaterialProperties(renderer);
+                var choices = properties.Select(property => property.Label).ToList();
+                var selected = Array.FindIndex(properties, property => property.Name == Target().Property);
+                if (selected < 0) choices.Insert(0, T("selectMaterialProperty"));
+                var field = UiTextFactory.CreatePopupField(T("materialProperty"), choices, Math.Max(0, selected));
+                field.name = "materialProperty";
+                field.SetEnabled(properties.Length > 0);
+                field.RegisterValueChangedCallback(evt => Run(() =>
+                {
+                    var property = properties.FirstOrDefault(option => option.Label == evt.newValue).Name;
+                    Change(() =>
+                    {
+                        Target().Property = property;
+                        Target().Minimum = Target().Maximum = ExpressionMenuAnimationRecipe.MaterialCurrentValue(_context, Target());
+                    }, true);
+                }));
+                row.Add(field);
+                var configured = renderer != null && selected >= 0;
+                if (Target().Path != null && (renderer == null || !string.IsNullOrEmpty(Target().Property) && selected < 0))
+                    row.Add(UiTextFactory.CreateHelpBox(T("missingMaterialProperty"), HelpBoxMessageType.Error));
+                void Endpoint(VisualElement host, bool maximum)
+                {
+                    var input = UiTextFactory.CreateFloatField("", "ee4v-menu-template__range-value");
+                    input.name = maximum ? "materialMaximum" : "materialMinimum";
+                    input.tooltip = T(radial ? maximum ? "parameterAtHundred" : "parameterAtZero" : maximum ? "onValue" : "currentValue");
+                    input.isDelayed = true;
+                    input.isReadOnly = !radial && !maximum;
+                    input.SetValueWithoutNotify(!radial && !maximum ?
+                        ExpressionMenuAnimationRecipe.MaterialCurrentValue(_context, Target()) : maximum ? Target().Maximum : Target().Minimum);
+                    input.SetEnabled(configured);
+                    if (!input.isReadOnly) input.RegisterValueChangedCallback(evt => Run(() => Change(() =>
+                    {
+                        ExpressionMenuAnimationRecipe.ValidateMaterialValue(evt.newValue);
+                        if (maximum) Target().Maximum = evt.newValue;
+                        else Target().Minimum = evt.newValue;
+                    })));
+                    host.Add(input);
+                }
+                if (radial)
+                {
+                    var range = new VisualElement { name = "materialValueRange" };
+                    range.AddToClassList("ee4v-menu-template__range");
+                    row.Add(new FormInput(T("valueRange"), range));
+                    Endpoint(range, false);
+                    range.Add(UiTextFactory.Create("〜", "ee4v-menu-template__range-separator"));
+                    Endpoint(range, true);
+                }
+                else
+                {
+                    var transition = AddTransition(row, T("offValue"), T("onValue"));
+                    Endpoint(transition.Before, false);
+                    Endpoint(transition.After, true);
+                }
+            }
+            card.Add(new UiButton(T("addTarget"), () => Run(() => Change(() =>
+                recipe.MaterialValues[index].Targets.Add(new MenuMaterialValueTarget()), true)), variant: UiButtonVariant.Ghost));
             card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
         }
 

@@ -19,7 +19,8 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
-                        "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuTemplateEditor.cs"
+                        "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuTemplateEditor.cs",
+                        "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuView.cs"
                     }));
             }
         }
