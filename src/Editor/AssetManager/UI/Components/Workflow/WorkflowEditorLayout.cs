@@ -4,19 +4,15 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed class WorkflowEditorLayout : VisualElement
     {
-        private readonly VisualElement _preview;
-        private readonly VisualElement _controlsColumn;
-
         internal WorkflowEditorLayout(VisualElement navigation,
             VisualElement preview)
         {
-            _preview = preview;
             AddToClassList("ee4v-modification-workflow__body");
             if (navigation != null) { Add(navigation); }
             AppearanceHost = new VisualElement();
             AppearanceHost.AddToClassList("ee4v-modification-workflow__customizer-host");
             AppearanceHost.Add(preview);
-            var controlsColumn = _controlsColumn = new VisualElement();
+            var controlsColumn = new VisualElement();
             controlsColumn.AddToClassList("ee4v-modification-workflow__controls-column");
             AppearanceHeader = new VisualElement();
             AppearanceHeader.AddToClassList("ee4v-modification-workflow__appearance-header");
@@ -34,6 +30,10 @@ namespace Ee4v.AssetManager.UI
             FaceExpressionHost.AddToClassList("ee4v-modification-workflow__face-expression-host");
             FaceExpressionHost.AddToClassList("ee4v-modification-workflow__hidden");
             Add(FaceExpressionHost);
+            ExpressionMenuHost = new VisualElement();
+            ExpressionMenuHost.AddToClassList("ee4v-modification-workflow__expression-menu-host");
+            ExpressionMenuHost.AddToClassList("ee4v-modification-workflow__hidden");
+            Add(ExpressionMenuHost);
             ExecutionHost = new VisualElement();
             ExecutionHost.AddToClassList("ee4v-execution-host");
             ExecutionHost.AddToClassList("ee4v-modification-workflow__hidden");
@@ -45,18 +45,17 @@ namespace Ee4v.AssetManager.UI
         internal VisualElement AppearanceHeader { get; }
         internal ScrollView Controls { get; }
         internal VisualElement FaceExpressionHost { get; }
+        internal VisualElement ExpressionMenuHost { get; }
         internal VisualElement ExecutionHost { get; }
 
         internal void ShowCategory(WorkflowCategory category)
         {
-            _preview.EnableInClassList("ee4v-modification-workflow__hidden",
-                category == WorkflowCategory.ExpressionMenu);
-            _controlsColumn.EnableInClassList("ee4v-modification-workflow__controls-column--without-preview",
-                category == WorkflowCategory.ExpressionMenu);
             AppearanceHost.EnableInClassList("ee4v-modification-workflow__hidden",
-                category == WorkflowCategory.ExpressionAnimation || category.IsPlayMode());
+                category == WorkflowCategory.ExpressionAnimation || category == WorkflowCategory.ExpressionMenu || category.IsPlayMode());
             FaceExpressionHost.EnableInClassList("ee4v-modification-workflow__hidden",
                 category != WorkflowCategory.ExpressionAnimation);
+            ExpressionMenuHost.EnableInClassList("ee4v-modification-workflow__hidden",
+                category != WorkflowCategory.ExpressionMenu);
             ExecutionHost.EnableInClassList("ee4v-modification-workflow__hidden",
                 !category.IsPlayMode());
         }

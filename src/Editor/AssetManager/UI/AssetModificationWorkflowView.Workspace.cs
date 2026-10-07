@@ -667,7 +667,9 @@ namespace Ee4v.AssetManager.UI
                 _overviewContent = category == WorkflowCategory.ExpressionMenu
                     ? new Ee4v.ExpressionMenu.ExpressionMenuView(_avatarContext)
                     : BuildOverviewControls();
-                _avatarContext.ControlsHost.Add(_overviewContent);
+                if (category == WorkflowCategory.ExpressionMenu)
+                    _editorLayout.ExpressionMenuHost.Add(_overviewContent);
+                else _avatarContext.ControlsHost.Add(_overviewContent);
                 if (categoryChanged)
                 {
                     _avatarContext.ControlsHost.scrollOffset = Vector2.zero;

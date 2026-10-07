@@ -66,6 +66,7 @@ namespace Ee4v.ExpressionMenu
             var itemPages = new List<MenuPage>();
             foreach (var item in avatar.GetComponentsInChildren<ModularAvatarMenuItem>(true))
             {
+                if (ExpressionMenuTemplateModel.IsDraft(item)) continue;
                 var control = item.PortableControl.CloneToVRCSDK();
                 var axes = control.type == VRCExpressionsMenu.Control.ControlType.RadialPuppet ? 1 :
                     control.type == VRCExpressionsMenu.Control.ControlType.TwoAxisPuppet ? 2 :
@@ -110,8 +111,10 @@ namespace Ee4v.ExpressionMenu
                     var submenu = ReadNode(control.SubmenuNode, control.name);
                     var matches = candidates.Where(candidate => SameControl(candidate.Control, control) &&
                         (control.type != VRCExpressionsMenu.Control.ControlType.SubMenu ||
-                         candidate.Control.subMenu == submenu?.Asset ||
-                         candidate.Owner is ModularAvatarMenuItem item && item.MenuSource == SubmenuSource.Children)).ToArray();
+                         (candidate.Owner is ModularAvatarMenuItem item && item.MenuSource == SubmenuSource.Children ?
+                             submenu?.ChildRoot == (item.menuSource_otherObjectChildren != null ?
+                                 item.menuSource_otherObjectChildren : item.gameObject) :
+                             candidate.Control.subMenu == submenu?.Asset))).ToArray();
                     var source = matches.Length == 1 ? matches[0] : null;
                     page.Entries.Add(new MenuEntry
                     {
@@ -140,11 +143,23 @@ namespace Ee4v.ExpressionMenu
             (a.labels ?? Array.Empty<VRCExpressionsMenu.Control.Label>()).Select(l => (l.name, l.icon))
                 .SequenceEqual((b.labels ?? Array.Empty<VRCExpressionsMenu.Control.Label>()).Select(l => (l.name, l.icon)));
 
-        internal static bool CanWrite(Object target) => target != null &&
-            !EditorApplication.isPlayingOrWillChangePlaymode && (target.hideFlags & HideFlags.NotEditable) == 0 &&
-            (!EditorUtility.IsPersistent(target) ||
-             AssetDatabase.GetAssetPath(target).StartsWith("Assets/", StringComparison.Ordinal) &&
-             AssetDatabase.IsOpenForEdit(AssetDatabase.GetAssetPath(target)));
+        internal static Texture2D DisplayIcon(Texture2D icon) =>
+            icon != null ? icon : Resources.Load<Texture2D>("Vrc3/BSX_GM_Default");
+
+        internal static bool CanWrite(Object target)
+        {
+            if (target == null || EditorApplication.isPlayingOrWillChangePlaymode ||
+                (target.hideFlags & HideFlags.NotEditable) != 0) return false;
+            if (EditorUtility.IsPersistent(target))
+            {
+                var path = AssetDatabase.GetAssetPath(target);
+                return path.StartsWith("Assets/", StringComparison.Ordinal) && AssetDatabase.IsOpenForEdit(path);
+            }
+            if (!(target is GameObject) && !(target is Component)) return true;
+            if (PrefabUtility.IsPartOfImmutablePrefab(target)) return false;
+            var source = PrefabUtility.GetCorrespondingObjectFromSource(target);
+            return source == null || CanWrite(source);
+        }
 
         internal static VRCExpressionsMenu.Control Copy(VRCExpressionsMenu.Control control) =>
             new VRCExpressionsMenu.Control

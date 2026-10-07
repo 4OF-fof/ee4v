@@ -2,7 +2,7 @@
 
 ## Editor ModeのExpression Menu
 
-Editor Modeの「Expression Menu」カテゴリは、DescriptorとModular Avatarの合成メニューと項目設定を表示します。新規項目の追加時に通常項目、MA Object Toggle、Material Swap、Shape Changerのテンプレートを選べます。MA設定は対応するメニュー項目の設定欄で編集します。メニュー項目の設定・削除も行います。追加項目はアバター内の専用MA Prefabへ配置し、生成Prefabを上部item一覧から除外します。3Dプレビューは表示しません。ユーザー設定の`assetManager.excludedItemNamePrefixes`で上部item一覧の追加除外を指定できます。詳細は[Expression Menu](features/expression-menu.md)を参照してください。
+Editor Modeの「Expression Menu」カテゴリは、DescriptorとModular Avatarの合成メニューと項目設定を表示します。左のギミックエディターで表示・Material・BlendShape・Animation Clipを組み合わせ、右の1項目へ登録します。通常項目の追加と各設定の編集・削除も行います。保護項目は円形プレビューでも無効化してグレーアウトします。参照先メニューassetの保護はMA Installerによる新規項目の追加を妨げません。root初期ページの上端は「編集を閉じる」で、左右の編集欄を閉じます。追加項目は専用Prefabへ配置し、生成Prefabを上部item一覧から除外します。3Dプレビューは表示しません。`assetManager.excludedItemNamePrefixes`で上部item一覧の追加除外を指定できます。詳細は[Expression Menu](features/expression-menu.md)を参照してください。
 
 AssetManager は Item、File、Import Target、依存関係、Tag、Collection、取り込み済み Asset GUID と派生アセットを管理します。MCP の公開操作と入力境界は [mcp.md](./mcp.md) を参照してください。
 
@@ -124,6 +124,8 @@ Variant作成時は同じVariantフォルダーに`<Variant名>.prefab`と`<Vari
 統合画面の総合・体型・マテリアルは同じ`PrefabScenePreview`インスタンスを使用します。構成Prefabタブの切り替えではPreviewとNDMF sessionを維持し、次の描画から選択した範囲だけを表示します。全体表示を挟む画面再構築は行いません。選択範囲の変更時は部位・Materialの選択を解除し、表示対象だけを切り替えます。Cameraの位置・角度・距離は維持し、進行中のCamera移動アニメーションはその位置で停止します。部位選択や表示リセットによるフレーミングは通常通り行います。描画はCoreの[AvatarPreviewRenderer](./core/avatar-preview.md)が管理し、Edit Modeでは作業SceneのAvatarに対するNDMF Previewを、Play ModeではGestureManagerなどが制御している実際のAvatarを表示します。SceneのAvatarを表示用に複製せず、SDKやNDMFの実行処理を再起動しません。Play Mode移行前に編集用Previewを破棄し、開始・停止後にそれぞれの対象へ接続します。表示するだけでPlay Modeの開始・停止は行いません。グリッド背景、背景の明暗切り替え、表示リセット、未表示時のPlaceholderと上部アセットタブの表示・非表示は共通UIが担当します。
 
 カテゴリの並びは「体型・パーツ」「マテリアル」「表情」です。上部アセットタブの非表示設定はカテゴリ間で維持します。
+
+「Expression Menu」カテゴリは専用の左右レイアウトを使用します。右の追加はItem／Submenuの二択です。Itemは空の動作設定で作成して表示中のメニューへ即時登録します。左はアイコンと名前、共通設定、動作の順に配置し、Toggle（ON／OFF）または0〜100（連続値）を選んでから対応する動作を組み合わせます。Toggleでは表示切り替え・マテリアル差し替え・BlendShape変更・Animation Clip、連続値ではBlendShape変更・Animation Clipを追加できます。初期値は共通設定、他プレイヤーへの同期は各動作カードで設定します。同期ONの動作は他プレイヤーにも、OFFの動作は本人だけへ適用します。未選択時は左を空にします。SubmenuはChildren階層を作成してその中へ移動し、左でアイコンと名前だけを編集します。右は階層移動・追加・項目削除を担当します。項目削除では生成ギミック本体もSceneから除去し、未登録で保持しません。このカテゴリでは3Dプレビューを表示しません。詳細は[Expression Menu](./features/expression-menu.md)を参照します。
 
 Shader別の視覚的なpreset、表情presetと左右連動、Avatarへの一括適用と検証、workflow session永続化は未実装です。
 

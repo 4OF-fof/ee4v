@@ -29,6 +29,8 @@ namespace Ee4v.ExpressionMenu
         private int _selected = -1;
         private string _error;
         private ModularAvatarMenuItem _selectAddedSource;
+        private bool _openAddedSubmenu;
+        private VisualElement _menuHost;
         private static string T(string key) => I18N.Get("expressionMenu." + key);
 
         public ExpressionMenuView(AvatarEditingContext context, bool showsEditSource = false)
@@ -58,8 +60,14 @@ namespace Ee4v.ExpressionMenu
                 if (_source > _sources.Count) _source = 0;
                 if (_selectAddedSource != null)
                 {
-                    LocateSource(_selectAddedSource);
+                    if (LocateSource(_selectAddedSource) && _openAddedSubmenu)
+                    {
+                        _path.Add(_selected);
+                        _selected = -1;
+                        _offset = 0;
+                    }
                     _selectAddedSource = null;
+                    _openAddedSubmenu = false;
                 }
                 _page = _source == 0 ? _root : _sources[_source - 1];
                 _submenuEntry = null;
@@ -82,7 +90,17 @@ namespace Ee4v.ExpressionMenu
 
         private void Build()
         {
-            Add(UiTextFactory.Create(T("title"), UiClassNames.SectionTitle));
+            if (!string.IsNullOrEmpty(_error))
+                Add(UiTextFactory.CreateHelpBox(_error, HelpBoxMessageType.Error));
+            var split = new VisualElement { name = "expressionMenuSplit" };
+            split.AddToClassList("ee4v-expression-menu__split");
+            Add(split);
+            var selectedEntry = _selected >= 0 && _selected < _page.Entries.Count ? _page.Entries[_selected] : null;
+            split.Add(new ExpressionMenuGimmickCreator(_context, (selectedEntry ?? _submenuEntry)?.Owner as ModularAvatarMenuItem, Refresh));
+            _menuHost = new ScrollView(ScrollViewMode.Vertical) { name = "expressionMenuEditor" };
+            _menuHost.AddToClassList("ee4v-expression-menu__editor");
+            split.Add(_menuHost);
+            _menuHost.Add(UiTextFactory.Create(T("title"), UiClassNames.SectionTitle));
             if (_showsEditSource)
             {
                 var choices = new List<string> { T("effective") };
@@ -93,13 +111,11 @@ namespace Ee4v.ExpressionMenu
                     _source = choices.IndexOf(evt.newValue);
                     _path.Clear(); _offset = 0; _selected = -1; Refresh();
                 });
-                Add(source);
-                Add(UiTextFactory.Create(_page.Name, UiClassNames.SecondaryText));
+                _menuHost.Add(source);
+                _menuHost.Add(UiTextFactory.Create(_page.Name, UiClassNames.SecondaryText));
             }
-            if (!string.IsNullOrEmpty(_error))
-                Add(UiTextFactory.CreateHelpBox(_error, HelpBoxMessageType.Error));
             BuildRadial();
-            if (_selected >= 0 && _selected < _page.Entries.Count) BuildSettings(_page.Entries[_selected]);
+            if (selectedEntry != null) BuildSettings(selectedEntry);
             else if (_submenuEntry != null) BuildSettings(_submenuEntry, true);
         }
 
@@ -109,25 +125,24 @@ namespace Ee4v.ExpressionMenu
             ring.AddToClassList("ee4v-expression-menu__ring");
             var labels = new VisualElement { pickingMode = PickingMode.Ignore };
             labels.AddToClassList("ee4v-expression-menu__labels");
-            Add(ring);
+            _menuHost.Add(ring);
             var paged = _page.Entries.Count > 8;
             var count = Math.Min(paged ? 7 : 8, _page.Entries.Count - _offset);
             var hasNext = paged && _offset + count < _page.Entries.Count;
             var slices = count + 2;
             var addSlot = slices - 1;
-            var back = new UiButton(T("back"), () =>
+            var initialPage = _offset == 0 && _path.Count == 0;
+            var back = new UiButton(T(initialPage ? "closeEditor" : "back"), () =>
             {
                 if (_offset > 0) _offset = Math.Max(0, _offset - 7);
                 else if (_path.Count > 0) _path.RemoveAt(_path.Count - 1);
-                _selected = -1; Refresh();
-            }, variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SecondaryText);
-            var backSlice = PlaceSlot(ring, labels, back, 0, slices, Resources.Load<Texture2D>("Vrc3/BSX_GM_Back"));
-            backSlice.SetEnabled(_offset > 0 || _path.Count > 0);
-            if (!backSlice.enabledSelf)
-            {
-                back.SetLabelColor(Color.gray);
-                back.Content.Q<Image>().tintColor = Color.gray;
-            }
+                _selected = -1;
+                _error = null;
+                Refresh();
+            }, tooltip: initialPage ? T("closeEditorHint") : T("back"),
+                variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SecondaryText);
+            PlaceSlot(ring, labels, back, 0, slices, initialPage ? FluentUiIcons.LoadTexture("dismiss.png") :
+                Resources.Load<Texture2D>("Vrc3/BSX_GM_Back"));
             for (var slot = 0; slot < count; slot++)
             {
                 var index = _offset + slot;
@@ -139,11 +154,13 @@ namespace Ee4v.ExpressionMenu
                 }, variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SecondaryText);
                 if (entry.Submenu != null)
                     button.AddManipulator(new ContextualMenuManipulator(evt =>
-                        evt.menu.AppendAction(T("settings"), _ => SelectControl(index))));
+                    {
+                        if (CanInteract(entry)) evt.menu.AppendAction(T("settings"), _ => SelectControl(index));
+                    }));
                 button.tooltip = entry.Control.name + "\n" + entry.Control.type + " / " +
                     (entry.Owner == null ? T("ambiguous") : entry.Owner.name);
-                var icon = entry.Control.icon != null ? entry.Control.icon : Resources.Load<Texture2D>("Vrc3/BSX_GM_Default");
-                PlaceSlot(ring, labels, button, slot + 1, slices, icon, _selected == index);
+                var icon = ExpressionMenuModel.DisplayIcon(entry.Control.icon);
+                var slice = PlaceSlot(ring, labels, button, slot + 1, slices, icon, _selected == index);
                 var subIcon = RadialMenuUtility.GetSubIcon(entry.Control.type);
                 if (subIcon != null)
                 {
@@ -152,6 +169,7 @@ namespace Ee4v.ExpressionMenu
                     indicator.Add(new Image { image = subIcon, scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore });
                     button.Content.Add(indicator);
                 }
+                slice.SetAvailable(CanInteract(entry), button);
             }
             if (hasNext)
             {
@@ -161,15 +179,10 @@ namespace Ee4v.ExpressionMenu
             }
             else
             {
-                var add = new UiButton(T("addItem"), ShowTemplates, tooltip: T("add"), variant: UiButtonVariant.Ghost,
+                var add = new UiButton(T("addItem"), ShowAddMenu, tooltip: T("add"), variant: UiButtonVariant.Ghost,
                     labelTypographyClassName: UiClassNames.SecondaryText);
                 var addSlice = PlaceSlot(ring, labels, add, addSlot, slices, FluentUiIcons.LoadTexture("add.png"));
-                addSlice.SetEnabled(_context.Edits.CanEditPrefab() && !EditorApplication.isPlayingOrWillChangePlaymode);
-                if (!addSlice.enabledSelf)
-                {
-                    add.SetLabelColor(Color.gray);
-                    add.Content.Q<Image>().tintColor = Color.gray;
-                }
+                addSlice.SetAvailable(CanAddToPage(), add);
             }
             var center = RadialMenuUtility.Prefabs.NewCircle(RadialMenu.Size / 3f,
                 RadialMenuUtility.Colors.RadialInner, RadialMenuUtility.Colors.CustomBorder, Position.Absolute);
@@ -199,19 +212,20 @@ namespace Ee4v.ExpressionMenu
                 MoveCursor(ring.contentRect.center);
                 foreach (var slice in radialSlices) slice.SetHovered(false);
             });
-            if (_page.Entries.Count == 0) Add(UiTextFactory.Create(T("empty"), UiClassNames.SecondaryText));
+            if (_page.Entries.Count == 0) _menuHost.Add(UiTextFactory.Create(T("empty"), UiClassNames.SecondaryText));
         }
 
         private void SelectControl(int index)
         {
+            if (index < 0 || index >= _page.Entries.Count || !CanInteract(_page.Entries[index])) return;
             _selected = index;
             _error = null;
             Refresh();
         }
 
-        private void LocateSource(UnityEngine.Object source)
+        private bool LocateSource(UnityEngine.Object source)
         {
-            if (_root == null || source == null) return;
+            if (_root == null || source == null) return false;
             var visited = new HashSet<MenuPage>();
             var path = new List<int>();
             int selected = -1;
@@ -233,7 +247,7 @@ namespace Ee4v.ExpressionMenu
                 }
                 return false;
             }
-            if (!Find(_root)) return;
+            if (!Find(_root)) return false;
             _source = 0;
             _path.Clear();
             _path.AddRange(path);
@@ -241,17 +255,26 @@ namespace Ee4v.ExpressionMenu
             var page = _root;
             foreach (var index in path) page = page.Entries[index].Submenu;
             _offset = page.Entries.Count > 8 ? selected / 7 * 7 : 0;
+            return true;
         }
 
         private void OpenSubmenu(int index)
         {
-            if (index < 0 || index >= _page.Entries.Count || _page.Entries[index].Submenu == null) return;
+            if (index < 0 || index >= _page.Entries.Count || _page.Entries[index].Submenu == null ||
+                !CanInteract(_page.Entries[index])) return;
             _path.Add(index);
             _selected = -1;
             _offset = 0;
             _error = null;
             Refresh();
         }
+
+        private bool CanInteract(MenuEntry entry) => entry.CanEdit && _context.Edits.CanEditPrefab() &&
+            (!(entry.Owner is Component component) || ExpressionMenuTemplateModel.CanEdit(_context, component));
+
+        // Install target assets are references; new controls are stored in a separate prefab.
+        private bool CanAddToPage() => _context.Edits.CanEditPrefab() && !EditorApplication.isPlayingOrWillChangePlaymode &&
+            (_page.ChildRoot == null || ExpressionMenuTemplateModel.CanEdit(_context, _page.ChildRoot));
 
         private static RadialSlice PlaceSlot(VisualElement ring, VisualElement labels, UiButton button, int index, int count,
             Texture2D icon, bool selected = false)
@@ -322,6 +345,16 @@ namespace Ee4v.ExpressionMenu
                 UpdateColors();
             }
 
+            public void SetAvailable(bool available, UiButton button)
+            {
+                SetEnabled(available);
+                _content.SetEnabled(available);
+                button.SetLabelColor(available ? new Color(0.824f, 0.824f, 0.824f) : Color.gray);
+                _content.Query<Image>().ForEach(icon => icon.tintColor = available ? Color.white : Color.gray);
+                _highlightInitialized = false;
+                UpdateColors();
+            }
+
             public override bool ContainsPoint(Vector2 localPoint)
             {
                 var radius = Mathf.Min(contentRect.width, contentRect.height) * 0.5f;
@@ -337,7 +370,8 @@ namespace Ee4v.ExpressionMenu
                 if (_highlightInitialized && _highlighted == highlighted) return;
                 _highlightInitialized = true;
                 _highlighted = highlighted;
-                _visual.VertexColor = highlighted ? RadialMenuUtility.Colors.CustomSelected : RadialMenuUtility.Colors.CustomMain;
+                _visual.VertexColor = !enabledSelf ? new Color(0.18f, 0.18f, 0.18f) :
+                    highlighted ? RadialMenuUtility.Colors.CustomSelected : RadialMenuUtility.Colors.CustomMain;
                 _visual.CenterColor = highlighted ? RadialMenuUtility.Colors.CenterSelected : RadialMenuUtility.Colors.CenterIdle;
                 StopScaleAnimation();
                 _scaleAnimation = _content.experimental.animation.Scale(highlighted ? 1.1f : 1f, 100);
@@ -355,24 +389,29 @@ namespace Ee4v.ExpressionMenu
 
         private void BuildSettings(MenuEntry entry, bool currentSubmenu = false)
         {
-            Add(UiTextFactory.Create(T("settings"), UiClassNames.SectionTitle));
+            var host = _menuHost;
+            host.Add(UiTextFactory.Create(T("settings"), UiClassNames.SectionTitle));
             var maSource = entry.Owner as ModularAvatarMenuItem;
-            var effects = ExpressionMenuTemplateModel.Effects(maSource);
-            var simple = effects.Length > 0;
+            var simple = ExpressionMenuTemplateModel.HasActions(maSource);
+            var submenuControl = entry.Control.type == VRCExpressionsMenu.Control.ControlType.SubMenu;
+            var compact = simple || submenuControl && maSource != null &&
+                ExpressionMenuTemplateModel.IsOwned(maSource.gameObject) && maSource.MenuSource == SubmenuSource.Children;
             var canEdit = entry.CanEdit && _context.Edits.CanEditPrefab() && !EditorApplication.isPlayingOrWillChangePlaymode &&
                 (!(entry.Owner is Component sourceComponent) || ExpressionMenuTemplateModel.CanEdit(_context, sourceComponent));
-            if (!canEdit) Add(UiTextFactory.CreateHelpBox(T("readOnly"), HelpBoxMessageType.Info));
-            if (!simple)
+            if (!canEdit) host.Add(UiTextFactory.CreateHelpBox(T("readOnly"), HelpBoxMessageType.Info));
+            if (!compact)
             {
                 var owner = UiTextFactory.CreateObjectField(T("source"));
-                owner.SetValueWithoutNotify(entry.Owner); owner.SetEnabled(false); Add(owner);
+                owner.SetValueWithoutNotify(entry.Owner); owner.SetEnabled(false); host.Add(owner);
             }
             if (entry.Submenu != null && !currentSubmenu)
             {
                 var index = _selected;
-                Add(new UiButton(T("openSubmenu"), () => OpenSubmenu(index)));
+                var open = new UiButton(T("openSubmenu"), () => OpenSubmenu(index));
+                open.SetEnabled(canEdit);
+                host.Add(open);
             }
-            var settingsStart = childCount;
+            var settingsStart = host.childCount;
             var draft = ExpressionMenuModel.Copy(entry.Control);
             if (entry.Owner is VRCExpressionsMenu menu) draft.subMenu = menu.controls[entry.Index].subMenu;
             else if (maSource != null) draft.subMenu = maSource.Control.subMenu;
@@ -385,8 +424,11 @@ namespace Ee4v.ExpressionMenu
                 ExpressionMenuModel.Update(entry, draft);
                 if (maSource != null)
                 {
-                    maSource.isSynced = synced; maSource.isSaved = saved;
-                    maSource.isDefault = defaultValue; maSource.automaticValue = automaticValue;
+                    if (!simple)
+                    {
+                        maSource.isSynced = synced; maSource.isSaved = saved;
+                        maSource.isDefault = defaultValue; maSource.automaticValue = automaticValue;
+                    }
                     PrefabUtility.RecordPrefabInstancePropertyModifications(maSource);
                     EditorUtility.SetDirty(maSource);
                     ExpressionMenuInstaller.SaveGeneratedPrefab(maSource.gameObject);
@@ -401,28 +443,29 @@ namespace Ee4v.ExpressionMenu
                 change();
                 ApplyDraft();
             });
-            AddText(T("name"), draft.name, value => Change(() => draft.name = value));
-            var icon = UiTextFactory.CreateObjectField(T("icon"));
-            icon.objectType = typeof(Texture2D); icon.allowSceneObjects = false;
-            icon.SetValueWithoutNotify(draft.icon);
-            icon.RegisterValueChangedCallback(evt => Change(() => draft.icon = evt.newValue as Texture2D)); Add(icon);
-            if (maSource != null)
+            if (maSource == null || !simple && !submenuControl)
             {
-                AddToggle(T(simple ? "syncPlayers" : "synced"), synced, value => Change(() => synced = value));
-                if (!simple)
+                AddText(T("name"), draft.name, value => Change(() => draft.name = value), host);
+                var icon = UiTextFactory.CreateObjectField(T("icon"));
+                icon.objectType = typeof(Texture2D); icon.allowSceneObjects = false;
+                icon.SetValueWithoutNotify(draft.icon);
+                icon.RegisterValueChangedCallback(evt => Change(() => draft.icon = evt.newValue as Texture2D)); host.Add(icon);
+            }
+            if (maSource != null && !submenuControl && !simple)
+            {
+                AddToggle(T("synced"), synced, value => Change(() => synced = value), host);
+                if (!compact)
                 {
-                    AddToggle(T("saved"), saved, value => Change(() => saved = value));
-                    AddToggle(T("defaultValue"), defaultValue, value => Change(() => defaultValue = value));
-                    AddToggle(T("automaticValue"), automaticValue, value => Change(() => automaticValue = value));
+                    AddToggle(T("saved"), saved, value => Change(() => saved = value), host);
+                    AddToggle(T("defaultValue"), defaultValue, value => Change(() => defaultValue = value), host);
+                    AddToggle(T("automaticValue"), automaticValue, value => Change(() => automaticValue = value), host);
                 }
             }
-            if (simple)
-                Add(new ExpressionMenuTemplateEditor(_context, maSource));
-            else
+            if (!compact)
             {
                 var type = UiTextFactory.CreateEnumField(T("type"), draft.type);
-                Add(type);
-                var details = new VisualElement(); Add(details);
+                host.Add(type);
+                var details = new VisualElement(); host.Add(details);
                 void BuildDetails()
                 {
                     details.Clear();
@@ -494,58 +537,49 @@ namespace Ee4v.ExpressionMenu
                 }));
                 BuildDetails();
             }
-            Add(new UiButton(T("remove"), () => Run(() =>
+            host.Add(new UiButton(T("remove"), () => Run(() =>
             {
                 if (!canEdit) throw new InvalidOperationException(T("readOnly"));
-                ExpressionMenuModel.Remove(entry);
+                if (simple && ExpressionMenuTemplateModel.IsOwned(maSource.gameObject))
+                    ExpressionMenuTemplateModel.Delete(_context, maSource);
+                else ExpressionMenuModel.Remove(entry);
                 if (currentSubmenu && _path.Count > 0) _path.RemoveAt(_path.Count - 1);
                 _selected = -1; NotifyChanged();
             }), variant: UiButtonVariant.Ghost));
             if (!canEdit)
-                foreach (var field in Children().Skip(settingsStart)) field.SetEnabled(false);
+                foreach (var field in host.Children().Skip(settingsStart)) field.SetEnabled(false);
         }
 
         private void AddText(string label, string value, Action<string> changed, VisualElement host = null)
         {
             var input = new InputField(new InputFieldState(value)) { IsDelayed = true };
             input.ValueChanged += changed;
-            (host ?? this).Add(new FormInput(label, input));
+            (host ?? _menuHost).Add(new FormInput(label, input));
         }
 
-        private void AddToggle(string label, bool value, Action<bool> changed)
+        private void AddToggle(string label, bool value, Action<bool> changed, VisualElement host = null)
         {
             var toggle = UiTextFactory.CreateToggle(label);
             toggle.SetValueWithoutNotify(value);
             toggle.RegisterValueChangedCallback(evt => changed(evt.newValue));
-            Add(toggle);
+            (host ?? _menuHost).Add(toggle);
         }
 
-        private void AddControl()
+        private void AddControl(bool submenu)
         {
-            _selectAddedSource = ExpressionMenuTemplateModel.Create(_context, null,
-                T("newControl"), _page.Asset, _page.ChildRoot);
+            if (!CanAddToPage()) throw new InvalidOperationException(T("readOnly"));
+            _selectAddedSource = ExpressionMenuTemplateModel.Create(_context,
+                T(submenu ? "newSubmenu" : "newControl"), _page.Asset, _page.ChildRoot, submenu);
+            _openAddedSubmenu = submenu;
             NotifyChanged();
         }
 
-        private void ShowTemplates()
+        private void ShowAddMenu()
         {
             var choices = new GenericMenu();
-            choices.AddItem(UiTextFactory.CreateGuiContent(T("plainTemplate")), false, () => Run(AddControl));
-            choices.AddSeparator("");
-            foreach (MenuTemplateKind kind in Enum.GetValues(typeof(MenuTemplateKind)))
-            {
-                var template = kind;
-                choices.AddItem(UiTextFactory.CreateGuiContent(TemplateText.Get("kind" + template)), false,
-                    () => Run(() => AddTemplate(template)));
-            }
+            choices.AddItem(UiTextFactory.CreateGuiContent(T("addControl")), false, () => Run(() => AddControl(false)));
+            choices.AddItem(UiTextFactory.CreateGuiContent(T("addSubmenu")), false, () => Run(() => AddControl(true)));
             choices.ShowAsContext();
-        }
-
-        private void AddTemplate(MenuTemplateKind template)
-        {
-            _selectAddedSource = ExpressionMenuTemplateModel.Create(_context, template,
-                TemplateText.Get("new" + template), _page.Asset, _page.ChildRoot);
-            NotifyChanged();
         }
 
         private void NotifyChanged()

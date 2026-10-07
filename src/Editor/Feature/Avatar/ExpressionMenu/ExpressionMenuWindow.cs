@@ -1,5 +1,8 @@
 using Ee4v.AvatarEditing;
 using UnityEditor;
+using UnityEngine;
+using UnityEngine.UIElements;
+using Ee4v.UI;
 
 namespace Ee4v.ExpressionMenu
 {
@@ -14,6 +17,13 @@ namespace Ee4v.ExpressionMenu
         protected override void CreateFeature() { }
         protected override void ClearFeatureData() { }
         protected override void DisposeFeature() { }
-        protected override void RenderFeature() => Context.ControlsHost.Add(new ExpressionMenuView(Context, showsEditSource: true));
+        protected override void RenderFeature()
+        {
+            minSize = new Vector2(800f, 560f);
+            UiComposition.Prepare(Context.ControlsHost, "Editor/Feature/Avatar/ExpressionMenu/expression-menu.uss");
+            Context.ControlsHost.AddToClassList("ee4v-expression-menu__standalone-host");
+            Context.ControlsHost.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            Context.ControlsHost.Add(new ExpressionMenuView(Context, showsEditSource: true));
+        }
     }
 }

@@ -12,7 +12,8 @@
     flex-direction: row;
 }
 
-.ee4v-modification-workflow__face-expression-host {
+.ee4v-modification-workflow__face-expression-host,
+.ee4v-modification-workflow__expression-menu-host {
     min-width: 0;
     min-height: 0;
     flex-grow: 1;
@@ -51,12 +52,6 @@
     border-left-width: var(--ee4v-border-hairline);
     border-left-color: var(--ee4v-color-border-default);
     background-color: var(--ee4v-color-surface-subtle);
-}
-
-.ee4v-modification-workflow__controls-column--without-preview {
-    width: auto;
-    flex-grow: 1;
-    border-left-width: 0;
 }
 
 .ee4v-modification-workflow__appearance-header {
