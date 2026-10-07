@@ -23,6 +23,7 @@ Setting は設定定義の登録、値の検証、読込、保存、変更通知
 | `GlobalDataSettings` | ee4v共有データのルートと変更通知を公開する |
 | `ProjectAssetSettings` | Project内で生成するAssetの共通ルートを解決する |
 | `CommaSeparatedListSettingDrawer` | 行編集式の一覧設定UIと区切り文字付き保存値の解析を提供する |
+| `PathSettingDrawer` | 文字列設定へフォルダー・ファイル選択付きPathFieldを登録する |
 
 ## `SettingDefinitionBase`
 
@@ -122,6 +123,10 @@ Project の保存では `ProjectSettings` フォルダがなければ作成し�
 
 標準 drawer は `bool`、`int`、`float`、`double`、`string`、`Color`、enum に対応します。未対応型は警告用 `HelpBox` を表示します。
 
+文字列設定の入力欄は最小幅120px、パス入力欄は最小幅240pxとし、内容の必要幅を基準に伸縮します。最大幅はラベルと余白を除いた枠内の利用可能幅です。入力欄の余白を含む左クリックで内部のTextFieldへフォーカスします。`PathSettingDrawer.Register`で文字列設定をフォルダー選択またはファイル選択付きの`PathField`へ変更できます。手入力はEnterまたはフォーカスを外した時に保存し、ダイアログで選択した値は即時保存します。パス入力行の残り幅が最小幅に満たない場合は入力欄を次の行へ折り返します。
+
 独自 drawer は `SettingDrawerContext<T>` の `Value` を表示し、変更時に `NotifyValueChanged` を呼びます。通知された値は通常の `ISettingsService.Set` と同じ検証と保存を通ります。
 
 現行の Unity 2022.3 実装では、文字を持つ Settings UI を `UiTextFactory` 経由で作成します。
+
+パス入力の幅は、入力中の文字の描画幅と余白・選択アイコンの幅から求めます。内容の追加・削除、選択ダイアログでの変更、Window幅の変更で再計測し、最小幅と枠内の利用可能幅の間に収めます。

@@ -14,11 +14,11 @@ namespace Ee4v.FaceExpression
 
         private readonly Action _repaint;
         private readonly PreviewOrbitController _orbit;
+        private readonly PreviewOrbitController _thumbnailOrbit;
         private AvatarPreviewRenderer _utility;
         private AvatarPreviewRenderer _thumbnailUtility;
         private GameObject _sourceAvatar;
         private GameObject _avatar;
-        private SkinnedMeshRenderer _bodyRenderer;
         private readonly Dictionary<string, SkinnedMeshRenderer> _renderers =
             new Dictionary<string, SkinnedMeshRenderer>(StringComparer.Ordinal);
         private readonly Dictionary<string, SkinnedMeshRenderer> _thumbnailRenderers =
@@ -29,6 +29,7 @@ namespace Ee4v.FaceExpression
             _orbit = new PreviewOrbitController(
                 PreviewControlHash,
                 repaint);
+            _thumbnailOrbit = new PreviewOrbitController(PreviewControlHash, null);
         }
 
         public void SetAvatar(GameObject avatar)
@@ -42,7 +43,6 @@ namespace Ee4v.FaceExpression
             _utility = new AvatarPreviewRenderer(avatar);
             _sourceAvatar = avatar;
             _avatar = _utility.Root;
-            _bodyRenderer = FaceExpressionClipEditor.FindBodyRenderer(_avatar);
             foreach (var renderer in _avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 if (renderer.sharedMesh == null) continue;
@@ -100,34 +100,45 @@ namespace Ee4v.FaceExpression
 
         public void ResetView()
         {
-            if (_avatar == null)
+            if (_utility == null)
             {
                 return;
             }
 
-            var animator = _avatar.GetComponentInChildren<Animator>();
+            ResetView(_orbit, _utility);
+        }
+
+        private static Bounds GetFocusBounds(AvatarPreviewRenderer utility)
+        {
+            var avatar = utility.Root;
+            var animator = avatar.GetComponentInChildren<Animator>();
             if (animator != null && animator.isHuman)
             {
                 var head = animator.GetBoneTransform(HumanBodyBones.Head);
                 if (head != null)
                 {
-                    var bounds = CalculateBounds();
+                    var bounds = CalculateBounds(utility);
                     var centerOffset = Mathf.Max(0.12f, bounds.size.y * 0.2f) * 0.15f;
                     var focusSize = Mathf.Max(0.12f, bounds.size.y * 0.07f);
-                    SetView(new Bounds(
+                    return new Bounds(
                         head.position + Vector3.up * centerOffset,
-                        Vector3.one * focusSize));
-                    return;
+                        Vector3.one * focusSize);
                 }
             }
 
-            if (_bodyRenderer != null)
+            var bodyRenderer = FaceExpressionClipEditor.FindBodyRenderer(avatar);
+            if (bodyRenderer != null)
             {
-                SetUpperView(_utility.GetBounds(_bodyRenderer));
-                return;
+                var bounds = utility.GetBounds(bodyRenderer);
+                var size = Mathf.Max(0.12f, bounds.size.y * 0.25f);
+                var center = new Vector3(
+                    bounds.center.x,
+                    bounds.max.y - size * 0.5f,
+                    bounds.center.z);
+                return new Bounds(center, Vector3.one * size);
             }
 
-            SetView(CalculateBounds());
+            return CalculateBounds(utility);
         }
 
         public void Draw(Rect rect)
@@ -160,7 +171,6 @@ namespace Ee4v.FaceExpression
                 return null;
             }
 
-            ConfigureCamera();
             if (_thumbnailUtility == null)
             {
                 _thumbnailUtility = new AvatarPreviewRenderer(_sourceAvatar, isolatedSnapshot: true);
@@ -169,10 +179,11 @@ namespace Ee4v.FaceExpression
                     if (renderer.sharedMesh == null) continue;
                     _thumbnailRenderers[AnimationUtility.CalculateTransformPath(renderer.transform, _thumbnailUtility.Root.transform)] = renderer;
                 }
+                ResetView(_thumbnailOrbit, _thumbnailUtility);
             }
-            _thumbnailUtility.Camera.transform.SetPositionAndRotation(_utility.Camera.transform.position, _utility.Camera.transform.rotation);
-            _thumbnailUtility.Camera.nearClipPlane = _utility.Camera.nearClipPlane;
-            _thumbnailUtility.Camera.farClipPlane = _utility.Camera.farClipPlane;
+            _thumbnailOrbit.ConfigureCamera(
+                _thumbnailUtility.Camera,
+                _thumbnailUtility.Root.transform.rotation);
             ApplyChannels(_thumbnailUtility, _thumbnailRenderers, channels);
             var texture = _thumbnailUtility.Render(new Rect(0f, 0f, width, height));
             var previous = RenderTexture.active;
@@ -213,22 +224,15 @@ namespace Ee4v.FaceExpression
             Cleanup();
         }
 
-        private void SetView(Bounds bounds)
+        private static void ResetView(
+            PreviewOrbitController orbit,
+            AvatarPreviewRenderer utility)
         {
+            var bounds = GetFocusBounds(utility);
             var radius = Mathf.Max(0.05f, bounds.extents.magnitude);
-            _orbit.Reset(
+            orbit.Reset(
                 bounds.center,
-                radius / Mathf.Tan(15f * Mathf.Deg2Rad) * 1.1f);
-        }
-
-        private void SetUpperView(Bounds bounds)
-        {
-            var size = Mathf.Max(0.12f, bounds.size.y * 0.25f);
-            var center = new Vector3(
-                bounds.center.x,
-                bounds.max.y - size * 0.5f,
-                bounds.center.z);
-            SetView(new Bounds(center, Vector3.one * size));
+                radius / Mathf.Tan(utility.FieldOfView * 0.5f * Mathf.Deg2Rad) * 1.1f);
         }
 
         private void ConfigureCamera()
@@ -238,20 +242,20 @@ namespace Ee4v.FaceExpression
                 _avatar.transform.rotation);
         }
 
-        private Bounds CalculateBounds()
+        private static Bounds CalculateBounds(AvatarPreviewRenderer utility)
         {
             var hasBounds = false;
-            var bounds = new Bounds(_avatar.transform.position, Vector3.one * 0.2f);
-            foreach (var renderer in _avatar.GetComponentsInChildren<Renderer>(true))
+            var bounds = new Bounds(utility.Root.transform.position, Vector3.one * 0.2f);
+            foreach (var renderer in utility.Root.GetComponentsInChildren<Renderer>(true))
             {
                 if (!hasBounds)
                 {
-                    bounds = _utility.GetBounds(renderer);
+                    bounds = utility.GetBounds(renderer);
                     hasBounds = true;
                 }
                 else
                 {
-                    bounds.Encapsulate(_utility.GetBounds(renderer));
+                    bounds.Encapsulate(utility.GetBounds(renderer));
                 }
             }
 
@@ -261,7 +265,6 @@ namespace Ee4v.FaceExpression
         private void Cleanup()
         {
             _orbit.CancelInteraction();
-            _bodyRenderer = null;
             _renderers.Clear();
             _thumbnailUtility?.Dispose();
             _thumbnailUtility = null;

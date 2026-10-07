@@ -216,9 +216,15 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void SelectPrefabCard(int? siblingIndex, string name)
+        private void SelectPrefabCard(int? siblingIndex, string name, bool confirmExpressionChanges = true)
         {
             if (_avatarContext.SelectedPrefabSiblingIndex == siblingIndex)
+            {
+                return;
+            }
+
+            if (confirmExpressionChanges && _faceExpressionEditor != null &&
+                !_faceExpressionEditor.TryConfirmNavigation(this, () => SelectPrefabCard(siblingIndex, name, false)))
             {
                 return;
             }

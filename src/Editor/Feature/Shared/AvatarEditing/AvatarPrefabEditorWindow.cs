@@ -231,6 +231,7 @@ namespace Ee4v.AvatarEditing
                             Render();
                         });
                     FeatureHeader.Add(_bodyPartSelector);
+                    Context.Preview.FocusBodyPart(Context.SelectedBodyPart, true);
                 }
                 _bodyPartSelector.Refresh(Context.SelectedBodyPart, IsAvailable);
             }

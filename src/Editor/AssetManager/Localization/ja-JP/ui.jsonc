@@ -291,6 +291,11 @@
     "pin": "ピン"
   },
   "notice": {
+    "syncFailed": "データソースの同期に失敗しました。\n{0}",
+    "syncFolderRequired": "選択中のデータソースの保存先フォルダーを設定してください。",
+    "syncDatabaseRequired": "BOOTH Library Managerのデータベースの場所を設定してください。",
+    "syncFolderMissing": "保存先フォルダーが見つかりません：{0}",
+    "syncDatabaseMissing": "BOOTH Library Managerのデータベースが見つかりません：{0}",
     "noVariants": "このProjectに表示できるVariantはありません。名前や説明で検索を絞り込んでいる場合は、検索条件を確認してください。",
     "selectVariant": "詳細を確認するVariantを選択してください。",
     "noItems": "この表示に一致するItemはありません。",

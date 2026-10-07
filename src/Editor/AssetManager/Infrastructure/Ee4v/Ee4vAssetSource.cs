@@ -43,19 +43,21 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             var assetsPath = Path.Combine(
                 libraryPath,
                 AssetsDirectoryName);
-            if (!Directory.Exists(assetsPath))
-            {
-                return new AssetSourceSnapshot(
-                    Array.Empty<AssetSourceSnapshotItem>());
-            }
-
             try
             {
                 var seen = new HashSet<string>(StringComparer.Ordinal);
-                var items = new List<AssetSourceSnapshotItem>();
+                var folder = ExternalAssetSource.ReadEe4vFolder(libraryPath);
+                var items = new List<AssetSourceSnapshotItem>(folder.Items);
+                foreach (var item in items)
+                {
+                    if (!seen.Add(item.SourceId))
+                    {
+                        throw Error("Duplicate ee4v source id was found.");
+                    }
+                }
                 var files = new List<AssetSourceSnapshotFile>();
-                foreach (var entryPath in Directory
-                             .GetDirectories(assetsPath)
+                foreach (var entryPath in (Directory.Exists(assetsPath)
+                             ? Directory.GetDirectories(assetsPath) : Array.Empty<string>())
                              .OrderBy(path => path, StringComparer.Ordinal))
                 {
                     var metadataPath = Path.Combine(
@@ -190,6 +192,24 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
         public IEe4vDeleteOperation BeginDelete(
             IReadOnlyList<AssetFile> files)
         {
+            var source = files ?? Array.Empty<AssetFile>();
+            var folderFiles = source.Where(ExternalAssetSource.IsEe4vFolderFile).ToArray();
+            var folder = ExternalAssetSource.BeginDeleteEe4vFolderFiles(folderFiles);
+            try
+            {
+                return new CombinedDeleteOperation(folder,
+                    BeginDeletePairs(source.Except(folderFiles).ToArray()));
+            }
+            catch
+            {
+                folder.Dispose();
+                throw;
+            }
+        }
+
+        private IEe4vDeleteOperation BeginDeletePairs(
+            IReadOnlyList<AssetFile> files)
+        {
             try
             {
                 var source = files ?? Array.Empty<AssetFile>();
@@ -322,6 +342,11 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             }
 
             var metadataPath = Path.Combine(entryPath, MetadataFileName);
+            if (ExternalAssetSource.IsEe4vFolderFile(sourceFile))
+            {
+                ExternalAssetSource.UpdateEe4vFolder(sourceFile, name, description, normalizedTags);
+                return;
+            }
             var metadata = ReadMetadata(metadataPath);
             if (!string.Equals(
                     metadata.id,
@@ -622,6 +647,30 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
 
             internal string OriginalPath { get; }
             internal string StagedPath { get; }
+        }
+
+        private sealed class CombinedDeleteOperation : IEe4vDeleteOperation
+        {
+            private readonly IEe4vDeleteOperation _folder;
+            private readonly IEe4vDeleteOperation _pairs;
+
+            internal CombinedDeleteOperation(IEe4vDeleteOperation folder, IEe4vDeleteOperation pairs)
+            {
+                _folder = folder;
+                _pairs = pairs;
+            }
+
+            public void Commit()
+            {
+                _folder.Commit();
+                _pairs.Commit();
+            }
+
+            public void Dispose()
+            {
+                try { _pairs.Dispose(); }
+                finally { _folder.Dispose(); }
+            }
         }
 
         private sealed class Ee4vDeleteOperation

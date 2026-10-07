@@ -291,6 +291,11 @@
     "pin": "Pin"
   },
   "notice": {
+    "syncFailed": "Datasource synchronization failed.\n{0}",
+    "syncFolderRequired": "Set the folder path for the selected datasource.",
+    "syncDatabaseRequired": "Set the BOOTH Library Manager database path.",
+    "syncFolderMissing": "The datasource folder was not found: {0}",
+    "syncDatabaseMissing": "The BOOTH Library Manager database was not found: {0}",
     "noVariants": "No Variants match this view in the current project. Check the search filters if you are searching by name or description.",
     "selectVariant": "Select a Variant to view its details.",
     "noItems": "No items match this view.",

@@ -33,6 +33,7 @@
     --ee4v-color-selection-soft: rgba(44, 93, 135, 0.42);
     --ee4v-color-selection-soft-opaque: #334859;
     --ee4v-color-selection-pressed: #254F73;
+    --ee4v-color-overlay-surface: rgba(56, 56, 56, 0.45);
     --ee4v-color-overlay-border: rgba(0, 0, 0, 0.45);
     --ee4v-color-overlay-hover: rgba(64, 64, 64, 0.6);
     --ee4v-color-scroll-thumb: rgba(194, 194, 194, 0.44);
@@ -58,13 +59,18 @@
     --ee4v-color-success: #70B460;
     --ee4v-color-warning: #DCB448;
     --ee4v-color-error: #DC5C5C;
+    --ee4v-color-danger-action: #B73737;
+    --ee4v-color-danger-action-hover: #A22F2F;
+    --ee4v-color-danger-action-pressed: #8C2929;
     --ee4v-color-info-surface-soft: rgba(58, 121, 187, 0.10);
     --ee4v-color-info-surface-strong: rgba(58, 121, 187, 0.22);
     --ee4v-color-warning-surface-soft: rgba(220, 180, 72, 0.10);
+    --ee4v-color-warning-surface-soft-opaque: #48443A;
     --ee4v-color-warning-surface-strong: rgba(220, 180, 72, 0.22);
     --ee4v-color-warning-surface-hover: rgba(220, 180, 72, 0.32);
     --ee4v-color-warning-surface-pressed: rgba(220, 180, 72, 0.40);
     --ee4v-color-error-surface-soft: rgba(220, 92, 92, 0.10);
+    --ee4v-color-error-surface-soft-opaque: #483C3C;
     --ee4v-color-status-idle: rgba(128, 128, 128, 0.35);
     --ee4v-color-status-running: rgba(220, 180, 72, 0.35);
     --ee4v-color-status-passed: rgba(96, 184, 126, 0.35);
@@ -116,6 +122,7 @@
     --ee4v-color-selection-soft: rgba(58, 121, 187, 0.42);
     --ee4v-color-selection-soft-opaque: #8FAECE;
     --ee4v-color-selection-pressed: #31679F;
+    --ee4v-color-overlay-surface: rgba(200, 200, 200, 0.45);
     --ee4v-color-overlay-border: rgba(0, 0, 0, 0.25);
     --ee4v-color-overlay-hover: rgba(255, 255, 255, 0.35);
     --ee4v-color-scroll-thumb: rgba(56, 56, 56, 0.44);
@@ -141,10 +148,12 @@
     --ee4v-color-info-surface-soft: rgba(47, 111, 174, 0.10);
     --ee4v-color-info-surface-strong: rgba(47, 111, 174, 0.22);
     --ee4v-color-warning-surface-soft: rgba(167, 124, 24, 0.10);
+    --ee4v-color-warning-surface-soft-opaque: #C5C0B6;
     --ee4v-color-warning-surface-strong: rgba(167, 124, 24, 0.18);
     --ee4v-color-warning-surface-hover: rgba(167, 124, 24, 0.28);
     --ee4v-color-warning-surface-pressed: rgba(167, 124, 24, 0.36);
     --ee4v-color-error-surface-soft: rgba(183, 55, 55, 0.10);
+    --ee4v-color-error-surface-soft-opaque: #C6BABA;
     --ee4v-color-status-idle: rgba(128, 128, 128, 0.25);
     --ee4v-color-status-running: rgba(167, 124, 24, 0.25);
     --ee4v-color-status-passed: rgba(63, 143, 56, 0.25);

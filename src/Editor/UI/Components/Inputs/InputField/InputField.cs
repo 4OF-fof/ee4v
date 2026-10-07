@@ -75,6 +75,13 @@ namespace Ee4v.UI
             _fieldContainer.Add(_textField);
             _fieldContainer.Add(_placeholderLabel);
             Add(_fieldContainer);
+            RegisterCallback<MouseDownEvent>(evt =>
+            {
+                if (evt.button == 0 && enabledInHierarchy && !_isFocused)
+                {
+                    FocusInput();
+                }
+            });
             RegisterCallback<AttachToPanelEvent>(_ => ScheduleScrollViewRefresh());
 
             SetState(state ?? new InputFieldState());

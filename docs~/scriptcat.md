@@ -1,5 +1,7 @@
 # BOOTH userscript
 
+ee4vデータソース用は `External~/Scriptcat/B2ee4v.user.js` です。Eagle版と同じ画面・download単位の操作を使い、手動起動のloopback serverへ接続します。どちらか1つだけ有効にします。起動・保存・DB同期の契約は [datasources.md](./datasources.md) を参照してください。
+
 `External~/Scriptcat/B2E.user.js` はBOOTHのlibrary、gifts、商品ページからEagle連携bridgeを呼び出します。downloadごとに取り込み状態を表示し、未取り込みであれば単品で取り込めます。
 
 商品ページで1商品に複数のdownloadがある場合、各`Import Eagle`は対応する`その他のDL方法`の直下に表示します。

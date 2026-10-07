@@ -11,10 +11,10 @@ namespace Ee4v.FaceExpression
     internal sealed class GestureAssignmentViewText
     {
         public string Avatar { get; set; }
-        public string Apply { get; set; }
         public string LeftHand { get; set; }
         public string RightHand { get; set; }
         public string Selection { get; set; }
+        public string NoSelection { get; set; }
         public string ExpressionSettings { get; set; }
         public string Synchronization { get; set; }
         public string SynchronizeLeft { get; set; }
@@ -41,11 +41,11 @@ namespace Ee4v.FaceExpression
         private const float CellHeight = 128f;
 
         private readonly ObjectField _avatarField;
-        private readonly UiButton _applyButton;
         private readonly VisualElement _extraRow;
         private readonly Dictionary<GestureCombination, GestureAssignmentCell> _cells =
             new Dictionary<GestureCombination, GestureAssignmentCell>();
         private readonly GestureAssignmentViewText _text;
+        private readonly GestureAssignmentSession _session;
         private readonly Action<AnimationClip, Rect> _drawPreview;
         private bool _hasAvatar;
         private bool _rendering;
@@ -53,9 +53,12 @@ namespace Ee4v.FaceExpression
 
         public GestureAssignmentView(
             GestureAssignmentViewText text,
-            Action<AnimationClip, Rect> drawPreview = null)
+            Action<AnimationClip, Rect> drawPreview = null,
+            bool showAvatarField = true,
+            GestureAssignmentSession session = null)
         {
             _text = text ?? new GestureAssignmentViewText();
+            _session = session ?? new GestureAssignmentSession();
             _drawPreview = drawPreview;
             AddToClassList("ee4v-gesture-assignment");
 
@@ -73,13 +76,11 @@ namespace Ee4v.FaceExpression
                     AvatarChanged?.Invoke(evt.newValue as GameObject);
                 }
             });
-            toolbar.Leading.Add(_avatarField);
-            _applyButton = new UiButton(
-                _text.Apply,
-                () => ApplyRequested?.Invoke());
-            _applyButton.AddToClassList("ee4v-gesture-assignment__apply");
-            toolbar.Actions.Add(_applyButton);
-            Add(toolbar);
+            if (showAvatarField)
+            {
+                toolbar.Leading.Add(_avatarField);
+                Add(toolbar);
+            }
 
             var matrix = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
             matrix.AddToClassList("ee4v-gesture-assignment__matrix");
@@ -107,8 +108,8 @@ namespace Ee4v.FaceExpression
                     var cell = new GestureAssignmentCell(
                         _text.Clip,
                         _text.Unassigned,
-                        () => GestureAssignmentSession.Select(combination),
-                        clip => GestureAssignmentSession.SetClip(combination, clip),
+                        () => _session.Select(combination),
+                        clip => _session.SetClip(combination, clip),
                         rect => DrawPreview(combination, rect));
                     _cells.Add(combination, cell);
                     row.Add(cell);
@@ -124,11 +125,22 @@ namespace Ee4v.FaceExpression
 
             RegisterCallback<AttachToPanelEvent>(_ => Subscribe());
             RegisterCallback<DetachFromPanelEvent>(_ => Unsubscribe());
+            RegisterCallback<ClickEvent>(evt =>
+            {
+                if (evt.button != 0) { return; }
+                for (var element = evt.target as VisualElement; element != null && element != this; element = element.parent)
+                {
+                    if (element is GestureAssignmentCell || element is Button || element is ObjectField || element is Scroller)
+                    {
+                        return;
+                    }
+                }
+                _session.ClearSelection();
+            });
             RefreshState();
         }
 
         public event Action<GameObject> AvatarChanged;
-        public event Action ApplyRequested;
 
         public void SetAvatar(GameObject avatar)
         {
@@ -141,13 +153,7 @@ namespace Ee4v.FaceExpression
 
         public void SetConfiguration(FaceExpressionConfiguration configuration)
         {
-            GestureAssignmentSession.SetConfiguration(configuration);
-        }
-
-        public void SetApplyEnabled(bool enabled, string tooltip = null)
-        {
-            _applyButton.SetEnabled(enabled);
-            _applyButton.tooltip = tooltip ?? string.Empty;
+            _session.SetConfiguration(configuration);
         }
 
         private void Subscribe()
@@ -157,7 +163,7 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            GestureAssignmentSession.Changed += RefreshState;
+            _session.Changed += RefreshState;
             _subscribed = true;
             RefreshState();
         }
@@ -169,7 +175,7 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            GestureAssignmentSession.Changed -= RefreshState;
+            _session.Changed -= RefreshState;
             _subscribed = false;
         }
 
@@ -178,12 +184,12 @@ namespace Ee4v.FaceExpression
             foreach (var pair in _cells)
             {
                 pair.Value.SetAssignment(
-                    GestureAssignmentSession.GetAssignment(pair.Key));
+                    _session.GetAssignment(pair.Key));
                 pair.Value.SetClipEnabled(_hasAvatar);
                 pair.Value.EnableInClassList(
                     "ee4v-gesture-assignment__cell--selected",
-                    !GestureAssignmentSession.IsMenuSelection &&
-                    pair.Key.Equals(GestureAssignmentSession.SelectedCombination));
+                    _session.HasSelection && !_session.IsMenuSelection &&
+                    pair.Key.Equals(_session.SelectedCombination));
             }
 
             RenderMenuEntries();
@@ -233,7 +239,7 @@ namespace Ee4v.FaceExpression
         private void DrawPreview(GestureCombination combination, Rect rect)
         {
             _drawPreview?.Invoke(
-                GestureAssignmentSession.GetAssignment(combination).Clip,
+                _session.GetAssignment(combination).Clip,
                 rect);
         }
 
@@ -241,27 +247,27 @@ namespace Ee4v.FaceExpression
         {
             _extraRow.Clear();
             var items = new List<VisualElement>();
-            foreach (var entry in GestureAssignmentSession.MenuEntries)
+            foreach (var entry in _session.MenuEntries)
             {
                 var cell = new GestureAssignmentCell(
                     _text.Clip,
                     _text.Unassigned,
-                    () => GestureAssignmentSession.Select(entry),
-                    clip => GestureAssignmentSession.SetClip(entry, clip),
+                    () => _session.Select(entry),
+                    clip => _session.SetClip(entry, clip),
                     rect => _drawPreview?.Invoke(entry.Assignment.Clip, rect));
                 cell.SetAssignment(entry.Assignment);
                 cell.EnableInClassList(
                     "ee4v-gesture-assignment__cell--selected",
                     ReferenceEquals(
                         entry,
-                        GestureAssignmentSession.SelectedMenuEntry));
+                        _session.SelectedMenuEntry));
                 cell.SetClipEnabled(_hasAvatar);
                 items.Add(cell);
             }
 
             var add = new UiButton(
                 "+",
-                GestureAssignmentSession.AddMenuExpression,
+                _session.AddMenuExpression,
                 labelTypographyClassName: UiClassNames.NavigationItemLabel);
             add.AddToClassList("ee4v-gesture-assignment__cell");
             add.AddToClassList("ee4v-gesture-assignment__extra-add");
@@ -317,6 +323,7 @@ namespace Ee4v.FaceExpression
     internal sealed class GestureAssignmentSettingsView : ScrollView
     {
         private readonly GestureAssignmentViewText _text;
+        private readonly GestureAssignmentSession _session;
         private readonly UiTextElement _selectionLabel;
         private readonly InputField _menuNameField;
         private readonly UiButton _removeMenuButton;
@@ -331,10 +338,12 @@ namespace Ee4v.FaceExpression
 
         internal GestureAssignmentSettingsView(
             GestureAssignmentViewText text,
-            ISettingsService settings = null)
+            ISettingsService settings = null,
+            GestureAssignmentSession session = null)
             : base(ScrollViewMode.Vertical)
         {
             _text = text ?? new GestureAssignmentViewText();
+            _session = session ?? new GestureAssignmentSession();
             _settings = settings ?? CoreSettings.Current;
             _settings.Register(FaceExpressionSettings.MenuIconsDisabled);
             AddToClassList("ee4v-gesture-assignment-settings");
@@ -354,14 +363,14 @@ namespace Ee4v.FaceExpression
             _menuNameField.ValueChanged += value =>
             {
                 if (!_rendering &&
-                    value != GestureAssignmentSession.SelectedMenuName)
+                    value != _session.SelectedMenuName)
                 {
-                    GestureAssignmentSession.SetSelectedMenuName(value);
+                    _session.SetSelectedMenuName(value);
                 }
             };
             _removeMenuButton = new UiButton(
                 _text.Remove,
-                GestureAssignmentSession.RemoveSelectedMenuExpression);
+                _session.RemoveSelectedMenuExpression);
             _removeMenuButton.AddToClassList(
                 "ee4v-gesture-assignment__extra-remove");
             var menuControls = new FormInput(
@@ -388,7 +397,7 @@ namespace Ee4v.FaceExpression
             {
                 if (!_rendering)
                 {
-                    GestureAssignmentSession.UpdateSelection(
+                    _session.UpdateSelection(
                         evt.newValue,
                         _mouthToggle.value);
                 }
@@ -402,7 +411,7 @@ namespace Ee4v.FaceExpression
             {
                 if (!_rendering)
                 {
-                    GestureAssignmentSession.UpdateSelection(
+                    _session.UpdateSelection(
                         _blinkToggle.value,
                         evt.newValue);
                 }
@@ -426,7 +435,7 @@ namespace Ee4v.FaceExpression
             {
                 if (!_rendering)
                 {
-                    GestureAssignmentSession.SetSelectedLeftSynchronized(
+                    _session.SetSelectedLeftSynchronized(
                         evt.newValue);
                 }
             });
@@ -438,7 +447,7 @@ namespace Ee4v.FaceExpression
             {
                 if (!_rendering)
                 {
-                    GestureAssignmentSession.SetSelectedRightSynchronized(
+                    _session.SetSelectedRightSynchronized(
                         evt.newValue);
                 }
             });
@@ -481,7 +490,7 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            GestureAssignmentSession.Changed += RefreshState;
+            _session.Changed += RefreshState;
             _settings.Changed += OnSettingChanged;
             _subscribed = true;
             RefreshState();
@@ -494,7 +503,7 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            GestureAssignmentSession.Changed -= RefreshState;
+            _session.Changed -= RefreshState;
             _settings.Changed -= OnSettingChanged;
             _subscribed = false;
         }
@@ -511,29 +520,32 @@ namespace Ee4v.FaceExpression
 
         private void RefreshState()
         {
-            var assignment = GestureAssignmentSession.SelectedAssignment;
-            var isExtra = GestureAssignmentSession.IsMenuSelection;
+            var assignment = _session.SelectedAssignment;
+            var isExtra = _session.IsMenuSelection;
             _rendering = true;
-            _selectionLabel.SetText(isExtra
+            _selectionLabel.SetText(!_session.HasSelection ? _text.Selection + ": " + _text.NoSelection : isExtra
                 ? _text.Selection + ": " + _text.MenuOnly
                 : _text.Selection + ": " +
-                  GetGestureName(GestureAssignmentSession.SelectedCombination.Left) +
+                  GetGestureName(_session.SelectedCombination.Left) +
                   " + " +
-                  GetGestureName(GestureAssignmentSession.SelectedCombination.Right));
+                  GetGestureName(_session.SelectedCombination.Right));
             _menuNameField.SetValueWithoutNotify(
-                GestureAssignmentSession.SelectedMenuName);
+                _session.SelectedMenuName);
             _menuNameField.style.display = DisplayStyle.Flex;
             _removeMenuButton.style.display = isExtra
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             _blinkToggle.SetValueWithoutNotify(assignment.EnableBlink);
             _mouthToggle.SetValueWithoutNotify(assignment.FixMouth);
+            _menuNameField.SetEnabled(_session.HasSelection);
+            _blinkToggle.SetEnabled(_session.HasSelection);
+            _mouthToggle.SetEnabled(_session.HasSelection);
             _synchronizeLeftToggle.SetValueWithoutNotify(
-                GestureAssignmentSession.IsSelectedLeftSynced);
+                _session.IsSelectedLeftSynced);
             _synchronizeRightToggle.SetValueWithoutNotify(
-                GestureAssignmentSession.IsSelectedRightSynced);
-            _synchronizeLeftToggle.SetEnabled(!isExtra);
-            _synchronizeRightToggle.SetEnabled(!isExtra);
+                _session.IsSelectedRightSynced);
+            _synchronizeLeftToggle.SetEnabled(_session.HasSelection && !isExtra);
+            _synchronizeRightToggle.SetEnabled(_session.HasSelection && !isExtra);
             _menuIconsToggle.SetValueWithoutNotify(
                 FaceExpressionSettings.GetMenuIconsDisabled(_settings));
             _rendering = false;

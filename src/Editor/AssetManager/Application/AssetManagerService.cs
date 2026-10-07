@@ -8,7 +8,7 @@ using Ee4v.AssetManager.Contracts;
 
 namespace Ee4v.AssetManager.Application
 {
-    internal sealed class AssetManagerService : IAssetManager
+    internal sealed class AssetManagerService : IAssetManager, IAssetDatasourceManager
     {
         private sealed class FileImportPlan
         {
@@ -19,6 +19,8 @@ namespace Ee4v.AssetManager.Application
         private readonly IAssetManagerStore _store;
         private readonly IEagleAssetSource _eagle;
         private readonly IEe4vAssetSource _ee4v;
+        private readonly IExternalAssetSource _external;
+        private readonly AssetDatasourceKind? _datasource;
         private readonly IAssetTargetImporter _targetImporter;
         private readonly IAssetFileAnalyzer _fileAnalyzer;
         private readonly IAssetThumbnailProvider _thumbnailProvider;
@@ -29,10 +31,14 @@ namespace Ee4v.AssetManager.Application
             IEe4vAssetSource ee4v,
             IAssetTargetImporter targetImporter,
             IAssetFileAnalyzer fileAnalyzer,
-            IAssetThumbnailProvider thumbnailProvider)
+            IAssetThumbnailProvider thumbnailProvider,
+            IExternalAssetSource external = null,
+            AssetDatasourceKind? datasource = null)
         {
             _store = store ??
                      throw new ArgumentNullException(nameof(store));
+            _external = external;
+            _datasource = datasource;
             _eagle = eagle ??
                      throw new ArgumentNullException(nameof(eagle));
             _ee4v = ee4v ??
@@ -170,29 +176,8 @@ namespace Ee4v.AssetManager.Application
                     files.Select(file => file.Id),
                     StringComparer.Ordinal)
                 .ToArray();
-            for (var i = 0; i < items.Length; i++)
-            {
-                if (items[i].SourceType != AssetSourceType.Ee4v)
-                {
-                    continue;
-                }
-
-                var sourceFile = _store.GetFileBySource(
-                    AssetSourceType.Ee4v,
-                    items[i].SourceId);
-                if (!string.Equals(
-                        sourceFile.ItemId,
-                        items[i].Id,
-                        StringComparison.Ordinal))
-                {
-                    throw new AssetManagerException(
-                        AssetManagerErrorCode.InvalidRequest,
-                        "ee4v source item and file are inconsistent.");
-                }
-            }
-
             if (items.Any(item =>
-                    item.SourceType == AssetSourceType.Eagle) ||
+                    item.SourceType.HasValue && item.SourceType != AssetSourceType.Ee4v) ||
                 files.Any(file =>
                     file.SourceType != AssetSourceType.Ee4v))
             {
@@ -331,11 +316,11 @@ namespace Ee4v.AssetManager.Application
                 "file ids");
             var existingFiles = ids.Select(_store.GetFile).ToArray();
             if (existingFiles.Any(file =>
-                    file.SourceType == AssetSourceType.Eagle))
+                    file.SourceType != AssetSourceType.Ee4v))
             {
                 throw new AssetManagerException(
                     AssetManagerErrorCode.InvalidRequest,
-                    "Eagle file placement is controlled by Eagle.");
+                    "External file placement is controlled by its datasource.");
             }
 
             var files = _store.SetFileItem(
@@ -1095,6 +1080,7 @@ namespace Ee4v.AssetManager.Application
 
         public AssetSyncResult SyncEagle(EagleSyncRequest request)
         {
+            RequireDatasource(AssetDatasourceKind.Eagle);
             AssetManagerRequestValidator.RequireRequest(
                 request,
                 "Eagle sync request");
@@ -1105,6 +1091,7 @@ namespace Ee4v.AssetManager.Application
 
         public AssetSyncResult SyncEe4v(Ee4vSyncRequest request)
         {
+            RequireDatasource(AssetDatasourceKind.Ee4v);
             AssetManagerRequestValidator.RequireRequest(
                 request,
                 "ee4v sync request");
@@ -1114,6 +1101,36 @@ namespace Ee4v.AssetManager.Application
             return SyncSource(
                 AssetSourceType.Ee4v,
                 () => _ee4v.Read(request));
+        }
+
+        public AssetSyncResult SyncDatasource(AssetDatasourceRequest request)
+        {
+            AssetManagerRequestValidator.RequireRequest(request, "datasource request");
+            RequireDatasource(request.Kind);
+            if (request.Kind == AssetDatasourceKind.Eagle)
+            {
+                return SyncEagle(new EagleSyncRequest(request.LibraryPath, request.TargetRoot));
+            }
+            if (request.Kind == AssetDatasourceKind.Ee4v)
+            {
+                return SyncEe4v(new Ee4vSyncRequest(request.LibraryPath));
+            }
+            if (_external == null)
+            {
+                throw new AssetManagerException(AssetManagerErrorCode.DatasourceError,
+                    "The selected datasource is unavailable.");
+            }
+            return SyncSource(AssetSourceType.BoothLibraryManager,
+                () => _external.Read(request));
+        }
+
+        private void RequireDatasource(AssetDatasourceKind kind)
+        {
+            if (_datasource.HasValue && kind != _datasource.Value)
+            {
+                throw new AssetManagerException(AssetManagerErrorCode.InvalidRequest,
+                    "Only the selected datasource can synchronize.");
+            }
         }
 
         private AssetSyncResult SyncSource(
@@ -1213,9 +1230,11 @@ namespace Ee4v.AssetManager.Application
             }
 
             _ee4v.Update(
-                _store.GetFileBySource(
-                    AssetSourceType.Ee4v,
-                    item.SourceId),
+                item.Files.FirstOrDefault(file => file.SourceType == AssetSourceType.Ee4v &&
+                    (file.SourceId == item.SourceId || file.SourceId.StartsWith(
+                        item.SourceId + "/", StringComparison.Ordinal)))
+                    ?? throw new AssetManagerException(AssetManagerErrorCode.NotFound,
+                        "ee4v source item has no file for metadata editing."),
                 name,
                 description,
                 tags);
@@ -1245,11 +1264,11 @@ namespace Ee4v.AssetManager.Application
 
         private static void EnsureItemMetadataEditable(AssetItem item)
         {
-            if (item.SourceType == AssetSourceType.Eagle)
+            if (item.SourceType.HasValue && item.SourceType != AssetSourceType.Ee4v)
             {
                 throw new AssetManagerException(
                     AssetManagerErrorCode.InvalidRequest,
-                    "Eagle item metadata is controlled by Eagle.");
+                    "External item metadata is controlled by its datasource.");
             }
         }
 

@@ -19,6 +19,10 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 
 ### Inputs
 
+`InputField`は左クリックで内部のTextFieldへフォーカスします。文字の上だけでなく入力欄の余白もクリック対象です。無効な入力欄はフォーカスしません。
+
+- `PathField`は手入力とOSのフォルダー・ファイル選択ダイアログをまとめたパス入力です。`PathFieldKind`で選択対象を切り替え、ファイルには拡張子filterを指定できます。入力はEnterまたはフォーカスを外した時に確定し、選択をキャンセルした場合は変更を通知しません。選択ダイアログは現在値から環境変数を展開して最寄りの存在する親フォルダーを開き、空欄や無効な値ではDocumentsを起点にします。内容の必要幅を基準に最小240pxからラベルと余白を除いた枠内の利用可能幅まで伸縮します。文字入力と枠線のないフォルダーアイコンを一つの下線内に配置し、フォーカスとhoverは欄全体の下線色で示します。読み書き・同期は利用側が担当します。
+
 - `UiButton`は文字、アイコン、強調度を統一した通常の操作ボタンです。通常ボタンは操作面を薄く塗り、InputFieldと同じ境界線とフォーカス色を使用します。Ghostは通常時の面と境界線を表示しません。Toolbarなど用途固有の小型寸法は利用側USSで指定します。サムネイルなどの複合内容は`Content`へ配置し、操作面そのものは`UiButton`に保ちます。`SetPrimaryActionEnabled`は保存などの主操作の有効状態・青い操作面・ラベル色をまとめて切り替え、統合と単独のAvatar編集Windowが共有します。
 - `InputField` Storyはテキスト、トグル、Object選択、ドロップダウンを含む単一値入力の標準入口です。文字列には`InputField`コンポーネントを使用し、その他の値には`UiTextFactory`が生成する型付き入力を使用します。単行テキストとドロップダウンは透明背景の下線型、複数行テキストは全周の境界と内側余白を持つテキストエリアとして表示します。トグルは標準入力と同じ境界線と操作色を使う小型チェックボックスとし、選択時は青い面と白いチェックマークで状態を示します。フォーカスの有無では外観を変えません。
 - `SearchField`は薄い入力面と全周枠へ検索入力、消去、任意の先頭操作をまとめます。検索アイコンと角丸の全周枠で用途を示し、境界線とフォーカス色はInputFieldと共有します。先頭操作が有効な場合だけhover反応を表示します。
@@ -31,6 +35,8 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 - `PrefabSelector`は候補Prefabの選択とドラッグの受け入れを行います。`ShowPicker`は同じ候補を検索付きの一覧・Gridから選択する入口で、候補取得や保存は行いません。PickerのWindowは内部実装です。
 - `TagPill`は任意の選択操作と削除操作を持つタグ入力です。pill形と薄い面を保ち、境界線と選択操作にはInputFieldと同じフォーカス色を使用します。
 
+`PathField`の幅は入力中も文字の描画幅を計測して更新します。文字幅・入力余白・選択アイコンの幅を足した必要幅を最小幅と利用可能幅で制限し、入力内容の変更、パス選択、Window幅の変更に追従します。
+
 ### Displays
 
 - `Badge`は件数や短い分類値を中立表示し、任意の`UiStatusTone`で処理状態も表示します。
@@ -39,7 +45,7 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 - `StatusOverlay`はspinnerと状態メッセージを表示する小型パネルです。バックグラウンド処理ではウィンドウ右下へ重ね、統合ee4vの変更破棄では再読み込み完了まで画面中央へ表示します。配置と操作の抑止は使用側が制御します。
 - `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンと`InputGroup`の開閉chevronにはFluent UI System Iconsを使用します。組み込みアイコンはUnityのFolder、Scene、GameObject、Model FileとHierarchyの非表示操作に限定します。Fluent画像が読み込めない場合は組み込みアイコンへ代替せず非表示にします。
 - `PrefabThumbnail`はUnityのAssetPreviewを表示し、読み込み中はMiniThumbnailを表示します。取得の再試行は表示中だけ行います。
-- `PrefabScenePreview`はCoreの[`AvatarPreviewRenderer`](./avatar-preview.md)へ描画を委ねます。Scene上の対象は複製せず、Edit ModeではNDMF Previewの加工後Renderer、Play Modeでは実際の対象を描画します。Prefabアセットの表示は隔離された表示用コピーを使用します。対象、部位・Material選択、Cameraと破棄を担当し、`SetFlexibleLayout`で親のサイズへ追従し、`SetViewToggleVisible`で視点切り替えトグルだけを非表示にでき、Cameraのフレーミングは変えません。`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。表示中は約30fpsで再描画し、NDMFの更新、時間依存Shaderと実行中の姿勢を表示します。
+- `PrefabScenePreview`はCoreの[`AvatarPreviewRenderer`](./avatar-preview.md)へ描画を委ねます。Scene上の対象は複製せず、Edit ModeではNDMF Previewの加工後Renderer、Play Modeでは実際の対象を描画します。Prefabアセットの表示は隔離された表示用コピーを使用します。対象、部位・Material選択、Cameraと破棄を担当し、`SetFlexibleLayout`で親のサイズへ追従し、`SetViewToggleVisible`で視点切り替えとポーズの操作を非表示にでき、Cameraのフレーミングは変えません。`FocusBodyPart`で部位ポーズを適用し、右下のFluent Accessibilityアイコンまたは`SetTPose`で基準姿勢と切り替えます。ポーズ操作はHumanoidを持つEdit Modeの対象だけに表示します。`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。表示中は約30fpsで再描画し、NDMFの更新、時間依存Shaderと実行中の姿勢を表示します。
 - `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
 
 `PrefabScenePreview.SetScope`は描画対象とboundsを同期的に切り替え、PreviewとNDMF sessionを再生成しません。選択した構成Prefab rootのEditorOnly除外規則も同時に再計算し、scope変更後の最初の描画から選択範囲だけを表示します。
@@ -75,6 +81,13 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 - `UiLocalization`は共通部品の文字をUI scopeから取得する内部基盤です。部品は利用機能の翻訳catalogへ依存しません。
 - `UiComposition.Prepare`は共通USSと機能固有USSを一つの入口で登録します。
 - `UiColorPalette`はUI ToolkitとIMGUIが共有するテーマ別標準色の契約です。`UiColorPalettes`がUnity Dark・Lightのバリエーションを所有し、`UiColorTokens.Current`と`UiComposition.Prepare`が現在のUnity Editorテーマへ接続します。
+
+`warning-surface-soft-opaque`と`error-surface-soft-opaque`は、テーマ別のpanel色に薄い警告・エラー色を合成した不透明なUSS tokenです。背後の画面を透かさずに意味別の色を表示する通知で使用します。
+
+`danger-action`、`danger-action-hover`、`danger-action-pressed`は、破棄などの操作を示す不透明な赤いボタン面のUSS tokenです。Dark・Lightで同じ赤を使用し、ラベルは`UiColorTokens.TextOnState`で表示します。
+
+`overlay-surface`はPreview画像に重ねる操作ボタンの半透明背景です。Dark・Lightで背景色を切り替え、ホバー・押下時は`overlay-hover`を使用します。
+
 - `UiTextFactory`は文字を描画するUI要素の生成と文字更新を統一します。通常の操作、文字入力、検索入力にはそれぞれ`UiButton`、`InputField`、`SearchField`を使用し、低レベルの`TextField`生成は共有入力コンポーネント内部に限定します。FactoryのIMGUI文字は実際の描画時にも寸法を計測し、フォントの初期化後の寸法を反映します。折り返し時は配置済みのContent幅を上限に描画幅を再計測し、必要な高さを縮めません。文字・フォントサイズ・折り返しの変更と表示幅の変更を反映し、寸法が変わらない場合はレイアウトを更新しません。Factoryが生成する型付き入力には基盤となる共通クラスを付与します。数値入力とドロップダウンは透明背景の下線型、`Toggle`は標準入力と境界線、操作色、状態遷移を共有する小型チェックボックス型、`ObjectField`は右端の操作領域を分けた選択欄として`FormInput`の内外で共有します。複合入力内の埋め込みフィールドは共通クラスを外し、親コンポーネントが外観を担当します。
 - `UiDragAndDrop`は型付きpayloadによるドラッグ開始とMove操作の受け入れを共通化します。
 - `PreviewOrbitController`は3D Previewの回転、移動、拡縮とCamera配置を共通化します。Bounds計算と描画内容は利用側が扱います。

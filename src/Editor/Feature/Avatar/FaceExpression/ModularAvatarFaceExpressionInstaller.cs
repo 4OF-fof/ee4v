@@ -92,7 +92,7 @@ namespace Ee4v.FaceExpression
                 root.transform.SetParent(avatar, false);
                 if (recordUndo)
                 {
-                    Undo.RegisterCreatedObjectUndo(
+                    FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(
                         root,
                         "Create Face Expression Installer");
                 }

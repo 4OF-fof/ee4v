@@ -4,6 +4,7 @@ using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Infrastructure;
 using Ee4v.AssetProtection;
 using Ee4v.Core.EditorIntegration;
+using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
@@ -28,6 +29,7 @@ namespace Ee4v.AssetManager.UI
 
         static AssetManagerWindowSession()
         {
+            AssetManagerSettings.DatasourceChanged += InvalidateManager;
             GlobalDataSettings.PathChanged -=
                 InvalidateManager;
             GlobalDataSettings.PathChanged +=
@@ -77,7 +79,7 @@ namespace Ee4v.AssetManager.UI
             _manager = AssetManagerFactory.OpenSession(Path.Combine(
                 Environment.ExpandEnvironmentVariables(
                     AssetManagerSettings.Ee4vLibraryPath),
-                "asset-manager-v1.db"));
+                "asset-manager-v1.db"), AssetManagerSettings.SelectedDatasource);
             AssetProtectionModule.Configure(_manager);
             return _manager;
         }
@@ -124,6 +126,7 @@ namespace Ee4v.AssetManager.UI
         private static void InitializeProtection()
         {
             EditorApplication.delayCall -= InitializeProtection;
+            if (Application.isBatchMode) { return; }
             try
             {
                 GetManager();
@@ -144,77 +147,62 @@ namespace Ee4v.AssetManager.UI
             }
 
             SessionState.SetBool(StartupSyncSessionKey, true);
-            var eaglePath = ExistingDirectory(
-                AssetManagerSettings.EagleLibraryPath);
-            var ee4vPath = ExistingDirectory(
-                AssetManagerSettings.Ee4vLibraryPath);
-            var syncEagle =
-                AssetManagerSettings.AutoSyncEagleOnStartup &&
-                eaglePath != null;
-            var syncEe4v =
-                AssetManagerSettings.AutoSyncEe4vOnStartup &&
-                ee4vPath != null;
-            if (!syncEagle && !syncEe4v)
+            if (!AssetManagerSettings.AutoSyncDatasourceOnStartup)
             {
                 return;
             }
 
+            SyncSelectedDatasource();
+        }
+
+        internal static void SyncSelectedDatasource(IAssetManager manager = null)
+        {
             try
             {
-                var manager = GetManager();
-                if (syncEagle)
+                var request = AssetManagerSettings.DatasourceRequest;
+                request.LibraryPath = RequireSyncPath(request.LibraryPath, false);
+                if (request.Kind == AssetDatasourceKind.BoothLibraryManager)
                 {
-                    ReportSyncErrors(
-                        "Eagle",
-                        manager.SyncEagle(new EagleSyncRequest(
-                            eaglePath,
-                            AssetManagerSettings.EagleTargetRoot)));
+                    request.DatabasePath = RequireSyncPath(request.DatabasePath, true);
                 }
 
-                if (syncEe4v)
+                var result = ((IAssetDatasourceManager)(manager ?? GetManager()))
+                    .SyncDatasource(request);
+                if (result != null && result.ErrorCount > 0)
                 {
-                    ReportSyncErrors(
-                        "ee4v",
-                        manager.SyncEe4v(new Ee4vSyncRequest(ee4vPath)));
+                    ReportSyncFailure(string.Join(Environment.NewLine, result.ErrorMessages));
                 }
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
+                ReportSyncFailure(exception.Message);
             }
         }
 
-        private static string ExistingDirectory(string value)
+        private static string RequireSyncPath(string value, bool database)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
-                return null;
+                throw new IOException(I18N.Get(
+                    database ? "notice.syncDatabaseRequired" : "notice.syncFolderRequired"));
             }
 
-            try
+            var path = Path.GetFullPath(Environment.ExpandEnvironmentVariables(value));
+            if (database ? !File.Exists(path) : !Directory.Exists(path))
             {
-                var path = Path.GetFullPath(
-                    Environment.ExpandEnvironmentVariables(value));
-                return Directory.Exists(path) ? path : null;
+                throw new IOException(I18N.Get(
+                    database ? "notice.syncDatabaseMissing" : "notice.syncFolderMissing",
+                    new object[] { path }));
             }
-            catch (Exception)
-            {
-                return null;
-            }
+            return path;
         }
 
-        private static void ReportSyncErrors(
-            string source,
-            AssetSyncResult result)
+        private static void ReportSyncFailure(string error)
         {
-            if (result.ErrorCount == 0)
-            {
-                return;
-            }
-
-            Debug.LogWarning(
-                "AssetManager startup " + source + " sync: " +
-                string.Join(Environment.NewLine, result.ErrorMessages));
+            var message = I18N.Get("notice.syncFailed",
+                new object[] { error });
+            Debug.LogWarning(message);
         }
     }
 

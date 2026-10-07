@@ -186,9 +186,10 @@ namespace Ee4v.Mcp
             var metadata = name != null || arguments.Property("description") != null;
             var manager = Manager();
             var originals = ids.Select(manager.GetItem).ToArray();
-            if (metadata && originals.Any(item => item.SourceType == AssetSourceType.Eagle))
+            if (metadata && originals.Any(item => item.SourceType.HasValue &&
+                item.SourceType != AssetSourceType.Ee4v))
             {
-                throw new McpToolException("invalid_request", "Eagle item names and descriptions must be edited in Eagle.");
+                throw new McpToolException("invalid_request", "External item names and descriptions must be edited in their datasource.");
             }
             var applied = new List<object>();
             try

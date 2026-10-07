@@ -20,7 +20,7 @@
     "targetChanged": "アバターの構成が変更されています。変換画面を開き直してください。"
   },
   "window": {
-    "title": "表情エディター"
+    "title": "表情"
   },
   "assignmentWindow": {
     "title": "ジェスチャー割り当て"
@@ -100,6 +100,8 @@
     "sectionBody": "Body"
   },
   "search": {
+    "libraryPlaceholder": "表情ライブラリを検索",
+    "libraryTooltip": "現在のフォルダー内の表情・フォルダー名で絞り込みます",
     "placeholder": "BlendShape を検索",
     "tooltip": "BlendShape 名で絞り込みます",
     "clearTooltip": "検索をクリア"
@@ -130,9 +132,16 @@
     "timelineTooltip": "表情シーケンスの再生位置を確認または移動します。ここを動かしてもポーズは追加されません。"
   },
   "assignments": {
+    "unsavedChanges": "未保存の変更があります。",
+    "save": "保存",
+    "saveFailed": "保存できませんでした。変更は未保存のままです。",
+    "continueEditing": "編集を続ける",
+    "discard": "破棄",
+    "discardFailed": "変更を破棄できませんでした。元の画面で編集を続けてください。",
     "leftHand": "左手",
     "rightHand": "右手",
     "selection": "選択中",
+    "noSelection": "未選択",
     "expressionSettings": "選択中の表情設定",
     "synchronization": "同期",
     "synchronizeLeft": "同じ左手の組み合わせを同期",
@@ -142,7 +151,7 @@
     "fixMouth": "口の動きを固定",
     "unassigned": "未割り当て",
     "menuOnly": "Extra（メニュー限定）",
-    "menuOnlyHint": "メニューからだけ選ぶ表情です。太線より下のセルを選ぶと設定ウィンドウで編集できます。",
+    "menuOnlyHint": "メニューからだけ選ぶ表情です。太線より下のセルを選ぶと右側で割り当てと設定を編集できます。",
     "menuName": "メニュー名",
     "disableMenuIcons": "プレビューアイコンを無効化"
   },
@@ -154,10 +163,11 @@
     "resetBlendShapeTooltip": "アバターの初期値（{0}%）へ戻す",
     "newClip": "新規表情",
     "copyAndEdit": "コピーして編集",
+    "edit": "編集",
     "resetView": "表示をリセット",
     "previewBackground": "背景の明暗を切り替え",
     "backToLibrary": "戻る",
-    "apply": "アバターに適用",
+    "backToAssignments": "割り当て画面に戻る",
     "addMenuExpression": "メニュー専用表情を追加",
     "remove": "削除",
     "addMesh": "メッシュ追加",

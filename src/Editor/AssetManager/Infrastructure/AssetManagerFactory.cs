@@ -11,6 +11,7 @@ namespace Ee4v.AssetManager.Infrastructure
     {
         private static string _sessionDatabasePath;
         private static IAssetManager _sessionManager;
+        private static AssetDatasourceKind _sessionDatasource;
         private static string _variantSessionDatabasePath;
         private static IAssetManager _variantSessionAssetManager;
         private static IAssetVariantManager _variantSessionManager;
@@ -21,11 +22,26 @@ namespace Ee4v.AssetManager.Infrastructure
             {
                 throw new ArgumentException("Database path is required.", nameof(databasePath));
             }
+            var path = System.IO.Path.GetFullPath(databasePath);
+            return OpenSession(path, _sessionManager != null &&
+                string.Equals(_sessionDatabasePath, path, StringComparison.Ordinal)
+                    ? _sessionDatasource : AssetDatasourceKind.Eagle);
+        }
+
+        public static IAssetManager OpenSession(string databasePath,
+            AssetDatasourceKind datasource)
+        {
+            if (string.IsNullOrWhiteSpace(databasePath))
+            {
+                throw new ArgumentException("Database path is required.", nameof(databasePath));
+            }
 
             var path = System.IO.Path.GetFullPath(databasePath);
-            if (_sessionManager == null || !string.Equals(_sessionDatabasePath, path, StringComparison.Ordinal))
+            if (_sessionManager == null || _sessionDatasource != datasource ||
+                !string.Equals(_sessionDatabasePath, path, StringComparison.Ordinal))
             {
-                _sessionManager = Open(path);
+                _sessionManager = Open(path, datasource);
+                _sessionDatasource = datasource;
                 _sessionDatabasePath = path;
             }
 
@@ -34,6 +50,22 @@ namespace Ee4v.AssetManager.Infrastructure
 
         public static IAssetManager Open(string databasePath)
         {
+            return Open(databasePath, AssetDatasourceKind.Eagle, false);
+        }
+
+        public static IAssetManager Open(string databasePath,
+            AssetDatasourceKind datasource)
+        {
+            return Open(databasePath, datasource, true);
+        }
+
+        private static IAssetManager Open(string databasePath,
+            AssetDatasourceKind datasource, bool scopeCatalog)
+        {
+            if (!Enum.IsDefined(typeof(AssetDatasourceKind), datasource))
+            {
+                throw new ArgumentOutOfRangeException(nameof(datasource));
+            }
             if (string.IsNullOrWhiteSpace(databasePath))
             {
                 throw new ArgumentException(
@@ -42,12 +74,18 @@ namespace Ee4v.AssetManager.Infrastructure
             }
 
             return new AssetManagerService(
-                new SqliteAssetManagerStore(databasePath),
+                new SqliteAssetManagerStore(databasePath, scopeCatalog
+                    ? (AssetSourceType?)(datasource == AssetDatasourceKind.Eagle
+                        ? AssetSourceType.Eagle
+                        : datasource == AssetDatasourceKind.Ee4v
+                            ? AssetSourceType.Ee4v : AssetSourceType.BoothLibraryManager)
+                    : null),
                 new EagleAssetSource(),
                 new Ee4vAssetSource(),
                 new AssetTargetImporter(),
                 new AssetFileAnalyzer(databasePath),
-                new AssetThumbnailProvider(databasePath));
+                new AssetThumbnailProvider(databasePath),
+                new ExternalAssetSource(), scopeCatalog ? datasource : (AssetDatasourceKind?)null);
         }
 
         public static IAssetVariantManager OpenVariants(string databasePath, IAssetManager manager)

@@ -21,6 +21,22 @@ CameraはPreview Sceneの描画資源と照明を使用し、NDMFのProxy Scene�
 
 `ResolveRenderer`は元Rendererから直近の描画に使った加工後Rendererを取得します。`GetBounds`は描画対象のboundsを返し、範囲が未初期化の場合はSkinnedMeshRendererの共有Mesh、またはMeshFilterを持つMeshRendererの共有MeshとTransformから範囲を求めます。MeshFilterを持たないMeshRendererやParticleSystemRendererなどはRenderer自身のboundsを使用します。クリック選択には加工後Meshを使い、通知には元のHierarchyとMaterialの識別情報を返します。NDMFが非同期で構築中の場合は元Rendererを表示し、準備が整った後の描画からProxyを使用します。
 
+## 部位フォーカスのポーズ
+
+脚のフォーカスは右脚のboneを基準にyaw -13度・pitch 4度、距離係数0.68で表示します。太ももからすねを大きく映し、足先まで全体を収めることは優先しません。部位の再選択と表示リセットでも同じ距離を使用します。
+
+`PrefabScenePreview.FocusBodyPart`は頭・胸・全身などの部位フォーカスと描画用ポーズを連動させます。現時点では全部位に共通の仮ポーズ（両腕を水平から60度下げる）を使用します。Preview右下のFluent AccessibilityアイコンでTポーズへ切り替え、再度押すと部位ポーズへ戻します。選択中のアイコンは青い背景・枠で示し、tooltipで切替先を表示します。切替状態は部位・左右・前後の移動やPreview再構築で保持します。`SetTPose`は同じ操作を公開APIから行います。
+
+`accessibility.png`はMicrosoftの[Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Accessibility/SVG/ic_fluent_accessibility_24_regular.svg)（MIT、Copyright Microsoft Corporation）の24px Regular SVGから白色・透過の512px PNGへ変換したものです。
+
+Coreの`SetHumanoidPose`は有効なHumanoid Avatarの基準骨格回転を使用し、上腕と前腕を左右の水平（Tポーズ）または仮ポーズの方向へ合わせます。Scene本体、Prefab、AnimationClipへ書き込まず、NDMF描画用骨へ回転を適用します。隔離Previewでは描画中だけ回転を変更して復元します。骨格スケールとBlendShapeのoverrideは併用できます。`GetTransformPosition`は描画用回転・スケールを含む位置を返し、腕・手などのフォーカスも現在のポーズへ追従します。
+
+衣装などの別Armatureには、MA Merge Armatureの公開`GetBonesMapping`とmerge先を使って本体のポーズ差分を伝播します。prefix・suffix、入れ子のmerge、衣装独自の末端boneも元の相対姿勢を保って追従します。MA Bone Proxyはtarget・attachment mode・matchScaleに従って描画用の位置・回転・スケールを求めます。Bone対応は`RefreshHierarchy`で更新し、Prefab用コピーではスクリプトを取り除く前に保持します。Scene入力では描画用骨だけを変更し、隔離Previewでは描画後・例外時に位置・回転・スケールを復元します。Core Previewはこの公開APIのため`nadena.dev.modular-avatar.core`を直接参照します。MAのビルド処理や元のArmatureの変更は実行しません。
+
+NDMFの描画用骨の更新は`OnFrameGroup`で描画グループごとに1回行い、その描画で追加された骨だけ個別に初期化します。衣装の追従に使うポーズ行列は同じグループ内で共有し、親やmerge先の計算を再利用します。行列のキャッシュはグループの更新ごとに破棄し、SceneのTransformや描画用overrideの変更を次の描画へ反映します。隔離Previewでも描画前の衣装の行列計算を共有し、一時的なTransform変更前に計算を完了します。
+
+Humanoidを持たない対象、Play Mode、部位フォーカスを開始していないPreviewではポーズを適用しません。`SetViewToggleVisible(false)`ではポーズ操作も非表示になります。NDMF Proxyが構築されるまでは元Rendererの姿勢を表示します。
+
 ## ライフサイクルと制約
 
 同じ対象の構造更新とscope・目アイコンの変更ではsessionを再生成しません。UIから離れたとき、対象の変更時、Play Mode移行時に`Dispose`し、Camera override・event購読・Proxy session・描画資源を解放します。表示中の再描画頻度はUIが所有します。
