@@ -66,7 +66,7 @@ namespace Ee4v.AssetManager.UI
             layout.AppearanceHeader.Add(new BodyPartSelector(null, _ => true, _ => { }));
             layout.Controls.Add(UiTextFactory.Create("編集コントロール領域"));
             layout.FaceExpressionHost.Add(new EmptyState(new EmptyStateState("表情・アニメーション", "専用Viewの領域です。")));
-            layout.ExpressionMenuHost.Add(new EmptyState(new EmptyStateState("ギミッククリエイター / Expression Menu", "左でギミックを制作し、右でメニューへ配置する専用Viewの領域です。")));
+            layout.ExpressionMenuHost.Add(new EmptyState(new EmptyStateState("Expression Menu", "1ペインでメニュー全体の簡単な編集と、選択した項目の詳細編集を切り替えます。")));
             layout.ExecutionHost.Add(new EmptyState(new EmptyStateState("操作確認", "PlayMode専用Viewの領域です。")));
             parent.Add(layout);
         }

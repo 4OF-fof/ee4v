@@ -27,6 +27,7 @@ namespace Ee4v.ExpressionMenu
         private int _source;
         private int _offset;
         private int _selected = -1;
+        private bool _editingCurrentSubmenu;
         private string _error;
         private ModularAvatarMenuItem _selectAddedSource;
         private bool _openAddedSubmenu;
@@ -80,6 +81,7 @@ namespace Ee4v.ExpressionMenu
                 }
                 _offset = _page.Entries.Count > 8 ? Mathf.Clamp(_offset, 0, (_page.Entries.Count - 1) / 7 * 7) : 0;
                 if (_selected >= _page.Entries.Count) _selected = -1;
+                if (_submenuEntry == null) _editingCurrentSubmenu = false;
                 Build();
             }
             catch (Exception exception)
@@ -92,14 +94,38 @@ namespace Ee4v.ExpressionMenu
         {
             if (!string.IsNullOrEmpty(_error))
                 Add(UiTextFactory.CreateHelpBox(_error, HelpBoxMessageType.Error));
-            var split = new VisualElement { name = "expressionMenuSplit" };
-            split.AddToClassList("ee4v-expression-menu__split");
-            Add(split);
-            var selectedEntry = _selected >= 0 && _selected < _page.Entries.Count ? _page.Entries[_selected] : null;
-            split.Add(new ExpressionMenuGimmickCreator(_context, (selectedEntry ?? _submenuEntry)?.Owner as ModularAvatarMenuItem, Refresh));
-            _menuHost = new ScrollView(ScrollViewMode.Vertical) { name = "expressionMenuEditor" };
+            var selectedEntry = _editingCurrentSubmenu ? _submenuEntry :
+                _selected >= 0 && _selected < _page.Entries.Count ? _page.Entries[_selected] : null;
+            if (selectedEntry != null)
+            {
+                var navigation = new VisualElement();
+                navigation.AddToClassList("ee4v-expression-menu__navigation");
+                navigation.Add(new UiButton(T("backToMenu"), () =>
+                {
+                    _selected = -1;
+                    _editingCurrentSubmenu = false;
+                    _error = null;
+                    Refresh();
+                }, icon: FluentUiIcons.CreateState("arrow_left.png")) { name = "expressionMenuBack" });
+                navigation.Add(UiTextFactory.Create(selectedEntry.Control.name, UiClassNames.SectionTitle));
+                Add(navigation);
+            }
+            var scroll = new ScrollView(ScrollViewMode.Vertical) { name = "expressionMenuScroll" };
+            scroll.AddToClassList("ee4v-expression-menu__scroll");
+            Add(scroll);
+            _menuHost = new VisualElement { name = "expressionMenuEditor" };
             _menuHost.AddToClassList("ee4v-expression-menu__editor");
-            split.Add(_menuHost);
+            _menuHost.EnableInClassList("ee4v-expression-menu__editor--detail", selectedEntry != null);
+            scroll.Add(_menuHost);
+            if (selectedEntry != null)
+            {
+                var item = selectedEntry.Owner as ModularAvatarMenuItem;
+                if (item != null && (ExpressionMenuTemplateModel.HasActions(item) ||
+                    item.PortableControl.Type == PortableControlType.SubMenu))
+                    _menuHost.Add(new ExpressionMenuTemplateEditor(_context, item, Refresh));
+                BuildSettings(selectedEntry, _editingCurrentSubmenu);
+                return;
+            }
             _menuHost.Add(UiTextFactory.Create(T("title"), UiClassNames.SectionTitle));
             if (_showsEditSource)
             {
@@ -109,40 +135,116 @@ namespace Ee4v.ExpressionMenu
                 source.RegisterValueChangedCallback(evt =>
                 {
                     _source = choices.IndexOf(evt.newValue);
-                    _path.Clear(); _offset = 0; _selected = -1; Refresh();
+                    _path.Clear(); _offset = 0; _selected = -1; _editingCurrentSubmenu = false; Refresh();
                 });
                 _menuHost.Add(source);
                 _menuHost.Add(UiTextFactory.Create(_page.Name, UiClassNames.SecondaryText));
             }
-            BuildRadial();
-            if (selectedEntry != null) BuildSettings(selectedEntry);
-            else if (_submenuEntry != null) BuildSettings(_submenuEntry, true);
+            var overview = new VisualElement();
+            overview.AddToClassList("ee4v-expression-menu__overview");
+            _menuHost.Add(overview);
+            var menu = new VisualElement();
+            menu.AddToClassList("ee4v-expression-menu__menu-column");
+            overview.Add(menu);
+            BuildRadial(menu);
+            if (_submenuEntry != null)
+                BuildQuickSettings(_submenuEntry, () =>
+                {
+                    _editingCurrentSubmenu = true;
+                    _selected = -1;
+                    _error = null;
+                    Refresh();
+                }, host: menu);
+            var items = new VisualElement();
+            items.AddToClassList("ee4v-expression-menu__items");
+            overview.Add(items);
+            var count = Math.Min(_page.Entries.Count > 8 ? 7 : 8, _page.Entries.Count - _offset);
+            for (var slot = 0; slot < count; slot++)
+            {
+                var index = _offset + slot;
+                BuildQuickSettings(_page.Entries[index], () => SelectControl(index),
+                    _page.Entries[index].Submenu == null ? null : (Action)(() => OpenSubmenu(index)), items);
+            }
         }
 
-        private void BuildRadial()
+        private void BuildQuickSettings(MenuEntry entry, Action edit, Action open = null, VisualElement host = null)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("ee4v-expression-menu__quick-item");
+            (host ?? _menuHost).Add(row);
+            var iconHost = new VisualElement();
+            iconHost.AddToClassList("ee4v-expression-menu__quick-icon-host");
+            row.Add(iconHost);
+            var preview = new Image { image = ExpressionMenuModel.DisplayIcon(entry.Control.icon),
+                scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore };
+            preview.AddToClassList("ee4v-expression-menu__quick-icon-preview");
+            iconHost.Add(preview);
+            var draft = ExpressionMenuModel.Copy(entry.SourceControl ?? entry.Control);
+            var source = entry.Owner as ModularAvatarMenuItem;
+            void Change(Action maChange, Action controlChange)
+            {
+                if (!CanInteract(entry)) throw new InvalidOperationException(T("readOnly"));
+                if (source != null) ExpressionMenuTemplateModel.Edit(_context, source, maChange);
+                else
+                {
+                    controlChange();
+                    ExpressionMenuModel.Update(entry, draft);
+                    NotifyChanged();
+                }
+            }
+            var icon = UiTextFactory.CreateObjectField("");
+            icon.objectType = typeof(Texture2D);
+            icon.allowSceneObjects = false;
+            icon.tooltip = T("icon");
+            icon.AddToClassList("ee4v-expression-menu__quick-icon");
+            icon.SetValueWithoutNotify(entry.Control.icon);
+            icon.RegisterValueChangedCallback(evt => Run(() =>
+            {
+                try { Change(() => source.Control.icon = evt.newValue as Texture2D, () => draft.icon = evt.newValue as Texture2D); }
+                catch { icon.SetValueWithoutNotify(evt.previousValue); throw; }
+            }));
+            iconHost.Add(icon);
+            var details = new VisualElement();
+            details.AddToClassList("ee4v-expression-menu__quick-details");
+            row.Add(details);
+            var name = new InputField(new InputFieldState(entry.Control.name)) { IsDelayed = true };
+            name.tooltip = T("name");
+            name.ValueChanged += value => Run(() => Change(() => source.label = value, () => draft.name = value));
+            details.Add(name);
+            var actions = new VisualElement();
+            actions.AddToClassList("ee4v-expression-menu__quick-actions");
+            details.Add(actions);
+            if (open != null) actions.Add(new UiButton(T("openSubmenu"), open));
+            actions.Add(new UiButton(T("editDetails"), edit));
+            row.SetEnabled(CanInteract(entry));
+        }
+
+        private void BuildRadial(VisualElement host)
         {
             var ring = new VisualElement();
             ring.AddToClassList("ee4v-expression-menu__ring");
             var labels = new VisualElement { pickingMode = PickingMode.Ignore };
             labels.AddToClassList("ee4v-expression-menu__labels");
-            _menuHost.Add(ring);
+            host.Add(ring);
             var paged = _page.Entries.Count > 8;
             var count = Math.Min(paged ? 7 : 8, _page.Entries.Count - _offset);
             var hasNext = paged && _offset + count < _page.Entries.Count;
-            var slices = count + 2;
+            var hasBack = _offset > 0 || _path.Count > 0;
+            var slices = count + (hasBack ? 2 : 1);
             var addSlot = slices - 1;
-            var initialPage = _offset == 0 && _path.Count == 0;
-            var back = new UiButton(T(initialPage ? "closeEditor" : "back"), () =>
+            if (hasBack)
             {
-                if (_offset > 0) _offset = Math.Max(0, _offset - 7);
-                else if (_path.Count > 0) _path.RemoveAt(_path.Count - 1);
-                _selected = -1;
-                _error = null;
-                Refresh();
-            }, tooltip: initialPage ? T("closeEditorHint") : T("back"),
-                variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SecondaryText);
-            PlaceSlot(ring, labels, back, 0, slices, initialPage ? FluentUiIcons.LoadTexture("dismiss.png") :
-                Resources.Load<Texture2D>("Vrc3/BSX_GM_Back"));
+                var back = new UiButton(T("back"), () =>
+                {
+                    if (_offset > 0) _offset = Math.Max(0, _offset - 7);
+                    else _path.RemoveAt(_path.Count - 1);
+                    _selected = -1;
+                    _editingCurrentSubmenu = false;
+                    _error = null;
+                    Refresh();
+                }, variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SecondaryText);
+                PlaceSlot(ring, labels, back, 0, slices, Resources.Load<Texture2D>("Vrc3/BSX_GM_Back"));
+            }
             for (var slot = 0; slot < count; slot++)
             {
                 var index = _offset + slot;
@@ -160,7 +262,7 @@ namespace Ee4v.ExpressionMenu
                 button.tooltip = entry.Control.name + "\n" + entry.Control.type + " / " +
                     (entry.Owner == null ? T("ambiguous") : entry.Owner.name);
                 var icon = ExpressionMenuModel.DisplayIcon(entry.Control.icon);
-                var slice = PlaceSlot(ring, labels, button, slot + 1, slices, icon, _selected == index);
+                var slice = PlaceSlot(ring, labels, button, slot + (hasBack ? 1 : 0), slices, icon);
                 var subIcon = RadialMenuUtility.GetSubIcon(entry.Control.type);
                 if (subIcon != null)
                 {
@@ -175,7 +277,7 @@ namespace Ee4v.ExpressionMenu
             {
                 var next = new UiButton(T("next"), () => { _offset += 7; _selected = -1; Refresh(); },
                     variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SecondaryText);
-                PlaceSlot(ring, labels, next, count + 1, slices, FluentUiIcons.LoadTexture("arrow_right.png"));
+                PlaceSlot(ring, labels, next, addSlot, slices, FluentUiIcons.LoadTexture("arrow_right.png"));
             }
             else
             {
@@ -219,6 +321,7 @@ namespace Ee4v.ExpressionMenu
         {
             if (index < 0 || index >= _page.Entries.Count || !CanInteract(_page.Entries[index])) return;
             _selected = index;
+            _editingCurrentSubmenu = false;
             _error = null;
             Refresh();
         }
@@ -252,6 +355,7 @@ namespace Ee4v.ExpressionMenu
             _path.Clear();
             _path.AddRange(path);
             _selected = selected;
+            _editingCurrentSubmenu = false;
             var page = _root;
             foreach (var index in path) page = page.Entries[index].Submenu;
             _offset = page.Entries.Count > 8 ? selected / 7 * 7 : 0;
@@ -264,12 +368,14 @@ namespace Ee4v.ExpressionMenu
                 !CanInteract(_page.Entries[index])) return;
             _path.Add(index);
             _selected = -1;
+            _editingCurrentSubmenu = false;
             _offset = 0;
             _error = null;
             Refresh();
         }
 
         private bool CanInteract(MenuEntry entry) => entry.CanEdit && _context.Edits.CanEditPrefab() &&
+            !EditorApplication.isPlayingOrWillChangePlaymode &&
             (!(entry.Owner is Component component) || ExpressionMenuTemplateModel.CanEdit(_context, component));
 
         // Install target assets are references; new controls are stored in a separate prefab.
@@ -544,7 +650,7 @@ namespace Ee4v.ExpressionMenu
                     ExpressionMenuTemplateModel.Delete(_context, maSource);
                 else ExpressionMenuModel.Remove(entry);
                 if (currentSubmenu && _path.Count > 0) _path.RemoveAt(_path.Count - 1);
-                _selected = -1; NotifyChanged();
+                _selected = -1; _editingCurrentSubmenu = false; NotifyChanged();
             }), variant: UiButtonVariant.Ghost));
             if (!canEdit)
                 foreach (var field in host.Children().Skip(settingsStart)) field.SetEnabled(false);
