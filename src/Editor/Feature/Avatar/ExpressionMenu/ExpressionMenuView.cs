@@ -28,7 +28,6 @@ namespace Ee4v.ExpressionMenu
         private int _offset;
         private int _selected = -1;
         private string _error;
-        private bool _selectAddedControl;
         private ModularAvatarMenuItem _selectAddedSource;
         private static string T(string key) => I18N.Get("expressionMenu." + key);
 
@@ -71,12 +70,6 @@ namespace Ee4v.ExpressionMenu
                     _submenuEntry = _page.Entries[index];
                     _page = _submenuEntry.Submenu;
                 }
-                if (_selectAddedControl)
-                {
-                    _selected = _page.Entries.Count - 1;
-                    _offset = _page.Entries.Count > 8 ? Math.Max(0, _selected / 7 * 7) : 0;
-                    _selectAddedControl = false;
-                }
                 _offset = _page.Entries.Count > 8 ? Mathf.Clamp(_offset, 0, (_page.Entries.Count - 1) / 7 * 7) : 0;
                 if (_selected >= _page.Entries.Count) _selected = -1;
                 Build();
@@ -84,7 +77,6 @@ namespace Ee4v.ExpressionMenu
             catch (Exception exception)
             {
                 Add(UiTextFactory.CreateHelpBox(exception.GetBaseException().Message, HelpBoxMessageType.Error));
-                Add(new UiButton(T("refresh"), Refresh));
             }
         }
 
@@ -104,15 +96,6 @@ namespace Ee4v.ExpressionMenu
                 Add(source);
                 Add(UiTextFactory.Create(_page.Name, UiClassNames.SecondaryText));
             }
-            var toolbar = new VisualElement();
-            toolbar.AddToClassList("ee4v-expression-menu__toolbar");
-            toolbar.Add(new UiButton(T("refresh"), Refresh, variant: UiButtonVariant.Ghost));
-            toolbar.Add(new UiButton(T("saveAssets"), () => Run(() =>
-            {
-                foreach (var asset in _sources.Select(page => page.Asset).Where(asset => asset != null).Distinct())
-                    if (ExpressionMenuModel.CanWrite(asset)) AssetDatabase.SaveAssetIfDirty(asset);
-            }), variant: UiButtonVariant.Ghost));
-            Add(toolbar);
             if (!string.IsNullOrEmpty(_error))
                 Add(UiTextFactory.CreateHelpBox(_error, HelpBoxMessageType.Error));
             BuildRadial();
@@ -130,7 +113,7 @@ namespace Ee4v.ExpressionMenu
             var paged = _page.Entries.Count > 8;
             var count = Math.Min(paged ? 7 : 8, _page.Entries.Count - _offset);
             var hasNext = paged && _offset + count < _page.Entries.Count;
-            var slices = count + (hasNext ? 1 : 0) + 2;
+            var slices = count + 2;
             var addSlot = slices - 1;
             var back = new UiButton(T("back"), () =>
             {
@@ -176,14 +159,17 @@ namespace Ee4v.ExpressionMenu
                     variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SecondaryText);
                 PlaceSlot(ring, labels, next, count + 1, slices, FluentUiIcons.LoadTexture("arrow_right.png"));
             }
-            var add = new UiButton(T("addItem"), ShowTemplates, tooltip: T("add"), variant: UiButtonVariant.Ghost,
-                labelTypographyClassName: UiClassNames.SecondaryText);
-            var addSlice = PlaceSlot(ring, labels, add, addSlot, slices, FluentUiIcons.LoadTexture("add.png"));
-            addSlice.SetEnabled(_context.Edits.CanEditPrefab() && !EditorApplication.isPlayingOrWillChangePlaymode);
-            if (!addSlice.enabledSelf)
+            else
             {
-                add.SetLabelColor(Color.gray);
-                add.Content.Q<Image>().tintColor = Color.gray;
+                var add = new UiButton(T("addItem"), ShowTemplates, tooltip: T("add"), variant: UiButtonVariant.Ghost,
+                    labelTypographyClassName: UiClassNames.SecondaryText);
+                var addSlice = PlaceSlot(ring, labels, add, addSlot, slices, FluentUiIcons.LoadTexture("add.png"));
+                addSlice.SetEnabled(_context.Edits.CanEditPrefab() && !EditorApplication.isPlayingOrWillChangePlaymode);
+                if (!addSlice.enabledSelf)
+                {
+                    add.SetLabelColor(Color.gray);
+                    add.Content.Q<Image>().tintColor = Color.gray;
+                }
             }
             var center = RadialMenuUtility.Prefabs.NewCircle(RadialMenu.Size / 3f,
                 RadialMenuUtility.Colors.RadialInner, RadialMenuUtility.Colors.CustomBorder, Position.Absolute);
@@ -370,40 +356,30 @@ namespace Ee4v.ExpressionMenu
         private void BuildSettings(MenuEntry entry, bool currentSubmenu = false)
         {
             Add(UiTextFactory.Create(T("settings"), UiClassNames.SectionTitle));
-            var owner = UiTextFactory.CreateObjectField(T("source"));
-            owner.SetValueWithoutNotify(entry.Owner); owner.SetEnabled(false); Add(owner);
+            var maSource = entry.Owner as ModularAvatarMenuItem;
+            var effects = ExpressionMenuTemplateModel.Effects(maSource);
+            var simple = effects.Length > 0;
+            var canEdit = entry.CanEdit && _context.Edits.CanEditPrefab() && !EditorApplication.isPlayingOrWillChangePlaymode &&
+                (!(entry.Owner is Component sourceComponent) || ExpressionMenuTemplateModel.CanEdit(_context, sourceComponent));
+            if (!canEdit) Add(UiTextFactory.CreateHelpBox(T("readOnly"), HelpBoxMessageType.Info));
+            if (!simple)
+            {
+                var owner = UiTextFactory.CreateObjectField(T("source"));
+                owner.SetValueWithoutNotify(entry.Owner); owner.SetEnabled(false); Add(owner);
+            }
             if (entry.Submenu != null && !currentSubmenu)
             {
                 var index = _selected;
                 Add(new UiButton(T("openSubmenu"), () => OpenSubmenu(index)));
             }
-            var canEdit = entry.CanEdit && _context.Edits.CanEditPrefab() && !EditorApplication.isPlayingOrWillChangePlaymode;
-            if (!canEdit) Add(UiTextFactory.CreateHelpBox(T("readOnly"), HelpBoxMessageType.Info));
             var settingsStart = childCount;
             var draft = ExpressionMenuModel.Copy(entry.Control);
-            // Virtual controls deliberately have no serialized submenu asset reference.
             if (entry.Owner is VRCExpressionsMenu menu) draft.subMenu = menu.controls[entry.Index].subMenu;
-            else if (entry.Owner is ModularAvatarMenuItem item) draft.subMenu = item.Control.subMenu;
-            var sourcePath = entry.Owner == null ? T("ambiguous") :
-                EditorUtility.IsPersistent(entry.Owner) ? AssetDatabase.GetAssetPath(entry.Owner) :
-                AnimationUtility.CalculateTransformPath(((Component)entry.Owner).transform, _context.Root.transform);
-            var pathLabel = UiTextFactory.Create(sourcePath, UiClassNames.SecondaryText);
-            pathLabel.SetWhiteSpace(WhiteSpace.Normal);
-            Add(pathLabel);
-            var confirmed = UiTextFactory.CreateToggle(T("confirmSource"));
-            Add(confirmed);
-            var maSource = entry.Owner as ModularAvatarMenuItem;
+            else if (maSource != null) draft.subMenu = maSource.Control.subMenu;
             var synced = maSource != null && maSource.isSynced;
             var saved = maSource != null && maSource.isSaved;
             var defaultValue = maSource != null && maSource.isDefault;
             var automaticValue = maSource != null && maSource.automaticValue;
-            if (maSource != null)
-            {
-                AddToggle(T("synced"), synced, value => synced = value);
-                AddToggle(T("saved"), saved, value => saved = value);
-                AddToggle(T("defaultValue"), defaultValue, value => defaultValue = value);
-                AddToggle(T("automaticValue"), automaticValue, value => automaticValue = value);
-            }
             void ApplyDraft()
             {
                 ExpressionMenuModel.Update(entry, draft);
@@ -413,107 +389,118 @@ namespace Ee4v.ExpressionMenu
                     maSource.isDefault = defaultValue; maSource.automaticValue = automaticValue;
                     PrefabUtility.RecordPrefabInstancePropertyModifications(maSource);
                     EditorUtility.SetDirty(maSource);
+                    ExpressionMenuInstaller.SaveGeneratedPrefab(maSource.gameObject);
                 }
                 if (currentSubmenu && draft.type != VRCExpressionsMenu.Control.ControlType.SubMenu && _path.Count > 0)
                     _path.RemoveAt(_path.Count - 1);
                 NotifyChanged();
             }
-            AddText(T("name"), draft.name, value => draft.name = value);
+            void Change(Action change) => Run(() =>
+            {
+                if (!canEdit) throw new InvalidOperationException(T("readOnly"));
+                change();
+                ApplyDraft();
+            });
+            AddText(T("name"), draft.name, value => Change(() => draft.name = value));
             var icon = UiTextFactory.CreateObjectField(T("icon"));
             icon.objectType = typeof(Texture2D); icon.allowSceneObjects = false;
             icon.SetValueWithoutNotify(draft.icon);
-            icon.RegisterValueChangedCallback(evt => draft.icon = evt.newValue as Texture2D); Add(icon);
-            var type = UiTextFactory.CreateEnumField(T("type"), draft.type);
-            Add(type);
-            var details = new VisualElement(); Add(details);
-            void BuildDetails()
+            icon.RegisterValueChangedCallback(evt => Change(() => draft.icon = evt.newValue as Texture2D)); Add(icon);
+            if (maSource != null)
             {
-                details.Clear();
-                AddText(T("parameter"), draft.parameter?.name, value =>
-                    draft.parameter = new VRCExpressionsMenu.Control.Parameter { name = value }, details);
-                var valueField = UiTextFactory.CreateFloatField(T("value"));
-                valueField.SetValueWithoutNotify(draft.value);
-                valueField.RegisterValueChangedCallback(evt => draft.value = evt.newValue); details.Add(valueField);
-                if (draft.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
+                AddToggle(T(simple ? "syncPlayers" : "synced"), synced, value => Change(() => synced = value));
+                if (!simple)
                 {
-                    var submenu = UiTextFactory.CreateObjectField(T("submenu"));
-                    submenu.objectType = typeof(VRCExpressionsMenu); submenu.allowSceneObjects = false;
-                    submenu.SetValueWithoutNotify(draft.subMenu);
-                    submenu.RegisterValueChangedCallback(evt => draft.subMenu = evt.newValue as VRCExpressionsMenu);
-                    submenu.SetEnabled(!(entry.Owner is ModularAvatarMenuItem ma && ma.MenuSource == SubmenuSource.Children));
-                    details.Add(submenu);
-                    var createSubmenu = new UiButton(T("createSubmenu"), () => Run(() =>
+                    AddToggle(T("saved"), saved, value => Change(() => saved = value));
+                    AddToggle(T("defaultValue"), defaultValue, value => Change(() => defaultValue = value));
+                    AddToggle(T("automaticValue"), automaticValue, value => Change(() => automaticValue = value));
+                }
+            }
+            if (simple)
+                Add(new ExpressionMenuTemplateEditor(_context, maSource));
+            else
+            {
+                var type = UiTextFactory.CreateEnumField(T("type"), draft.type);
+                Add(type);
+                var details = new VisualElement(); Add(details);
+                void BuildDetails()
+                {
+                    details.Clear();
+                    AddText(T("parameter"), draft.parameter?.name, value => Change(() =>
+                        draft.parameter = new VRCExpressionsMenu.Control.Parameter { name = value }), details);
+                    var valueField = UiTextFactory.CreateFloatField(T("value"));
+                    valueField.isDelayed = true;
+                    valueField.SetValueWithoutNotify(draft.value);
+                    valueField.RegisterValueChangedCallback(evt => Change(() => draft.value = evt.newValue)); details.Add(valueField);
+                    if (draft.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
                     {
-                        var path = AssetDatabase.GetAssetPath(entry.Owner is VRCExpressionsMenu asset ? asset : _context.PrefabAsset);
-                        var newMenu = ScriptableObject.CreateInstance<VRCExpressionsMenu>();
-                        newMenu.name = string.IsNullOrWhiteSpace(draft.name) ? "Submenu" : draft.name;
-                        var newPath = AssetDatabase.GenerateUniqueAssetPath(
-                            System.IO.Path.GetDirectoryName(path).Replace('\\', '/') + "/Submenu.asset");
-                        AssetDatabase.CreateAsset(newMenu, newPath);
-                        Undo.RegisterCreatedObjectUndo(newMenu, "Create Expression Submenu");
-                        try { draft.subMenu = newMenu; ApplyDraft(); }
-                        catch { AssetDatabase.DeleteAsset(newPath); throw; }
-                    }));
-                    var supportsAsset = !(entry.Owner is ModularAvatarMenuItem childItem &&
-                        childItem.MenuSource == SubmenuSource.Children);
-                    createSubmenu.SetEnabled(confirmed.value && supportsAsset);
-                    confirmed.RegisterValueChangedCallback(evt => createSubmenu.SetEnabled(evt.newValue && supportsAsset));
-                    details.Add(createSubmenu);
-                }
-                var axes = draft.type == VRCExpressionsMenu.Control.ControlType.RadialPuppet ? 1 :
-                    draft.type == VRCExpressionsMenu.Control.ControlType.TwoAxisPuppet ? 2 :
-                    draft.type == VRCExpressionsMenu.Control.ControlType.FourAxisPuppet ? 4 : 0;
-                var old = draft.subParameters ?? Array.Empty<VRCExpressionsMenu.Control.Parameter>();
-                draft.subParameters = Enumerable.Range(0, axes).Select(i => new VRCExpressionsMenu.Control.Parameter
-                    { name = i < old.Length ? old[i]?.name ?? "" : "" }).ToArray();
-                for (var axis = 0; axis < axes; axis++)
-                {
-                    var index = axis;
-                    AddText(T("axis") + " " + (axis + 1), draft.subParameters[axis].name,
-                        value => draft.subParameters[index].name = value, details);
-                }
-                if (axes > 1)
-                {
-                    var oldLabels = draft.labels ?? Array.Empty<VRCExpressionsMenu.Control.Label>();
-                    draft.labels = Enumerable.Range(0, 4).Select(i => i < oldLabels.Length ? oldLabels[i] :
-                        new VRCExpressionsMenu.Control.Label()).ToArray();
-                    for (var axis = 0; axis < 4; axis++)
+                        var supportsAsset = !(maSource != null && maSource.MenuSource == SubmenuSource.Children);
+                        var submenu = UiTextFactory.CreateObjectField(T("submenu"));
+                        submenu.objectType = typeof(VRCExpressionsMenu); submenu.allowSceneObjects = false;
+                        submenu.SetValueWithoutNotify(draft.subMenu);
+                        submenu.RegisterValueChangedCallback(evt => Change(() => draft.subMenu = evt.newValue as VRCExpressionsMenu));
+                        submenu.SetEnabled(supportsAsset);
+                        details.Add(submenu);
+                        var createSubmenu = new UiButton(T("createSubmenu"), () => Run(() =>
+                        {
+                            if (!canEdit) throw new InvalidOperationException(T("readOnly"));
+                            var path = AssetDatabase.GetAssetPath(entry.Owner is VRCExpressionsMenu asset ? asset : _context.PrefabAsset);
+                            var newMenu = ScriptableObject.CreateInstance<VRCExpressionsMenu>();
+                            newMenu.name = string.IsNullOrWhiteSpace(draft.name) ? "Submenu" : draft.name;
+                            var newPath = AssetDatabase.GenerateUniqueAssetPath(
+                                System.IO.Path.GetDirectoryName(path).Replace('\\', '/') + "/Submenu.asset");
+                            AssetDatabase.CreateAsset(newMenu, newPath);
+                            Undo.RegisterCreatedObjectUndo(newMenu, "Create Expression Submenu");
+                            try { draft.subMenu = newMenu; ApplyDraft(); }
+                            catch { AssetDatabase.DeleteAsset(newPath); throw; }
+                        }));
+                        createSubmenu.SetEnabled(supportsAsset);
+                        details.Add(createSubmenu);
+                    }
+                    var axes = draft.type == VRCExpressionsMenu.Control.ControlType.RadialPuppet ? 1 :
+                        draft.type == VRCExpressionsMenu.Control.ControlType.TwoAxisPuppet ? 2 :
+                        draft.type == VRCExpressionsMenu.Control.ControlType.FourAxisPuppet ? 4 : 0;
+                    var old = draft.subParameters ?? Array.Empty<VRCExpressionsMenu.Control.Parameter>();
+                    draft.subParameters = Enumerable.Range(0, axes).Select(i => new VRCExpressionsMenu.Control.Parameter
+                        { name = i < old.Length ? old[i]?.name ?? "" : "" }).ToArray();
+                    for (var axis = 0; axis < axes; axis++)
                     {
                         var index = axis;
-                        AddText(T("axisLabel") + " " + (axis + 1), draft.labels[axis].name,
-                            value => draft.labels[index].name = value, details);
-                        var labelIcon = UiTextFactory.CreateObjectField(T("icon") + " " + (axis + 1));
-                        labelIcon.objectType = typeof(Texture2D); labelIcon.allowSceneObjects = false;
-                        labelIcon.SetValueWithoutNotify(draft.labels[axis].icon);
-                        labelIcon.RegisterValueChangedCallback(evt => draft.labels[index].icon = evt.newValue as Texture2D);
-                        details.Add(labelIcon);
+                        AddText(T("axis") + " " + (axis + 1), draft.subParameters[axis].name,
+                            value => Change(() => draft.subParameters[index].name = value), details);
+                    }
+                    if (axes > 1)
+                    {
+                        var oldLabels = draft.labels ?? Array.Empty<VRCExpressionsMenu.Control.Label>();
+                        draft.labels = Enumerable.Range(0, 4).Select(i => i < oldLabels.Length ? oldLabels[i] :
+                            new VRCExpressionsMenu.Control.Label()).ToArray();
+                        for (var axis = 0; axis < 4; axis++)
+                        {
+                            var index = axis;
+                            AddText(T("axisLabel") + " " + (axis + 1), draft.labels[axis].name,
+                                value => Change(() => draft.labels[index].name = value), details);
+                            var labelIcon = UiTextFactory.CreateObjectField(T("icon") + " " + (axis + 1));
+                            labelIcon.objectType = typeof(Texture2D); labelIcon.allowSceneObjects = false;
+                            labelIcon.SetValueWithoutNotify(draft.labels[axis].icon);
+                            labelIcon.RegisterValueChangedCallback(evt => Change(() => draft.labels[index].icon = evt.newValue as Texture2D));
+                            details.Add(labelIcon);
+                        }
                     }
                 }
+                type.RegisterValueChangedCallback(evt => Change(() =>
+                {
+                    draft.type = (VRCExpressionsMenu.Control.ControlType)evt.newValue;
+                    BuildDetails();
+                }));
+                BuildDetails();
             }
-            type.RegisterValueChangedCallback(evt =>
-            { draft.type = (VRCExpressionsMenu.Control.ControlType)evt.newValue; BuildDetails(); });
-            BuildDetails();
-            if (maSource != null && ExpressionMenuTemplateModel.Effects(maSource).Length > 0)
+            Add(new UiButton(T("remove"), () => Run(() =>
             {
-                var templateEditor = new ExpressionMenuTemplateEditor(_context, maSource);
-                templateEditor.SetEnabled(false);
-                confirmed.RegisterValueChangedCallback(evt => templateEditor.SetEnabled(evt.newValue && canEdit));
-                Add(templateEditor);
-            }
-            var apply = new UiButton(T("apply"), () => Run(() =>
-            {
-                ApplyDraft();
-            }));
-            var remove = new UiButton(T("remove"), () => Run(() =>
-            {
+                if (!canEdit) throw new InvalidOperationException(T("readOnly"));
                 ExpressionMenuModel.Remove(entry);
                 if (currentSubmenu && _path.Count > 0) _path.RemoveAt(_path.Count - 1);
                 _selected = -1; NotifyChanged();
-            }), variant: UiButtonVariant.Ghost);
-            apply.SetEnabled(false); remove.SetEnabled(false);
-            confirmed.RegisterValueChangedCallback(evt =>
-            { apply.SetEnabled(evt.newValue); remove.SetEnabled(evt.newValue); });
-            Add(apply); Add(remove);
+            }), variant: UiButtonVariant.Ghost));
             if (!canEdit)
                 foreach (var field in Children().Skip(settingsStart)) field.SetEnabled(false);
         }
@@ -535,23 +522,9 @@ namespace Ee4v.ExpressionMenu
 
         private void AddControl()
         {
-            VRCExpressionsMenu target;
-            var path = _page.Asset == null ? "" : AssetDatabase.GetAssetPath(_page.Asset);
-            if (path.Contains(".ExpressionMenu/")) target = _page.Asset;
-            else target = ExpressionMenuInstaller.EnsureMenu(_context.Root, _context.PrefabAsset, _page.Asset, _page.ChildRoot);
-            if (!ExpressionMenuModel.CanWrite(target)) throw new InvalidOperationException(T("readOnly"));
-            if (target.controls.Count >= 8) throw new InvalidOperationException(T("full"));
-            Undo.RecordObject(target, "Add Expression Menu Control");
-            target.controls.Add(new VRCExpressionsMenu.Control
-            {
-                name = T("newControl"), type = VRCExpressionsMenu.Control.ControlType.Toggle,
-                parameter = new VRCExpressionsMenu.Control.Parameter { name = "" },
-                subParameters = Array.Empty<VRCExpressionsMenu.Control.Parameter>(),
-                labels = Array.Empty<VRCExpressionsMenu.Control.Label>(), value = 1
-            });
-            EditorUtility.SetDirty(target);
-            AssetDatabase.SaveAssetIfDirty(target);
-            _selectAddedControl = true; NotifyChanged();
+            _selectAddedSource = ExpressionMenuTemplateModel.Create(_context, null,
+                T("newControl"), _page.Asset, _page.ChildRoot);
+            NotifyChanged();
         }
 
         private void ShowTemplates()

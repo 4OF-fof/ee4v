@@ -170,6 +170,7 @@ namespace Ee4v.ExpressionMenu
                 PrefabUtility.RecordPrefabInstancePropertyModifications(item);
             }
             EditorUtility.SetDirty(entry.Owner);
+            if (entry.Owner is VRCExpressionsMenu) AssetDatabase.SaveAssetIfDirty(entry.Owner);
         }
 
         internal static void Remove(MenuEntry entry)
@@ -180,11 +181,16 @@ namespace Ee4v.ExpressionMenu
                 Undo.RecordObject(asset, "Remove Expression Menu Control");
                 asset.controls.RemoveAt(entry.Index);
                 EditorUtility.SetDirty(asset);
+                AssetDatabase.SaveAssetIfDirty(asset);
             }
             else if (entry.Owner is ModularAvatarMenuItem item)
             {
                 if (ExpressionMenuTemplateModel.IsOwned(item.gameObject))
+                {
+                    var parent = item.transform.parent?.gameObject;
                     Undo.DestroyObjectImmediate(item.gameObject);
+                    ExpressionMenuInstaller.SaveGeneratedPrefab(parent);
+                }
                 else Undo.DestroyObjectImmediate(item);
             }
         }
@@ -195,9 +201,9 @@ namespace Ee4v.ExpressionMenu
             if (entry.Owner is VRCExpressionsMenu asset &&
                 (entry.Index < 0 || entry.Index >= asset.controls.Count ||
                  !ReferenceEquals(asset.controls[entry.Index], entry.SourceControl)))
-                throw new InvalidOperationException("The menu source changed. Refresh and select the control again.");
+                throw new InvalidOperationException("The menu source changed. Select the control again.");
             if (entry.Owner is ModularAvatarMenuItem item && !ReferenceEquals(item.Control, entry.SourceControl))
-                throw new InvalidOperationException("The MA Menu Item changed. Refresh and select the control again.");
+                throw new InvalidOperationException("The MA Menu Item changed. Select the control again.");
         }
     }
 }

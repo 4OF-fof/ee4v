@@ -1,13 +1,19 @@
 .ee4v-expression-menu { flex-grow: 1; padding: 8px; }
-.ee4v-menu-template { margin-top: 12px; margin-bottom: 12px; }
-.ee4v-menu-template__row { flex-direction: row; flex-wrap: wrap; align-items: center; }
-.ee4v-menu-template__row > * { margin-right: 6px; margin-bottom: 6px; }
-.ee4v-menu-template__change { margin-bottom: 8px; padding: 10px; border-width: 1px; border-color: var(--ee4v-color-border-default); border-radius: 4px; }
+.ee4v-menu-template { margin-top: 6px; margin-bottom: 6px; }
+.ee4v-menu-template__change { margin-bottom: 6px; }
 .ee4v-menu-template__change > * { margin-bottom: 6px; }
-.ee4v-menu-template__entry { margin-top: 8px; padding: 8px; background-color: var(--ee4v-color-surface-subtle); border-radius: 4px; }
+.ee4v-menu-template__entry { margin-top: 4px; }
 .ee4v-menu-template__entry > * { margin-bottom: 6px; }
+.ee4v-menu-template__change .ee4v-ui-button { align-self: flex-start; }
+.ee4v-menu-template__entry .ee4v-ui-button { align-self: flex-end; }
 .ee4v-menu-template__hidden { display: none; }
-.ee4v-expression-menu__toolbar { flex-direction: row; margin-top: 6px; margin-bottom: 6px; }
+.ee4v-menu-template__shape-group { margin-top: 6px; border-width: 1px; border-color: var(--ee4v-color-border-default); border-radius: 4px; }
+.ee4v-menu-template__shape-group .ee4v-ui-button.ee4v-menu-template__shape-header { align-self: stretch; }
+.ee4v-menu-template__shape-row { flex-direction: row; flex-wrap: wrap; align-items: center; padding: 6px; border-bottom-width: 1px; border-bottom-color: var(--ee4v-color-border-default); }
+.ee4v-menu-template__shape-label { flex-grow: 1; flex-basis: 200px; min-width: 150px; margin-right: 8px; }
+.ee4v-menu-template__shape-value { width: 200px; margin-right: 6px; }
+.ee4v-menu-template__shape-favorite { margin-right: 6px; }
+.ee4v-menu-template__shape-row .ee4v-ui-button { align-self: center; }
 .ee4v-expression-menu__ring { width: 300px; height: 300px; align-self: center; margin-top: 8px; margin-bottom: 8px; flex-shrink: 0; }
 .ee4v-expression-menu__slice { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; }
 .ee4v-expression-menu__slice-visual { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }

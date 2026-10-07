@@ -2,7 +2,7 @@
 
 ## Editor ModeのExpression Menu
 
-Editor Modeの「Expression Menu」カテゴリは、DescriptorとModular Avatarの合成メニューと項目設定を表示します。新規項目の追加時に通常項目、MA Object Toggle、Material Swap、Material Setter、Shape Changerのテンプレートを選べます。MA設定は対応するメニュー項目の設定欄で編集します。メニュー項目の設定・削除も行います。追加項目はアバター内の専用MA Prefabへ配置し、生成Prefabを上部item一覧から除外します。3Dプレビューは表示しません。ユーザー設定の`assetManager.excludedItemNamePrefixes`で上部item一覧の追加除外を指定できます。詳細は[Expression Menu](features/expression-menu.md)を参照してください。
+Editor Modeの「Expression Menu」カテゴリは、DescriptorとModular Avatarの合成メニューと項目設定を表示します。新規項目の追加時に通常項目、MA Object Toggle、Material Swap、Shape Changerのテンプレートを選べます。MA設定は対応するメニュー項目の設定欄で編集します。メニュー項目の設定・削除も行います。追加項目はアバター内の専用MA Prefabへ配置し、生成Prefabを上部item一覧から除外します。3Dプレビューは表示しません。ユーザー設定の`assetManager.excludedItemNamePrefixes`で上部item一覧の追加除外を指定できます。詳細は[Expression Menu](features/expression-menu.md)を参照してください。
 
 AssetManager は Item、File、Import Target、依存関係、Tag、Collection、取り込み済み Asset GUID と派生アセットを管理します。MCP の公開操作と入力境界は [mcp.md](./mcp.md) を参照してください。
 
