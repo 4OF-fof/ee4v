@@ -390,8 +390,9 @@ namespace Ee4v.ExpressionMenu
             }
             var radial = ExpressionMenuAnimationRecipe.IsContinuous(_item);
             var values = new VisualElement { name = "parameterValues" };
-            values.AddToClassList("ee4v-menu-template__range");
+            if (radial) values.AddToClassList("ee4v-menu-template__range");
             card.Add(new FormInput(T(radial ? "valueRange" : "parameterValues"), values));
+            var transition = !radial ? AddTransition(values, T("parameterWhenOff"), T("parameterWhenOn")) : default;
             void SetEndpoint(bool on, float value) => ExpressionMenuAnimationRecipe.Change(_context, _item, () =>
             {
                 if (on) action.On = value;
@@ -404,15 +405,17 @@ namespace Ee4v.ExpressionMenu
                 var value = on ? action.On : action.Off;
                 if (!radial)
                 {
-                    var field = UiTextFactory.CreateToggle("", "ee4v-menu-template__range-value");
+                    var choices = new List<string> { "False", "True" };
+                    var field = UiTextFactory.CreatePopupField("", choices, value != 0 ? 1 : 0);
+                    field.name = on ? "parameterOnValue" : "parameterOffValue";
                     field.tooltip = hint;
-                    field.SetValueWithoutNotify(value != 0);
+                    field.SetValueWithoutNotify(value != 0 ? "True" : "False");
                     field.RegisterValueChangedCallback(evt => Run(() =>
                     {
-                        try { SetEndpoint(on, evt.newValue ? 1 : 0); }
+                        try { SetEndpoint(on, evt.newValue == "True" ? 1 : 0); }
                         catch { field.SetValueWithoutNotify(evt.previousValue); Refresh(); throw; }
                     }));
-                    values.Add(field);
+                    (on ? transition.After : transition.Before).Add(field);
                 }
                 else if (action.NumericType == AnimatorControllerParameterType.Int)
                 {
@@ -442,7 +445,7 @@ namespace Ee4v.ExpressionMenu
                 }
             }
             Endpoint(false);
-            values.Add(UiTextFactory.Create(radial ? "〜" : "→", "ee4v-menu-template__range-separator"));
+            if (radial) values.Add(UiTextFactory.Create("〜", "ee4v-menu-template__range-separator"));
             Endpoint(true);
             card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
         }

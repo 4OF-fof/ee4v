@@ -87,7 +87,7 @@ Toggleで追加できます。 `MenuComponentAction` の各行で対象Objectと
 
 ## パラメータの値を変更
 
-動作カードでパラメータ名を設定します。ToggleはBool、連続値・保存済みPuppet動作はFloat／Intを使用し、型の選択欄を配置しません。ButtonだけはTrigger・Bool・Int・Floatの型を扱います。名前は直接入力でき、Playable Layer、MA Merge Animator、Expression Parameters、公開MA Parametersから型付きの候補を選択できます。既知の名前は型を自動反映し、Buttonの型選択欄を無効にします。未知の名前は数値操作ではFloat、Buttonでは初期Triggerとし、Buttonの型を選択できます。TriggerでExpression Parametersに同名宣言があるものは候補から除きます。MAのprivate・prefix定義、自分自身の入力parameterは候補へ含めません。ToggleはOFF／ONのチェック、連続値は両端の範囲を1行で編集します。ButtonのTriggerは値の入力を設けず、Boolはチェック、Intは整数、Floatは小数の「設定する値」を1つ表示します。型を変更すると値を初期化します。対象未指定のカードは保持し、動作レイヤーへ含めません。
+動作カードでパラメータ名を設定します。ToggleはBool、連続値・保存済みPuppet動作はFloat／Intを使用し、型の選択欄を配置しません。ButtonだけはTrigger・Bool・Int・Floatの型を扱います。名前は直接入力でき、Playable Layer、MA Merge Animator、Expression Parameters、公開MA Parametersから型付きの候補を選択できます。既知の名前は型を自動反映し、Buttonの型選択欄を無効にします。未知の名前は数値操作ではFloat、Buttonでは初期Triggerとし、Buttonの型を選択できます。TriggerでExpression Parametersに同名宣言があるものは候補から除きます。MAのprivate・prefix定義、自分自身の入力parameterは候補へ含めません。Toggleは「設定する値」の下に「メニューOFF時」「メニューON時」の見出しを配置し、それぞれFalse／Trueを選択します。連続値は両端の範囲を1行で編集します。ButtonのTriggerは値の入力を設けず、Boolはチェック、Intは整数、Floatは小数の「設定する値」を1つ表示します。型を変更すると値を初期化します。対象未指定のカードは保持し、動作レイヤーへ含めません。
 
 設定はEditor専用recipeの`MenuParameterAction`へ保持します。ToggleはFXレイヤーのOFF／ON stateの`VRCAvatarParameterDriver`でSetし、初期状態も適用します。Buttonはメニュー入力用BoolをSDKのButtonで操作し、ONへ入ったときだけDriverのSetで対象Triggerを実行するか、Bool／Int／Floatを指定値に設定します。OFF・初期状態にはDriverを配置せず、起動時の誤実行を防ぎ、Buttonの復帰後も設定した値を保持します。対象TriggerはAnimator Controllerだけに宣言し、Expression Parameters／MA Parametersには追加しません。同期は入力Boolと各プレイヤー側の実行で扱います。連続値・Puppetは2つのstateを各0.02秒以上保持して交互に遷移し、stateへ入るたびにCopy／Convert Rangeで入力Floatを指定範囲へ写します。Puppetは動作が指定した軸をsourceとし、2 Axisでは−1〜1、4 Axisでは0〜1を使用します。止めた操作値も継続して適用し、逆方向の範囲も使用できます。Intの中間値はSDKの切り捨てを使用します。時計用Clipは共通parameter IDに`/CopyClock`を付けた内部Floatだけを操作します。
 
@@ -161,6 +161,8 @@ MAは`src/package.json`の対応範囲（1.18.2以上2.0.0未満）で内部reso
 
 Unity 2022.3で以下を確認します。新規自動テストは追加しません。
 
+- Toggleのパラメータ変更は「設定する値」の下に「メニューOFF時」「メニューON時」を表示し、各Bool値をFalse／Trueで選択できること。OFF・ONとも独立に変更でき、生成・Undo／Redoに反映されること。数値とButtonの入力形式が変わらないこと。
+
 - マテリアル設定の型に合う入力、Color・HDR・Vector・Float／Range・Shader Integer・Texture・倍率／オフセット・キーワード・Shader・各設定の選択。Toggleの現在値OFFとON、連続値の両端・中間・負の値・逆方向の補間。非アニメーション項目がToggle専用であること。Texture／キーワード等が生成Materialへまとめられ、元Materialとslot別のOFF参照が保持されること。生成MaterialのController保存・再読込・Undo／Redo、dimension不一致とbinding競合の拒否、行保持・消失の再指定・同期とLocalOnly gate。
 
 - ツリーの通常項目表示と個別編集への移動、Root・Submenuの移動と現在位置強調、展開・折りたたみ保持。ツリー内とカードからの階層移動・同じ階層の並び替え、移動先強調と挿入線、Undo／Redo、自動スクロール、Esc・範囲外・capture喪失の取消。保護・満杯・自分自身・子孫の拒否と、移動後に表示階層が一致すること。
@@ -174,7 +176,7 @@ Unity 2022.3で以下を確認します。新規自動テストは追加しま�
 - 各動作の同期変更とUndo、全OFF時のlocalOnly、ON／OFF混在時のparameter同期とIsLocalによる本人専用動作の分離。Toggleの初期ONと連続値の初期値でも他プレイヤー側へ本人専用の変更が適用されないこと。既存の生成MA componentの引き継ぎ・Undo・非対応設定の拒否。
 - Submenuの作成後にその階層へ入り、左に名前・アイコンだけを表示すること。SubmenuへItem・Submenuを追加でき、同名SubmenuでもChildren rootによって出所と追加先が特定されること。名前・アイコンの変更とUndo。
 - 表示＋Material＋BlendShape＋パラメータ変更を1項目へ登録し、Play Modeで同じON/OFFへ追従すること。Animation Clipが追加候補にないこと。
-- Toggleと連続値のパラメータ変更に型選択欄がなく、ToggleのBoolはチェック、数値のFloat／Intは対応する型の範囲入力が1行に収まること。候補がメニューの型で絞られ、Int選択時に整数入力へ切り替わること。数値の0・中間・100と逆方向の範囲、値を止めた後の継続コピー、初期値、動作ごとの同期、未設定のカード保持、既存のparameter宣言保持、重複・組み込み名・型不一致・非有限値・Expression範囲外の拒否と復元、Undo／Redo、保存後の再読み込み。
+- Toggleと連続値のパラメータ変更に型選択欄がなく、ToggleのBoolは見出し付きのFalse／True選択、数値のFloat／Intは対応する型の範囲入力が1行に収まること。候補がメニューの型で絞られ、Int選択時に整数入力へ切り替わること。数値の0・中間・100と逆方向の範囲、値を止めた後の継続コピー、初期値、動作ごとの同期、未設定のカード保持、既存のparameter宣言保持、重複・組み込み名・型不一致・非有限値・Expression範囲外の拒否と復元、Undo／Redo、保存後の再読み込み。
 - 登録済みClipカードの編集・削除、ON/OFF、OFF省略時の復帰、ループ設定、初期ON/OFF、複数Clipの別プロパティ適用、競合・不正path・root表示・Legacy/Humanoidの拒否、素材Clip保持。
 - Item・Submenuの追加が専用root内へまとまり、item一覧にroot・項目が表示されないこと。繰り返し追加でrootを再利用し、Submenuの親子構造・登録先・Prefab接続を維持すること。root作成・既存追加overrideの移動・項目追加をUndo／Redoでき、生成Prefabの保存でAvatar Prefabへ他のScene overrideをApplyしないこと。
 - アバターrootに存在しないSkinnedMeshRendererを操作するClip、存在しないBlendShape・プロパティ、競合するClipを指定しても、Componentへのアクセス例外や画面消失を起こさず、入力参照と生成済み設定を保持して同じ編集欄にエラーを表示すること。
