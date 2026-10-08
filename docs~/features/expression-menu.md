@@ -26,12 +26,12 @@
 
 | 操作タイプ | 利用可能な動作 | 初期状態 |
 | --- | --- | --- |
-| Toggle（ON／OFF） | オブジェクト表示／非表示、マテリアル差し替え、BlendShape変更、パラメータの値を変更、マテリアルの数値を変更 | ON／OFF |
-| 0〜100（連続値） | BlendShape変更、パラメータの値を変更、マテリアルの数値を変更 | 0〜100の数値 |
-| Button（実行） | パラメータの値を変更（対象はTrigger） | OFF固定、値保存なし |
-| Puppet（軸操作） | なし | 各軸0、中心位置 |
+| Toggle（ON／OFF） | オブジェクト表示／非表示、マテリアル差し替え、BlendShape変更、パラメータの値を変更、マテリアルのパラメーター変更、Transform変更、Componentの有効切り替え | ON／OFF |
+| 0〜100（連続値） | BlendShape変更、パラメータの値を変更、マテリアルのパラメーター変更、Transform変更 | 0〜100の数値 |
+| Button（実行） | パラメータの値を変更（Trigger実行、Bool／Int／FloatのSet） | OFF固定、値保存なし |
+| Puppet（軸操作） | Transform変更 | 各軸0、中心位置 |
 
-Puppetは2 Axis／4 Axisの設定を保持しますが、新規動作テンプレートを提供せず「動作を追加」を無効にします。保存済みの動作カードがある場合は保持し、既存の軸選択・範囲編集・削除を使用できます。Buttonの候補とカード名は他のタイプと共通の「パラメータの値を変更」を使用し、対象型だけをTriggerに限定します。
+Puppetの新規動作はTransform変更だけを提供します。ほかの保存済み動作カードも表示・編集・削除できます。Buttonの候補とカード名は他のタイプと共通の「パラメータの値を変更」を使用します。
 
 ButtonはSDKのButton controlを使用し、クリック時の一時的なONとSDKによるOFFへの復帰で動作します。初期値の入力は配置しません。Puppetの2 Axisは左右・上下の−1〜1、4 Axisは上・右・下・左の0〜1を使用し、各動作の軸選択と範囲へ反映します。左右・上下では範囲の左端が−100、右端が100に対応し、中心は両端の中間値になります。4 Axisの左端は0、右端は100です。Puppetにも初期値の入力は配置しません。軸parameterは固有の共通IDへ軸名を付けて生成し、各軸を使用する同期ONの動作がある場合だけ同期します。タイプや軸数の変更でも共通IDを保持し、不要になった生成軸parameter宣言を除去します。
 
@@ -61,23 +61,37 @@ Toggleの表示／非表示・マテリアル差し替え・BlendShape変更はE
 
 MA対象は編集中アバター内部に限定し、rootの無効化を拒否します。対象をroot相対pathのAvatarObjectReferenceへ変換し、同名の兄弟Objectと名前に`/`を含むObjectを拒否します。対象の削除・改名、存在しないBlendShapeはエラー表示します。
 
-## マテリアルの数値を変更
+## マテリアルのパラメーター変更
 
-Toggleと0〜100タイプで追加できます。カードごとの同期設定と、複数の対象行を持つEditor専用recipeの`MenuMaterialValueAction`として保持します。対象行はアバター内のRendererとShaderの数値項目を選択します。候補には使用Materialの公開Float／Rangeプロパティだけを列挙し、表示名と内部プロパティ名を併記します。Color・Vector・Textureと非表示プロパティは含めません。同じObjectに複数のRendererがある場合は先頭のRendererだけを対象にでき、別のRendererを指定した編集は拒否します。
+Toggleと0〜100タイプで追加できます。カードごとの同期と複数の対象行を持つEditor専用recipeの `MenuMaterialValueAction` として保持します。各行はアバター内のRendererとMaterialの設定項目を選びます。ShaderのFloat／Range／Integer・Color（HDRを含む）・Vector・Texture、Textureの倍率／オフセット、Shaderキーワード、Shader、Render Queue、GPU Instancing、Double Sided GI、Global Illumination Flagsを列挙します。非表示のShaderプロパティも含めます。TextureのNoScaleOffset指定は尊重します。使用Materialにある設定を列挙し、Shaderの項目は表示名と内部名を併記します。同じObjectに複数のRendererがある場合、先頭のRendererだけを対象にできます。
 
-Toggleは「OFF → ON」を1行で表示します。OFFはAnimationUtilityで取得した現在値を表示する編集不可の入力で、ONだけを編集します。0〜100タイプは操作値0と100に対応する範囲を1行で編集し、1秒の線形Clipで中間値を補間します。負の値と逆方向の範囲を指定でき、非有限値を拒否します。ShaderのRange属性は入力の上限・下限として強制しません。
+Toggleは現在値のOFFと編集するONを2列に並べます。OFFは編集不可です。値の型に合わせて数値・整数・チェック・Color・成分ごとの入力・Texture／Shader参照を表示します。0〜100タイプはUnityのRenderer animation bindingが提供する項目だけを候補にし、両端の値を入力して1秒の線形Clipで補間します。対応する数値・Color・Vector・Texture倍率／オフセットを使用できます。負の値と逆方向の範囲を使用でき、非有限値・整数項目の小数を拒否します。ShaderのRange属性は入力範囲として強制しません。
 
-生成ClipはRendererの`material.<property>`を操作します。Renderer単位の操作であり、同じ名前のプロパティを持つ複数のMaterial slotへ共通の値を適用します。OFFの復帰値はUnityのRenderer bindingが返す現在値（通常は先頭Materialの値）です。slot別の値変更・復帰は提供しません。元のMaterial assetは変更しません。ClipとFXレイヤーの生成、共通入力parameter・IsLocalによる動作単位の同期、保存・Undo／Redo・タイプ変更時の破棄には他の動作と同じ契約を使用します。
+アニメーション対応項目はRendererの `material.<property>` を操作します。同じ名前の項目を持つ複数のMaterial slotに共通の値を適用し、OFFはUnityのbindingから取得した現在値（通常は先頭Materialの値）へ戻します。slot別の数値復帰は提供しません。アニメーションできない項目はToggle専用で、MaterialのコピーへON設定を適用し、Rendererの該当slotの参照を切り替えます。Cull・ZWrite・Blend・Stencil等のrender stateもコピーで扱います。一般的なプロパティ名とShaderの依存ソース内のShaderLab命令から対象を識別し、連続値の候補から除外します。同じカード内のTexture・キーワード等の変更はslotごとに1つのコピーへまとめます。OFFは各slotの元Material参照へ復帰します。生成MaterialはControllerのsubassetとして保存し、元Material assetは変更しません。
 
-対象未指定の行を保持し、Clip生成から除外します。Rendererや数値項目の変更時は両端を現在値で初期化します。描画だけでは保存値を変更しません。指定済みRenderer・数値項目の消失、読めないbinding、他の動作との同一プロパティ競合、アバター外や曖昧なpathは編集を拒否して元へ戻し、再指定・行削除を行える入力欄を保持します。ButtonとPuppetの追加候補には含めません。
+対象未指定の行を保持して生成から除外します。Renderer・項目の変更時は両端と参照を現在値で初期化します。描画だけでは保存値を変更しません。Textureのdimension、Render Queue（−1〜5000）、GI flags（0〜7）、チェック（0／1）、非有限値、対象消失、アバター外・曖昧なpathと同一bindingの競合を検証します。Materialの差し替えが同じslotと競合する場合も拒否します。不正な編集は元へ戻して入力欄とエラーを表示し、再指定・行削除を行えます。同期・Undo／Redo・保存・タイプ変更時の破棄には他の動作と同じ契約を使用します。ButtonとPuppetの候補には含めません。
+
+## Transform変更
+
+Toggle・0〜100・Puppetで追加できます。 `MenuTransformAction` のカードに複数の対象Objectを保持し、各対象で位置・回転・サイズの操作を個別に有効にできます。値はlocalPosition・localEulerAngles（度）・localScaleを使用します。対象変更時は両端を現在値で初期化します。Toggleは編集不可の現在値OFFと編集するON、0〜100は両端のXYZ入力を並べます。0〜100は各成分を線形に補間します。未設定の行・全操作OFFの行を保持します。
+
+Puppetの2 Axisは入力方向を左右／上下から選び、XYZの1軸を割り当てます。4 Axisは左右と上下へ異なるXYZの2軸を割り当てます。左右はRight／Left、上下はUp／Downの値から操作し、同じ軸を選んだ際はもう一方の割り当てを入れ替えて重複を防ぎます。位置・回転・サイズで共通の軸割り当てを使用し、各操作の選択軸の両端だけを編集します。中心は両端の中間値、未選択のXYZ成分は設定時の現在値です。2 Axisは−1／0／1の1D BlendTree、4 Axisは四方向parameterを使用する入れ子の1D BlendTreeと9つの姿勢Clipで補間します。回転の補間にはUnityのBlendTreeの回転補間を使用します。2 Axisは選択した入力だけ、4 Axisは四方向すべてに動作の同期フラグを反映します。
+
+非有限値・消失した対象・アバター外・曖昧なpath・不正な軸指定・他の動作との同一binding競合を拒否します。QuaternionとEulerの別表現による回転競合も検証します。FXレイヤーとClipを生成し、ToggleのOFF復帰、同期のLocalOnly gate、Undo／Redo・保存・タイプ変更時の破棄には他の動作と同じ契約を使用します。Buttonには提供しません。
+
+## Componentの有効切り替え
+
+Toggleで追加できます。 `MenuComponentAction` の各行で対象ObjectとComponent、ON時の有効状態を設定します。OFFは現在の `m_Enabled` 値を示す編集不可のチェックで、復帰Clipも現在値を取得します。Renderer・Collider・Animator・Light・Camera・AudioSource・Cloth・Animation・Unity Constraintと対応するVRC Dynamics／Spatial Audio／HeadChop／Station componentのうち、Unityが `m_Enabled` のanimation bindingを提供するものを候補にします。対象Objectに同型Componentが複数ある場合は識別できないため、その型を候補から除外します。MA・ee4v・Descriptor、アバターDescriptorと同じObjectのAnimatorは候補に含めません。
+
+複数の対象行と動作ごとの同期を設定でき、未指定行を保持します。対象消失・非対応のComponent・同一binding競合は編集を拒否して復元し、再指定・行削除を行えるカードを保持します。FX生成・OFF復帰・Undo／Redo・保存・タイプ変更時の破棄には他の動作と同じ契約を使用します。
 
 ## パラメータの値を変更
 
-動作カードでパラメータ名を設定します。型の選択欄は配置せず、ToggleはBool、ButtonはAnimatorのTrigger、連続値・Puppetは対象のFloat／Intを使用します。名前は直接入力でき、アバターのPlayable Layer、MA Merge Animator、Expression Parameters、公開MA Parametersから対応する型の名前だけを選択できます。Buttonの候補はAnimatorのTriggerだけで、Expression Parametersに同名の宣言があるものは除きます。候補には名前と型を表示し、選択した型へ自動で切り替えます。未知の名前は数値操作ではFloat、ButtonではTriggerとし、数値型の変更時は両端を0／1へ戻します。MAのprivate・prefix定義、自分自身の入力parameterは候補へ含めません。ToggleではOFF／ONの2つのチェックを矢印で1行へ並べ、Buttonでは値の入力を配置せず、連続値・Puppetでは指定軸の入力範囲に対応する範囲を1行へ並べます。Floatは小数、Intは整数入力を使用します。対象未指定のカードは保持し、Controllerの動作レイヤーへ含めません。
+動作カードでパラメータ名を設定します。ToggleはBool、連続値・保存済みPuppet動作はFloat／Intを使用し、型の選択欄を配置しません。ButtonだけはTrigger・Bool・Int・Floatの型を扱います。名前は直接入力でき、Playable Layer、MA Merge Animator、Expression Parameters、公開MA Parametersから型付きの候補を選択できます。既知の名前は型を自動反映し、Buttonの型選択欄を無効にします。未知の名前は数値操作ではFloat、Buttonでは初期Triggerとし、Buttonの型を選択できます。TriggerでExpression Parametersに同名宣言があるものは候補から除きます。MAのprivate・prefix定義、自分自身の入力parameterは候補へ含めません。ToggleはOFF／ONのチェック、連続値は両端の範囲を1行で編集します。ButtonのTriggerは値の入力を設けず、Boolはチェック、Intは整数、Floatは小数の「設定する値」を1つ表示します。型を変更すると値を初期化します。対象未指定のカードは保持し、動作レイヤーへ含めません。
 
-設定はEditor専用recipeの`MenuParameterAction`へ保持します。ToggleはFXレイヤーのOFF／ON stateの`VRCAvatarParameterDriver`でSetし、初期状態も適用します。Buttonはメニュー入力用BoolをSDKのButtonで操作し、ONへ入ったときだけDriverのSetで対象Triggerを実行します。OFF・初期状態にはDriverを配置せず、起動時やボタン復帰時の誤発火を防ぎます。対象TriggerはAnimator Controllerだけに宣言し、Expression Parameters／MA Parametersには追加しません。同期は入力Boolと各プレイヤー側の実行で扱います。連続値・Puppetは2つのstateを各0.02秒以上保持して交互に遷移し、stateへ入るたびにCopy／Convert Rangeで入力Floatを指定範囲へ写します。Puppetは動作が指定した軸をsourceとし、2 Axisでは−1〜1、4 Axisでは0〜1を使用します。止めた操作値も継続して適用し、逆方向の範囲も使用できます。Intの中間値はSDKの切り捨てを使用します。時計用Clipは共通parameter IDに`/CopyClock`を付けた内部Floatだけを操作します。
+設定はEditor専用recipeの`MenuParameterAction`へ保持します。ToggleはFXレイヤーのOFF／ON stateの`VRCAvatarParameterDriver`でSetし、初期状態も適用します。Buttonはメニュー入力用BoolをSDKのButtonで操作し、ONへ入ったときだけDriverのSetで対象Triggerを実行するか、Bool／Int／Floatを指定値に設定します。OFF・初期状態にはDriverを配置せず、起動時の誤実行を防ぎ、Buttonの復帰後も設定した値を保持します。対象TriggerはAnimator Controllerだけに宣言し、Expression Parameters／MA Parametersには追加しません。同期は入力Boolと各プレイヤー側の実行で扱います。連続値・Puppetは2つのstateを各0.02秒以上保持して交互に遷移し、stateへ入るたびにCopy／Convert Rangeで入力Floatを指定範囲へ写します。Puppetは動作が指定した軸をsourceとし、2 Axisでは−1〜1、4 Axisでは0〜1を使用します。止めた操作値も継続して適用し、逆方向の範囲も使用できます。Intの中間値はSDKの切り捨てを使用します。時計用Clipは共通parameter IDに`/CopyClock`を付けた内部Floatだけを操作します。
 
-カードの同期設定は共通parameterの同期判定とIsLocal gate・DriverのlocalOnlyへ反映します。対象parameterの既存のExpression Parameters／MA Parametersの同期・保存宣言は変更しません。既存宣言で同期されている対象の値は、その宣言に従って同期されます。新しい対象名は生成FX Controllerだけへ型を宣言し、同期ONの場合は共通parameterから各プレイヤー側のDriverで適用します。
+カードの同期設定は共通parameterの同期判定とIsLocal gate・DriverのlocalOnlyへ反映します。対象parameterの既存のExpression Parameters／MA Parametersの同期・保存宣言は変更しません。生成Controllerの対象parameterは既存Controller・Expression Parameters・明示的なMA Parametersの初期値を引き継ぎ、Buttonを押す前の値を維持します。既存宣言で同期されている対象の値は、その宣言に従って同期されます。新しい対象名は生成FX Controllerだけへ型を宣言し、同期ONの場合は共通parameterから各プレイヤー側のDriverで適用します。
 
 組み込みparameter、自分自身の共通parameter・時計parameter、同じItem内の重複した対象名、メニューの型と一致しない既存parameterを拒否します。非有限値、Boolの0／1以外、Intの小数を拒否し、Expression Parametersで宣言されたIntは0〜255・Floatは−1〜1も検証します。不正な編集はUndo transactionで元に戻し、入力と動作カードを再表示してエラーを示します。削除・型切り替え・保存・Undo／Redoは他の動作と同じ契約を使用します。
 
@@ -145,22 +159,22 @@ MAは`src/package.json`の対応範囲（1.18.2以上2.0.0未満）で内部reso
 
 ## 手動確認
 
-- マテリアル数値の対象RendererとFloat／Range項目の選択、表示名と内部名、Color／Vector／Textureの除外。ToggleのOFF現在値が編集不可で、ONへの変更とOFFへの復帰、連続値の両端・中間・負の値・逆方向の補間が一致すること。元Material assetが変化せず、複数slotではRenderer単位の共通値となること。未設定行保持、対象消失の再指定、非有限値・同一binding競合の拒否と復元、動作ごとの同期とLocalOnly gate、入力・同期・タイプ変更のUndo／Redo、保存したrecipeとControllerの一致。
-
 Unity 2022.3で以下を確認します。新規自動テストは追加しません。
+
+- マテリアル設定の型に合う入力、Color・HDR・Vector・Float／Range・Shader Integer・Texture・倍率／オフセット・キーワード・Shader・各設定の選択。Toggleの現在値OFFとON、連続値の両端・中間・負の値・逆方向の補間。非アニメーション項目がToggle専用であること。Texture／キーワード等が生成Materialへまとめられ、元Materialとslot別のOFF参照が保持されること。生成MaterialのController保存・再読込・Undo／Redo、dimension不一致とbinding競合の拒否、行保持・消失の再指定・同期とLocalOnly gate。
 
 - ツリーの通常項目表示と個別編集への移動、Root・Submenuの移動と現在位置強調、展開・折りたたみ保持。ツリー内とカードからの階層移動・同じ階層の並び替え、移動先強調と挿入線、Undo／Redo、自動スクロール、Esc・範囲外・capture喪失の取消。保護・満杯・自分自身・子孫の拒否と、移動後に表示階層が一致すること。
 
 - 1ペインの縦スクロール、全体画面と個別画面の切り替え、3Dプレビュー非表示、カテゴリ切り替え、単独Windowの表示元切り替え。
 - 全体画面が横幅を使用し、144pxのアイコンを持つ大きな簡易編集カードが一覧の幅900px以上で2列、狭い幅で1列になること。狭い画面では円形メニューの下へ折り返すこと。円形メニュー下はRoot・Submenuのどちらもアイコン・名前だけの同じ配置で、Submenuは直接編集でき、Rootは固定で、見出し・詳細編集ボタンがないこと。透過アイコンの背景が黒くならないこと。個別編集の戻るボタンがスクロール領域外の左上にあること。
-- 個別画面が最大680px幅で中央配置されること。全体画面で名前・アイコンを変更でき、型・parameter・動作・初期値・同期設定が保持されること。個別画面では円形メニューがなく、上部枠内に大きいアイコン、その右に名前・タイプ・初期値、枠の下に動作があること。説明文が表示されないこと。アイコン選択欄がアイコン枠内に収まり、選択・クリア・ドラッグ＆ドロップ・Undoで表示と保存値が一致すること。未設定時は円形メニューと同じGameObjectアイコンを表示すること。狭い幅での折り返しと入力欄の収まり。個別編集から戻ると同じ階層・ページを表示し、項目削除後は全体画面になること。Submenu移動では円形メニュー上のアイコン・名前が現在のSubmenuへ切り替わること。追加がItem／Submenuの二択だけであること。Item追加直後から個別画面にToggle・初期値・動作が表示され、タイプはToggle・0〜100・Button（実行）・Puppet（軸操作）の4択であること。同期は各カードに配置されること。Toggleは5種類、Buttonはパラメータの値を変更だけ、連続値は3種類を追加でき、Puppetは追加が無効であること。動作カード・対象行の追加削除、最後の動作削除後のメニュー項目保持。
+- 個別画面が最大680px幅で中央配置されること。全体画面で名前・アイコンを変更でき、型・parameter・動作・初期値・同期設定が保持されること。個別画面では円形メニューがなく、上部枠内に大きいアイコン、その右に名前・タイプ・初期値、枠の下に動作があること。説明文が表示されないこと。アイコン選択欄がアイコン枠内に収まり、選択・クリア・ドラッグ＆ドロップ・Undoで表示と保存値が一致すること。未設定時は円形メニューと同じGameObjectアイコンを表示すること。狭い幅での折り返しと入力欄の収まり。個別編集から戻ると同じ階層・ページを表示し、項目削除後は全体画面になること。Submenu移動では円形メニュー上のアイコン・名前が現在のSubmenuへ切り替わること。追加がItem／Submenuの二択だけであること。Item追加直後から個別画面にToggle・初期値・動作が表示され、タイプはToggle・0〜100・Button（実行）・Puppet（軸操作）の4択であること。同期は各カードに配置されること。Toggleは7種類、Buttonはパラメータの値を変更だけ、連続値は4種類を追加でき、PuppetはTransform変更を追加できること。動作カード・対象行の追加削除、最後の動作削除後のメニュー項目保持。
 - 動作なし・初期OFF／0では両方向に確認なしで切り替わり、名前・アイコンだけの変更でも確認しないこと。動作カードまたは初期ON／0以外の値がある場合は共通overlayを表示し、確認前のタイプ・設定を保持すること。取消・Esc・画面離脱、破棄後の全動作と初期値のリセット、名前・アイコン・登録先・素材Clipの保持、Undo／Redo、失敗時の復元とエラー表示。
-- Button（実行）は「パラメータの値を変更」だけを追加でき、初期値・OFF／ONの値入力がなく、初期OFF・値保存なしで生成されること。候補がTriggerだけに絞られ、Bool／Float／Intの指定を拒否すること。押すたびにONのDriverだけが実行され、起動時とOFF復帰時に発火しないこと。対象TriggerがExpression Parametersへ追加されないこと。同期・Undo／Redo・保存と再読込を確認すること。Puppet（軸操作）は動作候補が空で追加が無効でも2 Axis／4 Axisを切り替えられること。保存済みの動作がある場合は保持し、軸数変更のoverlay・取消・破棄・Undo／Redo、固有IDの保持、不要な軸宣言の除去、Prefabとrecipeの保存・再読込を確認すること。
+- Button（実行）はパラメータの値変更だけを追加でき、初期OFF・値保存なしで生成されること。Triggerの値入力はなく、Bool／Int／Floatは型に合う設定値を1つ入力できること。既知の型の自動反映と未知名の型選択、OFF・起動時にDriverがなく、押すたびにONだけでTrigger実行／値Setが行われること。OFF復帰後の値保持、Expression Parametersの既存宣言保持、同期・Undo／Redo・保存・再読込。不正な型・値とTriggerのExpression宣言競合の拒否。PuppetのTransform候補、2 Axisの左右／上下選択とXYZの1軸、4 AxisのXYZの2軸と重複時の入れ替え、端点・中心・斜めの反映と未選択成分の保持、軸単位の同期、ローカル動作のgate、型・軸数変更overlayとUndo／Redo、保存・再読込。
 - 連続値のBlendShapeで0・中間・100が両端の値へ追従すること。Clipの時間指定、生成コピーの非ループ化と素材Clip保持、Float初期値、複数動作の共有値とプロパティ競合拒否をPlay Modeで確認すること。名前・アイコン変更後も初期値・各動作の同期が保持され、円形メニューへ反映されること。
 - 各動作の同期変更とUndo、全OFF時のlocalOnly、ON／OFF混在時のparameter同期とIsLocalによる本人専用動作の分離。Toggleの初期ONと連続値の初期値でも他プレイヤー側へ本人専用の変更が適用されないこと。既存の生成MA componentの引き継ぎ・Undo・非対応設定の拒否。
 - Submenuの作成後にその階層へ入り、左に名前・アイコンだけを表示すること。SubmenuへItem・Submenuを追加でき、同名SubmenuでもChildren rootによって出所と追加先が特定されること。名前・アイコンの変更とUndo。
 - 表示＋Material＋BlendShape＋パラメータ変更を1項目へ登録し、Play Modeで同じON/OFFへ追従すること。Animation Clipが追加候補にないこと。
-- パラメータ変更の型選択欄がなく、ToggleのBoolはチェック、数値のFloat／Intは対応する型の範囲入力が1行に収まること。候補がメニューの型で絞られ、Int選択時に整数入力へ切り替わること。数値の0・中間・100と逆方向の範囲、値を止めた後の継続コピー、初期値、動作ごとの同期、未設定のカード保持、既存のparameter宣言保持、重複・組み込み名・型不一致・非有限値・Expression範囲外の拒否と復元、Undo／Redo、保存後の再読み込み。
+- Toggleと連続値のパラメータ変更に型選択欄がなく、ToggleのBoolはチェック、数値のFloat／Intは対応する型の範囲入力が1行に収まること。候補がメニューの型で絞られ、Int選択時に整数入力へ切り替わること。数値の0・中間・100と逆方向の範囲、値を止めた後の継続コピー、初期値、動作ごとの同期、未設定のカード保持、既存のparameter宣言保持、重複・組み込み名・型不一致・非有限値・Expression範囲外の拒否と復元、Undo／Redo、保存後の再読み込み。
 - 登録済みClipカードの編集・削除、ON/OFF、OFF省略時の復帰、ループ設定、初期ON/OFF、複数Clipの別プロパティ適用、競合・不正path・root表示・Legacy/Humanoidの拒否、素材Clip保持。
 - Item・Submenuの追加が専用root内へまとまり、item一覧にroot・項目が表示されないこと。繰り返し追加でrootを再利用し、Submenuの親子構造・登録先・Prefab接続を維持すること。root作成・既存追加overrideの移動・項目追加をUndo／Redoでき、生成Prefabの保存でAvatar Prefabへ他のScene overrideをApplyしないこと。
 - アバターrootに存在しないSkinnedMeshRendererを操作するClip、存在しないBlendShape・プロパティ、競合するClipを指定しても、Componentへのアクセス例外や画面消失を起こさず、入力参照と生成済み設定を保持して同じ編集欄にエラーを表示すること。

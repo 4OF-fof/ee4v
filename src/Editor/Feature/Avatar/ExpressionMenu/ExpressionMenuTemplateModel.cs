@@ -11,7 +11,7 @@ using Object = UnityEngine.Object;
 
 namespace Ee4v.ExpressionMenu
 {
-    internal enum MenuTemplateKind { ObjectToggle = 0, MaterialSwap = 1, ShapeChanger = 2, ParameterValue = 4, MaterialValue = 5 }
+    internal enum MenuTemplateKind { ObjectToggle = 0, MaterialSwap = 1, ShapeChanger = 2, ParameterValue = 4, MaterialValue = 5, Transform = 6, Component = 7 }
 
     internal static class ExpressionMenuTemplateModel
     {
@@ -157,6 +157,16 @@ namespace Ee4v.ExpressionMenu
                 {
                     Targets = { new MenuMaterialValueTarget() }
                 }));
+            else if (kind == MenuTemplateKind.Transform)
+                ExpressionMenuAnimationRecipe.Change(context, item, () => recipe.Transforms.Add(new MenuTransformAction
+                {
+                    Targets = { new MenuTransformTarget() }
+                }));
+            else if (kind == MenuTemplateKind.Component)
+                ExpressionMenuAnimationRecipe.Change(context, item, () => recipe.Components.Add(new MenuComponentAction
+                {
+                    Targets = { new MenuComponentTarget() }
+                }));
             else if (kind == MenuTemplateKind.ParameterValue)
                 ExpressionMenuAnimationRecipe.Change(context, item, () => recipe.ParameterActions.Add(new MenuParameterAction()));
             else if (ExpressionMenuAnimationRecipe.IsContinuous(item))
@@ -180,7 +190,8 @@ namespace Ee4v.ExpressionMenu
             {
                 case MenuBehaviorMode.Toggle: return (MenuTemplateKind[])Enum.GetValues(typeof(MenuTemplateKind));
                 case MenuBehaviorMode.Button: return new[] { MenuTemplateKind.ParameterValue };
-                case MenuBehaviorMode.Radial: return new[] { MenuTemplateKind.ShapeChanger, MenuTemplateKind.ParameterValue, MenuTemplateKind.MaterialValue };
+                case MenuBehaviorMode.Radial: return new[] { MenuTemplateKind.ShapeChanger, MenuTemplateKind.ParameterValue, MenuTemplateKind.MaterialValue, MenuTemplateKind.Transform };
+                case MenuBehaviorMode.Puppet: return new[] { MenuTemplateKind.Transform };
                 default: return Array.Empty<MenuTemplateKind>();
             }
         }

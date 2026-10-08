@@ -17,6 +17,7 @@ namespace Ee4v.ExpressionMenu
             internal string Name;
             internal AnimatorControllerParameterType Type;
             internal bool Expression;
+            internal AnimatorControllerParameter Declaration;
         }
 
         private static readonly HashSet<string> BuiltIns = new HashSet<string>(StringComparer.Ordinal)
@@ -35,17 +36,21 @@ namespace Ee4v.ExpressionMenu
         internal static Entry[] Entries(AvatarEditingContext context, AnimatorController ignore)
         {
             var entries = new Dictionary<string, Entry>(StringComparer.Ordinal);
-            void Add(string name, AnimatorControllerParameterType type, bool expression = false)
+            void Add(string name, AnimatorControllerParameterType type, bool expression = false, AnimatorControllerParameter declaration = null)
             {
                 if (string.IsNullOrWhiteSpace(name) || IsBuiltIn(name)) return;
-                if (entries.TryGetValue(name, out var current)) current.Expression |= expression;
-                else entries.Add(name, new Entry { Name = name, Type = type, Expression = expression });
+                if (entries.TryGetValue(name, out var current))
+                {
+                    current.Expression |= expression;
+                    if (declaration != null && (expression || current.Declaration == null)) current.Declaration = declaration;
+                }
+                else entries.Add(name, new Entry { Name = name, Type = type, Expression = expression, Declaration = declaration });
             }
             void Controller(RuntimeAnimatorController runtime)
             {
                 while (runtime is AnimatorOverrideController overrides) runtime = overrides.runtimeAnimatorController;
                 if (!(runtime is AnimatorController controller) || controller == ignore) return;
-                foreach (var parameter in controller.parameters) Add(parameter.name, parameter.type);
+                foreach (var parameter in controller.parameters) Add(parameter.name, parameter.type, declaration: parameter);
             }
             var root = context.Root;
             if (root == null) return Array.Empty<Entry>();
@@ -58,16 +63,28 @@ namespace Ee4v.ExpressionMenu
             foreach (var merge in root.GetComponentsInChildren<ModularAvatarMergeAnimator>(true)) Controller(merge.animator);
             if (descriptor != null && descriptor.expressionParameters != null)
                 foreach (var parameter in descriptor.expressionParameters.parameters ?? Array.Empty<VRCExpressionParameters.Parameter>())
-                    Add(parameter.name, parameter.valueType == VRCExpressionParameters.ValueType.Bool ? AnimatorControllerParameterType.Bool :
-                        parameter.valueType == VRCExpressionParameters.ValueType.Int ? AnimatorControllerParameterType.Int : AnimatorControllerParameterType.Float, true);
+                {
+                    var type = parameter.valueType == VRCExpressionParameters.ValueType.Bool ? AnimatorControllerParameterType.Bool :
+                        parameter.valueType == VRCExpressionParameters.ValueType.Int ? AnimatorControllerParameterType.Int : AnimatorControllerParameterType.Float;
+                    Add(parameter.name, type, true, new AnimatorControllerParameter
+                    {
+                        name = parameter.name, type = type, defaultBool = parameter.defaultValue != 0,
+                        defaultInt = (int)parameter.defaultValue, defaultFloat = parameter.defaultValue
+                    });
+                }
             foreach (var component in root.GetComponentsInChildren<ModularAvatarParameters>(true))
                 foreach (var parameter in component.parameters)
                 {
                     // Private/prefix definitions belong to their own object scope, not the shared avatar parameter catalog.
                     if (parameter.internalParameter || parameter.isPrefix || parameter.syncType == ParameterSyncType.NotSynced) continue;
-                    Add(string.IsNullOrEmpty(parameter.remapTo) ? parameter.nameOrPrefix : parameter.remapTo,
-                        parameter.syncType == ParameterSyncType.Bool ? AnimatorControllerParameterType.Bool :
-                        parameter.syncType == ParameterSyncType.Int ? AnimatorControllerParameterType.Int : AnimatorControllerParameterType.Float, true);
+                    var name = string.IsNullOrEmpty(parameter.remapTo) ? parameter.nameOrPrefix : parameter.remapTo;
+                    var type = parameter.syncType == ParameterSyncType.Bool ? AnimatorControllerParameterType.Bool :
+                        parameter.syncType == ParameterSyncType.Int ? AnimatorControllerParameterType.Int : AnimatorControllerParameterType.Float;
+                    Add(name, type, true, parameter.hasExplicitDefaultValue ? new AnimatorControllerParameter
+                    {
+                        name = name, type = type, defaultBool = parameter.defaultValue != 0,
+                        defaultInt = (int)parameter.defaultValue, defaultFloat = parameter.defaultValue
+                    } : null);
                 }
             return entries.Values.OrderBy(entry => entry.Name, StringComparer.Ordinal).ToArray();
         }

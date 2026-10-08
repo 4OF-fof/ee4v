@@ -84,6 +84,9 @@
 .ee4v-menu-template__range-value { flex-grow: 1; flex-basis: 0; min-width: 0; margin: 0; }
 .ee4v-menu-template__range-value > .unity-base-field__label { display: none; }
 .ee4v-menu-template__range-separator { flex-shrink: 0; margin-left: 6px; margin-right: 6px; }
+.ee4v-menu-template__vector { flex-direction: row; flex-wrap: wrap; min-width: 0; }
+.ee4v-menu-template__vector-value { flex-grow: 1; flex-basis: 48px; min-width: 48px; margin: 0; }
+.ee4v-menu-template__vector-value > .unity-base-field__label { min-width: 12px; width: 12px; margin-right: 3px; }
 .ee4v-menu-template__transition { flex-direction: row; align-items: flex-end; min-width: 0; }
 .ee4v-menu-template__transition-column { flex-grow: 1; flex-basis: 0; min-width: 0; }
 .ee4v-menu-template__transition-column > .ee4v-ui-secondary-text { margin-bottom: 4px; }

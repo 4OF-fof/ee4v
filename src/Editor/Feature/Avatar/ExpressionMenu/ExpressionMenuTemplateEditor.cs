@@ -17,7 +17,7 @@ namespace Ee4v.ExpressionMenu
         internal static string Get(string key) => I18N.Get("expressionMenu.templates." + key);
     }
 
-    internal sealed class ExpressionMenuTemplateEditor : VisualElement
+    internal sealed partial class ExpressionMenuTemplateEditor : VisualElement
     {
         private readonly AvatarEditingContext _context;
         private readonly ModularAvatarMenuItem _item;
@@ -122,6 +122,8 @@ namespace Ee4v.ExpressionMenu
                 for (var index = 0; index < recipe.RadialShapes.Count; index++) BuildRadialShapes(_fields, recipe, index);
                 for (var index = 0; index < recipe.ParameterActions.Count; index++) BuildParameter(_fields, recipe, index);
                 for (var index = 0; index < recipe.MaterialValues.Count; index++) BuildMaterialValues(_fields, recipe, index);
+                for (var index = 0; index < recipe.Transforms.Count; index++) BuildTransforms(_fields, recipe, index);
+                for (var index = 0; index < recipe.Components.Count; index++) BuildComponents(_fields, recipe, index);
             }
             if (!owned) return;
             var availableActions = ExpressionMenuTemplateModel.AvailableActions(_item);
@@ -338,6 +340,16 @@ namespace Ee4v.ExpressionMenu
                     {
                         action.Parameter = name;
                         var known = options.FirstOrDefault(entry => entry.Name == name);
+                        if (ExpressionMenuAnimationRecipe.EffectiveMode(_item) == MenuBehaviorMode.Button)
+                        {
+                            var buttonType = known?.Type ?? action.ButtonType;
+                            if (action.ButtonType != buttonType)
+                            {
+                                action.ButtonType = buttonType;
+                                action.On = buttonType == AnimatorControllerParameterType.Bool ? 0 : 1;
+                            }
+                            return;
+                        }
                         var type = known != null && known.Type == AnimatorControllerParameterType.Int ? AnimatorControllerParameterType.Int : AnimatorControllerParameterType.Float;
                         if (action.NumericType != type)
                         {
@@ -372,6 +384,7 @@ namespace Ee4v.ExpressionMenu
             card.Add(new FormInput(T("parameterName"), parameter, select));
             if (trigger)
             {
+                BuildButtonParameter(card, recipe, index, options.FirstOrDefault(entry => entry.Name == action.Parameter));
                 card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
                 return;
             }
@@ -530,107 +543,6 @@ namespace Ee4v.ExpressionMenu
             card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
         }
 
-        private void BuildMaterialValues(VisualElement parent, ExpressionMenuAnimationRecipe recipe, int index)
-        {
-            var card = new VisualElement { name = "materialValueAction" };
-            card.AddToClassList("ee4v-menu-template__change");
-            parent.Add(card);
-            var header = new SectionHeader(T("kindMaterialValue"));
-            header.Actions.Add(new UiButton(T("removeAction"), () => Run(() =>
-            {
-                ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.MaterialValues.RemoveAt(index));
-                Refresh();
-            }), variant: UiButtonVariant.Ghost));
-            card.Add(header);
-            AddSync(card, recipe.MaterialValues[index].Synced, value =>
-                ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.MaterialValues[index].Synced = value),
-                ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
-            var radial = ExpressionMenuAnimationRecipe.EffectiveMode(_item) == MenuBehaviorMode.Radial;
-            void Change(Action change, bool rebuild = false)
-            {
-                try { ExpressionMenuAnimationRecipe.Change(_context, _item, change); }
-                catch { Refresh(); throw; }
-                if (rebuild) Refresh();
-            }
-            for (var rowIndex = 0; rowIndex < recipe.MaterialValues[index].Targets.Count; rowIndex++)
-            {
-                var targetIndex = rowIndex;
-                MenuMaterialValueTarget Target() => recipe.MaterialValues[index].Targets[targetIndex];
-                var row = Entry(card, () => Change(() => recipe.MaterialValues[index].Targets.RemoveAt(targetIndex), true));
-                var renderer = ExpressionMenuAnimationRecipe.ResolveMaterialRenderer(_context, Target());
-                AddObject<Renderer>(row, T("targetRenderer"), renderer, true, value =>
-                {
-                    if (value != null)
-                    {
-                        ExpressionMenuTemplateModel.Reference(_context, value.gameObject);
-                        if (value.gameObject.GetComponent<Renderer>() != value)
-                            throw new InvalidOperationException(T("ambiguousMaterialRenderer"));
-                    }
-                    Change(() =>
-                    {
-                        Target().Path = value == null ? null : AnimationUtility.CalculateTransformPath(value.transform, _context.Root.transform);
-                        Target().Property = ExpressionMenuAnimationRecipe.MaterialProperties(value).FirstOrDefault().Name;
-                        Target().Minimum = Target().Maximum = ExpressionMenuAnimationRecipe.MaterialCurrentValue(_context, Target());
-                    }, true);
-                });
-                var properties = ExpressionMenuAnimationRecipe.MaterialProperties(renderer);
-                var choices = properties.Select(property => property.Label).ToList();
-                var selected = Array.FindIndex(properties, property => property.Name == Target().Property);
-                if (selected < 0) choices.Insert(0, T("selectMaterialProperty"));
-                var field = UiTextFactory.CreatePopupField(T("materialProperty"), choices, Math.Max(0, selected));
-                field.name = "materialProperty";
-                field.SetEnabled(properties.Length > 0);
-                field.RegisterValueChangedCallback(evt => Run(() =>
-                {
-                    var property = properties.FirstOrDefault(option => option.Label == evt.newValue).Name;
-                    Change(() =>
-                    {
-                        Target().Property = property;
-                        Target().Minimum = Target().Maximum = ExpressionMenuAnimationRecipe.MaterialCurrentValue(_context, Target());
-                    }, true);
-                }));
-                row.Add(field);
-                var configured = renderer != null && selected >= 0;
-                if (Target().Path != null && (renderer == null || !string.IsNullOrEmpty(Target().Property) && selected < 0))
-                    row.Add(UiTextFactory.CreateHelpBox(T("missingMaterialProperty"), HelpBoxMessageType.Error));
-                void Endpoint(VisualElement host, bool maximum)
-                {
-                    var input = UiTextFactory.CreateFloatField("", "ee4v-menu-template__range-value");
-                    input.name = maximum ? "materialMaximum" : "materialMinimum";
-                    input.tooltip = T(radial ? maximum ? "parameterAtHundred" : "parameterAtZero" : maximum ? "onValue" : "currentValue");
-                    input.isDelayed = true;
-                    input.isReadOnly = !radial && !maximum;
-                    input.SetValueWithoutNotify(!radial && !maximum ?
-                        ExpressionMenuAnimationRecipe.MaterialCurrentValue(_context, Target()) : maximum ? Target().Maximum : Target().Minimum);
-                    input.SetEnabled(configured);
-                    if (!input.isReadOnly) input.RegisterValueChangedCallback(evt => Run(() => Change(() =>
-                    {
-                        ExpressionMenuAnimationRecipe.ValidateMaterialValue(evt.newValue);
-                        if (maximum) Target().Maximum = evt.newValue;
-                        else Target().Minimum = evt.newValue;
-                    })));
-                    host.Add(input);
-                }
-                if (radial)
-                {
-                    var range = new VisualElement { name = "materialValueRange" };
-                    range.AddToClassList("ee4v-menu-template__range");
-                    row.Add(new FormInput(T("valueRange"), range));
-                    Endpoint(range, false);
-                    range.Add(UiTextFactory.Create("〜", "ee4v-menu-template__range-separator"));
-                    Endpoint(range, true);
-                }
-                else
-                {
-                    var transition = AddTransition(row, T("offValue"), T("onValue"));
-                    Endpoint(transition.Before, false);
-                    Endpoint(transition.After, true);
-                }
-            }
-            card.Add(new UiButton(T("addTarget"), () => Run(() => Change(() =>
-                recipe.MaterialValues[index].Targets.Add(new MenuMaterialValueTarget()), true)), variant: UiButtonVariant.Ghost));
-            card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
-        }
 
         private void BuildToggle(VisualElement card, ModularAvatarObjectToggle effect, MenuReactiveAction action = null)
         {
