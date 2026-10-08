@@ -43,7 +43,8 @@
     border-radius: 0;
 }
 
-.ee4v-modification-workflow__controls-column {
+.ee4v-modification-workflow__controls-column,
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__editor-pane {
     width: 460px;
     min-width: 420px;
     min-height: 0;
@@ -52,6 +53,60 @@
     border-left-width: var(--ee4v-border-hairline);
     border-left-color: var(--ee4v-color-border-default);
     background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression {
+    padding: 0;
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__content {
+    min-height: 0;
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__preview-pane,
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__assignment-pane {
+    min-width: 480px;
+    margin-right: 0;
+    padding: var(--ee4v-space-xl);
+    border-width: 0;
+    border-radius: 0;
+    background-color: var(--ee4v-color-panel);
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__editor-pane {
+    flex-grow: 0;
+    flex-basis: auto;
+    padding: var(--ee4v-space-2xl);
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-radius: 0;
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix {
+    margin-top: 0;
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix-row,
+.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__extra-row {
+    min-width: 624px;
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix-header,
+.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__cell {
+    width: 64px;
+    min-width: 64px;
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix-header--row,
+.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix-header--corner {
+    width: 112px;
+    min-width: 112px;
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix-header--row,
+.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__cell {
+    min-height: 80px;
 }
 
 .ee4v-modification-workflow__appearance-header {

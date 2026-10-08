@@ -36,9 +36,6 @@ namespace Ee4v.FaceExpression
     internal sealed class GestureAssignmentView : VisualElement
     {
         private const int ColumnCount = 8;
-        private const float RowHeaderWidth = 112f;
-        private const float CellWidth = 112f;
-        private const float CellHeight = 128f;
 
         private readonly ObjectField _avatarField;
         private readonly VisualElement _extraRow;
@@ -219,15 +216,18 @@ namespace Ee4v.FaceExpression
             row.AddToClassList("ee4v-gesture-assignment__matrix-row");
             row.RegisterCallback<GeometryChangedEvent>(evt =>
             {
-                var dataWidth = evt.newRect.width - RowHeaderWidth;
-                if (dataWidth <= 0f)
+                var cell = row[1];
+                var dataWidth = evt.newRect.width - row[0].resolvedStyle.width;
+                var cellWidth = cell.resolvedStyle.minWidth.value;
+                var cellHeight = cell.resolvedStyle.minHeight.value;
+                if (dataWidth <= 0f || cellWidth <= 0f || cellHeight <= 0f)
                 {
                     return;
                 }
 
                 var height = Mathf.Max(
-                    CellHeight,
-                    dataWidth / ColumnCount * CellHeight / CellWidth);
+                    cellHeight,
+                    dataWidth / ColumnCount * cellHeight / cellWidth);
                 if (!Mathf.Approximately(row.resolvedStyle.height, height))
                 {
                     row.style.height = height;
