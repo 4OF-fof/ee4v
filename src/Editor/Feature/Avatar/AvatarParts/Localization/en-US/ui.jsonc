@@ -6,11 +6,12 @@
       "mergeTitle": "Merge Armature", "mergeSource": "Source armature", "mergeTarget": "Target armature",
       "proxy": "Bone Proxy",
       "missing": "No attachment settings", "unassigned": "No target assigned",
+      "recommended": "Recommended: {0}",
       "addMerge": "Add Merge Armature", "addProxy": "Add Bone Proxy",
       "target": "Attachment target", "mode": "Position and rotation mode", "matchScale": "Match target scale",
       "undo": "Configure part attachment",
-      "mergeRecommended": "This part has an armature. Merge Armature will be used. Check the target armature.",
-      "proxyRecommended": "This part has no armature to merge. Bone Proxy will be used. Check the target bone. World position and rotation are preserved.",
+      "mergeRecommended": "Merge this part's armature to make it follow the avatar. Select the target armature.",
+      "proxyRecommended": "Make this part follow the selected bone. Its current position and rotation are preserved when added.",
       "invalidTarget": "Select a target within this avatar and outside this part."
     },
     "appearance": {

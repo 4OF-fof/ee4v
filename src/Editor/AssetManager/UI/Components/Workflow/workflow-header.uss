@@ -3,6 +3,55 @@
     margin-right: var(--ee4v-space-sm);
 }
 
+.ee4v-modification-workflow__changes-hover {
+    position: absolute;
+    min-width: 0;
+    max-height: 90%;
+    padding: var(--ee4v-space-xl);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-active);
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-surface-raised);
+}
+
+.ee4v-modification-workflow__changes-list {
+    width: 100%;
+    max-height: 320px;
+    min-height: 0;
+    flex-grow: 0;
+    flex-shrink: 1;
+}
+
+.ee4v-modification-workflow__changes-group {
+    flex-shrink: 0;
+    border-left-width: 2px;
+    padding-left: var(--ee4v-space-lg);
+}
+
+.ee4v-modification-workflow__changes-group--spaced {
+    margin-top: var(--ee4v-space-xl);
+}
+
+.ee4v-modification-workflow__changes-heading {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__changes-icon {
+    flex-shrink: 0;
+    margin-right: var(--ee4v-space-sm);
+}
+
+.ee4v-modification-workflow__changes-row {
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.ee4v-modification-workflow__changes-row--spaced {
+    margin-top: var(--ee4v-space-sm);
+}
+
 .ee4v-modification-workflow__header-add.ee4v-ui-button {
     width: 30px;
     min-width: 30px;

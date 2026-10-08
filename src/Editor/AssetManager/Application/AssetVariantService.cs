@@ -130,6 +130,84 @@ namespace Ee4v.AssetManager.Application
             };
         }
 
+        public AssetVariantChangeDetails GetChangeDetails(string rootAssetPath)
+        {
+            AssetManagerRequestValidator.Require(rootAssetPath, "root asset path");
+            var working = _workspace.Inspect(rootAssetPath);
+            var variant = GetVariants().FirstOrDefault(candidate => candidate.Id == working.Variant.Id);
+            var latest = string.IsNullOrEmpty(variant?.HeadRevisionId)
+                ? null : ReadSnapshot(variant.Id, variant.HeadRevisionId);
+            var revisionId = GetCurrentRevisionId(working.Variant.Id);
+            var current = string.IsNullOrEmpty(revisionId)
+                ? null : ReadSnapshot(working.Variant.Id, revisionId);
+            return new AssetVariantChangeDetails
+            {
+                LatestRevisionNumber = latest?.Revision.Number,
+                CurrentRevisionNumber = current?.Revision.Number,
+                SaveChanges = CompareChanges(working, latest),
+                DiscardChanges = current == null ? Array.Empty<AssetVariantChange>() : CompareChanges(working, current)
+            };
+        }
+
+        private static IReadOnlyList<AssetVariantChange> CompareChanges(
+            AssetVariantSnapshot working, AssetVariantSnapshot saved)
+        {
+            var changes = new List<AssetVariantChange>();
+            var before = (saved?.Assets ?? Array.Empty<AssetVariantOwnedAsset>())
+                .ToDictionary(asset => asset.Path, StringComparer.Ordinal);
+            var after = working.Assets.ToDictionary(asset => asset.Path, StringComparer.Ordinal);
+            foreach (var path in before.Keys.Union(after.Keys).OrderBy(path => path, StringComparer.Ordinal))
+            {
+                before.TryGetValue(path, out var original);
+                after.TryGetValue(path, out var asset);
+                if (original != null && asset != null && original.Guid == asset.Guid &&
+                    original.Hash == asset.Hash && original.MetaHash == asset.MetaHash &&
+                    original.IsFolder == asset.IsFolder) { continue; }
+                changes.Add(new AssetVariantChange
+                {
+                    Subject = AssetVariantChangeSubject.Asset, Path = path,
+                    Kind = original == null ? AssetVariantChangeKind.Added : asset == null
+                        ? AssetVariantChangeKind.Removed : AssetVariantChangeKind.Modified
+                });
+            }
+            var oldDependencies = DescribeDependencies(saved?.Dependencies);
+            var newDependencies = DescribeDependencies(working.Dependencies);
+            foreach (var key in oldDependencies.Keys.Union(newDependencies.Keys).OrderBy(key => key, StringComparer.Ordinal))
+            {
+                oldDependencies.TryGetValue(key, out var original);
+                newDependencies.TryGetValue(key, out var dependency);
+                if (original == dependency) { continue; }
+                changes.Add(new AssetVariantChange
+                {
+                    Subject = AssetVariantChangeSubject.Dependency, Path = key,
+                    Kind = original == null ? AssetVariantChangeKind.Added : dependency == null
+                        ? AssetVariantChangeKind.Removed : AssetVariantChangeKind.Modified
+                });
+            }
+            if (saved != null && (working.Variant.Name != saved.Variant.Name ||
+                working.Variant.Description != saved.Variant.Description ||
+                working.Variant.SourcePrefabGuid != saved.Variant.SourcePrefabGuid ||
+                working.Variant.ParentItemId != saved.Variant.ParentItemId ||
+                working.Variant.RootAssetPath != saved.Variant.RootAssetPath))
+            {
+                changes.Add(new AssetVariantChange
+                {
+                    Subject = AssetVariantChangeSubject.Metadata,
+                    Kind = AssetVariantChangeKind.Modified, Path = working.Variant.Name
+                });
+            }
+            return changes;
+        }
+
+        private static Dictionary<string, string> DescribeDependencies(AssetVariantDependency[] dependencies)
+        {
+            return (dependencies ?? Array.Empty<AssetVariantDependency>())
+                .GroupBy(dependency => dependency.SourceType + "/" + dependency.SourceId)
+                .ToDictionary(group => group.Key, group => string.Join("\n", group.Select(dependency =>
+                    string.Join("\n", dependency.AssetGuids) + "\n--\n" + string.Join("\n", dependency.TargetPaths))
+                    .OrderBy(value => value, StringComparer.Ordinal)), StringComparer.Ordinal);
+        }
+
         public AssetVariantRevisionDetails GetRevisionDetails(string variantId, string revisionId)
         {
             AssetManagerRequestValidator.Require(variantId, "variant id");

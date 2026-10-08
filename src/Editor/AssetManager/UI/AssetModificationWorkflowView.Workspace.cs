@@ -21,6 +21,7 @@ namespace Ee4v.AssetManager.UI
     {
         private void BuildWindow()
         {
+            HideVariantChangesHover();
             InvalidateVariantSaveStatus();
             ApplyEditorMode();
             _parts.FlushPendingPartVisibility();
@@ -212,10 +213,16 @@ namespace Ee4v.AssetManager.UI
                 () => AssetVariantSaveOverlay.Show(this, SaveVariantRevision));
             save.AddToClassList("ee4v-modification-workflow__variant-save");
             save.SetEnabled(false);
+            AttachVariantChangesHover(save, false);
+            AttachVariantChangesHover(discard, true);
             save.schedule.Execute(() =>
             {
                 RefreshVariantSaveButton(save);
                 RefreshVariantDiscardButton(discard);
+                if (_variantChangesHoverAnchor != null && !_variantChangesHoverAnchor.enabledInHierarchy)
+                {
+                    HideVariantChangesHover();
+                }
             }).Every(750);
             cards.Add(save);
 

@@ -196,6 +196,10 @@ namespace Ee4v.AssetManager.UI
 
         internal AssetModificationWorkflowView(Action repaint)
         {
+            RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode == KeyCode.Escape) { HideVariantChangesHover(); }
+            });
             _avatarContext = new AvatarEditingContext(
                 new AvatarEditingServices(IsEditableWorkflowPrefab, IsEditableWorkflowMaterial,
                     () =>
@@ -299,6 +303,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             _disposed = true;
+            HideVariantChangesHover();
             _parts.EndBodyScaleDrag(false);
             _parts.SaveBodyScalePrefab(false);
             _parts.FlushPendingPartVisibility();

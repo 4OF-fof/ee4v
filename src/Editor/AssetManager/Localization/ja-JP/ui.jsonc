@@ -327,6 +327,16 @@
     "analysisUnavailable": "File Treeを読み込めませんでした。Consoleを確認してください。"
   },
   "variant": {
+    "noTargetChanges": "この操作の対象となる変更はありません。",
+    "changesFailed": "変更内容を取得できませんでした。",
+    "added": "追加",
+    "modified": "変更",
+    "removed": "削除",
+    "dependencyContent": "依存素材 · {0}",
+    "metadataContent": "Variant情報 · {0}",
+    "sceneProperty": "{0} · {1}: {2} → {3}",
+    "pendingParts": "反映待ちのパーツ表示変更",
+    "pendingShape": "反映待ちの体型・BlendShape変更",
     "save": "保存",
     "discardChanges": "変更を破棄",
     "discarding": "変更を破棄して再読み込み中…",

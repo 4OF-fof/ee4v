@@ -457,3 +457,54 @@
 .ee4v-part-attachment__details--hidden {
     display: none;
 }
+
+.ee4v-part-attachment--missing {
+    padding: var(--ee4v-space-2xl);
+}
+
+.ee4v-part-attachment--missing > .ee4v-part-attachment__summary {
+    margin-top: var(--ee4v-space-xs);
+}
+
+.ee4v-part-attachment--missing > .ee4v-part-attachment__details {
+    padding-top: var(--ee4v-space-2xl);
+}
+
+.ee4v-part-attachment__setup-description {
+    min-width: 0;
+    margin-bottom: var(--ee4v-space-2xl);
+}
+
+.ee4v-part-attachment__setup-target.ee4v-ui-form-input {
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0;
+}
+
+.ee4v-part-attachment__setup-target > .ee4v-ui-form-input__label {
+    width: auto;
+    margin-right: 0;
+    margin-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-part-attachment__setup-target > .ee4v-ui-form-input__input {
+    min-width: 0;
+    width: auto;
+    flex-basis: auto;
+    flex-grow: 0;
+    flex-shrink: 0;
+    align-self: stretch;
+}
+
+.ee4v-part-attachment__setup-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: var(--ee4v-space-2xl);
+}
+
+.ee4v-part-attachment__setup-add.ee4v-ui-button {
+    min-height: var(--ee4v-size-32);
+    padding-left: var(--ee4v-space-xl);
+    padding-right: var(--ee4v-space-xl);
+}

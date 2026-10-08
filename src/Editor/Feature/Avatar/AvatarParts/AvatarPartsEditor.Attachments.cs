@@ -72,8 +72,10 @@ namespace Ee4v.AvatarParts
             var armature = FindPartArmature(part);
             panel.Add(BuildAttachmentDisclosure(part.GetInstanceID(),
                 I18N.Get("workflow.attachment.missing"),
-                I18N.Get(armature != null ? "workflow.attachment.addMerge" : "workflow.attachment.addProxy"), () =>
+                I18N.Get("workflow.attachment.recommended", I18N.Get(armature != null
+                    ? "workflow.attachment.mergeTitle" : "workflow.attachment.proxy")), () =>
                 BuildNewAttachmentControls(part, armature)));
+            panel[panel.childCount - 1].AddToClassList("ee4v-part-attachment--missing");
             panel[panel.childCount - 1].AddToClassList("ee4v-part-attachment--last");
             return panel;
         }
@@ -129,6 +131,7 @@ namespace Ee4v.AvatarParts
         private VisualElement BuildNewAttachmentControls(Transform part, Transform armature)
         {
             var panel = new VisualElement();
+            panel.AddToClassList("ee4v-part-attachment__setup");
             var animator = _context.Root.GetComponentsInChildren<Animator>(true)
                 .FirstOrDefault(candidate => !candidate.transform.IsChildOf(part) && candidate.isHuman);
             var recommended = armature != null
@@ -144,10 +147,15 @@ namespace Ee4v.AvatarParts
             targetField.objectType = typeof(Transform);
             targetField.allowSceneObjects = true;
             targetField.SetValueWithoutNotify(recommended);
-            panel.Add(UiTextFactory.CreateHelpBox(I18N.Get(armature != null
-                ? "workflow.attachment.mergeRecommended" : "workflow.attachment.proxyRecommended"), HelpBoxMessageType.Warning));
-            panel.Add(new FormInput(I18N.Get("workflow.attachment.target"), targetField));
-            panel.Add(new UiButton(I18N.Get(armature != null
+            var description = UiTextFactory.Create(I18N.Get(armature != null
+                ? "workflow.attachment.mergeRecommended" : "workflow.attachment.proxyRecommended"),
+                UiClassNames.SecondaryText, "ee4v-part-attachment__setup-description");
+            description.SetWhiteSpace(WhiteSpace.Normal);
+            panel.Add(description);
+            var targetInput = new FormInput(I18N.Get("workflow.attachment.target"), targetField);
+            targetInput.AddToClassList("ee4v-part-attachment__setup-target");
+            panel.Add(targetInput);
+            var add = new UiButton(I18N.Get(armature != null
                 ? "workflow.attachment.addMerge" : "workflow.attachment.addProxy"), () =>
             {
                 var target = targetField.value as Transform;
@@ -180,7 +188,13 @@ namespace Ee4v.AvatarParts
                     Debug.LogException(exception);
                     _context.Edits.ShowAssetError("workflow.assets.saveFailed");
                 }
-            }));
+            });
+            add.AddToClassList("ee4v-part-attachment__setup-add");
+            add.SetPrimaryActionEnabled(true);
+            var actions = new VisualElement();
+            actions.AddToClassList("ee4v-part-attachment__setup-actions");
+            actions.Add(add);
+            panel.Add(actions);
             return panel;
         }
 

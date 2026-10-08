@@ -6,11 +6,12 @@
       "mergeTitle": "Merge Armature", "mergeSource": "統合元", "mergeTarget": "統合先",
       "proxy": "Bone Proxy",
       "missing": "装着設定なし", "unassigned": "装着先未設定",
+      "recommended": "推奨: {0}",
       "addMerge": "Merge Armatureを追加", "addProxy": "Bone Proxyを追加",
       "target": "装着先", "mode": "位置・回転の扱い", "matchScale": "装着先のスケールに合わせる",
       "undo": "パーツの装着設定",
-      "mergeRecommended": "骨格があるためMerge Armatureを使用します。装着先の骨格を確認してください。",
-      "proxyRecommended": "統合する骨格がないためBone Proxyを使用します。装着先のボーンを確認してください。現在の位置と回転を維持します。",
+      "mergeRecommended": "このパーツの骨格を統合して追従させます。統合先の骨格を指定してください。",
+      "proxyRecommended": "装着先のボーンに追従させます。追加時は現在の位置と回転を維持します。",
       "invalidTarget": "このパーツの外側にある、同じアバター内の装着先を指定してください。"
     },
     "appearance": {

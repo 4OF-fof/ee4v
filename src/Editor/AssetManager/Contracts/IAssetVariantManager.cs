@@ -16,6 +16,7 @@ namespace Ee4v.AssetManager.Contracts
         bool HasChanges(string rootAssetPath);
         bool HasChangesFromCurrentRevision(string rootAssetPath);
         AssetVariantChangeStatus GetChangeStatus(string rootAssetPath);
+        AssetVariantChangeDetails GetChangeDetails(string rootAssetPath);
         Task<AssetThumbnail> GetRevisionThumbnail(string variantId, string revisionId,
             CancellationToken cancellationToken = default);
         IReadOnlyList<AssetVariantGalleryImage> GetGalleryImages(string variantId);
@@ -72,6 +73,24 @@ namespace Ee4v.AssetManager.Contracts
     {
         public bool HasChanges { get; set; }
         public bool HasChangesFromCurrentRevision { get; set; }
+    }
+
+    public sealed class AssetVariantChangeDetails
+    {
+        public int? LatestRevisionNumber { get; set; }
+        public int? CurrentRevisionNumber { get; set; }
+        public IReadOnlyList<AssetVariantChange> SaveChanges { get; set; }
+        public IReadOnlyList<AssetVariantChange> DiscardChanges { get; set; }
+    }
+
+    public enum AssetVariantChangeKind { Added, Modified, Removed }
+    public enum AssetVariantChangeSubject { Asset, Dependency, Metadata }
+
+    public sealed class AssetVariantChange
+    {
+        public AssetVariantChangeKind Kind { get; set; }
+        public AssetVariantChangeSubject Subject { get; set; }
+        public string Path { get; set; }
     }
 
     public sealed class AssetVariantGalleryImage

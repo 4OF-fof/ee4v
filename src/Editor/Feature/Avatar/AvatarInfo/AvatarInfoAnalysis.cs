@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using Ee4v.AvatarEditing;
 using nadena.dev.modular_avatar.core;
 using Newtonsoft.Json;
 using UnityEditor;
@@ -82,6 +83,7 @@ namespace Ee4v.AvatarInfo
             {
                 var child = transform.gameObject;
                 if (!PrefabUtility.IsAnyPrefabInstanceRoot(child) ||
+                    AvatarGeneratedPrefabs.IsExpressionMenu(child) ||
                     !string.IsNullOrEmpty(basePath) &&
                     PrefabUtility.GetCorrespondingObjectFromSourceAtPath(
                         child, basePath) != null)

@@ -327,6 +327,16 @@
     "analysisUnavailable": "The file tree could not be loaded. Check the Console."
   },
   "variant": {
+    "noTargetChanges": "There are no changes for this operation.",
+    "changesFailed": "Could not load changes.",
+    "added": "Added",
+    "modified": "Modified",
+    "removed": "Removed",
+    "dependencyContent": "Dependency · {0}",
+    "metadataContent": "Variant metadata · {0}",
+    "sceneProperty": "{0} · {1}: {2} → {3}",
+    "pendingParts": "Pending part visibility changes",
+    "pendingShape": "Pending shape or BlendShape changes",
     "save": "Save",
     "discardChanges": "Discard changes",
     "discarding": "Discarding changes and reloading…",
