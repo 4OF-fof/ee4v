@@ -350,7 +350,7 @@ namespace Ee4v.ExpressionMenu
             return parameters.ToArray();
         }
 
-        private void ImportEffects(AvatarEditingContext context, ModularAvatarMenuItem item)
+        private void ImportEffects(AvatarEditingContext context, ModularAvatarMenuItem item, bool removeOriginal = true)
         {
             foreach (var effect in ExpressionMenuTemplateModel.Effects(item))
             {
@@ -387,7 +387,7 @@ namespace Ee4v.ExpressionMenu
                     }).ToList();
                 }
                 ReactiveActions.Add(action);
-                Undo.DestroyObjectImmediate(effect);
+                if (removeOriginal) Undo.DestroyObjectImmediate(effect);
             }
         }
 

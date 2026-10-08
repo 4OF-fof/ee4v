@@ -19,6 +19,8 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 
 ### Inputs
 
+型付きの標準Sliderは`UiTextFactory.CreateSlider`を使用します。生成したSliderの`value`・`SetValueWithoutNotify`・`showInputField`で操作値と数値入力を設定し、ラベルを標準UIの`text`へ直接書き込みません。
+
 `InputField`は左クリックで内部のTextFieldへフォーカスします。文字の上だけでなく入力欄の余白もクリック対象です。無効な入力欄はフォーカスしません。
 
 - `PathField`は手入力とOSのフォルダー・ファイル選択ダイアログをまとめたパス入力です。`PathFieldKind`で選択対象を切り替え、ファイルには拡張子filterを指定できます。入力はEnterまたはフォーカスを外した時に確定し、選択をキャンセルした場合は変更を通知しません。選択ダイアログは現在値から環境変数を展開して最寄りの存在する親フォルダーを開き、空欄や無効な値ではDocumentsを起点にします。内容の必要幅を基準に最小240pxからラベルと余白を除いた枠内の利用可能幅まで伸縮します。文字入力と枠線のないフォルダーアイコンを一つの下線内に配置し、フォーカスとhoverは欄全体の下線色で示します。読み書き・同期は利用側が担当します。
@@ -46,8 +48,10 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 - `StatusOverlay`はspinnerと状態メッセージを表示する小型パネルです。バックグラウンド処理ではウィンドウ右下へ重ね、統合ee4vの変更破棄では再読み込み完了まで画面中央へ表示します。配置と操作の抑止は使用側が制御します。
 - `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンと`InputGroup`の開閉chevronにはFluent UI System Iconsを使用します。組み込みアイコンはUnityのFolder、Scene、GameObject、Model FileとHierarchyの非表示操作に限定します。Fluent画像が読み込めない場合は組み込みアイコンへ代替せず非表示にします。
 - `PrefabThumbnail`はUnityのAssetPreviewを表示し、読み込み中はMiniThumbnailを表示します。取得の再試行は表示中だけ行います。
-- `PrefabScenePreview`はCoreの[`AvatarPreviewRenderer`](./avatar-preview.md)へ描画を委ねます。Scene上の対象は複製せず、Edit ModeではNDMF Previewの加工後Renderer、Play Modeでは実際の対象を描画します。Prefabアセットの表示は隔離された表示用コピーを使用します。対象、部位・Material選択、Cameraと破棄を担当し、`SetFlexibleLayout`で親のサイズへ追従し、`SetViewToggleVisible`で視点切り替えとポーズの操作を非表示にでき、Cameraのフレーミングは変えません。`FocusBodyPart`で部位ポーズを適用し、右下のFluent Accessibilityアイコンまたは`SetTPose`で基準姿勢と切り替えます。ポーズ操作はHumanoidを持つEdit Modeの対象だけに表示します。`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。表示中は約30fpsで再描画し、NDMFの更新、時間依存Shaderと実行中の姿勢を表示します。
+- `PrefabScenePreview`はCoreの[`AvatarPreviewRenderer`](./avatar-preview.md)へ描画を委ねます。Scene上の対象は複製せず、Edit ModeではNDMF Previewの加工後Renderer、Play Modeでは実際の対象を描画します。Prefabアセットの表示と`isolatedSnapshot: true`の表示は隔離された表示用コピーを使用します。対象、部位・Material選択、Cameraと破棄を担当し、`SetFlexibleLayout`で親のサイズへ追従し、`SetViewToggleVisible`で視点切り替えとポーズの操作を非表示にでき、Cameraのフレーミングは変えません。`FocusBodyPart`で部位ポーズを適用し、右下のFluent Accessibilityアイコンまたは`SetTPose`で基準姿勢と切り替えます。ポーズ操作はHumanoidを持つEdit Modeの対象だけに表示します。`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。表示中は約30fpsで再描画し、NDMFの更新、時間依存Shaderと実行中の姿勢を表示します。
 - `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
+
+`PrefabScenePreview.FeatureOverlay`はプレビュー画像上の機能固有操作の配置先です。Expression Menuは正面・背面切り替えを隠した左上へ戻るボタン、下部中央へ枠付きの動作操作を配置します。`MatchFullBodyFraming`は参照プレビューの全身boundsと拡大表示設定を取得し、隔離コピーの初期表示・リセット・サイズ変更時のカメラ計算に使用します。参照のCamera操作値はコピーせず、通常の全身フレーミングを適用します。`SetSnapshotAnimation`は`isolatedSnapshot: true`で生成したプレビュー専用のAnimationサンプリングを登録し、通常のScene参照モードでは拒否します。
 
 `PrefabScenePreview.SetScope`は描画対象とboundsを同期的に切り替え、PreviewとNDMF sessionを再生成しません。選択した構成Prefab rootのEditorOnly除外規則も同時に再計算し、scope変更後の最初の描画から選択範囲だけを表示します。
 

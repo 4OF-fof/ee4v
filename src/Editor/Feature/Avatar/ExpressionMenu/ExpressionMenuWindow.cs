@@ -19,7 +19,7 @@ namespace Ee4v.ExpressionMenu
         protected override void DisposeFeature() { }
         protected override void RenderFeature()
         {
-            minSize = new Vector2(480f, 560f);
+            minSize = new Vector2(800f, 560f);
             UiComposition.Prepare(Context.ControlsHost, "Editor/Feature/Avatar/ExpressionMenu/expression-menu.uss");
             Context.ControlsHost.AddToClassList("ee4v-expression-menu__standalone-host");
             Context.ControlsHost.verticalScrollerVisibility = ScrollerVisibility.Hidden;

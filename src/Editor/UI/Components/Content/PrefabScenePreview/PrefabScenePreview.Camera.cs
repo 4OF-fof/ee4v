@@ -9,6 +9,17 @@ namespace Ee4v.UI
 {
     public sealed partial class PrefabScenePreview
     {
+        private Bounds? _fullBodyFramingBounds;
+
+        public void MatchFullBodyFraming(PrefabScenePreview reference)
+        {
+            if (reference == null || reference._instance == null) return;
+            _fullBodyFramingBounds = reference.GetAvatarFocusBounds();
+            _fitWholeAvatar = reference._fitWholeAvatar;
+            FrameCurrentSelection();
+            RequestPreviewRepaint();
+        }
+
         public void ResetView()
         {
             if (_instance == null)
@@ -91,7 +102,7 @@ namespace Ee4v.UI
 
         private void FrameWholeAvatar(bool animate)
         {
-            var bounds = GetAvatarFocusBounds();
+            var bounds = _fullBodyFramingBounds ?? GetAvatarFocusBounds();
             var appearanceFraming = _flexibleLayout && !_fitWholeAvatar;
             if (appearanceFraming)
             {

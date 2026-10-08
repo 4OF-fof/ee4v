@@ -133,22 +133,29 @@ namespace Ee4v.ExpressionMenu
             if (!string.IsNullOrEmpty(_error))
                 Add(UiTextFactory.CreateHelpBox(_error, HelpBoxMessageType.Error));
             var selectedEntry = _selected >= 0 && _selected < _page.Entries.Count ? _page.Entries[_selected] : null;
+            VisualElement editorColumn = this;
             if (selectedEntry != null)
             {
-                var navigation = new VisualElement();
-                navigation.AddToClassList("ee4v-expression-menu__navigation");
-                navigation.Add(new UiButton(T("backToMenu"), () =>
+                var detail = new VisualElement { name = "expressionMenuDetail" };
+                detail.AddToClassList("ee4v-expression-menu__detail");
+                Add(detail);
+                detail.Add(new ExpressionMenuPreview(_context, selectedEntry, () =>
                 {
                     _selected = -1;
                     _error = null;
                     Refresh();
-                }, icon: FluentUiIcons.CreateState("arrow_left.png")) { name = "expressionMenuBack" });
+                }));
+                editorColumn = new VisualElement();
+                editorColumn.AddToClassList("ee4v-expression-menu__detail-editor");
+                detail.Add(editorColumn);
+                var navigation = new VisualElement();
+                navigation.AddToClassList("ee4v-expression-menu__navigation");
                 navigation.Add(UiTextFactory.Create(selectedEntry.Control.name, UiClassNames.SectionTitle));
-                Add(navigation);
+                editorColumn.Add(navigation);
             }
             var scroll = new ScrollView(ScrollViewMode.Vertical) { name = "expressionMenuScroll" };
             scroll.AddToClassList("ee4v-expression-menu__scroll");
-            Add(scroll);
+            editorColumn.Add(scroll);
             _menuHost = new VisualElement { name = "expressionMenuEditor" };
             _menuHost.AddToClassList("ee4v-expression-menu__editor");
             _menuHost.EnableInClassList("ee4v-expression-menu__editor--detail", selectedEntry != null);

@@ -96,6 +96,7 @@ namespace Ee4v.Core.Preview
         public Func<Renderer, bool> IsVisible { get; set; }
         public Func<Material, bool> IsMaterialVisible { get; set; }
         public bool UsesNdmf => !_ownsRoot && _session != null;
+        public Action<GameObject> SnapshotAnimation { get; set; }
 
         public void RefreshHierarchy()
         {
@@ -189,6 +190,7 @@ namespace Ee4v.Core.Preview
                 Camera.onPostRender -= OnPostRender;
                 Camera.onPostRender += OnPostRender;
                 ApplySnapshotOverrides();
+                if (_ownsRoot) SnapshotAnimation?.Invoke(Root);
                 Camera.Render();
                 var texture = _utility.EndPreview();
                 completed = true;

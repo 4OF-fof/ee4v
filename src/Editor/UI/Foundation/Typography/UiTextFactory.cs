@@ -52,6 +52,12 @@ namespace Ee4v.UI
             return ConfigureNativeInput(new TextField(label), classNames);
         }
 
+        public static Slider CreateSlider(string label = "", float lowValue = 0f, float highValue = 100f,
+            params string[] classNames)
+        {
+            return ConfigureNativeInput(new Slider(label, lowValue, highValue), classNames);
+        }
+
         public static IntegerField CreateIntegerField(
             string label = "",
             params string[] classNames)

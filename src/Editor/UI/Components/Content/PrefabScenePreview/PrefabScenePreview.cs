@@ -96,6 +96,8 @@ namespace Ee4v.UI
         private bool _previewDirty = true;
         private bool _cameraAnimationSubscribed;
         private bool _flexibleLayout;
+        private readonly bool _isolatedSnapshot;
+        private Action<GameObject> _snapshotAnimation;
         private bool _viewToggleVisible = true;
         private bool _fitWholeAvatar = true;
         private BodyPartCategory? _focusedBodyPart;
@@ -117,8 +119,9 @@ namespace Ee4v.UI
         public event Action<string, Material> PreviewObjectClicked;
         public event Action PreviewSelectionCleared;
 
-        public PrefabScenePreview()
+        public PrefabScenePreview(bool isolatedSnapshot = false)
         {
+            _isolatedSnapshot = isolatedSnapshot;
             AddToClassList(
                 "ee4v-ui-prefab-scene-preview");
 
@@ -205,6 +208,16 @@ namespace Ee4v.UI
 
             _prefab = prefab;
             RebuildPreview();
+        }
+
+        public VisualElement FeatureOverlay => _viewport.FeatureOverlay;
+
+        public void SetSnapshotAnimation(Action<GameObject> sample)
+        {
+            if (!_isolatedSnapshot) throw new InvalidOperationException("Animation sampling requires an isolated preview.");
+            _snapshotAnimation = sample;
+            if (_utility != null) _utility.SnapshotAnimation = sample;
+            RequestPreviewRepaint();
         }
 
         public void SetListSelection(string partKey, Material material)
@@ -783,7 +796,7 @@ namespace Ee4v.UI
 
             try
             {
-                _utility = new AvatarPreviewRenderer(_prefab);
+                _utility = new AvatarPreviewRenderer(_prefab, _isolatedSnapshot) { SnapshotAnimation = _snapshotAnimation };
                 _instance = _utility.Root;
                 _utility.IsVisible = renderer => IsInScope(renderer) && !_hiddenPartRenderers.Contains(renderer);
                 _utility.IsMaterialVisible = material => !_hiddenMaterials.Contains(material);
