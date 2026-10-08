@@ -1430,7 +1430,6 @@ namespace Ee4v.ExpressionMenu
                 }));
                 BuildDetails();
             }
-            host.Add(new UiButton(T("remove"), () => ConfirmRemove(entry), variant: UiButtonVariant.Ghost));
             if (!canEdit)
                 foreach (var field in host.Children().Skip(settingsStart)) field.SetEnabled(false);
         }

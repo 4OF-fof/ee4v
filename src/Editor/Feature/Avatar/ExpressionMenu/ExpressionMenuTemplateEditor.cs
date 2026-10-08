@@ -257,11 +257,11 @@ namespace Ee4v.ExpressionMenu
             card.AddToClassList("ee4v-menu-template__change");
             parent.Add(card);
             var header = new SectionHeader(T("new" + action.Kind));
-            header.Actions.Add(new UiButton(T("removeAction"), () => Run(() =>
+            header.Actions.Add(RemoveActionButton(header, () =>
             {
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.ReactiveActions.RemoveAt(index));
                 Refresh();
-            }), variant: UiButtonVariant.Ghost));
+            }));
             card.Add(header);
             AddSync(card, action.Synced, value =>
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.ReactiveActions[index].Synced = value),
@@ -280,11 +280,11 @@ namespace Ee4v.ExpressionMenu
             var header = new SectionHeader(T(effect is ModularAvatarObjectToggle ? "newObjectToggle" :
                 effect is ModularAvatarMaterialSwap ? "newMaterialSwap" : "newShapeChanger"));
             if (ExpressionMenuTemplateModel.IsOwned(_item.gameObject))
-                header.Actions.Add(new UiButton(T("removeAction"), () => Run(() =>
+                header.Actions.Add(RemoveActionButton(header, () =>
                 {
                     ExpressionMenuTemplateModel.RemoveAction(_context, _item, effect);
                     Refresh();
-                }), variant: UiButtonVariant.Ghost));
+                }));
             card.Add(header);
             var owned = ExpressionMenuTemplateModel.IsOwned(_item.gameObject);
             AddSync(card, _item.isSynced, value =>
@@ -319,11 +319,11 @@ namespace Ee4v.ExpressionMenu
             card.AddToClassList("ee4v-menu-template__change");
             parent.Add(card);
             var header = new SectionHeader(T("kindParameterValue"));
-            header.Actions.Add(new UiButton(T("removeAction"), () => Run(() =>
+            header.Actions.Add(RemoveActionButton(header, () =>
             {
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.ParameterActions.RemoveAt(index));
                 Refresh();
-            }), variant: UiButtonVariant.Ghost));
+            }));
             card.Add(header);
             AddSync(card, action.Synced, value =>
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.ParameterActions[index].Synced = value),
@@ -456,11 +456,11 @@ namespace Ee4v.ExpressionMenu
             card.AddToClassList("ee4v-menu-template__change");
             parent.Add(card);
             var header = new SectionHeader(T("newAnimationClip"));
-            header.Actions.Add(new UiButton(T("removeAction"), () => Run(() =>
+            header.Actions.Add(RemoveActionButton(header, () =>
             {
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.Actions.RemoveAt(index));
                 Refresh();
-            }), variant: UiButtonVariant.Ghost));
+            }));
             card.Add(header);
             AddSync(card, recipe.Actions[index].Synced, value =>
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.Actions[index].Synced = value),
@@ -479,11 +479,11 @@ namespace Ee4v.ExpressionMenu
             card.AddToClassList("ee4v-menu-template__change");
             parent.Add(card);
             var header = new SectionHeader(T("kindShapeChanger"));
-            header.Actions.Add(new UiButton(T("removeAction"), () => Run(() =>
+            header.Actions.Add(RemoveActionButton(header, () =>
             {
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.RadialShapes.RemoveAt(index));
                 Refresh();
-            }), variant: UiButtonVariant.Ghost));
+            }));
             card.Add(header);
             AddSync(card, recipe.RadialShapes[index].Synced, value =>
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.RadialShapes[index].Synced = value),
@@ -494,7 +494,7 @@ namespace Ee4v.ExpressionMenu
             {
                 var targetIndex = rowIndex;
                 MenuRadialShapeTarget Target() => recipe.RadialShapes[index].Targets[targetIndex];
-                var row = Entry(card, () =>
+                var row = Entry(card, "shapeEntry", targetIndex, () =>
                 {
                     ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.RadialShapes[index].Targets.RemoveAt(targetIndex));
                     Refresh();
@@ -538,11 +538,11 @@ namespace Ee4v.ExpressionMenu
                 range.Add(UiTextFactory.Create("〜", "ee4v-menu-template__range-separator"));
                 AddEndpoint("atHundred", Target().Maximum, value => Target().Maximum = value);
             }
-            card.Add(new UiButton(T("addTarget"), () => Run(() =>
+            AddEntryButton(card, "addShape", () =>
             {
                 ExpressionMenuAnimationRecipe.Change(_context, _item, () => recipe.RadialShapes[index].Targets.Add(new MenuRadialShapeTarget()));
                 Refresh();
-            }), variant: UiButtonVariant.Ghost));
+            });
             card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
         }
 
@@ -556,7 +556,7 @@ namespace Ee4v.ExpressionMenu
             {
                 var index = i;
                 var entry = Objects()[i];
-                var row = Entry(card, () => EditEffect(effect, action, () => Objects().RemoveAt(index), rebuild: true));
+                var row = Entry(card, "objectEntry", index, () => EditEffect(effect, action, () => Objects().RemoveAt(index), rebuild: true));
                 AddObject<GameObject>(row, T("target"), entry.Object?.Get(owner), true, target =>
                 {
                     var reference = ExpressionMenuTemplateModel.Reference(_context, target, false);
@@ -573,8 +573,8 @@ namespace Ee4v.ExpressionMenu
                 }));
                 row.Add(initial);
             }
-            card.Add(new UiButton(T("addTarget"), () => EditEffect(effect, action,
-                () => Objects().Add(new ToggledObject { Object = new AvatarObjectReference(), Active = !inverted }), rebuild: true), variant: UiButtonVariant.Ghost));
+            AddEntryButton(card, "addObject", () => EditEffect(effect, action,
+                () => Objects().Add(new ToggledObject { Object = new AvatarObjectReference(), Active = !inverted }), rebuild: true));
         }
 
         private void BuildSwap(VisualElement card, ModularAvatarMaterialSwap effect, MenuReactiveAction action = null)
@@ -584,15 +584,15 @@ namespace Ee4v.ExpressionMenu
             {
                 var index = i;
                 var entry = Swaps()[i];
-                var row = Entry(card, () => EditEffect(effect, action, () => Swaps().RemoveAt(index), rebuild: true));
+                var row = Entry(card, "swapEntry", index, () => EditEffect(effect, action, () => Swaps().RemoveAt(index), rebuild: true));
                 var transition = AddTransition(row, T("fromMaterial"), T("toMaterial"));
                 AddObject<Material>(transition.Before, "", entry.From, false, value => ChangeEffect(effect, action, () =>
                 { var obj = Swaps()[index]; obj.From = value; Swaps()[index] = obj; }));
                 AddObject<Material>(transition.After, "", entry.To, false, value => ChangeEffect(effect, action, () =>
                 { var obj = Swaps()[index]; obj.To = value; Swaps()[index] = obj; }));
             }
-            card.Add(new UiButton(T("addSwap"), () => EditEffect(effect, action,
-                () => Swaps().Add(new MatSwap()), rebuild: true), variant: UiButtonVariant.Ghost));
+            AddEntryButton(card, "addSwap", () => EditEffect(effect, action,
+                () => Swaps().Add(new MatSwap()), rebuild: true));
         }
 
 
@@ -604,7 +604,7 @@ namespace Ee4v.ExpressionMenu
             {
                 var targetIndex = index;
                 ChangedShape Target() => Shapes()[targetIndex];
-                var row = Entry(card, () => EditEffect(effect, action, () => Shapes().RemoveAt(targetIndex), rebuild: true));
+                var row = Entry(card, "shapeEntry", targetIndex, () => EditEffect(effect, action, () => Shapes().RemoveAt(targetIndex), rebuild: true));
                 var renderer = Target().Object?.Get(owner)?.GetComponent<SkinnedMeshRenderer>();
                 if (renderer == null) renderer = null;
                 FloatField off = null;
@@ -655,10 +655,10 @@ namespace Ee4v.ExpressionMenu
                 }));
                 transition.After.Add(weight);
             }
-            card.Add(new UiButton(T("addTarget"), () => EditEffect(effect, action, () => Shapes().Add(new ChangedShape
+            AddEntryButton(card, "addShape", () => EditEffect(effect, action, () => Shapes().Add(new ChangedShape
             {
                 Object = new AvatarObjectReference(), ChangeType = ShapeChangeType.Set, Value = 100
-            }), rebuild: true), variant: UiButtonVariant.Ghost));
+            }), rebuild: true));
         }
 
         private void BuildShapeSelection(VisualElement row, SkinnedMeshRenderer renderer, string shape, bool hasTarget,
@@ -718,12 +718,39 @@ namespace Ee4v.ExpressionMenu
                 parent.Add(UiTextFactory.CreateHelpBox(T("missingTarget") + " " + reference.referencePath, HelpBoxMessageType.Error));
         }
 
-        private VisualElement Entry(VisualElement parent, Action remove)
+        private UiButton RemoveActionButton(SectionHeader header, Action remove)
+        {
+            var hint = string.Format(T("removeActionHint"), header.TitleText.Text);
+            var button = new UiButton("", () => Run(remove), hint,
+                FluentUiIcons.CreateState("dismiss.png", UiSizeTokens.Size12, hint), UiButtonVariant.Ghost);
+            button.AddToClassList("ee4v-menu-template__remove-action");
+            return button;
+        }
+
+        private void AddEntryButton(VisualElement parent, string key, Action add)
+        {
+            var button = new UiButton(T(key), () => Run(add), T(key + "Hint"),
+                FluentUiIcons.CreateState("add.png", UiSizeTokens.Size12));
+            button.AddToClassList("ee4v-menu-template__add-entry");
+            button.LabelText.SetWhiteSpace(WhiteSpace.Normal);
+            parent.Add(button);
+        }
+
+        private VisualElement Entry(VisualElement parent, string titleKey, int index, Action remove)
         {
             var row = new VisualElement();
             row.AddToClassList("ee4v-menu-template__entry");
             parent.Add(row);
-            row.Add(new UiButton(T("removeRow"), () => Run(remove), variant: UiButtonVariant.Ghost));
+            var title = string.Format(T(titleKey), index + 1);
+            var header = new SectionHeader(title);
+            header.AddToClassList("ee4v-menu-template__entry-header");
+            header.TitleText.SetWhiteSpace(WhiteSpace.Normal);
+            var hint = string.Format(T("removeEntryHint"), title);
+            var removeButton = new UiButton("", () => Run(remove), hint,
+                FluentUiIcons.CreateState("dismiss.png", UiSizeTokens.Size12, hint), UiButtonVariant.Ghost);
+            removeButton.AddToClassList("ee4v-menu-template__remove-entry");
+            header.Actions.Add(removeButton);
+            row.Add(header);
             return row;
         }
 

@@ -98,10 +98,16 @@
 .ee4v-menu-template__settings .unity-float-field { flex-direction: column; align-items: stretch; }
 .ee4v-menu-template__settings .unity-popup-field > .unity-base-field__label,
 .ee4v-menu-template__settings .unity-float-field > .unity-base-field__label { width: auto; min-width: 0; margin-bottom: 4px; }
-.ee4v-menu-template__change { margin-top: 8px; margin-bottom: 8px; padding: 8px; border-width: 1px; border-color: var(--ee4v-color-border-default); border-radius: 4px; }
+.ee4v-menu-template__change { margin-top: 8px; margin-bottom: 8px; padding: 12px; border-width: 1px; border-color: var(--ee4v-color-border-default); border-radius: 4px; }
 .ee4v-menu-template__change > * { margin-bottom: 6px; }
-.ee4v-menu-template__entry { margin-top: 4px; }
+.ee4v-menu-template__change > .ee4v-ui-section-header { padding-bottom: 8px; border-bottom-width: 1px; border-bottom-color: var(--ee4v-color-border-default); }
+.ee4v-menu-template__remove-action.ee4v-ui-button,
+.ee4v-menu-template__remove-entry.ee4v-ui-button { width: 24px; height: 24px; min-height: 24px; flex-shrink: 0; }
+.ee4v-menu-template__entry { margin-top: 8px; padding: 8px; border-width: 1px; border-color: var(--ee4v-color-border-default); border-radius: 4px; background-color: var(--ee4v-color-surface-soft); }
 .ee4v-menu-template__entry > * { margin-bottom: 6px; }
+.ee4v-menu-template__entry-header { align-items: center; }
+.ee4v-menu-template__entry-header .ee4v-ui-section-header__title { font-size: 12px; }
+.ee4v-menu-template__change > .ee4v-menu-template__add-entry.ee4v-ui-button { align-self: stretch; margin-top: 8px; margin-bottom: 0; }
 .ee4v-menu-template__range-row > .ee4v-ui-form-input__label { width: 120px; }
 .ee4v-menu-template__range { flex-direction: row; align-items: center; max-width: 240px; }
 .ee4v-menu-template__range-value { flex-grow: 1; flex-basis: 0; min-width: 0; margin: 0; }
@@ -117,7 +123,6 @@
 .ee4v-menu-template__transition-column > .unity-base-field > .unity-base-field__label { display: none; }
 .ee4v-menu-template__transition-arrow { flex-shrink: 0; margin-left: 8px; margin-right: 8px; margin-bottom: 2px; }
 .ee4v-menu-template__change .ee4v-ui-button { align-self: flex-start; }
-.ee4v-menu-template__entry .ee4v-ui-button { align-self: flex-end; }
 .ee4v-menu-template__hidden { display: none; }
 .ee4v-expression-menu__ring { width: 300px; height: 300px; align-self: center; margin-top: 8px; margin-bottom: 8px; flex-shrink: 0; }
 .ee4v-expression-menu__slice { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; }

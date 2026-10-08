@@ -383,6 +383,7 @@ namespace Ee4v.ExpressionMenu
                     foreach (var clip in _clips.SelectMany(pair => new[] { pair.on, pair.off }).Where(clip => clip != null))
                     {
                         clip.hideFlags = HideFlags.HideAndDontSave;
+                        clip.legacy = true;
                         foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(clip))
                         {
                             var keys = AnimationUtility.GetObjectReferenceCurve(clip, binding);

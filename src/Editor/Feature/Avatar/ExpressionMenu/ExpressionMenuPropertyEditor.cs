@@ -19,7 +19,7 @@ namespace Ee4v.ExpressionMenu
             card.AddToClassList("ee4v-menu-template__change");
             parent.Add(card);
             var header = new SectionHeader(T(title));
-            header.Actions.Add(new UiButton(T("removeAction"), () => Run(remove), variant: UiButtonVariant.Ghost));
+            header.Actions.Add(RemoveActionButton(header, remove));
             card.Add(header);
             AddSync(card, synced, sync, true);
             return card;
@@ -124,7 +124,7 @@ namespace Ee4v.ExpressionMenu
             {
                 var targetIndex = rowIndex;
                 MenuMaterialValueTarget Target() => Action().Targets[targetIndex];
-                var row = Entry(card, () => ChangeProperty(() => Action().Targets.RemoveAt(targetIndex), true));
+                var row = Entry(card, "materialValueEntry", targetIndex, () => ChangeProperty(() => Action().Targets.RemoveAt(targetIndex), true));
                 var renderer = ExpressionMenuAnimationRecipe.ResolveMaterialRenderer(_context, Target());
                 void Initialize()
                 {
@@ -198,8 +198,8 @@ namespace Ee4v.ExpressionMenu
                 Endpoint(transition.Before, false);
                 Endpoint(transition.After, true);
             }
-            card.Add(new UiButton(T("addTarget"), () => Run(() => ChangeProperty(() =>
-                Action().Targets.Add(new MenuMaterialValueTarget()), true)), variant: UiButtonVariant.Ghost));
+            AddEntryButton(card, "addMaterialValue", () => ChangeProperty(() =>
+                Action().Targets.Add(new MenuMaterialValueTarget()), true));
             card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
         }
 
@@ -274,7 +274,7 @@ namespace Ee4v.ExpressionMenu
             {
                 var targetIndex = rowIndex;
                 MenuTransformTarget Target() => Action().Targets[targetIndex];
-                var row = Entry(card, () => ChangeProperty(() => Action().Targets.RemoveAt(targetIndex), true));
+                var row = Entry(card, "transformEntry", targetIndex, () => ChangeProperty(() => Action().Targets.RemoveAt(targetIndex), true));
                 var transform = ExpressionMenuAnimationRecipe.ResolveTransform(_context, Target().Path);
                 AddObject<GameObject>(row, T("target"), transform != null ? transform.gameObject : null, true, value =>
                 {
@@ -346,8 +346,8 @@ namespace Ee4v.ExpressionMenu
                     (max, value) => { if (max) Target().MaximumScale = value; else Target().MinimumScale = value; },
                     transform != null ? transform.localScale : Vector3.one);
             }
-            card.Add(new UiButton(T("addTarget"), () => Run(() => ChangeProperty(() =>
-                Action().Targets.Add(new MenuTransformTarget()), true)), variant: UiButtonVariant.Ghost));
+            AddEntryButton(card, "addTransform", () => ChangeProperty(() =>
+                Action().Targets.Add(new MenuTransformTarget()), true));
             card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
         }
 
@@ -361,7 +361,7 @@ namespace Ee4v.ExpressionMenu
             {
                 var targetIndex = rowIndex;
                 MenuComponentTarget Target() => Action().Targets[targetIndex];
-                var row = Entry(card, () => ChangeProperty(() => Action().Targets.RemoveAt(targetIndex), true));
+                var row = Entry(card, "componentEntry", targetIndex, () => ChangeProperty(() => Action().Targets.RemoveAt(targetIndex), true));
                 var transform = ExpressionMenuAnimationRecipe.ResolveTransform(_context, Target().Path);
                 AddObject<GameObject>(row, T("target"), transform != null ? transform.gameObject : null, true, value =>
                 {
@@ -404,8 +404,8 @@ namespace Ee4v.ExpressionMenu
                 on.RegisterValueChangedCallback(evt => Run(() => ChangeProperty(() => Target().Enabled = evt.newValue)));
                 transition.After.Add(on);
             }
-            card.Add(new UiButton(T("addTarget"), () => Run(() => ChangeProperty(() =>
-                Action().Targets.Add(new MenuComponentTarget()), true)), variant: UiButtonVariant.Ghost));
+            AddEntryButton(card, "addComponent", () => ChangeProperty(() =>
+                Action().Targets.Add(new MenuComponentTarget()), true));
             card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
         }
     }
