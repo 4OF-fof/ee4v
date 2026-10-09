@@ -26,6 +26,7 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs",
                         "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs",
                         "Editor/AssetManager/UI/AssetManagerView.cs",
                         "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs",

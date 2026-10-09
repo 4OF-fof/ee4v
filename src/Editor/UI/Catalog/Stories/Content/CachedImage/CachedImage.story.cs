@@ -27,7 +27,8 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/Components/AssetItemGridCard.cs",
-                        "Editor/AssetManager/UI/Components/AssetThumbnailStack.cs"
+                        "Editor/AssetManager/UI/Components/AssetThumbnailStack.cs",
+                        "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs"
                     }));
             }
         }

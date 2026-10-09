@@ -461,28 +461,18 @@ namespace Ee4v.AssetManager.UI
             VisualElement anchor,
             IReadOnlyList<VariantSourceOption> sources)
         {
-            var prefabs = sources
-                .SelectMany(source => source.Prefabs)
-                .Where(prefab => prefab != null)
-                .GroupBy(AssetDatabase.GetAssetPath,
-                    StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .OrderBy(prefab => prefab.name,
-                    StringComparer.OrdinalIgnoreCase)
-                .ToArray();
             var target = _avatarContext.Root;
-            PrefabSelector.ShowPicker(
+            AssetPrefabPickerWindow.Show(
                 anchor,
-                prefabs,
-                null,
+                sources,
+                _manager,
                 prefab =>
                 {
-                    if (_avatarContext.Root == target)
+                    if (!_disposed && _avatarContext.Root == target)
                     {
                         AddPrefab(prefab);
                     }
-                },
-                showAsGrid: true);
+                });
         }
 
         private void AddPrefab(GameObject prefab)

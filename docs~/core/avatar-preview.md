@@ -1,6 +1,6 @@
 # Avatarのプレビュー描画
 
-`Core/AvatarEvaluation`の`Ee4v.Core.AvatarEvaluation.Editor`は、NDMF 1.14.8以降のPreview APIとCamera描画を共有する基盤です。NDMF接続・MA骨対応・Clip再生の契約は[Avatar Evaluation](./avatar-evaluation.md)を参照します。`AvatarPreviewRenderer`をUIの`PrefabScenePreview`とFaceExpressionが使用します。AssetManagerの操作確認も`PrefabScenePreview`を使用し、実行中のAvatarを描画します。保存、Undo、Sceneの保存、GestureManagerの生成・操作、Play Modeの開始・停止は扱いません。
+`Core/AvatarEvaluation`の`Ee4v.Core.AvatarEvaluation.Editor`は、NDMF 1.14.8以降のPreview APIとCamera描画を共有する基盤です。NDMF接続・MA骨対応・Clip再生の契約は[Avatar Evaluation](./avatar-evaluation.md)を参照します。`AvatarPreviewRenderer`をUIの`PrefabScenePreview`、FaceExpression、AssetManagerの構成Prefab追加Pickerが使用します。追加Pickerは隔離コピーから選択中Prefabだけを高解像度で描画し、Cameraのフレーミングと生成済みRenderTextureの保持・解放を所有します。AssetManagerの操作確認も`PrefabScenePreview`を使用し、実行中のAvatarを描画します。保存、Undo、Sceneの保存、GestureManagerの生成・操作、Play Modeの開始・停止は扱いません。
 
 ## 対象と描画
 

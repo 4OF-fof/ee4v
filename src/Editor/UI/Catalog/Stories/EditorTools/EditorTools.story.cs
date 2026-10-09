@@ -38,7 +38,8 @@ namespace Ee4v.UI
                     BuildPrefabSelector, "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs", "Editor/AssetManager/UI/AssetManagerView.Items.cs"),
                 Story("prefab-thumbnail", "Displays", "PrefabThumbnail",
                     "UnityのAssetPreviewを使うPrefabサムネイルです。",
-                    BuildPrefabPreview, "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs", "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs")
+                    BuildPrefabPreview, "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs",
+                    "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs")
             };
         }
 

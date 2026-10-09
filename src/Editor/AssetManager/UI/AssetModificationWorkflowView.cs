@@ -37,7 +37,7 @@ namespace Ee4v.AssetManager.UI
             internal HelpBoxMessageType FeedbackType { get; set; }
         }
 
-        private sealed class VariantSourceOption
+        internal sealed class VariantSourceOption
         {
             internal AssetItem Item { get; set; }
             internal IReadOnlyList<GameObject> Prefabs { get; set; }

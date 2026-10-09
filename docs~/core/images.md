@@ -16,3 +16,5 @@ root.Add(image);
 ```
 
 AssetManagerは`AssetManagerView`ごとに1つのcacheを持ち、GridとItem詳細で共有します。スクロールや画面切り替えで表示要素が変わってもデコード済みTextureを再利用し、Source同期または再読み込み時だけcacheを破棄します。
+
+Variantの構成Prefab追加PickerはWindowごとに独立したcacheを持ち、Item検索やItem・Prefab画面の切り替えで取得済みItem画像を再利用します。選択中Prefabの大きなプレビューはCore画像cacheへ含めず、GPU上のRenderTextureを最大8件保持します。PNGへの変換と再デコードは行いません。Window終了時にItem画像cacheと全RenderTextureを解放します。
