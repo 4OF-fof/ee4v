@@ -27,7 +27,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     env:
-      VPM_OUTPUT: ${{ runner.temp }}/ee4v-vpm
       VPM_RELEASE_SHA: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
     steps:
       - uses: actions/checkout@v6
@@ -44,6 +43,7 @@ jobs:
         id: package
         run: node .github/scripts/vpm.mjs prepare
         env:
+          VPM_OUTPUT: ${{ runner.temp }}/ee4v-vpm
           PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
       - name: Create package ZIP
         run: zip -qr "$ZIP_PATH" .
@@ -53,10 +53,12 @@ jobs:
       - name: Publish new version
         run: node .github/scripts/vpm.mjs publish
         env:
+          VPM_OUTPUT: ${{ runner.temp }}/ee4v-vpm
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build VPM listing
         run: node .github/scripts/vpm.mjs listing
         env:
+          VPM_OUTPUT: ${{ runner.temp }}/ee4v-vpm
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
       - name: Upload Pages artifact

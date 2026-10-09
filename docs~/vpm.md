@@ -29,7 +29,7 @@
 
 `.github/scripts/vpm.mjs`はNode.js標準APIのみを使います。`prepare`でGit管理された`src`のファイルを配布用の一時フォルダーへコピーし、ZIP直下に`package.json`、`Editor`、`Runtime`を配置します。ローカルの未追跡ファイルと`Generated`は含めません。既存の`.meta`は保持し、新規作成しません。ルートの`LICENSE.md`と必要な第三者の権利表示も同梱します。第三者の権利表示内のリンクは配布物の配置に合わせます。
 
-配布用manifestへZIPの`url`と一覧の`repo`を追加します。リリース添付manifestとVPM一覧にはZIPの`zipSHA256`も記載し、ZIP内のmanifestには含めません。成果物はrunnerの一時フォルダーへ生成し、元のソースファイルを書き換えません。
+配布用manifestへZIPの`url`と一覧の`repo`を追加します。リリース添付manifestとVPM一覧にはZIPの`zipSHA256`も記載し、ZIP内のmanifestには含めません。成果物はrunnerの一時フォルダーへ生成し、元のソースファイルを書き換えません。`VPM_OUTPUT`は各stepの`env`で`runner.temp`から指定します。
 
 `publish`はDraftへZIPとmanifestをアップロードしてから公開します。`listing`はGitHub APIで全公開リリースを取得し、各ReleaseのmanifestとZIPを照合して`index.json`を生成します。DraftとPrereleaseは一覧へ含めません。ZIPやmanifestが壊れている場合は公開一覧の更新を停止します。
 
