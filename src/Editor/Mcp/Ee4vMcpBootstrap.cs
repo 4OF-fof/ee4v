@@ -106,6 +106,8 @@ namespace Ee4v.Mcp
             AvatarMcpTools.Register();
             FaceExpressionMcpTools.Register();
             AssetManagerMcpTools.Register();
+            AvatarSimulationMcpTools.Register();
+            ExpressionMenuMcpTools.Register();
         }
     }
 }

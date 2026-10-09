@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
@@ -12,48 +11,6 @@ namespace Ee4v.AssetManager.Simulation
 {
     public sealed partial class AvatarLightingView
     {
-        [Serializable]
-        private sealed class LightingPreset
-        {
-            public string Name = string.Empty;
-            public int Pattern;
-            public Color AmbientColor = new Color(0.22f, 0.24f, 0.28f);
-            public float AmbientIntensity = 1;
-            public float ReflectionIntensity = 0.5f;
-            public Color LightColor = Color.white;
-            public float LightIntensity = 1;
-            public float Pitch = 35;
-            public float Yaw = 160;
-            public Color VolumeColor = Color.white;
-            [NonSerialized] public string BuiltinKey;
-            [NonSerialized] public bool Modified;
-
-            public LightingPreset Copy() => (LightingPreset)MemberwiseClone();
-
-            public bool Matches(LightingPreset other) => Pattern == other.Pattern &&
-                AmbientColor == other.AmbientColor && AmbientIntensity == other.AmbientIntensity &&
-                ReflectionIntensity == other.ReflectionIntensity && LightColor == other.LightColor &&
-                LightIntensity == other.LightIntensity && Pitch == other.Pitch && Yaw == other.Yaw &&
-                VolumeColor == other.VolumeColor;
-
-            public bool IsValid => !string.IsNullOrWhiteSpace(Name) && Pattern >= 1 && Pattern <= 6 &&
-                ValidColor(AmbientColor) && ValidColor(LightColor) && ValidColor(VolumeColor) &&
-                Finite(AmbientIntensity) && AmbientIntensity >= 0 &&
-                Finite(ReflectionIntensity) && ReflectionIntensity >= 0 &&
-                Finite(LightIntensity) && LightIntensity >= 0 && Finite(Pitch) && Finite(Yaw);
-
-            private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
-            private static bool ValidColor(Color value) =>
-                Finite(value.r) && Finite(value.g) && Finite(value.b) && Finite(value.a);
-        }
-
-        [Serializable]
-        private sealed class PresetFile
-        {
-            public int Version = 1;
-            public List<LightingPreset> Presets = new List<LightingPreset>();
-        }
-
         private readonly List<LightingPreset> _savedPresets = new List<LightingPreset>();
         private readonly List<Action> _refreshPreviewSettings = new List<Action>();
         private readonly LightingPreset _customChoice = new LightingPreset { Pattern = -1 };
@@ -66,28 +23,10 @@ namespace Ee4v.AssetManager.Simulation
         private VisualElement _directionalSettings;
         private VisualElement _volumeSettings;
         private bool _presetReadFailed;
-        private static string PresetPath => Path.Combine(GlobalDataSettings.RootDirectory, "preset", "lighting.json");
 
         private LightingPreset CreateBuiltin(int pattern)
         {
-            var preset = new LightingPreset { Pattern = pattern, BuiltinKey = _patternNames[pattern - 1] };
-            if (pattern == 2)
-            {
-                preset.AmbientColor = new Color(0.025f, 0.035f, 0.08f);
-                preset.ReflectionIntensity = 0.1f;
-                preset.LightColor = new Color(0.45f, 0.6f, 1);
-                preset.LightIntensity = 0.15f;
-            }
-            if (pattern == 3) { preset.LightColor = new Color(1, 0.65f, 0.35f); }
-            if (pattern == 4) { preset.LightColor = new Color(0.45f, 0.65f, 1); }
-            if (pattern == 5) { preset.Yaw = 0; }
-            if (pattern == 6)
-            {
-                preset.AmbientColor = new Color(0.18f, 0.18f, 0.18f);
-                preset.ReflectionIntensity = 0.2f;
-                preset.LightIntensity = 2;
-            }
-            return preset;
+            return LightingPresetStore.CreateBuiltin(pattern);
         }
 
         private string PresetLabel(LightingPreset preset) =>
@@ -145,6 +84,7 @@ namespace Ee4v.AssetManager.Simulation
             actions.Add(_deletePreset);
             Controls.Add(actions);
             ReloadPresets();
+            LightingPresetStore.Changed += ReloadPresets;
             GlobalDataSettings.PathChanged += ReloadPresets;
         }
 
@@ -154,16 +94,7 @@ namespace Ee4v.AssetManager.Simulation
             _presetReadFailed = false;
             try
             {
-                var path = PresetPath;
-                if (File.Exists(path))
-                {
-                    var file = JsonUtility.FromJson<PresetFile>(File.ReadAllText(path));
-                    if (file == null || file.Version != 1 || file.Presets == null ||
-                        file.Presets.Any(preset => preset == null || !preset.IsValid) ||
-                        file.Presets.GroupBy(preset => preset.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
-                    { throw new InvalidDataException(Text("invalidPresets")); }
-                    _savedPresets.AddRange(file.Presets);
-                }
+                _savedPresets.AddRange(LightingPresetStore.Read());
             }
             catch (Exception exception) { _presetReadFailed = true; ShowPresetError(exception); }
             RefreshPresetControls();
@@ -194,22 +125,6 @@ namespace Ee4v.AssetManager.Simulation
                 _savedPresets.Any(preset => preset.Name == active.Name));
         }
 
-        private bool PersistPresets(List<LightingPreset> presets)
-        {
-            try
-            {
-                var path = PresetPath;
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
-                var temporary = path + ".tmp";
-                File.WriteAllText(temporary, JsonUtility.ToJson(new PresetFile { Presets = presets }, true));
-                if (File.Exists(path)) { File.Replace(temporary, path, null); }
-                else { File.Move(temporary, path); }
-                Status.SetText(string.Empty);
-                return true;
-            }
-            catch (Exception exception) { ShowPresetError(exception); return false; }
-        }
-
         private void SavePreset()
         {
             var preset = _previews[ActivePreview].Copy();
@@ -217,11 +132,8 @@ namespace Ee4v.AssetManager.Simulation
             preset.BuiltinKey = null;
             preset.Modified = false;
             if (!preset.IsValid) { return; }
-            var saved = _savedPresets.Where(value => value.Name != preset.Name).ToList();
-            saved.Add(preset.Copy());
-            if (!PersistPresets(saved)) { return; }
-            _savedPresets.Clear();
-            _savedPresets.AddRange(saved);
+            try { LightingPresetStore.Upsert(preset); Status.SetText(string.Empty); }
+            catch (Exception exception) { ShowPresetError(exception); return; }
             _previews[ActivePreview] = preset;
             RefreshSelection();
         }
@@ -229,10 +141,8 @@ namespace Ee4v.AssetManager.Simulation
         private void DeletePreset()
         {
             var name = _previews[ActivePreview].Name;
-            var saved = _savedPresets.Where(preset => preset.Name != name).ToList();
-            if (!PersistPresets(saved)) { return; }
-            _savedPresets.Clear();
-            _savedPresets.AddRange(saved);
+            try { LightingPresetStore.Delete(name); Status.SetText(string.Empty); }
+            catch (Exception exception) { ShowPresetError(exception); return; }
             foreach (var preview in _previews.Where(preview => preview.Name == name && string.IsNullOrEmpty(preview.BuiltinKey)))
             { preview.Name = string.Empty; preview.Modified = true; }
             _presetName.SetValueWithoutNotify(string.Empty);

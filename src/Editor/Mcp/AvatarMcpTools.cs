@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Ee4v.AvatarInfo;
+using Ee4v.Core.AvatarEvaluation;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -82,7 +84,8 @@ namespace Ee4v.Mcp
                 .Select(component => component.gameObject)
                 .Where(gameObject =>
                     !EditorUtility.IsPersistent(gameObject) &&
-                    gameObject.scene.IsValid());
+                    gameObject.scene.IsValid() && gameObject.scene.isLoaded &&
+                    !EditorSceneManager.IsPreviewScene(gameObject.scene));
 
             var values = avatars
                 .Distinct()
@@ -112,6 +115,7 @@ namespace Ee4v.Mcp
                 ["avatarRef"] = UnityObjectReference.Create(avatar),
                 ["name"] = avatar.name,
                 ["kind"] = kind,
+                ["isPlaying"] = EditorApplication.isPlaying,
                 ["hierarchyPath"] = UnityObjectReference.HierarchyPath(avatar.transform),
                 ["assetPath"] = assetPath,
                 ["scenePath"] = avatar.scene.path
@@ -147,6 +151,8 @@ namespace Ee4v.Mcp
             {
                 ["ok"] = true,
                 ["avatar"] = AvatarSummary(avatar),
+                ["scope"] = "currentHierarchy",
+                ["lastMeasurement"] = McpJson.From(AvatarPlayModePerformanceCache.Get(avatar)),
                 ["rig"] = new JObject
                 {
                     ["hasAnimator"] = animator != null,
@@ -159,7 +165,9 @@ namespace Ee4v.Mcp
                     ["skinnedMeshRendererCount"] = skinned.Length,
                     ["meshRendererCount"] = meshRenderers.Length,
                     ["uniqueMeshCount"] = meshes.Length,
-                    ["triangleCount"] = meshes.Sum(mesh => (long)mesh.triangles.Length / 3L),
+                    ["triangleCount"] = skinned.Select(renderer => renderer.sharedMesh)
+                        .Concat(meshRenderers.Select(renderer => renderer.GetComponent<MeshFilter>()?.sharedMesh))
+                        .Where(mesh => mesh != null).Sum(mesh => (long)mesh.triangles.Length / 3L),
                     ["blendShapeCount"] = meshes.Sum(mesh => mesh.blendShapeCount),
                     ["materialSlotCount"] = avatar.GetComponentsInChildren<Renderer>(true)
                         .Sum(renderer => renderer.sharedMaterials.Length),
@@ -196,7 +204,8 @@ namespace Ee4v.Mcp
             var descriptor = GetComponent(avatar, DescriptorTypeName);
             var animator = avatar.GetComponent<Animator>();
             var triangleCount = (long)inventory["rendering"]["triangleCount"];
-            var parameterBits = (int)inventory["expressions"]["syncedParameterBits"];
+            var parameterBits = (int?)inventory["expressions"]["syncedParameterBits"];
+            var parameterLimit = (int?)inventory["expressions"]["parameterLimit"];
 
             if (descriptor == null)
             {
@@ -239,11 +248,21 @@ namespace Ee4v.Mcp
                     " avatar guide of " + triangleGuide + ".", avatar);
             }
 
-            if (parameterBits > 256)
+            if (parameterBits.HasValue && parameterLimit.HasValue && parameterBits > parameterLimit)
             {
                 AddFinding(findings, "error", "expression_parameter_budget_exceeded",
-                    "Synced Expression Parameters use more than 256 bits.", descriptor);
+                    "Synced Expression Parameters exceed the SDK limit (" + parameterLimit +
+                    " bits); source: " + (string)inventory["expressions"]["parameterSource"] + ".", descriptor);
             }
+            if (!parameterBits.HasValue)
+                AddFinding(findings, "warning", "expression_parameter_usage_unavailable",
+                    "Parameter usage could not be obtained; it is not treated as zero.", avatar);
+            var measured = AvatarPlayModePerformanceCache.Get(avatar);
+            if (measured?.CapturedAt == null)
+                AddFinding(findings, "info", "performance_measurement_missing",
+                    "Current hierarchy counts are not final NDMF/AAO performance. Use ee4v_measure_avatar_performance for a processed measurement.", avatar);
+            else if (!string.IsNullOrEmpty(measured.Error))
+                AddFinding(findings, "warning", "performance_measurement_failed", measured.Error, avatar);
 
             foreach (var duplicate in DuplicateExpressionParameters(descriptor))
             {
@@ -312,7 +331,9 @@ namespace Ee4v.Mcp
                 ["hasExpressionParameters"] = false,
                 ["hasExpressionsMenu"] = false,
                 ["parameterCount"] = 0,
-                ["syncedParameterBits"] = 0
+                ["syncedParameterBits"] = JValue.CreateNull(),
+                ["parameterLimit"] = JValue.CreateNull(),
+                ["parameterSource"] = "unavailable"
             };
             if (descriptor == null)
             {
@@ -323,37 +344,33 @@ namespace Ee4v.Mcp
             var menu = GetMemberValue(descriptor, "expressionsMenu") as UnityEngine.Object;
             result["hasExpressionParameters"] = parameters != null;
             result["hasExpressionsMenu"] = menu != null;
-            if (parameters == null)
+            try
             {
-                return result;
-            }
-
-            var entries = GetMemberValue(parameters, "parameters") as IEnumerable;
-            var count = 0;
-            var bits = 0;
-            if (entries != null)
-            {
-                foreach (var entry in entries)
+                var memory = AvatarInfoSdk.Provider?.ReadParameterMemory(descriptor.gameObject);
+                if (memory != null)
                 {
-                    if (entry == null)
-                    {
-                        continue;
-                    }
-
-                    count++;
-                    var synced = GetMemberValue(entry, "networkSynced");
-                    if (synced is bool isSynced && !isSynced)
-                    {
-                        continue;
-                    }
-
-                    var type = GetMemberValue(entry, "valueType")?.ToString() ?? string.Empty;
-                    bits += type.IndexOf("Bool", StringComparison.OrdinalIgnoreCase) >= 0 ? 1 : 8;
+                    var estimated = !EditorApplication.isPlaying && memory.ItemsEstimated && memory.Items != null;
+                    result["syncedParameterBits"] = estimated ? memory.Items.Sum(item => item.Used) : memory.Used;
+                    result["parameterLimit"] = memory.Limit;
+                    result["parameterCount"] = memory.Parameters?.Length ?? 0;
+                    result["parameterSource"] = estimated ? "authoringEstimate" : EditorApplication.isPlaying ? "runtimeDescriptor" : "descriptor";
+                    result["parameterMemory"] = McpJson.From(memory);
                 }
             }
-
-            result["parameterCount"] = count;
-            result["syncedParameterBits"] = bits;
+            catch (Exception exception) { result["parameterError"] = exception.GetBaseException().Message; }
+            try
+            {
+                var candidates = AvatarAuthoringParameters.Read(descriptor.gameObject);
+                result["authoringParameters"] = McpJson.From(candidates.Select(value => new { value.Name, type = value.Type.ToString(), value.Expression }));
+                var composed = Ee4v.ExpressionMenu.ExpressionMenuApi.Inspect(descriptor.gameObject);
+                result["composedMenuPageCount"] = composed.Pages.Count;
+                result["composedMenuEntryCount"] = composed.Entries.Count;
+                result["menuSource"] = "maAuthoring";
+            }
+            catch (Exception exception)
+            {
+                result["authoringError"] = exception.GetBaseException().Message;
+            }
             return result;
         }
 
@@ -389,17 +406,23 @@ namespace Ee4v.Mcp
 
         private static IReadOnlyList<JObject> AuditExpressionMenus(Component descriptor)
         {
-            var root = descriptor == null
-                ? null
-                : GetMemberValue(descriptor, "expressionsMenu") as UnityEngine.Object;
-            if (root == null)
+            if (descriptor == null)
             {
                 return Array.Empty<JObject>();
             }
 
             var findings = new List<JObject>();
             var visited = new HashSet<int>();
-            AuditMenu(root, visited, findings);
+            try
+            {
+                AvatarAuthoringMenu.Read(descriptor.gameObject, out var sources);
+                foreach (var source in sources.Where(page => page.Asset != null)) AuditMenu(source.Asset, visited, findings);
+            }
+            catch (Exception exception)
+            {
+                findings.Add(new JObject { ["severity"] = "warning", ["code"] = "expression_menu_resolution_failed",
+                    ["message"] = exception.GetBaseException().Message });
+            }
             return findings;
         }
 
@@ -434,7 +457,7 @@ namespace Ee4v.Mcp
 
             foreach (var control in values)
             {
-                var submenu = GetMemberValue(control, "subMenu") as UnityEngine.Object;
+                var submenu = GetMemberValue(control, "type")?.ToString() == "SubMenu" ? GetMemberValue(control, "subMenu") as UnityEngine.Object : null;
                 if (submenu != null)
                 {
                     AuditMenu(submenu, visited, findings);

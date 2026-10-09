@@ -173,11 +173,15 @@ rootまたはassetサブメニューへの追加時は、アバター直下にSc
 
 ## 依存
 
+外部操作は公開`ExpressionMenuApi`から同じModel／recipe／AvatarEvaluationへ接続します。MCP固有の型は持たず、参照はAvatar内のindex path、asset pathとlocal ID、機能側DTOで扱います。調査は出所・編集／コピー可否・動作設定とrevisionを返し、書き込み時は最新のrevisionと出所・編集許可を再検証します。生成Itemの全動作置換は、隔離したrecipeで対象・範囲・property競合を事前検証し、実行時は既存MA ReactiveComponentの変換を含め同じUndo transaction内で置換・生成・保存します。dryRunは保存しません。メニュー変更はSceneをdirtyにして画面の変更検出へ通知し、Avatar Prefab・Sceneの確定保存は既存ホストに任せます。
+
 Coreの公開Localization・ProjectAssetSettings、UI、共有AvatarEditingの編集許可・変更通知・単独Windowへ依存します。設定サービス型のためCore.Contracts、BodyPartCategoryのためCore.Editorも参照します。MAを考慮したメニュー解決・出所照合とパラメーター集計は`Ee4v.Core.AvatarEvaluation.Editor`の`AvatarAuthoringMenu.Read`と`AvatarAuthoringParameters.Read`を使用します。画面と編集処理は`AvatarMenuPage`・`AvatarMenuEntry`・`AvatarParameterInfo`を直接使用し、機能側でメニュー構造やパラメーターを複製しません。ExpressionMenuModelはdraft除外条件と編集・Undo・保存を、recipeは動作ごとのパラメーター候補の絞り込みを所有します。これはビルド前の編集用情報で、NDMFビルド後の最終Expression Menu・パラメーターではありません。AvatarEditingは統合版・単独版の対象と保存契約を揃えるため使用します。他のAvatar機能へ参照しません。VRChat SDK、MA runtime、GM runtime / Editorの実際に使うassemblyのみ参照します。GMは描画の共用に使用し、Edit Modeでアバター実行モジュールを生成しません。
 
 MAは`src/package.json`の対応範囲（1.18.2以上2.0.0未満）で内部resolver `VirtualMenu.ForAvatar`、`RootMenuNode`、Childrenのnode keyへアクセスします。バージョン依存箇所は[Core/AvatarEvaluation](../core/avatar-evaluation.md)へ隔離します。resolver取得・解決失敗時はエラーを表示し、不完全な合成メニューへの編集へ代替しません。
 
 ## 手動確認
+
+MCPの同期PNG撮影は`AvatarPreviewRenderer`の隔離スナップショットと`RenderPng`を使用し、同じrecipe・AvatarEvaluationで操作値を評価します。表示用コピーへのMA骨対応とClip／Puppet評価だけを同期的に描画し、Scene用の非同期NDMF Preview Plugin加工や実行時のAnimator遷移・PhysBoneはPlay Modeへ任せます。
 
 - Submenuを開く・戻る・ページ移動・ツリーからの移動・単独Windowの表示元切り替えを続けても、設定変更がなければメニューの再解決やコピー可否のためのアバター再走査を行わないこと。外部Inspectorでの名前・型・参照の変更、Hierarchy変更、Undo／Redo、Project変更、対象変更・タブ再接続の後は次の画面更新に反映すること。キャッシュ再利用中も本来のSubmenuと通常Itemの判定、選択位置・ページ保持が一致すること。ドラッグ中の同じ移動先で強調・説明がちらつかず、移動不可の判定・確定時検証・取消を維持すること。
 

@@ -8,7 +8,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace Ee4v.AssetManager.Simulation
 {
-    public static class GestureManagerIntegration
+    public static partial class GestureManagerIntegration
     {
         internal static GestureManager FindManager(GameObject avatar)
         {

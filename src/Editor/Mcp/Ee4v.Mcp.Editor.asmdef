@@ -7,7 +7,13 @@
     "Ee4v.AssetManager.UI.Editor",
     "Ee4v.Core.Editor",
     "Ee4v.Core.Presentation.Editor",
-    "Ee4v.FaceExpression.Editor"
+    "Ee4v.FaceExpression.Editor",
+    "Ee4v.Core.AvatarEvaluation.Editor",
+    "Ee4v.AvatarInfo.Editor",
+    "Ee4v.ExpressionMenu.Editor",
+    "Ee4v.AssetManager.Simulation.Editor",
+    "Ee4v.PlayModeComponentSuppression.Editor",
+    "nadena.dev.modular-avatar.core"
   ],
   "includePlatforms": [
     "Editor"

@@ -256,6 +256,36 @@ namespace Ee4v.Core.AvatarEvaluation
             }
         }
 
+        /// <summary>Reads one preview frame as an sRGB PNG without saving assets.</summary>
+        public byte[] RenderPng(int width, int height)
+        {
+            if (width < 64 || width > 1024 || height < 64 || height > 1024) throw new ArgumentOutOfRangeException(nameof(width));
+            var texture = Render(new Rect(0, 0, width, height));
+            if (texture == null) throw new InvalidOperationException("Preview render failed.");
+            var previous = RenderTexture.active;
+            var previousSrgb = GL.sRGBWrite;
+            RenderTexture readback = null;
+            Texture2D pixels = null;
+            try
+            {
+                readback = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
+                Graphics.Blit(texture, readback);
+                RenderTexture.active = readback;
+                pixels = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                pixels.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                pixels.Apply();
+                return pixels.EncodeToPNG();
+            }
+            finally
+            {
+                GL.sRGBWrite = previousSrgb;
+                RenderTexture.active = previous;
+                if (readback != null) RenderTexture.ReleaseTemporary(readback);
+                if (pixels != null) Object.DestroyImmediate(pixels);
+            }
+        }
+
         private void EnsureSession()
         {
             if (_session.Connect(Camera, Root, _filter, !_ownsRoot)) _resolved.Clear();

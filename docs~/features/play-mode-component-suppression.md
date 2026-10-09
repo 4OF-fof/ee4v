@@ -16,3 +16,5 @@ Play Mode向けのNDMF処理で、指定したコンポーネント型をビル�
 - NDMF 1.8.0以降が必要です。
 
 AAOの`Trace And Optimize`も選択できますが、AAOへの参照や専用処理は持ちません。
+
+公開APIは設定済みidentity・解決可否と読み込み済みの候補型を取得し、Edit Modeで設定を全置換できます。MCPも同じsettings serviceを使用します。新規identityは読み込み済み具象MonoBehaviourに限定し、既存の未導入型は保持または明示除去できます。設定変更はProject scopeに保存し、Play Mode中・切り替え中には拒否します。

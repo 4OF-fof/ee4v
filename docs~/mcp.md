@@ -1,6 +1,6 @@
 # ee4v MCP
 
-`src/Editor/Mcp`は、VRChatアバターの調査、表情改変、ee4vのAssetManagerをAIクライアントから操作するための統合層です。Hierarchy、Component、Scene、Prefab、Animator Controller、Materialなどの汎用操作は既存のUnity MCPへ任せ、ee4v MCPは複数のUnity APIとVRChatの規則をまとめて扱う高水準操作を所有します。
+`src/Editor/Mcp`は、VRChatアバターの調査、表情・Expression Menu改変、Play Modeの操作・ライティング確認、性能測定、ee4vのAssetManagerをAIクライアントから操作する統合層です。Hierarchy、Component、Scene、Prefab、Animator Controller、Materialなどの汎用操作は既存のUnity MCPへ任せ、ee4v MCPは複数のUnity APIとVRChatの規則をまとめて扱う高水準操作を所有します。
 
 ## 接続
 
@@ -31,6 +31,7 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 - tool結果は機械処理用の`structuredContent`と、同じ内容のtext contentを返す。preview PNGはimage contentも返す。
 - AssetManagerとVariantの必須文字列入力は`McpJson.RequireString`で前後の空白を除き、空なら`invalid_request`を返す。
 - tool annotationでread-only、破壊性、冪等性、open-world accessを宣言する。
+- 通常の書き込みはtool registryでPlay Mode中・切り替え中に`edit_mode_required`として拒否する。実行中のGestureManager操作とライティングプリセット保存・削除だけは明示的な例外とする。read-onlyな画像描画は一時状態を必ず復元する。
 - AssetManagerではmetadata編集、明示的な`ee4v_asset_import`によるUnity ProjectへのImport、Itemに紐付くVariantの作成・改変・履歴保存を公開する。同期、Item／Fileの削除、File登録、新規Item作成は公開しない。Collectionの作成・削除も公開し、削除toolは削除前の名前と条件を返す。Importは既存Project Assetを上書きする可能性があるため、破壊性あり・冪等性なしのannotationを付ける。
 - AssetManagerのPrefab調査は、既にUnity Projectへ取り込まれたPrefab assetとAssetManagerで作成済みの派生Prefabだけを対象にする。Prefab調査・previewからImportを暗黙には開始しない。必要な場合は登録済みFileを明示的なImport toolで取り込む。
 - Prefab previewはUnityの内部Preview sceneへだけinstanceを作成し、Play Mode、利用者のScene、Prefab assetを変更しない。外部APIへ画像を送信しない。
@@ -38,13 +39,13 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 
 ## Object参照
 
-`ee4v_find_avatars`は、loaded SceneとPrefab Modeから後続toolへ渡す`avatarRef`を返します。参照にはUnityの`GlobalObjectId`を優先します。Project内Prefabの検索は汎用Unity MCPへ任せます。
+`ee4v_find_avatars`は、loaded SceneとPrefab Modeから後続toolへ渡す`avatarRef`を返します。内部Preview Sceneは除外します。参照にはUnityの`GlobalObjectId`を優先し、Play Modeの実体と未保存ObjectはEditor session限定の`instance:<session>:<id>`で参照します。対象破棄、Play Mode停止、Domain Reload後は再取得します。Project内Prefabの検索は汎用Unity MCPへ任せます。
 
 書き込みtoolは取得済みの参照を再解決し、対象がAvatar配下にあること、永続Prefab assetを直接編集しようとしていないこと、必要なVRChat SDK型が存在することを再検証します。
 
 ## Tool設計
 
-現行catalogは33 tools。対象と編集単位が同じ操作は、部分更新または明示的なactionへ統合する。読み取り、書き込み、破壊的な削除はannotationと承認単位が異なるため分離する。検索／一覧と詳細取得は返す情報量と用途が異なるため維持する。Avatar inventoryとauditも、事実の取得と問題の検出を分ける。
+現行catalogは51 tools。対象と編集単位が同じ操作は、部分更新または明示的なactionへ統合する。読み取り、書き込み、破壊的な削除はannotationと承認単位が異なるため分離する。検索／一覧と詳細取得は返す情報量と用途が異なるため維持する。Avatar inventoryとauditも、事実の取得と問題の検出を分ける。
 
 Item編集へ名前・説明・Tag・Archive・Import Targetを統合し、一括編集を維持する。Collectionの作成と更新はupsertへ、ポーズ追加・更新・移動・Loop変更はanimation編集へ、Clipの調査とvalidationはClip調査へ統合する。左右Gestureの単独更新はFacialSetのpatch適用で扱う。
 
@@ -60,6 +61,50 @@ Item編集へ名前・説明・Tag・Archive・Import Targetを統合し、一�
 | `ee4v_audit_avatar` | inventoryを重複して返さず、Descriptor、Humanoid、Body、各上限、Constraint、PhysBoneについて対処可能なfindingだけを返す |
 
 監査で使うtriangle数の目安はPC `70,000`、Android `20,000`です。これはupload可否を断定する値ではなく、一般的な制作時の注意としてwarningを返します。
+
+inventoryの数量は`scope: currentHierarchy`で、最終ビルドの性能ではありません。Expression ParametersはAvatarInfoのSDK計算とNDMF供給元のビルド前推定を使用し、`parameterSource`で`authoringEstimate`／`descriptor`／`runtimeDescriptor`／`unavailable`を区別します。未取得の使用量・上限はnullで返し、0にしません。MA合成メニューの件数と編集用parameter候補も返し、解決失敗は`authoringError`へ残します。Menu監査は合成元のSDK assetを確認し、MAの自動ページ分割をassetの8項目上限違反として扱いません。最後のNDMF性能測定は`lastMeasurement`として日時・失敗情報とともに返し、現在の数量へ混ぜません。
+
+### Expression Menu
+
+| tool | 動作 |
+|---|---|
+| `ee4v_inspect_expression_menu` | MA合成後の編集用階層、出所、編集・コピー可否、タイプ、初期値、動作とrevisionを取得する |
+| `ee4v_create_expression_menu_item` | 指定pageへToggle ItemまたはChildren Submenuを作成・登録する |
+| `ee4v_edit_expression_menu_item` | `patch`で名前・アイコン・初期値、`setType`で生成Itemの操作タイプを変更する |
+| `ee4v_replace_expression_menu_actions` | 生成Itemの全動作を置換し、UIと同じ検証・Undo・Controller生成・保存を実行する。`dryRun`は保存せず入力を検証する |
+| `ee4v_move_expression_menu_item` | 同じ出所内で並び替える、または別pageの末尾へ移動する |
+| `ee4v_remove_expression_menu_item` | Item／Submenuを削除する。中身のあるSubmenuは`includeChildren: true`を必須とする |
+| `ee4v_copy_expression_menu` | SDK Menuと必要な子・親Menuをコピーし、対象Avatar内の参照だけを差し替える |
+| `ee4v_render_expression_menu_preview` | AvatarEvaluationで指定Itemの操作値を評価し、PNGと計算したparameter出力を返す |
+
+rootの`pagePath`は空文字、`entryPath`は調査で返す`0/1`形式のindex pathです。書き込みには最新の`expectedRevision`を必須とし、変更後に返る`menu.revision`を次の操作に使用します。共有・循環Submenuは祖先を再展開せず、最大32階層・2048項目を超える調査はエラーにします。編集にはScene上の書き込み可能なAvatar Prefab instanceを使用します。Prefab assetを直接書き換えません。Sceneをdirtyにし、機能側の生成物だけ保存します。Avatar Prefabと作業Sceneの確定保存はホストの保存操作です。
+
+`patch`は指定項目だけ更新します。`iconPath: ""`はアイコン解除、初期値はToggleの0／1またはRadialの0〜100です。タイプはToggle、RadialPuppet、Button、TwoAxisPuppet、FourAxisPuppet。設定を失う変更は`discardSettings: true`を明示し、名前・アイコン・登録先・共通parameter IDを保持します。並び替えの`relativeEntry`はその項目の現在のindexへ移動する指定です。別pageへの移動は`destinationPage`を使用し、保護境界・異なる出所・満杯・自己／子孫への移動を既存処理で拒否します。
+
+動作の置換は`actions`全体を渡し、空配列で全動作を除去します。KindはObjectToggle、MaterialSwap、ShapeChanger、ParameterValue、MaterialValue、Transform、Componentです。既存Clip動作は編集・削除だけを許可します。同期は各動作の`synced`、対象はAvatar相対`path`、Puppetは`axis`で指定します。Material／Clip等の参照は`{path, localId}`を使い、同一pathに複数sub-assetがある場合はlocalIdを必須にします。曖昧path、モード不一致、範囲外、propertyの重複はUIと同じ生成処理で拒否します。previewは各軸のnormalized値（通常0〜1、TwoAxisPuppetは−1〜1）を受け取ります。外部Animator遷移・PhysBone・SDK assetだけのControlはPlay Modeで確認します。
+
+### Play Mode確認と性能測定
+
+Expression Menuの同期PNG撮影は`scope: isolatedAuthoringPreview`の隔離した表示用コピーを使用し、MA骨対応とClip／Puppet再生を評価します。Scene用NDMF Preview Pluginの加工は含みません。最終的な処理結果・実行時動作はPlay Modeの撮影で確認します。
+
+| tool | 動作 |
+|---|---|
+| `ee4v_get_avatar_runtime` | GestureManager接続、表示中Avatar参照と全実行時parameterを取得する |
+| `ee4v_control_avatar_runtime` | `connect`でScene内の既存GestureManagerへ接続、`setParameters`で実行時値を設定する |
+| `ee4v_list_lighting_presets` | 組み込み・保存済み照明とVRCLV利用可否を取得する |
+| `ee4v_upsert_lighting_preset` | 名前付き照明を共通storeへ保存・上書きする |
+| `ee4v_delete_lighting_preset` | 名前付き照明を削除する |
+| `ee4v_render_lighting_preview` | Play Modeの実Avatarを同一Cameraで1〜6条件撮影し、各PNGを返す |
+| `ee4v_get_avatar_performance` | 最後のNDMF／AAO測定、PC／Quest性能、parameter内訳、SDKサイズと別々の日時を取得する |
+| `ee4v_measure_avatar_performance` | Edit Modeで隔離コピーをNDMF全フェーズへ通し、性能を明示測定する |
+| `ee4v_get_playmode_suppression` | 設定済み型（未導入も含む）と利用可能な具象MonoBehaviour型を取得する |
+| `ee4v_set_playmode_suppression` | Projectの除去対象型を全置換する。新規には利用可能な型だけを許可する |
+
+Play Modeの開始・停止は汎用Unity MCPで行います。開始後に`ee4v_find_avatars`で実体を再取得します。接続は保存済みSceneにあるGestureManagerを使い、追加・保存・既存Moduleの削除をしません。parameter入力は`[{name,value}]`。すべての値を事前検証し、Gestureは整数0〜7、強さは0〜1、Bool／Triggerは0／1を指定します。入力は実行中Moduleだけに渡し、Prefab・Scene assetへ保存しません。
+
+照明設定は`preset`へ組み込みkey（day、night、warm、cold、backlight、lv）または保存名を指定し、RGB3要素の色、環境光・反射・光源の強度、pitch／yawを任意に上書きできます。VRCLV未導入時は撮影を拒否しますが保存済み設定は維持します。PNGは64〜1024pxで、Cameraのyaw／pitchとdistanceScale（0.25〜4）を共通に指定できます。描画中だけSceneのLight、環境光・反射とVRCLV globalを変更し、成功・失敗とも復元します。一時Camera・Light・Textureを解放し、UIの画面選択・比較設定は変更しません。通常のPrefab撮影とは別の実行時照明確認です。
+
+照明の保存は`LightingPresetStore`をUIと共有し、組み込み名と破損ファイルの上書きを拒否します。変更通知で表示中の保存一覧も更新します。性能測定は画面と同じ`AvatarPlayModePerformanceCache.Bake`を使い、失敗時は前回成功値と日時を保持した構造化エラーを返します。サイズは公式SDKで利用者が行ったビルドの記録だけです。uploadや自動ビルドは開始しません。除去型の全置換では既存の未導入型を保持でき、Play ModeのNDMF専用という設定の適用範囲は変えません。
 
 ### Face Expression
 
@@ -202,7 +247,7 @@ ee4v MCPは任意C#実行toolを公開しません。高水準toolで扱って�
 - `Ee4v.Mcp.Editor`はMCP protocol、loopback HTTP server、tool registry、Unity main-thread dispatch、各moduleへのadapterを所有する。
 - Face Expressionは機能moduleの公開APIをMCP adapterから呼ぶ。MCPのJSON DTOを機能moduleへ持ち込まない。
 - AssetManagerは既存のContractsとInfrastructureを利用する。
-- VRChat SDKの型は任意依存としてreflectionで解決し、未導入時は構造化errorを返す。
+- Avatar調査のSDK型はreflectionで解決する。MA合成、Expression MenuとSimulationには導入済み機能moduleの公開APIを使い、実際に使用するassemblyだけを直接参照する。解決失敗・未導入・実行モード不一致は構造化errorとして返す。
 - MCPは複数機能を束ねる外部integration／composition rootであり、機能module同士の依存を追加しない。
 
 ## 未実装範囲

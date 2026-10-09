@@ -20,6 +20,7 @@ namespace Ee4v.Mcp
                     ["projectName"] = Application.productName,
                     ["projectPath"] = System.IO.Path.GetFullPath("."),
                     ["isPlaying"] = EditorApplication.isPlaying,
+                    ["isPlayingOrWillChangePlaymode"] = EditorApplication.isPlayingOrWillChangePlaymode,
                     ["isCompiling"] = EditorApplication.isCompiling,
                     ["isUpdating"] = EditorApplication.isUpdating
                 })),

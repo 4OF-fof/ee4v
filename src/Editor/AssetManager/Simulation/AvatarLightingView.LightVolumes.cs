@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Ee4v.AssetManager.Simulation
 {
-    public sealed partial class AvatarLightingView
+    public sealed partial class AvatarLightingRenderer
     {
         private Texture3D _volumeAtlas;
 

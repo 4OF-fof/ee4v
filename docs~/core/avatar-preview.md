@@ -17,6 +17,8 @@ CameraはPreview Sceneの描画資源と照明を使用し、NDMFのProxy Scene�
 
 ## 編集用override
 
+`RenderPng`は64〜1024pxの描画をsRGBへreadbackし、PNGをメモリ上で返します。RenderTextureのactive状態と`GL.sRGBWrite`を成功・失敗とも復元し、一時RenderTexture・Texture2Dを解放します。同期的な外部撮影では`isolatedSnapshot: true`を使用し、NDMFの非同期Preview構築を待たずにSceneの元Avatarへ書き込みません。
+
 `SetAnimation`と`SampleAnimation`はMerge Armature・Bone Proxyを反映したClip再生に使用します。Scene入力にはNDMF Previewの最終段filterで、隔離コピーには描画中だけ適用します。Humanoid Clip単体の再生中は部位フォーカスの仮ポーズ回転を適用しません。
 
 `SetAnimationSampler`は複数ClipとPuppet等のポーズを合成するcallbackを登録します。AvatarEvaluationがMA骨対応・Clipのpath解決・再生用コピーとMaterialを所有し、機能側は`AvatarAnimationFrame.Sample`と`ResolveTransform`へ操作値を渡します。仮ポーズを基準にサンプリングし、描画へ反映します。Scene入力にも使用でき、元のScene入力へサンプリングしません。Expression Menuの統合画面・単独WindowはUIの`PrefabScenePreview.SetAnimationSampler`を経由して使用します。

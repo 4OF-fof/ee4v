@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using UnityEditor;
 
 namespace Ee4v.Mcp
 {
@@ -16,7 +17,8 @@ namespace Ee4v.Mcp
             bool readOnly,
             bool destructive = false,
             bool idempotent = true,
-            bool openWorld = false)
+            bool openWorld = false,
+            bool allowDuringPlayMode = false)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Description = description ?? string.Empty;
@@ -26,6 +28,7 @@ namespace Ee4v.Mcp
             Destructive = destructive;
             Idempotent = idempotent;
             OpenWorld = openWorld;
+            AllowDuringPlayMode = allowDuringPlayMode;
         }
 
         internal string Name { get; }
@@ -36,6 +39,7 @@ namespace Ee4v.Mcp
         internal bool Destructive { get; }
         internal bool Idempotent { get; }
         internal bool OpenWorld { get; }
+        internal bool AllowDuringPlayMode { get; }
 
         internal JObject ToProtocolValue()
         {
@@ -111,6 +115,15 @@ namespace Ee4v.Mcp
             }
 
             return new McpToolResult(structured, content, false);
+        }
+
+        internal static McpToolResult Images(JToken metadata, IReadOnlyList<byte[]> images)
+        {
+            var result = Success(metadata);
+            var content = result.Content.ToList();
+            foreach (var bytes in images)
+                content.Add(new JObject { ["type"] = "image", ["mimeType"] = "image/png", ["data"] = Convert.ToBase64String(bytes) });
+            return new McpToolResult(result.StructuredContent, content, false);
         }
 
         internal static McpToolResult Error(
@@ -189,6 +202,12 @@ namespace Ee4v.Mcp
 
             try
             {
+                if (!tool.ReadOnly && !tool.AllowDuringPlayMode &&
+                    (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode))
+                {
+                    return McpToolResult.Error("edit_mode_required",
+                        "Stop Play Mode and wait for the transition to finish before editing assets or avatar configuration.");
+                }
                 return await tool.Invoke(arguments ?? new JObject());
             }
             catch (McpToolException exception)
