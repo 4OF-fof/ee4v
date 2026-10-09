@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using Ee4v.AvatarEditing;
@@ -18,7 +19,7 @@ namespace Ee4v.AvatarMaterials
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        private void NavigateToMaterial(Material material)
+        private void NavigateToMaterial(Material material, int? prefabSiblingIndex = null)
         {
             var controls = _context.ControlsHost;
             if (_context.SelectedMaterial == null && material != null)
@@ -30,6 +31,7 @@ namespace Ee4v.AvatarMaterials
             _context.SelectedMaterial = material;
             _context.Host.InvalidateControls(AvatarEditorPanel.Material);
             _context.Host.ShowMaterials();
+            _context.Preview?.FocusBodyPart(GetMaterialFocusPart(material, prefabSiblingIndex));
             if (controls != null)
             {
                 var offset = material != null ? Vector2.zero : _materialListScrollOffset;
@@ -45,6 +47,25 @@ namespace Ee4v.AvatarMaterials
             }
         }
 
+        private BodyPartCategory? GetMaterialFocusPart(Material material, int? prefabSiblingIndex)
+        {
+            if (material == null) { return _context.SelectedBodyPart; }
+            var entry = GetAvatarMaterials().FirstOrDefault(candidate => candidate.Material == material);
+            if (entry == null) { return null; }
+            var parts = entry.Usages
+                .Where(usage => !prefabSiblingIndex.HasValue ||
+                    usage.PrefabSiblingIndex == prefabSiblingIndex.Value)
+                .SelectMany(usage => GetMaterialUsageCategories(usage, material))
+                .Where(part => part != BodyPartCategory.Other)
+                .Select(part => part == BodyPartCategory.Arms ? BodyPartCategory.Shoulders : part)
+                .Distinct().ToArray();
+            if (_context.SelectedBodyPart.HasValue && parts.Any(_context.MatchesSelectedBodyPart))
+            {
+                return _context.SelectedBodyPart;
+            }
+            return parts.Length == 1 ? parts[0] : (BodyPartCategory?)null;
+        }
+
         public void SelectPreviewMaterial(Material material, int prefabSiblingIndex)
         {
             if (material == null) { return; }
@@ -54,7 +75,7 @@ namespace Ee4v.AvatarMaterials
                     GetMaterialUsageCategories(usage, material).Any(_context.MatchesSelectedBodyPart))))
             { _context.SelectedBodyPart = null; }
             if (prefabSiblingIndex >= 0) { _expandedMaterialPrefabGroups.Add(prefabSiblingIndex); }
-            NavigateToMaterial(material);
+            NavigateToMaterial(material, prefabSiblingIndex);
         }
 
         public VisualElement BuildControls()
