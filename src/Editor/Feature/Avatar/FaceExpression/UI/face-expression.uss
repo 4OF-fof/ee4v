@@ -1040,7 +1040,7 @@
     right: var(--ee4v-space-xs);
     top: 0;
     bottom: 0;
-    -unity-text-align: middle-center;
+    justify-content: center;
 }
 
 .ee4v-gesture-assignment__cell-input {

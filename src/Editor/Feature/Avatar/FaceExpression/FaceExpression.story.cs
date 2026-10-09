@@ -123,7 +123,6 @@ namespace Ee4v.FaceExpression
                     dependencies: new[]
                     {
                         "PreviewContainer",
-                        "EmptyState",
                         "UiTextFactory"
                     },
                     usageLocations: new[]

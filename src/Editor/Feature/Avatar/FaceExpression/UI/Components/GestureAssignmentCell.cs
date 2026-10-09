@@ -11,7 +11,7 @@ namespace Ee4v.FaceExpression
     internal sealed class GestureAssignmentCell : VisualElement
     {
         private readonly ObjectField _clipField;
-        private readonly EmptyState _empty;
+        private readonly UiTextElement _empty;
         private readonly PreviewContainer _previewArea;
         private readonly IMGUIContainer _preview;
         private readonly string _unassignedText;
@@ -41,11 +41,11 @@ namespace Ee4v.FaceExpression
                 "ee4v-gesture-assignment__cell-preview");
             _preview.pickingMode = PickingMode.Ignore;
             _previewArea.Content.Add(_preview);
-            _empty = new EmptyState(new EmptyStateState(
-                string.Empty,
-                unassignedText));
-            _empty.AddToClassList(
+            _empty = UiTextFactory.Create(
+                unassignedText,
+                UiClassNames.SecondaryText,
                 "ee4v-gesture-assignment__cell-empty");
+            _empty.SetTextAlign(TextAnchor.MiddleCenter);
             _empty.pickingMode = PickingMode.Ignore;
             _previewArea.Placeholder.Add(_empty);
             Add(_previewArea);
@@ -104,9 +104,7 @@ namespace Ee4v.FaceExpression
         private void SetClip(AnimationClip clip)
         {
             _clipField.SetValueWithoutNotify(clip);
-            _empty.SetState(new EmptyStateState(
-                string.Empty,
-                clip == null ? _unassignedText : string.Empty));
+            _empty.SetText(clip == null ? _unassignedText : string.Empty);
             _previewArea.SetHasContent(clip != null);
             tooltip = clip == null ? _unassignedText : clip.name;
             _preview.MarkDirtyRepaint();
