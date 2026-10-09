@@ -9,46 +9,46 @@ using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
 using Object = UnityEngine.Object;
 
-namespace Ee4v.Core.Ndmf
+namespace Ee4v.Core.AvatarEvaluation
 {
-    public sealed class NdmfMenuEntry
+    public sealed class AvatarMenuEntry
     {
         public VRCExpressionsMenu.Control Control { get; internal set; }
         public VRCExpressionsMenu.Control SourceControl { get; internal set; }
         public Object Owner { get; internal set; }
         public int Index { get; internal set; }
-        public NdmfMenuPage Submenu { get; internal set; }
+        public AvatarMenuPage Submenu { get; internal set; }
     }
 
-    public sealed class NdmfMenuPage
+    public sealed class AvatarMenuPage
     {
         public string Name { get; internal set; }
         public VRCExpressionsMenu Asset { get; internal set; }
         public GameObject ChildRoot { get; internal set; }
-        internal readonly List<NdmfMenuEntry> Entries = new List<NdmfMenuEntry>();
-        public IReadOnlyList<NdmfMenuEntry> Controls => Entries.AsReadOnly();
+        internal readonly List<AvatarMenuEntry> Entries = new List<AvatarMenuEntry>();
+        public IReadOnlyList<AvatarMenuEntry> Controls => Entries.AsReadOnly();
     }
 
-    public static partial class NdmfIntegration
+    public static partial class AvatarEvaluator
     {
-        public static NdmfMenuPage GetExpressionMenu(GameObject avatar, out List<NdmfMenuPage> sources,
+        public static AvatarMenuPage GetExpressionMenu(GameObject avatar, out List<AvatarMenuPage> sources,
             Func<ModularAvatarMenuItem, bool> excludeItem = null)
         {
             if (avatar == null) throw new ArgumentNullException(nameof(avatar));
             var descriptor = avatar.GetComponent<VRCAvatarDescriptor>();
             if (descriptor == null) throw new InvalidOperationException("VRCAvatarDescriptor is required.");
-            var assets = new Dictionary<VRCExpressionsMenu, NdmfMenuPage>();
-            NdmfMenuPage ReadAsset(VRCExpressionsMenu asset)
+            var assets = new Dictionary<VRCExpressionsMenu, AvatarMenuPage>();
+            AvatarMenuPage ReadAsset(VRCExpressionsMenu asset)
             {
                 if (asset == null) return null;
                 if (assets.TryGetValue(asset, out var found)) return found;
-                var page = new NdmfMenuPage { Name = asset.name, Asset = asset };
+                var page = new AvatarMenuPage { Name = asset.name, Asset = asset };
                 assets.Add(asset, page);
                 for (var i = 0; i < asset.controls.Count; i++)
                 {
                     var control = asset.controls[i];
                     if (control == null) continue;
-                    page.Entries.Add(new NdmfMenuEntry
+                    page.Entries.Add(new AvatarMenuEntry
                     {
                         Control = control, SourceControl = control, Owner = asset, Index = i,
                         Submenu = ReadAsset(control.subMenu)
@@ -62,8 +62,8 @@ namespace Ee4v.Core.Ndmf
                 ReadAsset(installer.menuToAppend);
                 ReadAsset(installer.installTargetMenu);
             }
-            var candidates = new List<NdmfMenuEntry>();
-            var itemPages = new List<NdmfMenuPage>();
+            var candidates = new List<AvatarMenuEntry>();
+            var itemPages = new List<AvatarMenuPage>();
             foreach (var item in avatar.GetComponentsInChildren<ModularAvatarMenuItem>(true))
             {
                 if (excludeItem?.Invoke(item) == true) continue;
@@ -73,10 +73,10 @@ namespace Ee4v.Core.Ndmf
                     control.type == VRCExpressionsMenu.Control.ControlType.FourAxisPuppet ? 4 : 0;
                 control.subParameters = (control.subParameters ?? Array.Empty<VRCExpressionsMenu.Control.Parameter>())
                     .Take(axes).ToArray();
-                var entry = new NdmfMenuEntry { Control = control, SourceControl = item.Control, Owner = item };
+                var entry = new AvatarMenuEntry { Control = control, SourceControl = item.Control, Owner = item };
                 entry.Submenu = ReadAsset(control.subMenu);
                 candidates.Add(entry);
-                var page = new NdmfMenuPage { Name = "MA / " + item.name };
+                var page = new AvatarMenuPage { Name = "MA / " + item.name };
                 page.Entries.Add(entry);
                 itemPages.Add(page);
             }
@@ -94,8 +94,8 @@ namespace Ee4v.Core.Ndmf
             var resolved = forAvatar.Invoke(null, args);
             var root = resolver.GetProperty("RootMenuNode")?.GetValue(resolved) as VirtualMenuNode;
             if (root == null) throw new InvalidOperationException("Modular Avatar did not resolve a root menu.");
-            var pages = new Dictionary<VirtualMenuNode, NdmfMenuPage>();
-            NdmfMenuPage ReadNode(VirtualMenuNode node, string name)
+            var pages = new Dictionary<VirtualMenuNode, AvatarMenuPage>();
+            AvatarMenuPage ReadNode(VirtualMenuNode node, string name)
             {
                 if (node == null) return null;
                 if (pages.TryGetValue(node, out var known)) return known;
@@ -104,7 +104,7 @@ namespace Ee4v.Core.Ndmf
                 var asset = origin as VRCExpressionsMenu;
                 var childRoot = origin?.GetType().GetField("root", BindingFlags.Instance | BindingFlags.NonPublic)
                     ?.GetValue(origin) as GameObject;
-                var page = new NdmfMenuPage { Name = name, Asset = asset, ChildRoot = childRoot };
+                var page = new AvatarMenuPage { Name = name, Asset = asset, ChildRoot = childRoot };
                 pages.Add(node, page);
                 foreach (var control in node.Controls)
                 {
@@ -116,7 +116,7 @@ namespace Ee4v.Core.Ndmf
                                  item.menuSource_otherObjectChildren : item.gameObject) :
                              candidate.Control.subMenu == submenu?.Asset))).ToArray();
                     var source = matches.Length == 1 ? matches[0] : null;
-                    page.Entries.Add(new NdmfMenuEntry
+                    page.Entries.Add(new AvatarMenuEntry
                     {
                         Control = control, Submenu = submenu,
                         Owner = source?.Owner, SourceControl = source?.SourceControl, Index = source?.Index ?? -1

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Ee4v.Core.Ndmf;
+using Ee4v.Core.AvatarEvaluation;
 using System.Linq;
 using nadena.dev.ndmf.preview;
 using UnityEditor;
@@ -32,7 +32,7 @@ namespace Ee4v.Core.Preview
         private readonly Dictionary<(SkinnedMeshRenderer, int), float> _temporaryShapes = new Dictionary<(SkinnedMeshRenderer, int), float>();
         private readonly Dictionary<SkinnedMeshRenderer, Dictionary<string, float>> _shapes =
             new Dictionary<SkinnedMeshRenderer, Dictionary<string, float>>();
-        private readonly NdmfPreviewSession _session = new NdmfPreviewSession();
+        private readonly AvatarPreviewSession _session = new AvatarPreviewSession();
         private Renderer[] _sceneRenderers = Array.Empty<Renderer>();
         private Renderer[] _sourceRenderers = Array.Empty<Renderer>();
         private bool _hierarchyDirty = true;

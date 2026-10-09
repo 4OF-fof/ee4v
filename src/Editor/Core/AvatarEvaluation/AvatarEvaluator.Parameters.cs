@@ -7,9 +7,9 @@ using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
 
-namespace Ee4v.Core.Ndmf
+namespace Ee4v.Core.AvatarEvaluation
 {
-    public sealed class NdmfParameterInfo
+    public sealed class AvatarParameterInfo
     {
         public string Name { get; internal set; }
         public AnimatorControllerParameterType Type { get; internal set; }
@@ -17,7 +17,7 @@ namespace Ee4v.Core.Ndmf
         public AnimatorControllerParameter Declaration { get; internal set; }
     }
 
-    public static partial class NdmfIntegration
+    public static partial class AvatarEvaluator
     {
         private static readonly HashSet<string> BuiltIns = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -29,10 +29,10 @@ namespace Ee4v.Core.Ndmf
 
         public static bool IsBuiltInParameter(string name) => BuiltIns.Contains(name);
 
-        public static IReadOnlyList<NdmfParameterInfo> GetParameters(GameObject avatar, AnimatorController ignore = null)
+        public static IReadOnlyList<AvatarParameterInfo> GetParameters(GameObject avatar, AnimatorController ignore = null)
         {
             if (avatar == null) throw new ArgumentNullException(nameof(avatar));
-            var entries = new Dictionary<string, NdmfParameterInfo>(StringComparer.Ordinal);
+            var entries = new Dictionary<string, AvatarParameterInfo>(StringComparer.Ordinal);
             void Add(string name, AnimatorControllerParameterType type, bool expression = false, AnimatorControllerParameter declaration = null)
             {
                 if (string.IsNullOrWhiteSpace(name) || IsBuiltInParameter(name)) return;
@@ -41,7 +41,7 @@ namespace Ee4v.Core.Ndmf
                     current.Expression |= expression;
                     if (declaration != null && (expression || current.Declaration == null)) current.Declaration = declaration;
                 }
-                else entries.Add(name, new NdmfParameterInfo { Name = name, Type = type, Expression = expression, Declaration = declaration });
+                else entries.Add(name, new AvatarParameterInfo { Name = name, Type = type, Expression = expression, Declaration = declaration });
             }
             void Controller(RuntimeAnimatorController runtime)
             {

@@ -1,6 +1,6 @@
 # Avatarのプレビュー描画
 
-`Core/Preview`の`Ee4v.Core.Preview.Editor`は、NDMF 1.14.8以降のPreview APIとCamera描画を共有する基盤です。NDMFのsession接続とMAの骨対応は[Core/Ndmf](./ndmf.md)の公開APIを使用し、描画資源と表示用overrideをPreviewが所有します。`AvatarPreviewRenderer`をUIの`PrefabScenePreview`とFaceExpressionが使用します。AssetManagerの操作確認も`PrefabScenePreview`を使用し、実行中のAvatarを描画します。保存、Undo、Sceneの保存、GestureManagerの生成・操作、Play Modeの開始・停止は扱いません。
+`Core/Preview`の`Ee4v.Core.Preview.Editor`は、NDMF 1.14.8以降のPreview APIとCamera描画を共有する基盤です。NDMFのsession接続とMAの骨対応は[Core/AvatarEvaluation](./avatar-evaluation.md)の公開APIを使用し、描画資源と表示用overrideをPreviewが所有します。`AvatarPreviewRenderer`をUIの`PrefabScenePreview`とFaceExpressionが使用します。AssetManagerの操作確認も`PrefabScenePreview`を使用し、実行中のAvatarを描画します。保存、Undo、Sceneの保存、GestureManagerの生成・操作、Play Modeの開始・停止は扱いません。
 
 ## 対象と描画
 
@@ -33,7 +33,7 @@ CameraはPreview Sceneの描画資源と照明を使用し、NDMFのProxy Scene�
 
 Coreの`SetHumanoidPose`は有効なHumanoid Avatarの基準骨格回転を使用し、上腕と前腕を左右の水平（Tポーズ）または仮ポーズの方向へ合わせます。Scene本体、Prefab、AnimationClipへ書き込まず、NDMF描画用骨へ回転を適用します。隔離Previewでは描画中だけ回転を変更して復元します。骨格スケールとBlendShapeのoverrideは併用できます。`GetTransformPosition`は描画用回転・スケールを含む位置を返し、腕・手などのフォーカスも現在のポーズへ追従します。
 
-衣装などの別Armatureには、Core.NdmfがMA Merge Armatureの公開`GetBonesMapping`とmerge先から取得した骨対応を使って本体のポーズ差分を伝播します。prefix・suffix、入れ子のmerge、衣装独自の末端boneも元の相対姿勢を保って追従します。MA Bone Proxyはtarget・attachment mode・matchScaleに従って描画用の位置・回転・スケールを求めます。Bone対応は`RefreshHierarchy`で更新し、Prefab用コピーではスクリプトを取り除く前に保持します。Scene入力では描画用骨だけを変更し、隔離Previewでは描画後・例外時に位置・回転・スケールを復元します。Core Previewは`Ee4v.Core.Ndmf.Editor`を参照し、MA runtimeの参照はCore.Ndmfへ閉じます。MAのビルド処理や元のArmatureの変更は実行しません。
+衣装などの別Armatureには、Core.AvatarEvaluationがMA Merge Armatureの公開`GetBonesMapping`とmerge先から取得した骨対応を使って本体のポーズ差分を伝播します。prefix・suffix、入れ子のmerge、衣装独自の末端boneも元の相対姿勢を保って追従します。MA Bone Proxyはtarget・attachment mode・matchScaleに従って描画用の位置・回転・スケールを求めます。Bone対応は`RefreshHierarchy`で更新し、Prefab用コピーではスクリプトを取り除く前に保持します。Scene入力では描画用骨だけを変更し、隔離Previewでは描画後・例外時に位置・回転・スケールを復元します。Core Previewは`Ee4v.Core.AvatarEvaluation.Editor`を参照し、MA runtimeの参照はCore.AvatarEvaluationへ閉じます。MAのビルド処理や元のArmatureの変更は実行しません。
 
 NDMFの描画用骨の更新は`OnFrameGroup`で描画グループごとに1回行い、その描画で追加された骨だけ個別に初期化します。衣装の追従に使うポーズ行列は同じグループ内で共有し、親やmerge先の計算を再利用します。行列のキャッシュはグループの更新ごとに破棄し、SceneのTransformや描画用overrideの変更を次の描画へ反映します。隔離Previewでも描画前の衣装の行列計算を共有し、一時的なTransform変更前に計算を完了します。
 

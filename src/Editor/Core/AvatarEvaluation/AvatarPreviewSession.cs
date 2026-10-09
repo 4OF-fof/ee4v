@@ -5,9 +5,9 @@ using nadena.dev.ndmf.preview;
 using UnityEditor;
 using UnityEngine;
 
-namespace Ee4v.Core.Ndmf
+namespace Ee4v.Core.AvatarEvaluation
 {
-    public sealed class NdmfPreviewSession : IDisposable
+    public sealed class AvatarPreviewSession : IDisposable
     {
         private PreviewSession _parent;
         private PreviewSession _session;
@@ -21,7 +21,7 @@ namespace Ee4v.Core.Ndmf
 
         public bool Connect(Camera camera, GameObject root, IRenderFilter filter, bool inheritPluginPreview = true)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(NdmfPreviewSession));
+            if (_disposed) throw new ObjectDisposedException(nameof(AvatarPreviewSession));
             if (camera == null) throw new ArgumentNullException(nameof(camera));
             if (root == null) throw new ArgumentNullException(nameof(root));
             var enabled = !EditorApplication.isPlayingOrWillChangePlaymode;

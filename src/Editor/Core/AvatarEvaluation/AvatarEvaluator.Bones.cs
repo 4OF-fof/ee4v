@@ -3,21 +3,21 @@ using System.Collections.Generic;
 using nadena.dev.modular_avatar.core;
 using UnityEngine;
 
-namespace Ee4v.Core.Ndmf
+namespace Ee4v.Core.AvatarEvaluation
 {
-    public sealed class NdmfBoneBinding
+    public sealed class AvatarBoneBinding
     {
         public Transform Target { get; internal set; }
         public BoneProxyAttachmentMode Mode { get; internal set; }
         public bool MatchScale { get; internal set; }
     }
 
-    public static partial class NdmfIntegration
+    public static partial class AvatarEvaluator
     {
-        public static IReadOnlyDictionary<Transform, NdmfBoneBinding> GetBoneBindings(GameObject avatar)
+        public static IReadOnlyDictionary<Transform, AvatarBoneBinding> GetBoneBindings(GameObject avatar)
         {
             if (avatar == null) throw new ArgumentNullException(nameof(avatar));
-            var bindings = new Dictionary<Transform, NdmfBoneBinding>();
+            var bindings = new Dictionary<Transform, AvatarBoneBinding>();
             void Add(Transform source, Transform target, BoneProxyAttachmentMode mode, bool matchScale = false)
             {
                 if (source == null || target == null || !target.IsChildOf(avatar.transform)) return;
@@ -27,7 +27,7 @@ namespace Ee4v.Core.Ndmf
                     if (current == source || !visited.Add(current)) return;
                     current = bindings.TryGetValue(current, out var binding) ? binding.Target : current.parent;
                 }
-                bindings[source] = new NdmfBoneBinding { Target = target, Mode = mode, MatchScale = matchScale };
+                bindings[source] = new AvatarBoneBinding { Target = target, Mode = mode, MatchScale = matchScale };
             }
             foreach (var merge in avatar.GetComponentsInChildren<ModularAvatarMergeArmature>(true))
             {
@@ -39,11 +39,11 @@ namespace Ee4v.Core.Ndmf
             }
             foreach (var proxy in avatar.GetComponentsInChildren<ModularAvatarBoneProxy>(true))
                 Add(proxy.transform, proxy.target, proxy.attachmentMode, proxy.matchScale);
-            return new System.Collections.ObjectModel.ReadOnlyDictionary<Transform, NdmfBoneBinding>(bindings);
+            return new System.Collections.ObjectModel.ReadOnlyDictionary<Transform, AvatarBoneBinding>(bindings);
         }
 
         public static Matrix4x4 GetBoneWorldMatrix(Transform source,
-            IReadOnlyDictionary<Transform, NdmfBoneBinding> bindings,
+            IReadOnlyDictionary<Transform, AvatarBoneBinding> bindings,
             IReadOnlyDictionary<Transform, Quaternion> rotations,
             IReadOnlyDictionary<Transform, Vector3> scales,
             Dictionary<Transform, Matrix4x4> cache = null)

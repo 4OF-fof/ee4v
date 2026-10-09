@@ -15,7 +15,7 @@ Core は機能横断の契約、共通実装、Unity Editor との接続部を�
 | Hierarchy への表示追加 | [Hierarchy](./hierarchy.md) | `InjectorApi`、`ItemInjectionRegistration` |
 | Unity Editor の操作 | [EditorIntegration](./editor-integration.md) | `Ee4v.Core.EditorIntegration` |
 | AvatarのPreview描画 | [Avatar Preview](./avatar-preview.md) | `AvatarPreviewRenderer` |
-| NDMF / MA連携 | [NDMF](./ndmf.md) | `NdmfPreviewSession`、`NdmfIntegration` |
+| NDMF / MAを考慮したAvatar評価 | [Avatar Evaluation](./avatar-evaluation.md) | `AvatarPreviewSession`、`AvatarEvaluator` |
 
 各ページでは公開型とメンバーに加え、既定実装が変更する状態、永続化、イベント登録などの副作用を記載します。
 
@@ -29,8 +29,8 @@ Core は機能横断の契約、共通実装、Unity Editor との接続部を�
 | `Ee4v.Core.Services.Editor` | 契約の標準実装 | なし |
 | `Ee4v.Core.Unity.Editor` | Settings の保存と JSON 変換 | あり |
 | `Ee4v.Core.Editor` | Unity Editor 操作と内部 API の隔離 | あり |
-| `Ee4v.Core.Ndmf.Editor` | NDMF Preview接続、MAメニュー・パラメーター・骨対応の読み取り | あり |
-| `Ee4v.Core.Preview.Editor` | 描画用overrideとCamera資源、Core.Ndmfを使ったPreview構築 | あり |
+| `Ee4v.Core.AvatarEvaluation.Editor` | NDMFを考慮したPreview接続、MAメニュー・パラメーター・骨対応の読み取り | あり |
+| `Ee4v.Core.Preview.Editor` | 描画用overrideとCamera資源、Core.AvatarEvaluationを使ったPreview構築 | あり |
 | `Ee4v.Core.Presentation.Editor` | Settings 画面、表示注入、状態表示 | あり |
 | `Ee4v.UI.Editor` | 機能横断のUI Toolkitコンポーネント | あり |
 

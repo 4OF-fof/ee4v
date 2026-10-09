@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.Core.Ndmf;
+using Ee4v.Core.AvatarEvaluation;
 using Ee4v.UI;
 using Ee4v.AvatarEditing;
 using Ee4v.Core.Settings;
@@ -36,9 +36,9 @@ namespace Ee4v.ExpressionMenu
     {
         internal static MenuPage Read(GameObject avatar, out List<MenuPage> sources)
         {
-            var effective = NdmfIntegration.GetExpressionMenu(avatar, out var origins, ExpressionMenuTemplateModel.IsDraft);
-            var pages = new Dictionary<NdmfMenuPage, MenuPage>();
-            MenuPage Adapt(NdmfMenuPage source)
+            var effective = AvatarEvaluator.GetExpressionMenu(avatar, out var origins, ExpressionMenuTemplateModel.IsDraft);
+            var pages = new Dictionary<AvatarMenuPage, MenuPage>();
+            MenuPage Adapt(AvatarMenuPage source)
             {
                 if (source == null) return null;
                 if (pages.TryGetValue(source, out var known)) return known;

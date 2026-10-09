@@ -3,7 +3,7 @@
   "rootNamespace": "Ee4v.ExpressionMenu",
   "references": [
     "Ee4v.Core.Editor",
-    "Ee4v.Core.Ndmf.Editor",
+    "Ee4v.Core.AvatarEvaluation.Editor",
     "Ee4v.Core.Contracts.Editor",
     "Ee4v.Core.Presentation.Editor",
     "Ee4v.UI.Editor",
