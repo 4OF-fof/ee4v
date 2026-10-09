@@ -135,9 +135,15 @@ Toggleと連続値は共通の対象選択フォームを使用します。対�
 
 初期表示はDescriptorへMA Menu Installer、Menu Item、Menu Group、Menu Install Targetを解決した構成です。円形メニューはGestureManagerの`GmgCircleElement`、`RadialMenuUtility`、`RadialCursor`を使用し、300pxの円、100pxの中央円、50pxのアイコン、扇形のグラデーション・区切り線・設定色・カーソルを描画します。root初期ページには項目と追加またはNextを表示します。階層内と2ページ目以降は「戻る」を先頭へ配置します。時計回りに項目、末尾操作の順で均等に分割します。
 
+階層移動・ツリーの展開・カードの「開く」はControlTypeがSubMenuの項目だけへ提供します。Toggleなどに残る未使用のサブメニュー参照はCoreの読み取り時に無視し、通常Itemとして個別編集を開きます。元メニューassetの参照は消去しません。
+
 8項目超の合成メニューは7項目とNextへ分割します。Nextがあるページの末尾はNextだけ、最後のページだけに「＋／追加」を配置します。簡易編集行も現在のページの項目だけを表示します。追加後は該当項目のページを保持して個別編集を開きます。追加・戻る・Nextはassetの8項目上限に含めません。ページ移動は表示だけで元assetを分割しません。
 
-保護・読み取り専用・出所不明の項目は名前・アイコンの入力と編集・移動・削除を無効にします。円形プレビューでも編集だけを行うItemは文字・主アイコン・型の補助アイコン・扇形をグレーアウトします。Submenuは保護状態にかかわらず円形メニューと「開く」から移動でき、ホバー強調も有効です。一覧の移動・削除ボタンは編集不可の場合に無効表示します。移動先の各項目の編集可否はその出所から個別に判定します。Scene componentは対応する元Prefabも`AssetDatabase.IsOpenForEdit`で確認します。生成ギミックの編集データ・Controllerも書き込み可否を確認します。AssetProtectionへ直接依存せずUnityの編集許可APIで保護を反映します。個別画面の入力にも編集可否を反映します。追加・登録は元メニューassetを変更せず専用PrefabとMA Menu Installerへ保存するため、参照先メニューassetが保護されていても許可します。Children rootが編集不可なら追加・登録を無効にします。Prefab編集不可とPlay Modeでは変更を無効にします。
+保護・読み取り専用・出所不明の項目は名前・アイコンの入力と編集・移動・削除を無効にします。円形プレビューでも編集だけを行うItemは文字・主アイコン・型の補助アイコン・扇形をグレーアウトします。Submenuは保護状態にかかわらず円形メニューと「開く」から移動でき、ホバー強調も有効です。一覧の移動・削除ボタンは編集不可の場合に無効表示します。移動先の各項目の編集可否はその出所から個別に判定します。Scene上のMA Menu Itemなどのcomponentは元Prefabを変更せずinstance overrideとして編集するため、元Prefabの保護状態だけでは読み取り専用にしません。対象の`NotEditable`、immutable Prefab、ホストのPrefab編集許可は確認します。生成ギミックは元の専用Prefabへ保存するため、そのPrefabと編集データ・Controllerの書き込み可否も確認します。AssetProtectionへ直接依存せずUnityの編集許可APIで保護を反映します。個別画面の入力にも編集可否を反映します。追加・登録は元メニューassetを変更せず専用PrefabとMA Menu Installerへ保存するため、参照先メニューassetが保護されていても許可します。Children rootが編集不可なら追加・登録を無効にします。Prefab編集不可とPlay Modeでは変更を無効にします。
+
+読み取り専用の`VRCExpressionsMenu`には「コピーして編集」を表示します。Rootと現在のSubmenuは左上の現在位置欄だけに配置し、Submenuの項目カードには配置しません。通常Itemは項目カードの「編集」ボタンを「コピーして編集」へ差し替えます。対象アバターのPrefabと差し替えるScene参照を編集できる場合だけ表示し、出所不明の項目には表示しません。対象メニューとその配下のサブメニューを、編集中のPrefabと同じフォルダーの`<Prefab名>.ExpressionMenu`へコピーします。対象を参照する親メニューもコピーしてつなぎ直し、親の元assetや他のアバターを変更しません。同じメニューへの複数参照と循環参照は1つのコピーへまとめます。コピー範囲外のメニュー、アイコン、parameter名などは保持します。対象アバター内のDescriptor、MA Menu Item、MA Menu Installerの`menuToAppend`と`installTargetMenu`を含むメニュー参照だけをinstance overrideとして差し替えます。MA Menu Itemを含むPrefab自体はコピーしません。
+
+差し替え後も現在の階層・ページと単独Windowの表示元を維持し、通常項目のカードから実行した場合はコピー先の個別編集を開きます。参照の差し替えは1つのUndo groupとし、Undo／Redoで参照を戻せます。作成したコピーassetはUndoで削除せず保持します。失敗時は参照を巻き戻し、今回作成したassetを除去して画面にエラーを表示します。画面表示だけではコピーを作成せず、Scene・アバターPrefabの保存は既存の保存操作で行います。
 
 編集可能な項目のホバー・フォーカスはGMの選択色と1.1倍の拡大で強調します。アイコン・文字は入力を受け取らない表示レイヤーに分離し、無効状態も反映します。ラベルは`UiTextFactory`の12px・100px幅で折り返し、切り捨てません。固定した扇形でホバー判定し、表示レイヤーだけを拡大します。状態変化時だけアニメーションを開始し、反転・破棄時に停止・解放します。未設定アイコンはUnityのGameObject、階層の戻る・型の補助アイコンはGM、個別編集の戻る・追加・NextはFluent UI System Iconsを使用します。
 
@@ -166,6 +172,11 @@ Coreの公開Localization・ProjectAssetSettings、UI、共有AvatarEditingの�
 MAは`src/package.json`の対応範囲（1.18.2以上2.0.0未満）で内部resolver `VirtualMenu.ForAvatar`、`RootMenuNode`、Childrenのnode keyへアクセスします。バージョン依存箇所は[Core/AvatarEvaluation](../core/avatar-evaluation.md)へ隔離します。resolver取得・解決失敗時はエラーを表示し、不完全な合成メニューへの編集へ代替しません。
 
 ## 手動確認
+
+- Toggle・Button・Puppetに未使用の`subMenu`参照が残っている場合と、通常MA Menu ItemにChildren設定が残っている場合でも、円形メニュー・カード・ツリーが通常Itemとして扱うこと。「開く」や子の展開がなく個別編集を開けること、合成表示と単独Windowの編集元選択で一致すること、表示前後で元asset・componentが変化しないこと。本来のSubmenuは引き続き開けること。
+
+- 読み取り専用のRoot・サブメニュー・通常項目からコピーへ差し替えられること。Root・サブメニューの「コピーして編集」は左上だけに表示し、通常Itemはカードの「編集」を差し替えること。通常項目はコピー先の個別編集を開き、Root・サブメニューでは階層・ページ・表示元を維持すること。コピー先だけを編集でき、元メニューと他アバターの参照を変更しないこと。サブメニューの共有・循環参照、親メニューのコピー、MA Installerの登録先の差し替えと追加先、Undo／Redo、失敗時の参照復元とコピー除去、Prefab保存後の再読み込みを確認すること。Prefab編集不可・Play Mode・出所不明ではコピーを実行できないこと。
+- 保護された元Prefabの通常MA Menu ItemをHierarchyへ配置し、名前・アイコン・設定をinstance overrideとして編集でき、元Prefabは変化しないこと。生成ギミックの元Prefab・Controllerが保護されている場合とimmutable Prefabでは編集を拒否すること。
 
 Unity 2022.3で以下を確認します。新規自動テストは追加しません。
 

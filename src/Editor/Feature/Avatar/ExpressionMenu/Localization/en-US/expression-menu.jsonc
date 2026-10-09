@@ -42,6 +42,8 @@
     "editDetails": "Edit",
     "root": "Root",
     "readOnlyBadge": "Read only",
+    "makeEditable": "Copy and edit",
+    "makeEditableHint": "Copy the menu and its submenus, then replace this avatar's references. The original menu assets are preserved.",
     "treeDragHint": "Drop on a destination",
     "treeDropUnavailable": "Cannot move here",
     "treeDropInto": "Move to: {0}",

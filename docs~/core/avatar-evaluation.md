@@ -38,6 +38,8 @@ Scene入力ではサンプリングした姿勢・Renderer値を最終段のNDMF
 
 `AvatarAuthoringMenu.Read(avatar, out sources, excludeItem)`はDescriptorとMA Menu Installer・Menu Item・Children等を解決したメニューと編集元候補を返します。`AvatarMenuPage`はasset・Children root・項目を、`AvatarMenuEntry`は合成Control・元Control・Owner・Index・Submenuを保持します。循環・共有サブメニューは同じpage参照を再利用します。
 
+`AvatarMenuEntry.Submenu`はControlTypeが`SubMenu`の場合だけ設定します。Toggle・Button・Puppetなどに未使用の`subMenu`参照やMA Children設定が残っていても、階層として読み取りません。元asset・元Control・MA componentの設定は変更しません。この判定は合成メニューと表示・編集元の候補の両方へ適用します。
+
 MAの内部`VirtualMenu.ForAvatar`、`RootMenuNode`とChildrenのnode keyへのreflectionはこのモジュールへ隔離します。resolverが利用できない場合は例外を返します。合成Controlと元Controlの照合が曖昧な場合はOwnerを確定しません。元Controlはコピーせず参照を保持し、利用側の変更検出に使います。
 
 `excludeItem`は編集元候補から除くMA Menu Itemの条件です。Expression Menuは未登録draftの判定を渡し、`AvatarMenuPage`・`AvatarMenuEntry`を直接使用します。`Controls`は変更できないcollectionで、項目検索と並び替え先のindex取得にも使用します。編集許可、書き換え、並び替え、Undoと保存はExpression Menuが所有します。

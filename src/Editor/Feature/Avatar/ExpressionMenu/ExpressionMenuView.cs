@@ -30,6 +30,8 @@ namespace Ee4v.ExpressionMenu
         private List<MenuPage> _sources;
         private MenuPage _root;
         private MenuPage _page;
+        private Dictionary<VRCExpressionsMenu, VRCExpressionsMenu> _replacedMenus;
+        private readonly Dictionary<VRCExpressionsMenu, bool> _copyableMenus = new Dictionary<VRCExpressionsMenu, bool>();
         private MenuEntry _submenuEntry;
         private int _source;
         private int _offset;
@@ -56,6 +58,7 @@ namespace Ee4v.ExpressionMenu
             _operationOverlay?.Close();
             Clear();
             _treeNodes.Clear();
+            _copyableMenus.Clear();
             _treeScroll = null;
             try
             {
@@ -64,11 +67,15 @@ namespace Ee4v.ExpressionMenu
                 _root = ExpressionMenuModel.Read(_context.Root, out _sources);
                 if (sourcePage != null)
                 {
-                    var index = _sources.FindIndex(page => sourcePage.Asset != null ? page.Asset == sourcePage.Asset :
+                    var sourceAsset = sourcePage.Asset;
+                    if (sourceAsset != null && _replacedMenus != null && _replacedMenus.TryGetValue(sourceAsset, out var replacement))
+                        sourceAsset = replacement;
+                    var index = _sources.FindIndex(page => sourceAsset != null ? page.Asset == sourceAsset :
                         page.Asset == null && page.Controls.FirstOrDefault()?.Owner == sourcePage.Controls.FirstOrDefault()?.Owner);
                     _source = index + 1;
                     if (index < 0) { _path.Clear(); _offset = 0; _selected = -1; }
                 }
+                _replacedMenus = null;
                 if (_source > _sources.Count) _source = 0;
                 if (_pendingTreeDestination != null)
                 {
@@ -358,6 +365,9 @@ namespace Ee4v.ExpressionMenu
             if (_submenuEntry != null)
             {
                 BuildIdentityFields(_submenuEntry, iconHost, details, "ee4v-expression-menu__location-icon-preview");
+                if (!CanInteract(_submenuEntry))
+                    AddEditableCopyAction(details, _submenuEntry.Owner as VRCExpressionsMenu);
+                else if (!CanEditMenuRoot(_page)) AddEditableCopyAction(details, _page.Asset);
                 return;
             }
             if (!CanEditMenuRoot(_page))
@@ -381,6 +391,7 @@ namespace Ee4v.ExpressionMenu
             var name = new InputField(new InputFieldState(T("root"))) { tooltip = T("rootFixed") };
             name.SetEnabled(false);
             details.Add(name);
+            if (!CanEditMenuRoot(_page)) AddEditableCopyAction(details, _page.Asset);
         }
 
         private void BuildQuickSettings(MenuEntry entry, int index, Action edit, Action open, VisualElement host)
@@ -418,9 +429,15 @@ namespace Ee4v.ExpressionMenu
             if (open != null) actions.Add(new UiButton(T("openSubmenu"), open));
             if (entry.Control.type != VRCExpressionsMenu.Control.ControlType.SubMenu)
             {
-                var editButton = new UiButton(T("editDetails"), edit);
-                editButton.SetEnabled(CanInteract(entry));
-                actions.Add(editButton);
+                var menu = entry.Owner as VRCExpressionsMenu;
+                if (!CanInteract(entry) && CanCreateEditableCopy(menu))
+                    AddEditableCopyAction(actions, menu, () => _selected = index);
+                else
+                {
+                    var editButton = new UiButton(T("editDetails"), edit);
+                    editButton.SetEnabled(CanInteract(entry));
+                    actions.Add(editButton);
+                }
             }
             var move = new UiButton(T("move"), () => ShowMoveMenu(entry));
             move.SetEnabled(CanInteract(entry));
@@ -428,6 +445,30 @@ namespace Ee4v.ExpressionMenu
             var remove = new UiButton(T("remove"), () => ConfirmRemove(entry));
             remove.SetEnabled(CanInteract(entry));
             actions.Add(remove);
+        }
+
+        private bool CanCreateEditableCopy(VRCExpressionsMenu menu)
+        {
+            if (menu == null) return false;
+            if (!_copyableMenus.TryGetValue(menu, out var canCopy))
+            {
+                canCopy = ExpressionMenuModel.CanCreateEditableCopy(_context, menu);
+                _copyableMenus.Add(menu, canCopy);
+            }
+            return canCopy;
+        }
+
+        private void AddEditableCopyAction(VisualElement host, VRCExpressionsMenu menu, Action copied = null)
+        {
+            if (!CanCreateEditableCopy(menu)) return;
+            host.Add(new UiButton(T("makeEditable"), () => Run(() =>
+            {
+                var replacements = ExpressionMenuModel.CreateEditableCopy(_context, menu);
+                if (replacements == null) return;
+                _replacedMenus = replacements;
+                copied?.Invoke();
+                NotifyChanged();
+            }), tooltip: T("makeEditableHint")) { name = "expressionMenuMakeEditable" });
         }
 
         private ConfirmationOverlay OpenOperationOverlay(MessagePanelState state)

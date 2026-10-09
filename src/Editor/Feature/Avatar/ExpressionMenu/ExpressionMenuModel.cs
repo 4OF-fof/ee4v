@@ -16,7 +16,7 @@ using MenuPage = Ee4v.Core.AvatarEvaluation.AvatarMenuPage;
 namespace Ee4v.ExpressionMenu
 {
     /// <summary>Keeps MA's menu resolution and serialized source editing separate.</summary>
-    internal static class ExpressionMenuModel
+    internal static partial class ExpressionMenuModel
     {
         internal static MenuPage Read(GameObject avatar, out List<MenuPage> sources) =>
             AvatarAuthoringMenu.Read(avatar, out sources, ExpressionMenuTemplateModel.IsDraft);
@@ -36,9 +36,7 @@ namespace Ee4v.ExpressionMenu
                 return path.StartsWith("Assets/", StringComparison.Ordinal) && AssetDatabase.IsOpenForEdit(path);
             }
             if (!(target is GameObject) && !(target is Component)) return true;
-            if (PrefabUtility.IsPartOfImmutablePrefab(target)) return false;
-            var source = PrefabUtility.GetCorrespondingObjectFromSource(target);
-            return source == null || CanWrite(source);
+            return !PrefabUtility.IsPartOfImmutablePrefab(target);
         }
 
         internal static VRCExpressionsMenu.Control Copy(VRCExpressionsMenu.Control control) =>

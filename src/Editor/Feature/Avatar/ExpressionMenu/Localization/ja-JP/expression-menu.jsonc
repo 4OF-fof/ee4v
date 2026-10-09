@@ -42,6 +42,8 @@
     "editDetails": "編集",
     "root": "Root",
     "readOnlyBadge": "読取専用",
+    "makeEditable": "コピーして編集",
+    "makeEditableHint": "メニューとサブメニューをコピーし、このアバターの参照を差し替えます。元のメニューassetは変更しません。",
     "treeDragHint": "移動先にドロップ",
     "treeDropUnavailable": "ここには移動できません",
     "treeDropInto": "移動先: {0}",

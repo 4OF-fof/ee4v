@@ -56,7 +56,7 @@ namespace Ee4v.Core.AvatarEvaluation
                     page.Entries.Add(new AvatarMenuEntry
                     {
                         Control = control, SourceControl = control, Owner = asset, Index = i,
-                        Submenu = ReadAsset(control.subMenu)
+                        Submenu = control.type == VRCExpressionsMenu.Control.ControlType.SubMenu ? ReadAsset(control.subMenu) : null
                     });
                 }
                 return page;
@@ -79,7 +79,7 @@ namespace Ee4v.Core.AvatarEvaluation
                 control.subParameters = (control.subParameters ?? Array.Empty<VRCExpressionsMenu.Control.Parameter>())
                     .Take(axes).ToArray();
                 var entry = new AvatarMenuEntry { Control = control, SourceControl = item.Control, Owner = item };
-                entry.Submenu = ReadAsset(control.subMenu);
+                entry.Submenu = control.type == VRCExpressionsMenu.Control.ControlType.SubMenu ? ReadAsset(control.subMenu) : null;
                 candidates.Add(entry);
                 var page = new AvatarMenuPage { Name = "MA / " + item.name };
                 page.Entries.Add(entry);
@@ -113,7 +113,8 @@ namespace Ee4v.Core.AvatarEvaluation
                 pages.Add(node, page);
                 foreach (var control in node.Controls)
                 {
-                    var submenu = ReadNode(control.SubmenuNode, control.name);
+                    var submenu = control.type == VRCExpressionsMenu.Control.ControlType.SubMenu ?
+                        ReadNode(control.SubmenuNode, control.name) : null;
                     var matches = candidates.Where(candidate => SameControl(candidate.Control, control) &&
                         (control.type != VRCExpressionsMenu.Control.ControlType.SubMenu ||
                          (candidate.Owner is ModularAvatarMenuItem item && item.MenuSource == SubmenuSource.Children ?
@@ -133,7 +134,8 @@ namespace Ee4v.Core.AvatarEvaluation
             foreach (var itemPage in itemPages)
             {
                 var entry = itemPage.Entries[0];
-                if (!(entry.Owner is ModularAvatarMenuItem item) || item.MenuSource != SubmenuSource.Children) continue;
+                if (entry.Control.type != VRCExpressionsMenu.Control.ControlType.SubMenu ||
+                    !(entry.Owner is ModularAvatarMenuItem item) || item.MenuSource != SubmenuSource.Children) continue;
                 var childRoot = item.menuSource_otherObjectChildren != null ? item.menuSource_otherObjectChildren : item.gameObject;
                 entry.Submenu = pages.Values.FirstOrDefault(page => page.ChildRoot == childRoot);
             }
