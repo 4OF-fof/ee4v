@@ -86,6 +86,7 @@ namespace Ee4v.Core.AvatarEvaluation
                 itemPages.Add(page);
             }
             candidates.AddRange(assets.Values.SelectMany(page => page.Entries));
+            var candidatesByNameAndType = candidates.ToLookup(candidate => (candidate.Control.name, candidate.Control.type));
             sources = assets.Values.Concat(itemPages).ToList();
 
             // MA has no supported public editor resolver. Isolate version-sensitive access.
@@ -115,12 +116,13 @@ namespace Ee4v.Core.AvatarEvaluation
                 {
                     var submenu = control.type == VRCExpressionsMenu.Control.ControlType.SubMenu ?
                         ReadNode(control.SubmenuNode, control.name) : null;
-                    var matches = candidates.Where(candidate => SameControl(candidate.Control, control) &&
+                    var matches = candidatesByNameAndType[(control.name, control.type)]
+                        .Where(candidate => SameControl(candidate.Control, control) &&
                         (control.type != VRCExpressionsMenu.Control.ControlType.SubMenu ||
                          (candidate.Owner is ModularAvatarMenuItem item && item.MenuSource == SubmenuSource.Children ?
                              submenu?.ChildRoot == (item.menuSource_otherObjectChildren != null ?
                                  item.menuSource_otherObjectChildren : item.gameObject) :
-                             candidate.Control.subMenu == submenu?.Asset))).ToArray();
+                             candidate.Control.subMenu == submenu?.Asset))).Take(2).ToArray();
                     var source = matches.Length == 1 ? matches[0] : null;
                     page.Entries.Add(new AvatarMenuEntry
                     {

@@ -42,6 +42,8 @@ Scene入力ではサンプリングした姿勢・Renderer値を最終段のNDMF
 
 MAの内部`VirtualMenu.ForAvatar`、`RootMenuNode`とChildrenのnode keyへのreflectionはこのモジュールへ隔離します。resolverが利用できない場合は例外を返します。合成Controlと元Controlの照合が曖昧な場合はOwnerを確定しません。元Controlはコピーせず参照を保持し、利用側の変更検出に使います。
 
+編集元候補は名前とControlTypeで索引化してから残りの設定を照合し、各合成Controlについて候補全体を走査しません。同じ設定が複数候補へ一致する場合は引き続き出所不明として返します。Coreは読み取り結果を永続キャッシュせず、画面移動時の再利用と変更通知による無効化は利用側のViewが所有します。
+
 `excludeItem`は編集元候補から除くMA Menu Itemの条件です。Expression Menuは未登録draftの判定を渡し、`AvatarMenuPage`・`AvatarMenuEntry`を直接使用します。`Controls`は変更できないcollectionで、項目検索と並び替え先のindex取得にも使用します。編集許可、書き換え、並び替え、Undoと保存はExpression Menuが所有します。
 
 ## パラメーター

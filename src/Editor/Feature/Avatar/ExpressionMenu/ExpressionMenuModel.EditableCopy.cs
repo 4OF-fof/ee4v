@@ -19,18 +19,25 @@ namespace Ee4v.ExpressionMenu
             internal VRCExpressionsMenu Menu;
         }
 
-        internal static bool CanCreateEditableCopy(AvatarEditingContext context, VRCExpressionsMenu menu)
+        internal static Func<VRCExpressionsMenu, bool> CreateEditableCopyCheck(AvatarEditingContext context)
         {
-            if (menu == null || context.Root == null || EditorUtility.IsPersistent(context.Root) ||
-                !context.Edits.CanEditPrefab() || EditorApplication.isPlayingOrWillChangePlaymode) return false;
+            if (context.Root == null || EditorUtility.IsPersistent(context.Root) ||
+                !context.Edits.CanEditPrefab() || EditorApplication.isPlayingOrWillChangePlaymode) return _ => false;
             var path = context.Edits.GetAssetPath();
             if (string.IsNullOrEmpty(path) || !path.StartsWith("Assets/", StringComparison.Ordinal) ||
-                !AssetDatabase.IsValidFolder(Path.GetDirectoryName(path)?.Replace('\\', '/'))) return false;
+                !AssetDatabase.IsValidFolder(Path.GetDirectoryName(path)?.Replace('\\', '/'))) return _ => false;
             var references = ReadMenuReferences(context.Root);
-            var menus = MenusToCopy(menu, references);
-            return references.Any(reference => menus.Contains(reference.Menu)) &&
-                references.Where(reference => menus.Contains(reference.Menu)).All(reference => CanWrite(reference.Owner));
+            return menu =>
+            {
+                if (menu == null) return false;
+                var menus = MenusToCopy(menu, references);
+                return references.Any(reference => menus.Contains(reference.Menu)) &&
+                    references.Where(reference => menus.Contains(reference.Menu)).All(reference => CanWrite(reference.Owner));
+            };
         }
+
+        internal static bool CanCreateEditableCopy(AvatarEditingContext context, VRCExpressionsMenu menu) =>
+            menu != null && CreateEditableCopyCheck(context)(menu);
 
         internal static Dictionary<VRCExpressionsMenu, VRCExpressionsMenu> CreateEditableCopy(
             AvatarEditingContext context, VRCExpressionsMenu menu)
