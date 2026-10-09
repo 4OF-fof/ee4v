@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 using ControlType = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu.Control.ControlType;
+using MenuEntry = Ee4v.Core.AvatarEvaluation.AvatarMenuEntry;
 
 namespace Ee4v.ExpressionMenu
 {
@@ -27,7 +28,7 @@ namespace Ee4v.ExpressionMenu
         internal ExpressionMenuPreview(AvatarEditingContext context, MenuEntry entry, Action back)
         {
             AddToClassList("ee4v-expression-menu__preview-column");
-            _preview = new PrefabScenePreview() { name = "expressionMenuPreview" };
+            _preview = new PrefabScenePreview { name = "expressionMenuPreview" };
             _preview.AddToClassList("ee4v-expression-menu__preview");
             _preview.SetFlexibleLayout(true);
             _preview.SetFullBodyFraming(false);

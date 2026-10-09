@@ -96,7 +96,6 @@ namespace Ee4v.UI
         private bool _previewDirty = true;
         private bool _cameraAnimationSubscribed;
         private bool _flexibleLayout;
-        private readonly bool _isolatedSnapshot;
         private Action<AvatarAnimationFrame> _animationSampler;
         private bool _viewToggleVisible = true;
         private bool _fitWholeAvatar = true;
@@ -119,9 +118,8 @@ namespace Ee4v.UI
         public event Action<string, Material> PreviewObjectClicked;
         public event Action PreviewSelectionCleared;
 
-        public PrefabScenePreview(bool isolatedSnapshot = false)
+        public PrefabScenePreview()
         {
-            _isolatedSnapshot = isolatedSnapshot;
             AddToClassList(
                 "ee4v-ui-prefab-scene-preview");
 
@@ -796,7 +794,7 @@ namespace Ee4v.UI
 
             try
             {
-                _utility = new AvatarPreviewRenderer(_prefab, _isolatedSnapshot);
+                _utility = new AvatarPreviewRenderer(_prefab);
                 if (_animationSampler != null) _utility.SetAnimationSampler(_animationSampler);
                 _instance = _utility.Root;
                 _utility.IsVisible = renderer => IsInScope(renderer) && !_hiddenPartRenderers.Contains(renderer);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using nadena.dev.modular_avatar.core;
@@ -27,7 +28,9 @@ namespace Ee4v.Core.AvatarEvaluation
         public VRCExpressionsMenu Asset { get; internal set; }
         public GameObject ChildRoot { get; internal set; }
         internal readonly List<AvatarMenuEntry> Entries = new List<AvatarMenuEntry>();
-        public IReadOnlyList<AvatarMenuEntry> Controls => Entries.AsReadOnly();
+        public ReadOnlyCollection<AvatarMenuEntry> Controls { get; }
+
+        public AvatarMenuPage() => Controls = Entries.AsReadOnly();
     }
 
     /// <summary>Resolves the authoring menu and source references through Modular Avatar without building the avatar.</summary>

@@ -40,13 +40,13 @@ Scene入力ではサンプリングした姿勢・Renderer値を最終段のNDMF
 
 MAの内部`VirtualMenu.ForAvatar`、`RootMenuNode`とChildrenのnode keyへのreflectionはこのモジュールへ隔離します。resolverが利用できない場合は例外を返します。合成Controlと元Controlの照合が曖昧な場合はOwnerを確定しません。元Controlはコピーせず参照を保持し、利用側の変更検出に使います。
 
-`excludeItem`は編集元候補から除くMA Menu Itemの条件です。Expression Menuは未登録draftの判定を渡し、戻り値を機能のMenuPage / MenuEntryへ変換します。編集許可、書き換え、並び替え、Undoと保存はExpression Menuが所有します。
+`excludeItem`は編集元候補から除くMA Menu Itemの条件です。Expression Menuは未登録draftの判定を渡し、`AvatarMenuPage`・`AvatarMenuEntry`を直接使用します。`Controls`は変更できないcollectionで、項目検索と並び替え先のindex取得にも使用します。編集許可、書き換え、並び替え、Undoと保存はExpression Menuが所有します。
 
 ## パラメーター
 
 `AvatarAuthoringParameters.Read(avatar, ignore)`はDescriptorの非既定Animator layer、MA Merge Animator、Expression ParametersとMA Parametersを集計し、名前順の`AvatarParameterInfo`を返します。名前・型・Expression宣言・既定値の宣言を保持し、既定値の優先順位は既存カタログと共通です。指定したAnimator Controllerは集計から除きます。
 
-MA Parametersのprivate・prefix・NotSynced宣言と組み込み名は候補から除き、共有宣言のremapToを考慮します。Animator側の全スコープの名前変換やビルド結果の解析は行いません。`IsBuiltIn`は同じ組み込み名判定を公開し、Expression Menuは結果を編集用カタログへ変換します。
+MA Parametersのprivate・prefix・NotSynced宣言と組み込み名は候補から除き、共有宣言のremapToを考慮します。Animator側の全スコープの名前変換やビルド結果の解析は行いません。`IsBuiltIn`は同じ組み込み名判定を公開します。Expression Menuは`AvatarParameterInfo`を直接使用し、操作に応じた候補の絞り込みと宣言の検索を行います。
 
 ## 骨対応・表示用ポーズ
 

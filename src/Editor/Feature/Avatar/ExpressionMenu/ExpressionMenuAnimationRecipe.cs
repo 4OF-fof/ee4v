@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Ee4v.AvatarEditing;
+using Ee4v.Core.AvatarEvaluation;
 using nadena.dev.modular_avatar.core;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -98,8 +99,11 @@ namespace Ee4v.ExpressionMenu
         [SerializeField] private string _sharedParameter;
         [SerializeField] private AnimatorController _controller;
 
-        internal ExpressionMenuParameterCatalog.Entry[] ParameterChoices(AvatarEditingContext context, ModularAvatarMenuItem item) =>
-            ExpressionMenuParameterCatalog.Entries(context, _controller).Where(entry =>
+        private IReadOnlyList<AvatarParameterInfo> ReadParameters(AvatarEditingContext context) =>
+            context.Root == null ? Array.Empty<AvatarParameterInfo>() : AvatarAuthoringParameters.Read(context.Root, _controller);
+
+        internal AvatarParameterInfo[] ParameterChoices(AvatarEditingContext context, ModularAvatarMenuItem item) =>
+            ReadParameters(context).Where(entry =>
                 (EffectiveMode(item) == MenuBehaviorMode.Button ? entry.Type != AnimatorControllerParameterType.Trigger || !entry.Expression :
                     IsContinuous(item) ? entry.Type == AnimatorControllerParameterType.Float || entry.Type == AnimatorControllerParameterType.Int :
                     entry.Type == AnimatorControllerParameterType.Bool) &&
@@ -337,7 +341,7 @@ namespace Ee4v.ExpressionMenu
             parameters.Add(new AnimatorControllerParameter { name = "IsLocal", type = AnimatorControllerParameterType.Bool });
             foreach (var action in ParameterActions.Where(action => !string.IsNullOrEmpty(action.Parameter)))
             {
-                var declaration = context != null ? ExpressionMenuParameterCatalog.Find(context, _controller, action.Parameter)?.Declaration :
+                var declaration = context != null ? ReadParameters(context).FirstOrDefault(entry => entry.Name == action.Parameter)?.Declaration :
                     _controller?.parameters.FirstOrDefault(parameter => parameter.name == action.Parameter);
                 parameters.Add(new AnimatorControllerParameter
                 {
@@ -709,11 +713,11 @@ namespace Ee4v.ExpressionMenu
                     throw new InvalidOperationException(TemplateText.Get("parameterTypeMismatch"));
                 var hasName = !string.IsNullOrEmpty(action.Parameter);
                 if (hasName && (string.IsNullOrWhiteSpace(action.Parameter) || action.Parameter.Trim() != action.Parameter ||
-                    ExpressionMenuParameterCatalog.IsBuiltIn(action.Parameter) || InputParameters(item).Contains(action.Parameter) || action.Parameter == Parameter(item) ||
+                    AvatarAuthoringParameters.IsBuiltIn(action.Parameter) || InputParameters(item).Contains(action.Parameter) || action.Parameter == Parameter(item) ||
                     action.Parameter == Parameter(item) + "/CopyClock"))
                     throw new InvalidOperationException(TemplateText.Get("invalidParameter"));
                 if (hasName && !used.Add(action.Parameter)) throw new InvalidOperationException(TemplateText.Get("overlappingParameters"));
-                var known = hasName ? ExpressionMenuParameterCatalog.Find(context, _controller, action.Parameter) : null;
+                var known = hasName ? ReadParameters(context).FirstOrDefault(entry => entry.Name == action.Parameter) : null;
                 if (known != null && known.Type != type)
                     throw new InvalidOperationException(TemplateText.Get("parameterTypeMismatch"));
                 if (type == AnimatorControllerParameterType.Trigger)

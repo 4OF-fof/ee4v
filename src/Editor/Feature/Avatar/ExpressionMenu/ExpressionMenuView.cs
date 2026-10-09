@@ -12,6 +12,8 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
 using VRC.SDK3.Avatars.ScriptableObjects;
+using MenuEntry = Ee4v.Core.AvatarEvaluation.AvatarMenuEntry;
+using MenuPage = Ee4v.Core.AvatarEvaluation.AvatarMenuPage;
 
 namespace Ee4v.ExpressionMenu
 {
@@ -63,7 +65,7 @@ namespace Ee4v.ExpressionMenu
                 if (sourcePage != null)
                 {
                     var index = _sources.FindIndex(page => sourcePage.Asset != null ? page.Asset == sourcePage.Asset :
-                        page.Asset == null && page.Entries.FirstOrDefault()?.Owner == sourcePage.Entries.FirstOrDefault()?.Owner);
+                        page.Asset == null && page.Controls.FirstOrDefault()?.Owner == sourcePage.Controls.FirstOrDefault()?.Owner);
                     _source = index + 1;
                     if (index < 0) { _path.Clear(); _offset = 0; _selected = -1; }
                 }
@@ -80,9 +82,9 @@ namespace Ee4v.ExpressionMenu
                         {
                             if (SamePage(page, destination.Page)) return true;
                             if (!visited.Add(page)) return false;
-                            for (var index = 0; index < page.Entries.Count; index++)
+                            for (var index = 0; index < page.Controls.Count; index++)
                             {
-                                var child = page.Entries[index].Submenu;
+                                var child = page.Controls[index].Submenu;
                                 if (child == null) continue;
                                 _path.Add(index);
                                 if (Find(child)) return true;
@@ -111,14 +113,14 @@ namespace Ee4v.ExpressionMenu
                 _submenuEntry = null;
                 foreach (var index in _path.ToArray())
                 {
-                    if (index >= _page.Entries.Count || _page.Entries[index].Submenu == null)
+                    if (index >= _page.Controls.Count || _page.Controls[index].Submenu == null)
                     { _path.Clear(); _submenuEntry = null; _page = _source == 0 ? _root : _sources[_source - 1]; break; }
-                    _submenuEntry = _page.Entries[index];
+                    _submenuEntry = _page.Controls[index];
                     _page = _submenuEntry.Submenu;
                 }
-                _offset = _page.Entries.Count > 8 ? Mathf.Clamp(_offset, 0, (_page.Entries.Count - 1) / 7 * 7) : 0;
-                if (_selected >= _page.Entries.Count) _selected = -1;
-                if (_selected >= 0 && _page.Entries[_selected].Control.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
+                _offset = _page.Controls.Count > 8 ? Mathf.Clamp(_offset, 0, (_page.Controls.Count - 1) / 7 * 7) : 0;
+                if (_selected >= _page.Controls.Count) _selected = -1;
+                if (_selected >= 0 && _page.Controls[_selected].Control.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
                     _selected = -1;
                 Build();
             }
@@ -132,7 +134,7 @@ namespace Ee4v.ExpressionMenu
         {
             if (!string.IsNullOrEmpty(_error))
                 Add(UiTextFactory.CreateHelpBox(_error, HelpBoxMessageType.Error));
-            var selectedEntry = _selected >= 0 && _selected < _page.Entries.Count ? _page.Entries[_selected] : null;
+            var selectedEntry = _selected >= 0 && _selected < _page.Controls.Count ? _page.Controls[_selected] : null;
             VisualElement editorColumn = this;
             if (selectedEntry != null)
             {
@@ -199,14 +201,14 @@ namespace Ee4v.ExpressionMenu
             items.RegisterCallback<GeometryChangedEvent>(evt =>
                 items.EnableInClassList("ee4v-expression-menu__items--two-columns", evt.newRect.width >= 900f));
             overview.Add(items);
-            var count = Math.Min(_page.Entries.Count > 8 ? 7 : 8, _page.Entries.Count - _offset);
+            var count = Math.Min(_page.Controls.Count > 8 ? 7 : 8, _page.Controls.Count - _offset);
             for (var slot = 0; slot < count; slot++)
             {
                 var index = _offset + slot;
-                BuildQuickSettings(_page.Entries[index], index, () => SelectControl(index),
-                    _page.Entries[index].Submenu == null ? null : (Action)(() => OpenSubmenu(index)), items);
+                BuildQuickSettings(_page.Controls[index], index, () => SelectControl(index),
+                    _page.Controls[index].Submenu == null ? null : (Action)(() => OpenSubmenu(index)), items);
             }
-            if (_offset + count >= _page.Entries.Count)
+            if (_offset + count >= _page.Controls.Count)
             {
                 var cell = new VisualElement();
                 cell.AddToClassList("ee4v-expression-menu__item-cell");
@@ -249,7 +251,7 @@ namespace Ee4v.ExpressionMenu
                 {
                     var key = string.Join("/", path);
                     var current = page != null && _path.SequenceEqual(path);
-                    var canExpand = page != null && !ancestors.Contains(page) && page.Entries.Count > 0;
+                    var canExpand = page != null && !ancestors.Contains(page) && page.Controls.Count > 0;
                     var expanded = canExpand && _expandedMenuPaths.Contains(key);
                     var row = new VisualElement { userData = path };
                     row.AddToClassList("ee4v-expression-menu__tree-row");
@@ -285,7 +287,7 @@ namespace Ee4v.ExpressionMenu
                             _path.Clear();
                             _path.AddRange(path.Take(path.Length - 1));
                             _selected = path[path.Length - 1];
-                            _offset = parentPage.Entries.Count > 8 ? _selected / 7 * 7 : 0;
+                            _offset = parentPage.Controls.Count > 8 ? _selected / 7 * 7 : 0;
                             _error = null;
                             Refresh();
                         }
@@ -313,9 +315,9 @@ namespace Ee4v.ExpressionMenu
                     children.AddToClassList("ee4v-expression-menu__tree-children");
                     parent.Add(children);
                     ancestors.Add(page);
-                    for (var index = 0; index < page.Entries.Count; index++)
+                    for (var index = 0; index < page.Controls.Count; index++)
                     {
-                        var child = page.Entries[index];
+                        var child = page.Controls[index];
                         AddNode(child.Submenu, page, child, child.Control.name, ExpressionMenuModel.DisplayIcon(child.Control.icon),
                             path.Concat(new[] { index }).ToArray(), tooltip + " / " + child.Control.name, children);
                     }
@@ -394,7 +396,7 @@ namespace Ee4v.ExpressionMenu
             handle.AddToClassList("ee4v-expression-menu__drag-handle");
             handle.Add(new Icon(FluentUiIcons.CreateState("re_order_dots_vertical.png")));
             handle.SetEnabled(CanMoveControl(index, index - 1) || CanMoveControl(index, index + 1) ||
-                _treeNodes.Any(node => CanDropInto(_page.Entries[index], _page, node)));
+                _treeNodes.Any(node => CanDropInto(_page.Controls[index], _page, node)));
             handle.AddManipulator(new MenuReorderManipulator(this, index, row, host));
             row.Add(handle);
             var iconHost = new VisualElement();
@@ -449,7 +451,7 @@ namespace Ee4v.ExpressionMenu
                 _selected = -1;
                 NotifyChanged();
             }
-            if (entry.Submenu == null || entry.Submenu.Entries.Count == 0) { Run(Remove); return; }
+            if (entry.Submenu == null || entry.Submenu.Controls.Count == 0) { Run(Remove); return; }
             var overlay = OpenOperationOverlay(new MessagePanelState(T("deleteSubmenuTitle"),
                 string.Format(T("deleteSubmenuMessage"), entry.Control.name), MessageSeverity.Warning));
             if (overlay == null) return;
@@ -472,7 +474,7 @@ namespace Ee4v.ExpressionMenu
                     page.ChildRoot == _page.ChildRoot || page.ChildRoot != null && page.ChildRoot == _page.ChildRoot;
                 if (!same && editable && ExpressionMenuModel.CanRelocate(_context, entry, page))
                     destinations.Add((path, page));
-                foreach (var child in page.Entries)
+                foreach (var child in page.Controls)
                     if (child.Submenu != null) Visit(child.Submenu, path + " / " + child.Control.name, CanInteract(child));
             }
             Visit(_root, T("root"), true);
@@ -548,16 +550,16 @@ namespace Ee4v.ExpressionMenu
         private bool CanMoveControl(int from, int to) => CanMoveControl(_page, from, to);
 
         private bool CanMoveControl(MenuPage page, int from, int to) => from >= 0 && to >= 0 &&
-            from < page.Entries.Count && to < page.Entries.Count &&
-            from != to && CanInteract(page.Entries[from]) &&
+            from < page.Controls.Count && to < page.Controls.Count &&
+            from != to && CanInteract(page.Controls[from]) &&
             Enumerable.Range(Math.Min(from, to), Math.Abs(to - from) + 1).All(index => index == from ||
-                CanInteract(page.Entries[index]) && ExpressionMenuModel.CanMove(page.Entries[from], page.Entries[index]));
+                CanInteract(page.Controls[index]) && ExpressionMenuModel.CanMove(page.Controls[from], page.Controls[index]));
 
         private void MoveControl(int from, int to) => Run(() =>
         {
             if (!CanMoveControl(from, to)) throw new InvalidOperationException(T("cannotReorder"));
-            ExpressionMenuModel.Move(_page.Entries[from], _page.Entries[to]);
-            _offset = _page.Entries.Count > 8 ? to / 7 * 7 : 0;
+            ExpressionMenuModel.Move(_page.Controls[from], _page.Controls[to]);
+            _offset = _page.Controls.Count > 8 ? to / 7 * 7 : 0;
             NotifyChanged();
         });
 
@@ -596,9 +598,9 @@ namespace Ee4v.ExpressionMenu
             }
             else
             {
-                if (!CanMoveControl(source, source.Entries.IndexOf(entry), drop.Index))
+                if (!CanMoveControl(source, source.Controls.IndexOf(entry), drop.Index))
                     throw new InvalidOperationException(T("cannotReorder"));
-                ExpressionMenuModel.Move(entry, source.Entries[drop.Index]);
+                ExpressionMenuModel.Move(entry, source.Controls[drop.Index]);
                 _pendingTreeDestination = new MenuTreeNode { Page = source,
                     Path = drop.Node.Path.Take(drop.Node.Path.Length - 1).ToArray() };
             }
@@ -649,7 +651,7 @@ namespace Ee4v.ExpressionMenu
                     if (inside && _view.CanDropInto(_entry, _source, hit)) Drop = new MenuTreeDrop { Node = hit };
                     else if (!inside && hit.Entry != null && SamePage(_source, hit.ParentPage))
                     {
-                        var sourceIndex = _source.Entries.IndexOf(_entry);
+                        var sourceIndex = _source.Controls.IndexOf(_entry);
                         var after = fraction >= 0.5f;
                         var boundary = hit.Path[hit.Path.Length - 1] + (after ? 1 : 0);
                         var index = boundary > sourceIndex ? boundary - 1 : boundary;
@@ -880,7 +882,7 @@ namespace Ee4v.ExpressionMenu
                 _placeholder.style.height = source.Bounds.height;
                 var preview = new VisualElement { pickingMode = PickingMode.Ignore };
                 preview.AddToClassList("ee4v-expression-menu__drop-placeholder");
-                var entry = _view._page.Entries[_index];
+                var entry = _view._page.Controls[_index];
                 _treePreview = new MenuTreeDragPreview(_view, entry, _view._page);
                 var icon = new Image { image = ExpressionMenuModel.DisplayIcon(entry.Control.icon),
                     scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore };
@@ -953,7 +955,7 @@ namespace Ee4v.ExpressionMenu
                 var treeDrop = _treePreview?.Drop;
                 Cancel();
                 evt.StopPropagation();
-                if (treeDrop != null) _view.ApplyTreeDrop(_view._page.Entries[_index], _view._page, treeDrop);
+                if (treeDrop != null) _view.ApplyTreeDrop(_view._page.Controls[_index], _view._page, treeDrop);
                 else if (destination >= 0 && _view.CanMoveControl(_index, destination))
                     _view.MoveControl(_index, destination);
             }
@@ -1014,9 +1016,9 @@ namespace Ee4v.ExpressionMenu
             var labels = new VisualElement { pickingMode = PickingMode.Ignore };
             labels.AddToClassList("ee4v-expression-menu__labels");
             host.Add(ring);
-            var paged = _page.Entries.Count > 8;
-            var count = Math.Min(paged ? 7 : 8, _page.Entries.Count - _offset);
-            var hasNext = paged && _offset + count < _page.Entries.Count;
+            var paged = _page.Controls.Count > 8;
+            var count = Math.Min(paged ? 7 : 8, _page.Controls.Count - _offset);
+            var hasNext = paged && _offset + count < _page.Controls.Count;
             var hasBack = _offset > 0 || _path.Count > 0;
             var slices = count + (hasBack ? 2 : 1);
             var addSlot = slices - 1;
@@ -1035,7 +1037,7 @@ namespace Ee4v.ExpressionMenu
             for (var slot = 0; slot < count; slot++)
             {
                 var index = _offset + slot;
-                var entry = _page.Entries[index];
+                var entry = _page.Controls[index];
                 var button = new UiButton(entry.Control.name, () =>
                 {
                     if (entry.Submenu != null) OpenSubmenu(index);
@@ -1100,10 +1102,10 @@ namespace Ee4v.ExpressionMenu
 
         private void SelectControl(int index)
         {
-            if (index >= 0 && index < _page.Entries.Count &&
-                _page.Entries[index].Control.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
+            if (index >= 0 && index < _page.Controls.Count &&
+                _page.Controls[index].Control.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
             { OpenSubmenu(index); return; }
-            if (index < 0 || index >= _page.Entries.Count || !CanInteract(_page.Entries[index])) return;
+            if (index < 0 || index >= _page.Controls.Count || !CanInteract(_page.Controls[index])) return;
             _selected = index;
             _error = null;
             Refresh();
@@ -1118,9 +1120,9 @@ namespace Ee4v.ExpressionMenu
             bool Find(MenuPage page)
             {
                 if (!visited.Add(page)) return false;
-                for (var i = 0; i < page.Entries.Count; i++)
+                for (var i = 0; i < page.Controls.Count; i++)
                 {
-                    var entry = page.Entries[i];
+                    var entry = page.Controls[i];
                     if (entry.Owner == source)
                     {
                         selected = i;
@@ -1139,14 +1141,14 @@ namespace Ee4v.ExpressionMenu
             _path.AddRange(path);
             _selected = selected;
             var page = _root;
-            foreach (var index in path) page = page.Entries[index].Submenu;
-            _offset = page.Entries.Count > 8 ? selected / 7 * 7 : 0;
+            foreach (var index in path) page = page.Controls[index].Submenu;
+            _offset = page.Controls.Count > 8 ? selected / 7 * 7 : 0;
             return true;
         }
 
         private void OpenSubmenu(int index)
         {
-            if (index < 0 || index >= _page.Entries.Count || _page.Entries[index].Submenu == null) return;
+            if (index < 0 || index >= _page.Controls.Count || _page.Controls[index].Submenu == null) return;
             _path.Add(index);
             _selected = -1;
             _offset = 0;
@@ -1154,7 +1156,7 @@ namespace Ee4v.ExpressionMenu
             Refresh();
         }
 
-        private bool CanInteract(MenuEntry entry) => entry.CanEdit && _context.Edits.CanEditPrefab() &&
+        private bool CanInteract(MenuEntry entry) => ExpressionMenuModel.CanEdit(entry) && _context.Edits.CanEditPrefab() &&
             !EditorApplication.isPlayingOrWillChangePlaymode &&
             (!(entry.Owner is Component component) || ExpressionMenuTemplateModel.CanEdit(_context, component));
 
@@ -1162,7 +1164,7 @@ namespace Ee4v.ExpressionMenu
         {
             if (page == null || !ExpressionMenuTemplateModel.CanEdit(_context)) return false;
             var target = (UnityEngine.Object)page.Asset ?? page.ChildRoot ??
-                (_source > 0 ? page.Entries.FirstOrDefault()?.Owner : _context.Root);
+                (_source > 0 ? page.Controls.FirstOrDefault()?.Owner : _context.Root);
             return ExpressionMenuModel.CanWrite(target) &&
                 (!(target is Component) && !(target is GameObject) || ExpressionMenuTemplateModel.CanEdit(_context, target));
         }
@@ -1291,8 +1293,7 @@ namespace Ee4v.ExpressionMenu
             var submenuControl = entry.Control.type == VRCExpressionsMenu.Control.ControlType.SubMenu;
             var compact = simple || submenuControl && maSource != null &&
                 ExpressionMenuTemplateModel.IsOwned(maSource.gameObject) && maSource.MenuSource == SubmenuSource.Children;
-            var canEdit = entry.CanEdit && _context.Edits.CanEditPrefab() && !EditorApplication.isPlayingOrWillChangePlaymode &&
-                (!(entry.Owner is Component sourceComponent) || ExpressionMenuTemplateModel.CanEdit(_context, sourceComponent));
+            var canEdit = CanInteract(entry);
             if (!canEdit) host.Add(UiTextFactory.CreateHelpBox(T("readOnly"), HelpBoxMessageType.Info));
             if (!compact)
             {

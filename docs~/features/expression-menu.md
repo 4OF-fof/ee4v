@@ -161,7 +161,7 @@ rootまたはassetサブメニューへの追加時は、アバター直下にSc
 
 ## 依存
 
-Coreの公開Localization・ProjectAssetSettings、UI、共有AvatarEditingの編集許可・変更通知・単独Windowへ依存します。設定サービス型のためCore.Contracts、BodyPartCategoryのためCore.Editorも参照します。MAを考慮したメニュー解決・出所照合とパラメーター集計は`Ee4v.Core.AvatarEvaluation.Editor`の`AvatarAuthoringMenu.Read`と`AvatarAuthoringParameters.Read`を使用し、ExpressionMenuModelとExpressionMenuParameterCatalogは結果を機能のモデルへ変換します。これはビルド前の編集用情報で、NDMFビルド後の最終Expression Menu・パラメーターではありません。編集・Undo・保存はExpression Menuが所有します。AvatarEditingは統合版・単独版の対象と保存契約を揃えるため使用します。他のAvatar機能へ参照しません。VRChat SDK、MA runtime、GM runtime / Editorの実際に使うassemblyのみ参照します。GMは描画の共用に使用し、Edit Modeでアバター実行モジュールを生成しません。
+Coreの公開Localization・ProjectAssetSettings、UI、共有AvatarEditingの編集許可・変更通知・単独Windowへ依存します。設定サービス型のためCore.Contracts、BodyPartCategoryのためCore.Editorも参照します。MAを考慮したメニュー解決・出所照合とパラメーター集計は`Ee4v.Core.AvatarEvaluation.Editor`の`AvatarAuthoringMenu.Read`と`AvatarAuthoringParameters.Read`を使用します。画面と編集処理は`AvatarMenuPage`・`AvatarMenuEntry`・`AvatarParameterInfo`を直接使用し、機能側でメニュー構造やパラメーターを複製しません。ExpressionMenuModelはdraft除外条件と編集・Undo・保存を、recipeは動作ごとのパラメーター候補の絞り込みを所有します。これはビルド前の編集用情報で、NDMFビルド後の最終Expression Menu・パラメーターではありません。AvatarEditingは統合版・単独版の対象と保存契約を揃えるため使用します。他のAvatar機能へ参照しません。VRChat SDK、MA runtime、GM runtime / Editorの実際に使うassemblyのみ参照します。GMは描画の共用に使用し、Edit Modeでアバター実行モジュールを生成しません。
 
 MAは`src/package.json`の対応範囲（1.18.2以上2.0.0未満）で内部resolver `VirtualMenu.ForAvatar`、`RootMenuNode`、Childrenのnode keyへアクセスします。バージョン依存箇所は[Core/AvatarEvaluation](../core/avatar-evaluation.md)へ隔離します。resolver取得・解決失敗時はエラーを表示し、不完全な合成メニューへの編集へ代替しません。
 

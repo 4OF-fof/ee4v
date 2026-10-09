@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.Core.AvatarEvaluation;
 using Ee4v.UI;
 using nadena.dev.modular_avatar.core;
 using UnityEditor;
@@ -203,7 +204,7 @@ namespace Ee4v.ExpressionMenu
             card.SetEnabled(ExpressionMenuAnimationRecipe.CanEdit(_context, _item));
         }
 
-        private void BuildButtonParameter(VisualElement card, ExpressionMenuAnimationRecipe recipe, int index, ExpressionMenuParameterCatalog.Entry known)
+        private void BuildButtonParameter(VisualElement card, ExpressionMenuAnimationRecipe recipe, int index, AvatarParameterInfo known)
         {
             MenuParameterAction Action() => recipe.ParameterActions[index];
             var types = new[] { AnimatorControllerParameterType.Trigger, AnimatorControllerParameterType.Bool,

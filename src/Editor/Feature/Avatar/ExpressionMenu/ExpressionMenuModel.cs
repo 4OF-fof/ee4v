@@ -10,52 +10,18 @@ using UnityEditor;
 using UnityEngine;
 using VRC.SDK3.Avatars.ScriptableObjects;
 using Object = UnityEngine.Object;
+using MenuEntry = Ee4v.Core.AvatarEvaluation.AvatarMenuEntry;
+using MenuPage = Ee4v.Core.AvatarEvaluation.AvatarMenuPage;
 
 namespace Ee4v.ExpressionMenu
 {
-    internal sealed class MenuEntry
-    {
-        internal VRCExpressionsMenu.Control Control;
-        internal VRCExpressionsMenu.Control SourceControl;
-        internal Object Owner;
-        internal int Index;
-        internal MenuPage Submenu;
-        internal bool CanEdit => Owner != null && ExpressionMenuModel.CanWrite(Owner);
-    }
-
-    internal sealed class MenuPage
-    {
-        internal string Name;
-        internal VRCExpressionsMenu Asset;
-        internal GameObject ChildRoot;
-        internal readonly List<MenuEntry> Entries = new List<MenuEntry>();
-    }
-
     /// <summary>Keeps MA's menu resolution and serialized source editing separate.</summary>
     internal static class ExpressionMenuModel
     {
-        internal static MenuPage Read(GameObject avatar, out List<MenuPage> sources)
-        {
-            var effective = AvatarAuthoringMenu.Read(avatar, out var origins, ExpressionMenuTemplateModel.IsDraft);
-            var pages = new Dictionary<AvatarMenuPage, MenuPage>();
-            MenuPage Adapt(AvatarMenuPage source)
-            {
-                if (source == null) return null;
-                if (pages.TryGetValue(source, out var known)) return known;
-                var page = new MenuPage { Name = source.Name, Asset = source.Asset, ChildRoot = source.ChildRoot };
-                pages.Add(source, page);
-                foreach (var entry in source.Controls)
-                    page.Entries.Add(new MenuEntry
-                    {
-                        Control = entry.Control, SourceControl = entry.SourceControl, Owner = entry.Owner,
-                        Index = entry.Index, Submenu = Adapt(entry.Submenu)
-                    });
-                return page;
-            }
-            var root = Adapt(effective);
-            sources = origins.Select(Adapt).ToList();
-            return root;
-        }
+        internal static MenuPage Read(GameObject avatar, out List<MenuPage> sources) =>
+            AvatarAuthoringMenu.Read(avatar, out sources, ExpressionMenuTemplateModel.IsDraft);
+
+        internal static bool CanEdit(MenuEntry entry) => entry != null && CanWrite(entry.Owner);
 
         internal static Texture2D DisplayIcon(Texture2D icon) =>
             icon != null ? icon : UiBuiltinIconResolver.LoadTexture(UiBuiltinIcon.GameObject) as Texture2D;
@@ -143,7 +109,7 @@ namespace Ee4v.ExpressionMenu
 
         internal static bool CanMove(MenuEntry from, MenuEntry to)
         {
-            if (from == null || to == null || from == to || !from.CanEdit || !to.CanEdit) return false;
+            if (from == to || !CanEdit(from) || !CanEdit(to)) return false;
             if (from.Owner is VRCExpressionsMenu asset)
                 return to.Owner == asset && from.Index != to.Index;
             if (!(from.Owner is ModularAvatarMenuItem first) || !(to.Owner is ModularAvatarMenuItem second)) return false;
@@ -154,14 +120,14 @@ namespace Ee4v.ExpressionMenu
 
         internal static bool CanRelocate(AvatarEditingContext context, MenuEntry entry, MenuPage destination)
         {
-            if (entry == null || destination == null || !entry.CanEdit || !context.Edits.CanEditPrefab() ||
-                destination.Entries.Count >= 8) return false;
+            if (destination == null || !CanEdit(entry) || !context.Edits.CanEditPrefab() ||
+                destination.Controls.Count >= 8) return false;
             var visited = new HashSet<MenuPage>();
             bool Contains(MenuPage page)
             {
                 if (page == null || !visited.Add(page)) return false;
                 return page == destination || page.Asset != null && page.Asset == destination.Asset ||
-                    page.ChildRoot != null && page.ChildRoot == destination.ChildRoot || page.Entries.Any(child => Contains(child.Submenu));
+                    page.ChildRoot != null && page.ChildRoot == destination.ChildRoot || page.Controls.Any(child => Contains(child.Submenu));
             }
             if (Contains(entry.Submenu)) return false;
             if (destination.ChildRoot != null && !ExpressionMenuTemplateModel.CanEdit(context, destination.ChildRoot) ||
@@ -360,7 +326,7 @@ namespace Ee4v.ExpressionMenu
 
         private static void ValidateEntry(MenuEntry entry)
         {
-            if (!entry.CanEdit) throw new InvalidOperationException("The menu source is read-only or ambiguous.");
+            if (!CanEdit(entry)) throw new InvalidOperationException("The menu source is read-only or ambiguous.");
             if (entry.Owner is VRCExpressionsMenu asset &&
                 (entry.Index < 0 || entry.Index >= asset.controls.Count ||
                  !ReferenceEquals(asset.controls[entry.Index], entry.SourceControl)))
