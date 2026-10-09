@@ -1,0 +1,68 @@
+name: Publish VPM
+
+on:
+  pull_request:
+    branches: [master]
+    types: [closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-vpm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+      || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      VPM_OUTPUT: ${{ runner.temp }}/ee4v-vpm
+      VPM_RELEASE_SHA: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VPM_RELEASE_SHA }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Prepare package
+        id: package
+        run: node .github/scripts/vpm.mjs prepare
+        env:
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+      - name: Create package ZIP
+        run: zip -qr "$ZIP_PATH" .
+        working-directory: ${{ runner.temp }}/ee4v-vpm/package
+        env:
+          ZIP_PATH: ${{ steps.package.outputs.zip_path }}
+      - name: Publish new version
+        run: node .github/scripts/vpm.mjs publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build VPM listing
+        run: node .github/scripts/vpm.mjs listing
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/ee4v-vpm/site
+      - name: Deploy VPM listing
+        id: deploy
+        uses: actions/deploy-pages@v4

@@ -6,9 +6,11 @@
   "description": "EditorExtensions for VRChat",
   "license": "MIT",
   "dependencies": {
-    "com.unity.nuget.newtonsoft-json": "3.0.2"
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
   },
   "vpmDependencies": {
+    "com.vrchat.avatars": ">=3.10.4 <4.0.0-a",
+    "com.anatawa12.avatar-optimizer": ">=1.9.20 <2.0.0-a",
     "vrchat.blackstartx.gesture-manager": ">=3.9.9 <4.0.0-a",
     "nadena.dev.modular-avatar": ">=1.18.2 <2.0.0-a",
     "nadena.dev.ndmf": ">=1.14.8 <2.0.0-a"
