@@ -84,6 +84,14 @@ namespace Ee4v.AssetManager.UI
             combined.RegisterCallback<ClickEvent>(
                 _ => SelectPrefabCard(null, string.Empty));
             combined.SetSelected(!_avatarContext.SelectedPrefabSiblingIndex.HasValue);
+            header.SetLeadingTab(combined);
+
+            if (EditorApplication.isPlaying)
+            {
+                combined.SetSelected(true);
+                return header;
+            }
+
             var changeLabel = I18N.Get("workflow.asset.change");
             var change = new UiButton(
                 changeLabel,
@@ -99,14 +107,6 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-modification-workflow__header-change-separator");
             combined.Add(changeSeparator);
             combined.Add(change);
-            header.SetLeadingTab(combined);
-
-            if (EditorApplication.isPlaying)
-            {
-                combined.SetSelected(true);
-                change.SetEnabled(false);
-                return header;
-            }
 
             var strip = header.Tabs;
             VisualElement selectedCard = null;
