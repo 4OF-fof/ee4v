@@ -11,6 +11,7 @@ using Object = UnityEngine.Object;
 
 namespace Ee4v.Core.AvatarEvaluation
 {
+    /// <summary>A resolved authoring control with its editable source, not a built avatar control.</summary>
     public sealed class AvatarMenuEntry
     {
         public VRCExpressionsMenu.Control Control { get; internal set; }
@@ -29,9 +30,10 @@ namespace Ee4v.Core.AvatarEvaluation
         public IReadOnlyList<AvatarMenuEntry> Controls => Entries.AsReadOnly();
     }
 
-    public static partial class AvatarEvaluator
+    /// <summary>Resolves the authoring menu and source references through Modular Avatar without building the avatar.</summary>
+    public static class AvatarAuthoringMenu
     {
-        public static AvatarMenuPage GetExpressionMenu(GameObject avatar, out List<AvatarMenuPage> sources,
+        public static AvatarMenuPage Read(GameObject avatar, out List<AvatarMenuPage> sources,
             Func<ModularAvatarMenuItem, bool> excludeItem = null)
         {
             if (avatar == null) throw new ArgumentNullException(nameof(avatar));

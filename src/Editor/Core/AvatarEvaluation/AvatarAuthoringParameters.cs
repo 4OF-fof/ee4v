@@ -9,6 +9,7 @@ using VRC.SDK3.Avatars.ScriptableObjects;
 
 namespace Ee4v.Core.AvatarEvaluation
 {
+    /// <summary>A parameter candidate collected from authoring declarations, not a final built parameter.</summary>
     public sealed class AvatarParameterInfo
     {
         public string Name { get; internal set; }
@@ -17,7 +18,8 @@ namespace Ee4v.Core.AvatarEvaluation
         public AnimatorControllerParameter Declaration { get; internal set; }
     }
 
-    public static partial class AvatarEvaluator
+    /// <summary>Collects parameter candidates for editing without executing NDMF build passes.</summary>
+    public static class AvatarAuthoringParameters
     {
         private static readonly HashSet<string> BuiltIns = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -27,15 +29,15 @@ namespace Ee4v.Core.AvatarEvaluation
             "ScaleModified", "ScaleFactor", "ScaleFactorInverse", "EyeHeightAsMeters", "EyeHeightAsPercent"
         };
 
-        public static bool IsBuiltInParameter(string name) => BuiltIns.Contains(name);
+        public static bool IsBuiltIn(string name) => BuiltIns.Contains(name);
 
-        public static IReadOnlyList<AvatarParameterInfo> GetParameters(GameObject avatar, AnimatorController ignore = null)
+        public static IReadOnlyList<AvatarParameterInfo> Read(GameObject avatar, AnimatorController ignore = null)
         {
             if (avatar == null) throw new ArgumentNullException(nameof(avatar));
             var entries = new Dictionary<string, AvatarParameterInfo>(StringComparer.Ordinal);
             void Add(string name, AnimatorControllerParameterType type, bool expression = false, AnimatorControllerParameter declaration = null)
             {
-                if (string.IsNullOrWhiteSpace(name) || IsBuiltInParameter(name)) return;
+                if (string.IsNullOrWhiteSpace(name) || IsBuiltIn(name)) return;
                 if (entries.TryGetValue(name, out var current))
                 {
                     current.Expression |= expression;

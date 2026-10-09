@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Ee4v.Core.AvatarEvaluation;
 using System.Linq;
 using nadena.dev.ndmf.preview;
 using UnityEditor;
@@ -9,7 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
-namespace Ee4v.Core.Preview
+namespace Ee4v.Core.AvatarEvaluation
 {
     public sealed partial class AvatarPreviewRenderer : IDisposable
     {
@@ -29,10 +28,13 @@ namespace Ee4v.Core.Preview
         private readonly Dictionary<GameObject, bool> _activeStates = new Dictionary<GameObject, bool>();
         private readonly Dictionary<Transform, Vector3> _temporaryScales = new Dictionary<Transform, Vector3>();
         private readonly Dictionary<GameObject, bool> _temporaryActiveStates = new Dictionary<GameObject, bool>();
+        private readonly Dictionary<Renderer, bool> _temporaryEnabledStates = new Dictionary<Renderer, bool>();
         private readonly Dictionary<(SkinnedMeshRenderer, int), float> _temporaryShapes = new Dictionary<(SkinnedMeshRenderer, int), float>();
         private readonly Dictionary<SkinnedMeshRenderer, Dictionary<string, float>> _shapes =
             new Dictionary<SkinnedMeshRenderer, Dictionary<string, float>>();
         private readonly AvatarPreviewSession _session = new AvatarPreviewSession();
+        private AvatarPreviewAnimation _animation;
+        private Action<GameObject> _snapshotAnimation;
         private Renderer[] _sceneRenderers = Array.Empty<Renderer>();
         private Renderer[] _sourceRenderers = Array.Empty<Renderer>();
         private bool _hierarchyDirty = true;
@@ -95,12 +97,53 @@ namespace Ee4v.Core.Preview
         public Func<Renderer, bool> IsVisible { get; set; }
         public Func<Material, bool> IsMaterialVisible { get; set; }
         public bool UsesNdmf => !_ownsRoot && _session.IsConnected;
-        public Action<GameObject> SnapshotAnimation { get; set; }
+        public Action<GameObject> SnapshotAnimation
+        {
+            get => _snapshotAnimation;
+            set
+            {
+                if (value != null && _animation != null)
+                    throw new InvalidOperationException("Clip playback and SnapshotAnimation cannot be used together.");
+                _snapshotAnimation = value;
+            }
+        }
+        public AnimationClip Animation => _animation?.Clip;
+        public float AnimationTime => _animation?.Time ?? 0f;
+
+        /// <summary>Selects a clip for Edit Mode preview. Null stops playback and releases the sampling copy.</summary>
+        public void SetAnimation(AnimationClip clip)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(AvatarPreviewRenderer));
+            if (clip != null && EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Animation preview is available only in Edit Mode.");
+            if (clip != null && SnapshotAnimation != null)
+                throw new InvalidOperationException("Clip playback and SnapshotAnimation cannot be used together.");
+            var next = clip == null ? null : new AvatarPreviewAnimation(Root, clip, _poseBindings);
+            _animation?.Dispose();
+            _animation = next;
+            _session.Disconnect();
+            _resolved.Clear();
+        }
+
+        /// <summary>Evaluates the selected clip at a time in seconds; the caller owns playback timing and repaint.</summary>
+        public void SampleAnimation(float time)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(AvatarPreviewRenderer));
+            if (_animation == null) throw new InvalidOperationException("Select an animation clip first.");
+            _animation.Sample(time, _scales);
+        }
 
         public void RefreshHierarchy()
         {
+            var clip = Animation;
+            var time = AnimationTime;
             _sourceRenderers = Root == null ? Array.Empty<Renderer>() : Root.GetComponentsInChildren<Renderer>(true);
             if (!_ownsRoot && Root != null) RefreshPoseBindings();
+            if (clip != null)
+            {
+                SetAnimation(clip);
+                SampleAnimation(time);
+            }
             _hierarchyDirty = true;
         }
 
@@ -175,6 +218,8 @@ namespace Ee4v.Core.Preview
         public Texture Render(Rect rect, Func<Renderer, Material, int, bool> includeSlot = null)
         {
             if (_disposed || Root == null) return null;
+            if (EditorApplication.isPlayingOrWillChangePlaymode && _animation != null) SetAnimation(null);
+            _animation?.Sample(AnimationTime, _scales);
             EnsureSession();
             _includeSlot = includeSlot;
             _utility.BeginPreview(rect, GUIStyle.none);
@@ -189,7 +234,7 @@ namespace Ee4v.Core.Preview
                 Camera.onPostRender -= OnPostRender;
                 Camera.onPostRender += OnPostRender;
                 ApplySnapshotOverrides();
-                if (_ownsRoot) SnapshotAnimation?.Invoke(Root);
+                if (_ownsRoot && _animation == null) SnapshotAnimation?.Invoke(Root);
                 Camera.Render();
                 var texture = _utility.EndPreview();
                 completed = true;
@@ -228,24 +273,38 @@ namespace Ee4v.Core.Preview
         {
             if (_ownsRoot)
             {
+                if (_animation != null)
+                {
+                    foreach (var source in Root.GetComponentsInChildren<Transform>(true))
+                    {
+                        var local = GetPoseLocalMatrix(source);
+                        _temporaryPositions[source] = source.localPosition;
+                        _temporaryRotations[source] = source.localRotation;
+                        _temporaryScales[source] = source.localScale;
+                        source.localPosition = local.GetColumn(3);
+                        source.localRotation = local.rotation;
+                        source.localScale = local.lossyScale;
+                    }
+                    _animation.ApplySnapshot(_temporaryActiveStates, _temporaryEnabledStates, _materialStates, _temporaryShapes);
+                }
                 var poseMatrices = new Dictionary<Transform, Matrix4x4>();
-                var attachments = _rotations.Count > 0 || _scales.Count > 0
+                var attachments = _animation == null && (_rotations.Count > 0 || _scales.Count > 0)
                     ? _poseBindings.Keys.Where(source => source != null)
                         .ToDictionary(source => source, source => GetPoseLocalMatrix(source, poseMatrices))
                     : new Dictionary<Transform, Matrix4x4>();
                 foreach (var pair in _activeStates)
                 {
                     if (pair.Key == null) continue;
-                    _temporaryActiveStates[pair.Key] = pair.Key.activeSelf;
+                    if (!_temporaryActiveStates.ContainsKey(pair.Key)) _temporaryActiveStates[pair.Key] = pair.Key.activeSelf;
                     pair.Key.SetActive(pair.Value);
                 }
-                foreach (var pair in _scales)
+                foreach (var pair in _scales.Where(_ => _animation == null))
                 {
                     if (pair.Key == null) continue;
                     _temporaryScales[pair.Key] = pair.Key.localScale;
                     pair.Key.localScale = pair.Value;
                 }
-                foreach (var pair in _rotations)
+                foreach (var pair in _rotations.Where(_ => _animation == null))
                 {
                     if (pair.Key == null) continue;
                     _temporaryRotations[pair.Key] = pair.Key.localRotation;
@@ -269,7 +328,8 @@ namespace Ee4v.Core.Preview
                         var index = pair.Key.sharedMesh.GetBlendShapeIndex(shape.Key);
                         if (index >= 0)
                         {
-                            _temporaryShapes[(pair.Key, index)] = pair.Key.GetBlendShapeWeight(index);
+                            if (!_temporaryShapes.ContainsKey((pair.Key, index)))
+                                _temporaryShapes[(pair.Key, index)] = pair.Key.GetBlendShapeWeight(index);
                             pair.Key.SetBlendShapeWeight(index, shape.Value);
                         }
                     }
@@ -318,7 +378,7 @@ namespace Ee4v.Core.Preview
                 changed[slot] = GetInvisibleMaterial();
             }
             if (changed == null) return;
-            _materialStates[renderer] = materials;
+            if (!_materialStates.ContainsKey(renderer)) _materialStates[renderer] = materials;
             renderer.sharedMaterials = changed;
         }
 
@@ -342,6 +402,8 @@ namespace Ee4v.Core.Preview
 
         private void RestoreRenderingStates()
         {
+            foreach (var pair in _temporaryEnabledStates) if (pair.Key != null) pair.Key.enabled = pair.Value;
+            _temporaryEnabledStates.Clear();
             foreach (var pair in _temporaryActiveStates) if (pair.Key != null) pair.Key.SetActive(pair.Value);
             _temporaryActiveStates.Clear();
             foreach (var pair in _temporaryScales) if (pair.Key != null) pair.Key.localScale = pair.Value;
@@ -368,6 +430,8 @@ namespace Ee4v.Core.Preview
             Camera.onPostRender -= OnPostRender;
             EditorApplication.hierarchyChanged -= OnHierarchyChanged;
             RestoreRenderingStates();
+            _animation?.Dispose();
+            _animation = null;
             _session.Dispose();
             if (_invisibleMaterial != null) Object.DestroyImmediate(_invisibleMaterial);
             if (_ownsRoot && Root != null) Object.DestroyImmediate(Root);

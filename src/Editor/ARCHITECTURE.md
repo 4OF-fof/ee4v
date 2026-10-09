@@ -24,9 +24,9 @@ AssetManagerは例外として、他の機能モジュールへ依存できま�
 - asmdefにはコンパイルで実際に使用するassemblyだけを記載します
 - NDMFなど外部Pluginとの接続は専用asmdefへ分離します
 
-`Core/AvatarEvaluation`の`Ee4v.Core.AvatarEvaluation.Editor`はNDMF / MAを考慮したアバターのPreview接続と、メニュー・パラメーター・骨対応の情報取得を提供します。Core PreviewとExpression Menuが公開APIを使用し、機能の編集・保存処理やUIへ依存しません。外部APIのバージョン依存箇所はこのmoduleへ閉じます。
+`Core/AvatarEvaluation`の`Ee4v.Core.AvatarEvaluation.Editor`は、NDMF Preview APIを使うプレビューと、MAを考慮したExpression Menu・パラメーター取得を提供します。`AvatarPreviewRenderer`は描画・Clip再生・Camera資源、`AvatarPreviewSession`はNDMF接続、`AvatarPreviewPose`はMA骨対応、`AvatarAuthoringMenu`と`AvatarAuthoringParameters`はビルド前の編集用情報を所有します。情報取得は描画や再生から独立しています。機能の編集・保存処理やUIへ依存せず、外部APIのバージョン依存箇所をこのmoduleへ閉じます。
 
-`Core/Preview`の`Ee4v.Core.Preview.Editor`は描画用overrideとCamera資源を所有し、NDMFの描画filterとCore.AvatarEvaluationの接続APIを使用します。UIのPrefabScenePreviewとFaceExpressionが公開APIを使用します。SceneのAvatarを全体複製せず、Play Modeでは既存の実行対象を描画します。
+UIのPrefabScenePreviewとFaceExpressionはAvatarEvaluationのプレビューを使用します。通常のScene描画ではAvatarを全体複製せず、Clip再生時だけ隔離したサンプリング用コピーを保持します。MA Merge Armature・Bone Proxyの対応はそのコピーへ適用し、描画にはNDMF PreviewのProxyを使用します。Play Modeでは既存の実行対象を描画します。
 
 AssetManager内はContracts、Domain、Application、Infrastructure、UI、AssetProtectionに分割します。この層分割は一つの機能モジュール内の依存として扱います。
 

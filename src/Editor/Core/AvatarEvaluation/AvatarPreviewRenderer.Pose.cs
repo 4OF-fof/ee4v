@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.Core.AvatarEvaluation;
 using UnityEditor;
 using UnityEngine;
 
-namespace Ee4v.Core.Preview
+namespace Ee4v.Core.AvatarEvaluation
 {
     public sealed partial class AvatarPreviewRenderer
     {
@@ -13,7 +12,7 @@ namespace Ee4v.Core.Preview
 
         private void RefreshPoseBindings()
         {
-            _poseBindings = AvatarEvaluator.GetBoneBindings(Root);
+            _poseBindings = AvatarPreviewPose.GetBindings(Root);
         }
 
         public bool SupportsHumanoidPose => Root != null && Root.GetComponentsInChildren<Animator>(true)
@@ -53,7 +52,8 @@ namespace Ee4v.Core.Preview
             ? Vector3.zero : GetPoseMatrix(source).MultiplyPoint3x4(Vector3.zero);
 
         private Matrix4x4 GetPoseMatrix(Transform source, Dictionary<Transform, Matrix4x4> matrices = null) =>
-            AvatarEvaluator.GetBoneWorldMatrix(source, _poseBindings, _rotations, _scales, matrices);
+            _animation != null ? _animation.GetWorldMatrix(source) :
+                AvatarPreviewPose.GetWorldMatrix(source, _poseBindings, _rotations, _scales, matrices);
 
         private Matrix4x4 GetPoseLocalMatrix(Transform source, Dictionary<Transform, Matrix4x4> matrices = null) =>
             GetPoseMatrix(source.parent, matrices).inverse * GetPoseMatrix(source, matrices);

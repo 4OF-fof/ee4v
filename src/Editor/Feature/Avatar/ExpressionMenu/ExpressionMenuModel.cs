@@ -36,7 +36,7 @@ namespace Ee4v.ExpressionMenu
     {
         internal static MenuPage Read(GameObject avatar, out List<MenuPage> sources)
         {
-            var effective = AvatarEvaluator.GetExpressionMenu(avatar, out var origins, ExpressionMenuTemplateModel.IsDraft);
+            var effective = AvatarAuthoringMenu.Read(avatar, out var origins, ExpressionMenuTemplateModel.IsDraft);
             var pages = new Dictionary<AvatarMenuPage, MenuPage>();
             MenuPage Adapt(AvatarMenuPage source)
             {

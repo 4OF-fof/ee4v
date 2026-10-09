@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
-namespace Ee4v.Core.Preview
+namespace Ee4v.Core.AvatarEvaluation
 {
     public sealed partial class AvatarPreviewRenderer
     {
@@ -59,6 +59,7 @@ namespace Ee4v.Core.Preview
                 if (_owner._rendering) _owner._frameProxies[original] = proxy;
                 if (EditorApplication.isPlaying) return;
                 RestoreTransform(proxy.transform);
+                _owner._animation?.ApplyRenderer(original, proxy);
                 if (_owner._activeStates.Count > 0)
                 {
                     var current = original.transform;
@@ -83,7 +84,7 @@ namespace Ee4v.Core.Preview
                     }
                     skinned.forceMatrixRecalculationPerRender = true;
                 }
-                if (_owner._scales.Count == 0 && _owner._rotations.Count == 0 && _bones.Count == 0) return;
+                if (_owner._animation == null && _owner._scales.Count == 0 && _owner._rotations.Count == 0 && _bones.Count == 0) return;
                 _boneScene = proxy.gameObject.scene;
                 var desired = GetBone(original.transform);
                 if (proxy is MeshRenderer)
@@ -163,6 +164,11 @@ namespace Ee4v.Core.Preview
             }
             private void CopyBone(Transform source, Transform target)
             {
+                if (_owner._animation != null)
+                {
+                    SetLocalMatrix(target, _owner.GetPoseLocalMatrix(source, _poseMatrices));
+                    return;
+                }
                 if ((_owner._rotations.Count > 0 || _owner._scales.Count > 0) && _owner._poseBindings.ContainsKey(source))
                 {
                     SetLocalMatrix(target, _owner.GetPoseLocalMatrix(source, _poseMatrices));

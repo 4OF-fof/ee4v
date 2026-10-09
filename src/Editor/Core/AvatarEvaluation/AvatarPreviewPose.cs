@@ -10,15 +10,17 @@ namespace Ee4v.Core.AvatarEvaluation
         public Transform Target { get; internal set; }
         public BoneProxyAttachmentMode Mode { get; internal set; }
         public bool MatchScale { get; internal set; }
+        public bool IsMerge { get; internal set; }
     }
 
-    public static partial class AvatarEvaluator
+    /// <summary>Evaluates display pose overrides using MA bone bindings; does not merge hierarchy or retarget animation.</summary>
+    public static class AvatarPreviewPose
     {
-        public static IReadOnlyDictionary<Transform, AvatarBoneBinding> GetBoneBindings(GameObject avatar)
+        public static IReadOnlyDictionary<Transform, AvatarBoneBinding> GetBindings(GameObject avatar)
         {
             if (avatar == null) throw new ArgumentNullException(nameof(avatar));
             var bindings = new Dictionary<Transform, AvatarBoneBinding>();
-            void Add(Transform source, Transform target, BoneProxyAttachmentMode mode, bool matchScale = false)
+            void Add(Transform source, Transform target, BoneProxyAttachmentMode mode, bool matchScale = false, bool isMerge = false)
             {
                 if (source == null || target == null || !target.IsChildOf(avatar.transform)) return;
                 var visited = new HashSet<Transform>();
@@ -27,22 +29,22 @@ namespace Ee4v.Core.AvatarEvaluation
                     if (current == source || !visited.Add(current)) return;
                     current = bindings.TryGetValue(current, out var binding) ? binding.Target : current.parent;
                 }
-                bindings[source] = new AvatarBoneBinding { Target = target, Mode = mode, MatchScale = matchScale };
+                bindings[source] = new AvatarBoneBinding { Target = target, Mode = mode, MatchScale = matchScale, IsMerge = isMerge };
             }
             foreach (var merge in avatar.GetComponentsInChildren<ModularAvatarMergeArmature>(true))
             {
                 if (merge.mergeTargetObject == null) continue;
-                Add(merge.transform, merge.mergeTargetObject.transform, BoneProxyAttachmentMode.AsChildKeepWorldPose);
+                Add(merge.transform, merge.mergeTargetObject.transform, BoneProxyAttachmentMode.AsChildKeepWorldPose, isMerge: true);
                 var mapping = merge.GetBonesMapping();
                 if (mapping == null) continue;
-                foreach (var pair in mapping) Add(pair.Item2, pair.Item1, BoneProxyAttachmentMode.AsChildKeepWorldPose);
+                foreach (var pair in mapping) Add(pair.Item2, pair.Item1, BoneProxyAttachmentMode.AsChildKeepWorldPose, isMerge: true);
             }
             foreach (var proxy in avatar.GetComponentsInChildren<ModularAvatarBoneProxy>(true))
                 Add(proxy.transform, proxy.target, proxy.attachmentMode, proxy.matchScale);
             return new System.Collections.ObjectModel.ReadOnlyDictionary<Transform, AvatarBoneBinding>(bindings);
         }
 
-        public static Matrix4x4 GetBoneWorldMatrix(Transform source,
+        public static Matrix4x4 GetWorldMatrix(Transform source,
             IReadOnlyDictionary<Transform, AvatarBoneBinding> bindings,
             IReadOnlyDictionary<Transform, Quaternion> rotations,
             IReadOnlyDictionary<Transform, Vector3> scales,

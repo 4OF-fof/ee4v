@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ee4v.Core.EditorIntegration;
-using Ee4v.Core.Preview;
+using Ee4v.Core.AvatarEvaluation;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;

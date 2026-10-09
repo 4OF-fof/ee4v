@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using Ee4v.AssetManager.Infrastructure;
 using Ee4v.Core.EditorIntegration;
-using Ee4v.Core.Preview;
+using Ee4v.Core.AvatarEvaluation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;

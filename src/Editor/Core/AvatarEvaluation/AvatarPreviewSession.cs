@@ -56,7 +56,7 @@ namespace Ee4v.Core.AvatarEvaluation
             }
         }
 
-        private void Disconnect()
+        internal void Disconnect()
         {
             _session?.Dispose();
             _session = null;
