@@ -36,10 +36,8 @@ namespace Ee4v.AvatarInfo
         private static readonly Dictionary<string, Record> Results = Load(ResultsKey)
             .ToDictionary(record => record.Key, StringComparer.Ordinal);
         private static List<Record> _pending = Load(PendingKey);
-        private static readonly List<(Func<GameObject> Avatar, Func<bool> Successful, Record Source,
-            AvatarInfoParameterSource[] ParameterSources)> Built =
-            new List<(Func<GameObject>, Func<bool>, Record, AvatarInfoParameterSource[])>();
-        private static bool _enteredPlayMode = EditorApplication.isPlaying;
+        internal static Action<GameObject, Record> BakeAvatar;
+        public static bool IsBaking { get; private set; }
 
         public static event Action Changed;
 
@@ -74,43 +72,62 @@ namespace Ee4v.AvatarInfo
             return matches.Length == 1 ? matches[0] : null;
         }
 
-        internal static Record FindBuildSource(GameObject avatar)
+        public static bool CanBake(GameObject avatar)
         {
-            if (!EditorApplication.isPlayingOrWillChangePlaymode || _pending.Count == 0)
-            {
-                return null;
-            }
-            var scene = GetSceneKey(avatar);
-            var hierarchy = GetHierarchy(avatar);
-            var candidates = _pending.Where(record => record.Scene == scene).ToArray();
-            var exact = candidates.Where(record => record.Hierarchy == hierarchy).ToArray();
-            var source = exact.Length == 1 ? exact[0] : null;
-            if (source == null)
-            {
-                var names = candidates.Where(record => record.Name == NormalizeName(avatar.name)).ToArray();
-                if (names.Length == 1) { source = names[0]; }
-            }
-            return source;
+            return avatar != null && !EditorApplication.isPlayingOrWillChangePlaymode && !IsBaking &&
+                BakeAvatar != null && AvatarInfoSdk.Provider != null;
         }
 
-        internal static void RememberBuild(Record source, Func<GameObject> avatar, Func<bool> successful,
+        public static void Bake(GameObject avatar)
+        {
+            if (!CanBake(avatar)) { return; }
+            var record = new Record
+            {
+                Key = GetKey(avatar), Scene = GetSceneKey(avatar), Hierarchy = GetHierarchy(avatar),
+                Name = NormalizeName(avatar.name), AaoAttached = AvatarInfoAnalysis.HasAaoComponents(avatar)
+            };
+            IsBaking = true;
+            try
+            {
+                Changed?.Invoke();
+                BakeAvatar(avatar, record);
+                Results[record.Key] = record;
+            }
+            catch (Exception exception)
+            {
+                if (Results.TryGetValue(record.Key, out var previous)) { record = previous; }
+                record.Error = exception.Message;
+                Results[record.Key] = record;
+            }
+            finally
+            {
+                IsBaking = false;
+                Save(ResultsKey, Results.Values);
+                Changed?.Invoke();
+            }
+        }
+
+        internal static void Capture(GameObject avatar, Record record,
             AvatarInfoParameterSource[] parameterSources)
         {
-            if (source == null) { return; }
-            Built.Add((avatar, successful, source, parameterSources));
-            if (_enteredPlayMode)
-            {
-                EditorApplication.delayCall -= CaptureBuiltAvatars;
-                EditorApplication.delayCall += CaptureBuiltAvatars;
-            }
+            if (!AvatarInfoAnalysis.TryReadPerformance(avatar, false,
+                    out var desktopRating, out var desktopMetrics, out var error) ||
+                !AvatarInfoAnalysis.TryReadPerformance(avatar, true,
+                    out var mobileRating, out var mobileMetrics, out error))
+                throw new InvalidOperationException(error);
+            record.Desktop = new AvatarInfoAnalysis.PerformanceReport
+                { Rating = desktopRating, Metrics = desktopMetrics };
+            record.Mobile = new AvatarInfoAnalysis.PerformanceReport
+                { Rating = mobileRating, Metrics = mobileMetrics };
+            record.ParameterMemory = AvatarInfoSdk.Provider.ReadParameterMemory(avatar);
+            record.ParameterMemory?.SetItemUsage(parameterSources, false);
+            record.CapturedAt = DateTime.Now;
         }
 
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             if (state == PlayModeStateChange.ExitingEditMode)
             {
-                _enteredPlayMode = false;
-                Built.Clear();
                 _pending = Resources.FindObjectsOfTypeAll<GameObject>()
                     .Where(avatar => !EditorUtility.IsPersistent(avatar) && avatar.scene.IsValid() &&
                         avatar.scene.isLoaded && !EditorSceneManager.IsPreviewScene(avatar.scene) &&
@@ -119,23 +136,9 @@ namespace Ee4v.AvatarInfo
                     .Select(avatar => new Record
                     {
                         Key = GetKey(avatar), Scene = GetSceneKey(avatar), Hierarchy = GetHierarchy(avatar),
-                        Name = NormalizeName(avatar.name),
-                        AaoAttached = AvatarInfoAnalysis.HasAaoComponents(avatar)
+                        Name = NormalizeName(avatar.name)
                     }).ToList();
-                foreach (var record in _pending) { Results[record.Key] = record; }
                 Save(PendingKey, _pending);
-                Save(ResultsKey, Results.Values);
-            }
-            else if (state == PlayModeStateChange.EnteredPlayMode)
-            {
-                _enteredPlayMode = true;
-                CaptureBuiltAvatars();
-            }
-            else if (state == PlayModeStateChange.ExitingPlayMode)
-            {
-                _enteredPlayMode = false;
-                Built.Clear();
-                EditorApplication.delayCall -= CaptureBuiltAvatars;
             }
             else if (state == PlayModeStateChange.EnteredEditMode)
             {
@@ -143,36 +146,6 @@ namespace Ee4v.AvatarInfo
                 SessionState.EraseString(PendingKey);
                 Changed?.Invoke();
             }
-        }
-
-        private static void CaptureBuiltAvatars()
-        {
-            if (!_enteredPlayMode) { return; }
-            foreach (var build in Built)
-            {
-                var record = build.Source;
-                var avatar = build.Avatar();
-                if (avatar == null || !build.Successful()) { continue; }
-                if (AvatarInfoAnalysis.TryReadPerformance(avatar, false,
-                        out var desktopRating, out var desktopMetrics, out var error) &&
-                    AvatarInfoAnalysis.TryReadPerformance(avatar, true,
-                        out var mobileRating, out var mobileMetrics, out error))
-                {
-                    record.Desktop = new AvatarInfoAnalysis.PerformanceReport
-                        { Rating = desktopRating, Metrics = desktopMetrics };
-                    record.Mobile = new AvatarInfoAnalysis.PerformanceReport
-                        { Rating = mobileRating, Metrics = mobileMetrics };
-                    record.CapturedAt = DateTime.Now;
-                    record.ParameterMemory = AvatarInfoSdk.Provider?.ReadParameterMemory(avatar);
-                    record.ParameterMemory?.SetItemUsage(build.ParameterSources, false);
-                    record.Error = null;
-                }
-                else { record.Error = error; }
-                Results[record.Key] = record;
-            }
-            Built.Clear();
-            Save(ResultsKey, Results.Values);
-            Changed?.Invoke();
         }
 
         internal static string GetKey(GameObject avatar)

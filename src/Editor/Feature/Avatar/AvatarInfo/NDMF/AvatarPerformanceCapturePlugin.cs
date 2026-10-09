@@ -1,8 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using nadena.dev.ndmf;
+using nadena.dev.ndmf.platform;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [assembly: ExportsPlugin(typeof(Ee4v.AvatarInfo.AvatarPerformanceCapturePlugin))]
 
@@ -12,10 +16,11 @@ namespace Ee4v.AvatarInfo
     {
         public override string QualifiedName => "dev.4of.ee4v.avatar-performance-capture";
         public override string DisplayName => "ee4v Avatar Performance Capture";
+        private static GameObject _measurementAvatar;
 
         private sealed class CaptureState
         {
-            internal AvatarPlayModePerformanceCache.Record Source;
+            internal bool Measuring;
             internal readonly Dictionary<string, AvatarInfoParameterSource> Parameters =
                 new Dictionary<string, AvatarInfoParameterSource>();
             internal readonly Dictionary<GameObject, (string Name, string Path)> Items =
@@ -26,6 +31,46 @@ namespace Ee4v.AvatarInfo
         private static void RegisterParameterSources()
         {
             AvatarInfoSdk.ReadParameterSources = avatar => ReadSources(avatar, ParameterInfo.ForUI);
+            AvatarPlayModePerformanceCache.BakeAvatar = Bake;
+        }
+
+        private static void Bake(GameObject source, AvatarPlayModePerformanceCache.Record record)
+        {
+            var scene = EditorSceneManager.NewPreviewScene();
+            var assetRoot = "Assets/ee4v_Performance_" + Guid.NewGuid().ToString("N");
+            GameObject avatar = null;
+            try
+            {
+                avatar = UnityEngine.Object.Instantiate(source);
+                SceneManager.MoveGameObjectToScene(avatar, scene);
+                avatar.name = source.name;
+                if (PrefabUtility.IsPartOfPrefabInstance(avatar))
+                    PrefabUtility.UnpackPrefabInstance(avatar, PrefabUnpackMode.Completely,
+                        InteractionMode.AutomatedAction);
+                _measurementAvatar = avatar;
+                using (new OverrideTemporaryDirectoryScope(assetRoot))
+                {
+                    var context = AvatarProcessor.ProcessAvatar(avatar,
+                        PlatformRegistry.GetPrimaryPlatformForAvatar(avatar));
+                    if (!context.Successful)
+                        throw new InvalidOperationException("NDMF bake failed. Check the NDMF error report.");
+                    AvatarPlayModePerformanceCache.Capture(context.AvatarRootObject, record,
+                        context.GetState<CaptureState>().Parameters.Values.ToArray());
+                }
+            }
+            finally
+            {
+                _measurementAvatar = null;
+                try
+                {
+                    EditorSceneManager.ClosePreviewScene(scene);
+                }
+                finally
+                {
+                    if (AssetDatabase.IsValidFolder(assetRoot) && !AssetDatabase.DeleteAsset(assetRoot))
+                        throw new InvalidOperationException("Could not remove measurement assets: " + assetRoot);
+                }
+            }
         }
 
         private static AvatarInfoParameterSource[] ReadSources(GameObject avatar, ParameterInfo info)
@@ -55,13 +100,14 @@ namespace Ee4v.AvatarInfo
 
         protected override void Configure()
         {
-            InPhase(BuildPhase.FirstChance).Run("Remember play mode avatar", context =>
-                context.GetState<CaptureState>().Source = AvatarPlayModePerformanceCache.FindBuildSource(context.AvatarRootObject));
+            InPhase(BuildPhase.FirstChance).Run("Remember measurement avatar", context =>
+                context.GetState<CaptureState>().Measuring = _measurementAvatar != null &&
+                    context.AvatarRootObject == _measurementAvatar);
             InPhase(BuildPhase.Transforming).BeforePlugin("nadena.dev.modular-avatar")
                 .Run("Remember parameter items", context =>
                 {
                     var state = context.GetState<CaptureState>();
-                    if (state.Source == null) return;
+                    if (!state.Measuring) return;
                     foreach (Transform item in context.AvatarRootTransform)
                         state.Items[item.gameObject] = (item.name, item.name + " [" + item.GetSiblingIndex() + "]");
                     foreach (var parameter in ReadSources(context.AvatarRootObject, ParameterInfo.ForContext(context)))
@@ -72,7 +118,7 @@ namespace Ee4v.AvatarInfo
                 .Run("Remember generated menu parameters", context =>
                 {
                     var state = context.GetState<CaptureState>();
-                    if (state.Source == null) return;
+                    if (!state.Measuring) return;
                     foreach (var item in state.Items)
                     {
                         if (item.Key == null) continue;
@@ -85,11 +131,6 @@ namespace Ee4v.AvatarInfo
                         }
                     }
                 });
-            InPhase(BuildPhase.Optimizing).AfterPlugin("com.anatawa12.avatar-optimizer")
-                .Run("Remember play mode build", context =>
-                    AvatarPlayModePerformanceCache.RememberBuild(context.GetState<CaptureState>().Source,
-                        () => context.AvatarRootObject, () => context.Successful,
-                        context.GetState<CaptureState>().Parameters.Values.ToArray()));
         }
     }
 }

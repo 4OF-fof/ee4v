@@ -44,7 +44,11 @@ namespace Ee4v.AvatarInfo
                     EditorUtility.OpenPropertyEditor(target);
                 }, AvatarInfoEditing.CreateOptions(Context),
                 AvatarInfoSdk.Provider?.ReadParameterMemory(avatar),
-                AvatarBuildSizeCache.Get(avatar, _mobile)));
+                AvatarBuildSizeCache.Get(avatar, _mobile),
+                () =>
+                {
+                    if (Context.Edits.FlushChanges()) AvatarPlayModePerformanceCache.Bake(avatar);
+                }, AvatarPlayModePerformanceCache.CanBake(avatar)));
         }
 
         private void RefreshPerformance()

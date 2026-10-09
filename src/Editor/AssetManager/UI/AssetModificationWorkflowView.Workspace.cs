@@ -792,7 +792,12 @@ namespace Ee4v.AssetManager.UI
                     ShowCategory(WorkflowCategory.ShapeParts, false);
                 }, AvatarInfoEditing.CreateOptions(_avatarContext),
                 AvatarInfoSdk.Provider?.ReadParameterMemory(_avatarContext.Root),
-                AvatarBuildSizeCache.Get(_avatarContext.Root, _overviewMobile));
+                AvatarBuildSizeCache.Get(_avatarContext.Root, _overviewMobile),
+                () =>
+                {
+                    if (_avatarContext.Edits.FlushChanges())
+                        AvatarPlayModePerformanceCache.Bake(_avatarContext.Root);
+                }, AvatarPlayModePerformanceCache.CanBake(_avatarContext.Root));
         }
     }
 }

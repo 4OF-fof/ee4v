@@ -13,7 +13,7 @@ namespace Ee4v.AvatarInfo
         public IReadOnlyList<UiStory> GetStories()
         {
             return new[] { new UiStory("avatar-info", "Domain/AvatarInfo/Displays", "AvatarInfoView",
-                "名前編集、サンプル一覧からのID選択、装着警告、パラメーター使用量の色分けバーと凡例、ビルド結果、最下部の取得日時を確認できます。SDKへの通信は行いません。",
+                "名前編集、サンプル一覧からのID選択、装着警告、パラメーター使用量の色分けバーと凡例、手動ベイクボタン、測定結果、最下部の取得日時を確認できます。SDKへの通信は行いません。",
                 "AvatarInfoの詳細表示です。", BuildOverview,
                 usageLocations: new[] { "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",
                     "Editor/Feature/Avatar/AvatarInfo/UI/AvatarInfoWindow.cs" },
@@ -57,7 +57,7 @@ namespace Ee4v.AvatarInfo
                     {
                         Mobile = mobile, DownloadBytes = (mobile ? 12 : 38) * 1024L * 1024,
                         UncompressedBytes = (mobile ? 35 : 110) * 1024L * 1024, CapturedAt = DateTime.Now
-                    } : null));
+                    } : null, () => { available = true; Render(); }, true));
             }
             parent.Add(new UiButton("ビルド結果の有無を切り替え", () =>
             {

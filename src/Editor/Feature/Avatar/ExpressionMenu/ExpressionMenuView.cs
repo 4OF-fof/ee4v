@@ -45,6 +45,7 @@ namespace Ee4v.ExpressionMenu
         private bool _openAddedSubmenu;
         private VisualElement _menuHost;
         private ConfirmationOverlay _operationOverlay;
+        private Action _closeCopyOverlay;
         private static string T(string key) => I18N.Get("expressionMenu." + key);
 
         public ExpressionMenuView(AvatarEditingContext context, bool showsEditSource = false)
@@ -73,6 +74,7 @@ namespace Ee4v.ExpressionMenu
         {
             if (evt.target != this) return;
             _operationOverlay?.Close();
+            _closeCopyOverlay?.Invoke();
             InvalidateMenu();
             if (!_listening) return;
             _listening = false;
@@ -530,7 +532,8 @@ namespace Ee4v.ExpressionMenu
 
         private bool CanCreateEditableCopy(VRCExpressionsMenu menu)
         {
-            if (menu == null || !_context.Edits.CanEditPrefab() || EditorApplication.isPlayingOrWillChangePlaymode) return false;
+            if (menu == null || !_context.Edits.CanEditPrefab() ||
+                EditorApplication.isPlayingOrWillChangePlaymode) return false;
             if (!_copyableMenus.TryGetValue(menu, out var canCopy))
             {
                 if (_editableCopyCheck == null) _editableCopyCheck = ExpressionMenuModel.CreateEditableCopyCheck(_context);
@@ -543,14 +546,57 @@ namespace Ee4v.ExpressionMenu
         private void AddEditableCopyAction(VisualElement host, VRCExpressionsMenu menu, Action copied = null)
         {
             if (!CanCreateEditableCopy(menu)) return;
-            host.Add(new UiButton(T("makeEditable"), () => Run(() =>
+            host.Add(new UiButton(T("makeEditable"), () => CreateEditableCopy(menu, copied),
+                tooltip: T("makeEditableHint")) { name = "expressionMenuMakeEditable" });
+        }
+
+        private void CreateEditableCopy(VRCExpressionsMenu menu, Action copied)
+        {
+            if (_closeCopyOverlay != null || !CanCreateEditableCopy(menu) || panel == null) return;
+            var avatar = _context.Root;
+            var host = (VisualElement)this;
+            while (host.parent != null && host.parent != panel.visualTree) host = host.parent;
+            var previousFocus = panel.focusController.focusedElement as VisualElement;
+            var background = host.Children().Select(element => (Element: element, Enabled: element.enabledSelf)).ToArray();
+            var loading = new VisualElement { name = "expressionMenuCopyProcessing", focusable = true, tabIndex = -1 };
+            UiComposition.Prepare(loading, "Editor/Feature/Avatar/ExpressionMenu/expression-menu.uss");
+            loading.AddToClassList("ee4v-expression-menu__processing");
+            loading.Add(new StatusOverlay(new StatusOverlayState(true, T("copyingMenu"))));
+            loading.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
+            loading.RegisterCallback<WheelEvent>(evt => evt.StopPropagation());
+            loading.RegisterCallback<KeyDownEvent>(evt => { evt.PreventDefault(); evt.StopPropagation(); });
+            IVisualElementScheduledItem pending = null;
+            var closed = false;
+            void Close()
             {
-                var replacements = ExpressionMenuModel.CreateEditableCopy(_context, menu);
-                if (replacements == null) return;
-                _replacedMenus = replacements;
-                copied?.Invoke();
-                NotifyChanged();
-            }), tooltip: T("makeEditableHint")) { name = "expressionMenuMakeEditable" });
+                if (closed) return;
+                closed = true;
+                pending?.Pause();
+                foreach (var item in background) item.Element.SetEnabled(item.Enabled);
+                loading.RemoveFromHierarchy();
+                _closeCopyOverlay = null;
+                if (previousFocus?.panel != null && previousFocus.enabledInHierarchy) previousFocus.Focus();
+            }
+            _closeCopyOverlay = Close;
+            foreach (var item in background) item.Element.SetEnabled(false);
+            host.Add(loading);
+            loading.Focus();
+            pending = loading.schedule.Execute(() =>
+            {
+                try
+                {
+                    if (panel == null || _context.Root != avatar) return;
+                    Run(() =>
+                    {
+                        var replacements = ExpressionMenuModel.CreateEditableCopy(_context, menu);
+                        if (replacements == null) return;
+                        _replacedMenus = replacements;
+                        copied?.Invoke();
+                        NotifyChanged();
+                    });
+                }
+                finally { Close(); }
+            }).StartingIn(100);
         }
 
         private ConfirmationOverlay OpenOperationOverlay(MessagePanelState state)

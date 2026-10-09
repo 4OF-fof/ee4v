@@ -53,7 +53,8 @@ namespace Ee4v.AvatarInfo
             Action<GameObject> openAttachmentSettings,
             AvatarInfoEditOptions editing = null,
             AvatarInfoParameterMemory parameterMemory = null,
-            AvatarBuildSizeCache.Record buildSize = null)
+            AvatarBuildSizeCache.Record buildSize = null,
+            Action bakePerformance = null, bool canBakePerformance = false)
         {
             UiComposition.Prepare(this, "Editor/Feature/Avatar/AvatarInfo/UI/avatar-info.uss");
             _mobile = mobile;
@@ -90,14 +91,26 @@ namespace Ee4v.AvatarInfo
                 content.Add(warning);
             }
 
-            content.Add(UiTextFactory.Create(I18N.Get("workflow.overview.performance"),
-                UiClassNames.SectionTitle,
-                "ee4v-avatar-info__overview-section-title"));
+            var performanceHeader = new VisualElement();
+            performanceHeader.AddToClassList("ee4v-avatar-info__performance-header");
+            performanceHeader.AddToClassList("ee4v-avatar-info__overview-section-title");
+            performanceHeader.Add(UiTextFactory.Create(I18N.Get("workflow.overview.performance"),
+                UiClassNames.SectionTitle));
+            if (bakePerformance != null)
+            {
+                var bake = new UiButton(I18N.Get(AvatarPlayModePerformanceCache.IsBaking
+                    ? "workflow.overview.bakingPerformance" : "workflow.overview.bakePerformance"),
+                    bakePerformance);
+                bake.name = "overviewBakePerformance";
+                bake.tooltip = I18N.Get("workflow.overview.bakeTooltip");
+                bake.SetEnabled(canBakePerformance);
+                performanceHeader.Add(bake);
+            }
+            content.Add(performanceHeader);
             var report = mobile ? record?.Mobile : record?.Desktop;
             var metrics = report?.Metrics ?? Array.Empty<AvatarInfoAnalysis.PerformanceMetric>();
             var help = report == null && record?.Error == null
-                ? I18N.Get(record == null ? "workflow.overview.playModeRequired"
-                    : "workflow.overview.playModeNotCaptured") : null;
+                ? I18N.Get("workflow.overview.bakeRequired") : null;
             content.Add(BuildPerformanceSummary(report?.Rating, metrics, record, help));
             var memory = record?.ParameterMemory ?? parameterMemory;
             if (memory != null)
@@ -112,14 +125,11 @@ namespace Ee4v.AvatarInfo
                 information.Add(CreateInformationCard("workflow.overview.uncompressedSize", FormatSize(buildSize.UncompressedBytes),
                     "overviewUncompressedSize", true));
             if (information.childCount > 0) content.Add(information);
-            if (report == null)
-            {
-                if (record?.Error != null)
-                    content.Add(new MessagePanel(new MessagePanelState(string.Empty,
-                        string.Format(I18N.Get("workflow.overview.performanceFailed"), record.Error),
-                        MessageSeverity.Error)));
-            }
-            else
+            if (record?.Error != null)
+                content.Add(new MessagePanel(new MessagePanelState(string.Empty,
+                    string.Format(I18N.Get("workflow.overview.performanceFailed"), record.Error),
+                    MessageSeverity.Error)));
+            if (report != null)
             {
                 foreach (var group in new[] { "rendering", "dynamics", "effects" })
                     AddPerformanceGroup(content, group, metrics.Where(metric =>

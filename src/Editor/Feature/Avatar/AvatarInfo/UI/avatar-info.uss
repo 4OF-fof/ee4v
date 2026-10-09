@@ -28,6 +28,17 @@
     margin-bottom: var(--ee4v-space-md);
 }
 
+.ee4v-avatar-info__performance-header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ee4v-avatar-info__performance-header > .ee4v-ui-button {
+    margin-left: var(--ee4v-space-md);
+}
+
 .ee4v-avatar-info__overview .ee4v-ui-form-input__label {
     width: 100px;
 }
