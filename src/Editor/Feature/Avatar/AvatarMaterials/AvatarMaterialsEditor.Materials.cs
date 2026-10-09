@@ -62,10 +62,12 @@ namespace Ee4v.AvatarMaterials
             var header = new ItemRow(new ItemRowState(
                 material.name,
                 FormatMaterialUsageSummary(entry),
-                icon: CreateMaterialIcon(material)));
+                icon: CreateMaterialIcon(material),
+                layout: ItemRowLayout.Stacked));
             header.AddToClassList(
                 "ee4v-modification-workflow__material-editor-header");
             header.tooltip = FormatMaterialUsageTooltip(entry);
+            header.DescriptionText.SetWhiteSpace(WhiteSpace.Normal);
             var materialField = UiTextFactory.CreateObjectField(
                 string.Empty,
                 "ee4v-modification-workflow__material-slot");
@@ -93,6 +95,7 @@ namespace Ee4v.AvatarMaterials
             surface.Add(header);
             var showOnly = UiTextFactory.CreateToggle(
                 I18N.Get("workflow.appearance.showOnlySelectedMaterial"),
+                UiClassNames.FormLabel,
                 "ee4v-modification-workflow__material-show-only");
             showOnly.SetValueWithoutNotify(_showOnlySelectedMaterial);
             showOnly.RegisterValueChangedCallback(evt =>

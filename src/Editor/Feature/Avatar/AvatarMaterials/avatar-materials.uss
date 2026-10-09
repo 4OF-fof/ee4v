@@ -88,8 +88,44 @@
     border-bottom-color: var(--ee4v-color-border-default);
 }
 
-.ee4v-modification-workflow__material-show-only {
+.ee4v-modification-workflow__material-editor-header > .ee4v-ui-item-row__text {
+    flex-shrink: 1;
+}
+
+.ee4v-modification-workflow__material-editor-header .ee4v-ui-item-row__description {
+    flex-shrink: 1;
+}
+
+.ee4v-modification-workflow__material-editor-header .ee4v-modification-workflow__material-slot {
+    align-self: stretch;
+    flex-shrink: 1;
+}
+
+.ee4v-modification-workflow__material-show-only.ee4v-ui-standard-input {
+    min-width: 0;
+    min-height: 34px;
+    flex-direction: row-reverse;
+    align-items: center;
     margin: var(--ee4v-space-md);
+    padding: var(--ee4v-space-md);
+    border-radius: var(--ee4v-radius-md);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-modification-workflow__material-show-only > .unity-base-field__label {
+    min-width: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-left: var(--ee4v-space-md);
+    margin-right: 0;
+    white-space: normal;
+}
+
+.ee4v-modification-workflow__material-show-only.ee4v-ui-standard-input > .unity-toggle__input {
+    flex-grow: 0;
+    flex-shrink: 0;
+    width: var(--ee4v-size-16);
+    min-width: var(--ee4v-size-16);
 }
 
 .ee4v-modification-workflow__material-editor {
