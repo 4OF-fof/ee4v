@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
+using Ee4v.Core.Ndmf;
 using Ee4v.UI;
 using Ee4v.AvatarEditing;
 using Ee4v.Core.Settings;
 using nadena.dev.modular_avatar.core;
-using nadena.dev.modular_avatar.core.menu;
 using UnityEditor;
 using UnityEngine;
-using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
 using Object = UnityEngine.Object;
 
@@ -38,113 +36,26 @@ namespace Ee4v.ExpressionMenu
     {
         internal static MenuPage Read(GameObject avatar, out List<MenuPage> sources)
         {
-            var descriptor = avatar.GetComponent<VRCAvatarDescriptor>();
-            if (descriptor == null) throw new InvalidOperationException("VRCAvatarDescriptor is required.");
-            var assets = new Dictionary<VRCExpressionsMenu, MenuPage>();
-            MenuPage ReadAsset(VRCExpressionsMenu asset)
+            var effective = NdmfIntegration.GetExpressionMenu(avatar, out var origins, ExpressionMenuTemplateModel.IsDraft);
+            var pages = new Dictionary<NdmfMenuPage, MenuPage>();
+            MenuPage Adapt(NdmfMenuPage source)
             {
-                if (asset == null) return null;
-                if (assets.TryGetValue(asset, out var found)) return found;
-                var page = new MenuPage { Name = asset.name, Asset = asset };
-                assets.Add(asset, page);
-                for (var i = 0; i < asset.controls.Count; i++)
-                {
-                    var control = asset.controls[i];
-                    if (control == null) continue;
+                if (source == null) return null;
+                if (pages.TryGetValue(source, out var known)) return known;
+                var page = new MenuPage { Name = source.Name, Asset = source.Asset, ChildRoot = source.ChildRoot };
+                pages.Add(source, page);
+                foreach (var entry in source.Controls)
                     page.Entries.Add(new MenuEntry
                     {
-                        Control = control, SourceControl = control, Owner = asset, Index = i,
-                        Submenu = ReadAsset(control.subMenu)
+                        Control = entry.Control, SourceControl = entry.SourceControl, Owner = entry.Owner,
+                        Index = entry.Index, Submenu = Adapt(entry.Submenu)
                     });
-                }
                 return page;
             }
-            ReadAsset(descriptor.expressionsMenu);
-            foreach (var installer in avatar.GetComponentsInChildren<ModularAvatarMenuInstaller>(true))
-            {
-                ReadAsset(installer.menuToAppend);
-                ReadAsset(installer.installTargetMenu);
-            }
-            var candidates = new List<MenuEntry>();
-            var itemPages = new List<MenuPage>();
-            foreach (var item in avatar.GetComponentsInChildren<ModularAvatarMenuItem>(true))
-            {
-                if (ExpressionMenuTemplateModel.IsDraft(item)) continue;
-                var control = item.PortableControl.CloneToVRCSDK();
-                var axes = control.type == VRCExpressionsMenu.Control.ControlType.RadialPuppet ? 1 :
-                    control.type == VRCExpressionsMenu.Control.ControlType.TwoAxisPuppet ? 2 :
-                    control.type == VRCExpressionsMenu.Control.ControlType.FourAxisPuppet ? 4 : 0;
-                control.subParameters = (control.subParameters ?? Array.Empty<VRCExpressionsMenu.Control.Parameter>())
-                    .Take(axes).ToArray();
-                var entry = new MenuEntry { Control = control, SourceControl = item.Control, Owner = item };
-                entry.Submenu = ReadAsset(control.subMenu);
-                candidates.Add(entry);
-                var page = new MenuPage { Name = "MA / " + item.name };
-                page.Entries.Add(entry);
-                itemPages.Add(page);
-            }
-            candidates.AddRange(assets.Values.SelectMany(page => page.Entries));
-            sources = assets.Values.Concat(itemPages).ToList();
-
-            // MA has no supported public editor resolver. Isolate version-sensitive access.
-            var resolver = AppDomain.CurrentDomain.GetAssemblies()
-                .Select(assembly => assembly.GetType("nadena.dev.modular_avatar.core.editor.menu.VirtualMenu", false))
-                .FirstOrDefault(type => type != null);
-            var forAvatar = resolver?.GetMethod("ForAvatar", BindingFlags.Static | BindingFlags.NonPublic);
-            if (forAvatar == null) throw new InvalidOperationException("The installed Modular Avatar menu resolver is unavailable.");
-            var args = new object[forAvatar.GetParameters().Length];
-            args[0] = descriptor;
-            var resolved = forAvatar.Invoke(null, args);
-            var root = resolver.GetProperty("RootMenuNode")?.GetValue(resolved) as VirtualMenuNode;
-            if (root == null) throw new InvalidOperationException("Modular Avatar did not resolve a root menu.");
-            var pages = new Dictionary<VirtualMenuNode, MenuPage>();
-            MenuPage ReadNode(VirtualMenuNode node, string name)
-            {
-                if (node == null) return null;
-                if (pages.TryGetValue(node, out var known)) return known;
-                var key = node.NodeKey;
-                var origin = key?.GetType().GetField("Item1")?.GetValue(key) ?? key;
-                var asset = origin as VRCExpressionsMenu;
-                var childRoot = origin?.GetType().GetField("root", BindingFlags.Instance | BindingFlags.NonPublic)
-                    ?.GetValue(origin) as GameObject;
-                var page = new MenuPage { Name = name, Asset = asset, ChildRoot = childRoot };
-                pages.Add(node, page);
-                foreach (var control in node.Controls)
-                {
-                    var submenu = ReadNode(control.SubmenuNode, control.name);
-                    var matches = candidates.Where(candidate => SameControl(candidate.Control, control) &&
-                        (control.type != VRCExpressionsMenu.Control.ControlType.SubMenu ||
-                         (candidate.Owner is ModularAvatarMenuItem item && item.MenuSource == SubmenuSource.Children ?
-                             submenu?.ChildRoot == (item.menuSource_otherObjectChildren != null ?
-                                 item.menuSource_otherObjectChildren : item.gameObject) :
-                             candidate.Control.subMenu == submenu?.Asset))).ToArray();
-                    var source = matches.Length == 1 ? matches[0] : null;
-                    page.Entries.Add(new MenuEntry
-                    {
-                        Control = control, Submenu = submenu,
-                        Owner = source?.Owner, SourceControl = source?.SourceControl, Index = source?.Index ?? -1
-                    });
-                }
-                return page;
-            }
-            var effective = ReadNode(root, "Expression Menu");
-            foreach (var itemPage in itemPages)
-            {
-                var entry = itemPage.Entries[0];
-                if (!(entry.Owner is ModularAvatarMenuItem item) || item.MenuSource != SubmenuSource.Children) continue;
-                var childRoot = item.menuSource_otherObjectChildren != null ? item.menuSource_otherObjectChildren : item.gameObject;
-                entry.Submenu = pages.Values.FirstOrDefault(page => page.ChildRoot == childRoot);
-            }
-            return effective;
+            var root = Adapt(effective);
+            sources = origins.Select(Adapt).ToList();
+            return root;
         }
-
-        private static bool SameControl(VRCExpressionsMenu.Control a, VRCExpressionsMenu.Control b) =>
-            a.name == b.name && a.type == b.type && a.icon == b.icon && a.value == b.value &&
-            (a.parameter?.name ?? "") == (b.parameter?.name ?? "") &&
-            (a.subParameters ?? Array.Empty<VRCExpressionsMenu.Control.Parameter>()).Select(p => p?.name)
-                .SequenceEqual((b.subParameters ?? Array.Empty<VRCExpressionsMenu.Control.Parameter>()).Select(p => p?.name)) &&
-            (a.labels ?? Array.Empty<VRCExpressionsMenu.Control.Label>()).Select(l => (l.name, l.icon))
-                .SequenceEqual((b.labels ?? Array.Empty<VRCExpressionsMenu.Control.Label>()).Select(l => (l.name, l.icon)));
 
         internal static Texture2D DisplayIcon(Texture2D icon) =>
             icon != null ? icon : UiBuiltinIconResolver.LoadTexture(UiBuiltinIcon.GameObject) as Texture2D;

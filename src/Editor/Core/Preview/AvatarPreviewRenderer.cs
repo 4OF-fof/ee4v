@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using Ee4v.Core.Ndmf;
 using System.Linq;
 using nadena.dev.ndmf.preview;
 using UnityEditor;
@@ -32,8 +32,7 @@ namespace Ee4v.Core.Preview
         private readonly Dictionary<(SkinnedMeshRenderer, int), float> _temporaryShapes = new Dictionary<(SkinnedMeshRenderer, int), float>();
         private readonly Dictionary<SkinnedMeshRenderer, Dictionary<string, float>> _shapes =
             new Dictionary<SkinnedMeshRenderer, Dictionary<string, float>>();
-        private PreviewSession _parentSession;
-        private PreviewSession _session;
+        private readonly NdmfPreviewSession _session = new NdmfPreviewSession();
         private Renderer[] _sceneRenderers = Array.Empty<Renderer>();
         private Renderer[] _sourceRenderers = Array.Empty<Renderer>();
         private bool _hierarchyDirty = true;
@@ -95,7 +94,7 @@ namespace Ee4v.Core.Preview
         }
         public Func<Renderer, bool> IsVisible { get; set; }
         public Func<Material, bool> IsMaterialVisible { get; set; }
-        public bool UsesNdmf => !_ownsRoot && _session != null;
+        public bool UsesNdmf => !_ownsRoot && _session.IsConnected;
         public Action<GameObject> SnapshotAnimation { get; set; }
 
         public void RefreshHierarchy()
@@ -207,23 +206,7 @@ namespace Ee4v.Core.Preview
 
         private void EnsureSession()
         {
-            var parent = !EditorApplication.isPlayingOrWillChangePlaymode && !_ownsRoot
-                ? PreviewSession.Current : null;
-            var needsSession = !EditorApplication.isPlayingOrWillChangePlaymode;
-            if (ReferenceEquals(parent, _parentSession) && (_session != null) == needsSession) return;
-            _session?.Dispose();
-            _session = null;
-            _resolved.Clear();
-            _parentSession = parent;
-            if (!needsSession) return;
-            _session = parent != null ? parent.Fork("ee4v Avatar Preview") : new PreviewSession();
-            if (!_ownsRoot)
-            {
-                _session.HiddenRenderers = context => context.GetComponentsByType<Renderer>()
-                    .Where(renderer => renderer != null && !renderer.transform.IsChildOf(Root.transform)).ToImmutableHashSet();
-                _session.AddMutator(new SequencePoint { DebugString = "ee4v preview overrides" }, _filter);
-            }
-            _session.OverrideCamera(Camera);
+            if (_session.Connect(Camera, Root, _filter, !_ownsRoot)) _resolved.Clear();
         }
 
         private void OnHierarchyChanged() => _hierarchyDirty = true;
@@ -385,8 +368,7 @@ namespace Ee4v.Core.Preview
             Camera.onPostRender -= OnPostRender;
             EditorApplication.hierarchyChanged -= OnHierarchyChanged;
             RestoreRenderingStates();
-            _session?.Dispose();
-            PreviewSession.ClearCameraOverride(Camera);
+            _session.Dispose();
             if (_invisibleMaterial != null) Object.DestroyImmediate(_invisibleMaterial);
             if (_ownsRoot && Root != null) Object.DestroyImmediate(Root);
             _utility.Cleanup();

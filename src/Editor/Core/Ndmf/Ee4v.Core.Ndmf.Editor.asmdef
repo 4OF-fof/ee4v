@@ -1,0 +1,7 @@
+{
+  "name": "Ee4v.Core.Ndmf.Editor",
+  "rootNamespace": "Ee4v.Core.Ndmf",
+  "references": ["nadena.dev.ndmf", "nadena.dev.modular-avatar.core"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}
