@@ -21,6 +21,7 @@ namespace Ee4v.Core.AvatarEvaluation
         private readonly Dictionary<Renderer, Renderer> _resolved = new Dictionary<Renderer, Renderer>();
         private readonly Dictionary<Renderer, bool> _renderingStates = new Dictionary<Renderer, bool>();
         private readonly Dictionary<Renderer, Material[]> _materialStates = new Dictionary<Renderer, Material[]>();
+        private readonly Dictionary<Renderer, MaterialPropertyBlock> _temporaryPropertyBlocks = new Dictionary<Renderer, MaterialPropertyBlock>();
         private readonly Dictionary<Transform, Vector3> _scales = new Dictionary<Transform, Vector3>();
         private readonly Dictionary<Transform, Quaternion> _rotations = new Dictionary<Transform, Quaternion>();
         private readonly Dictionary<Transform, Quaternion> _temporaryRotations = new Dictionary<Transform, Quaternion>();
@@ -29,12 +30,13 @@ namespace Ee4v.Core.AvatarEvaluation
         private readonly Dictionary<Transform, Vector3> _temporaryScales = new Dictionary<Transform, Vector3>();
         private readonly Dictionary<GameObject, bool> _temporaryActiveStates = new Dictionary<GameObject, bool>();
         private readonly Dictionary<Renderer, bool> _temporaryEnabledStates = new Dictionary<Renderer, bool>();
+        private readonly Dictionary<Component, bool> _temporaryComponentStates = new Dictionary<Component, bool>();
         private readonly Dictionary<(SkinnedMeshRenderer, int), float> _temporaryShapes = new Dictionary<(SkinnedMeshRenderer, int), float>();
         private readonly Dictionary<SkinnedMeshRenderer, Dictionary<string, float>> _shapes =
             new Dictionary<SkinnedMeshRenderer, Dictionary<string, float>>();
         private readonly AvatarPreviewSession _session = new AvatarPreviewSession();
         private AvatarPreviewAnimation _animation;
-        private Action<GameObject> _snapshotAnimation;
+        private Action<AvatarAnimationFrame> _animationSampler;
         private Renderer[] _sceneRenderers = Array.Empty<Renderer>();
         private Renderer[] _sourceRenderers = Array.Empty<Renderer>();
         private bool _hierarchyDirty = true;
@@ -97,16 +99,6 @@ namespace Ee4v.Core.AvatarEvaluation
         public Func<Renderer, bool> IsVisible { get; set; }
         public Func<Material, bool> IsMaterialVisible { get; set; }
         public bool UsesNdmf => !_ownsRoot && _session.IsConnected;
-        public Action<GameObject> SnapshotAnimation
-        {
-            get => _snapshotAnimation;
-            set
-            {
-                if (value != null && _animation != null)
-                    throw new InvalidOperationException("Clip playback and SnapshotAnimation cannot be used together.");
-                _snapshotAnimation = value;
-            }
-        }
         public AnimationClip Animation => _animation?.Clip;
         public float AnimationTime => _animation?.Time ?? 0f;
 
@@ -116,11 +108,24 @@ namespace Ee4v.Core.AvatarEvaluation
             if (_disposed) throw new ObjectDisposedException(nameof(AvatarPreviewRenderer));
             if (clip != null && EditorApplication.isPlayingOrWillChangePlaymode)
                 throw new InvalidOperationException("Animation preview is available only in Edit Mode.");
-            if (clip != null && SnapshotAnimation != null)
-                throw new InvalidOperationException("Clip playback and SnapshotAnimation cannot be used together.");
             var next = clip == null ? null : new AvatarPreviewAnimation(Root, clip, _poseBindings);
             _animation?.Dispose();
             _animation = next;
+            _animationSampler = null;
+            _session.Disconnect();
+            _resolved.Clear();
+        }
+
+        /// <summary>Composes generic clips and direct pose values on the MA-aware rig before rendering.</summary>
+        public void SetAnimationSampler(Action<AvatarAnimationFrame> sample)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(AvatarPreviewRenderer));
+            if (sample != null && EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Animation preview is available only in Edit Mode.");
+            var next = sample == null ? null : new AvatarPreviewAnimation(Root, null, _poseBindings, sample);
+            _animation?.Dispose();
+            _animation = next;
+            _animationSampler = sample;
             _session.Disconnect();
             _resolved.Clear();
         }
@@ -137,9 +142,11 @@ namespace Ee4v.Core.AvatarEvaluation
         {
             var clip = Animation;
             var time = AnimationTime;
+            var sampler = _animationSampler;
             _sourceRenderers = Root == null ? Array.Empty<Renderer>() : Root.GetComponentsInChildren<Renderer>(true);
             if (!_ownsRoot && Root != null) RefreshPoseBindings();
-            if (clip != null)
+            if (sampler != null) SetAnimationSampler(sampler);
+            else if (clip != null)
             {
                 SetAnimation(clip);
                 SampleAnimation(time);
@@ -219,7 +226,7 @@ namespace Ee4v.Core.AvatarEvaluation
         {
             if (_disposed || Root == null) return null;
             if (EditorApplication.isPlayingOrWillChangePlaymode && _animation != null) SetAnimation(null);
-            _animation?.Sample(AnimationTime, _scales);
+            _animation?.Sample(AnimationTime, _scales, _animationSampler != null ? _rotations : null);
             EnsureSession();
             _includeSlot = includeSlot;
             _utility.BeginPreview(rect, GUIStyle.none);
@@ -234,7 +241,6 @@ namespace Ee4v.Core.AvatarEvaluation
                 Camera.onPostRender -= OnPostRender;
                 Camera.onPostRender += OnPostRender;
                 ApplySnapshotOverrides();
-                if (_ownsRoot && _animation == null) SnapshotAnimation?.Invoke(Root);
                 Camera.Render();
                 var texture = _utility.EndPreview();
                 completed = true;
@@ -285,7 +291,7 @@ namespace Ee4v.Core.AvatarEvaluation
                         source.localRotation = local.rotation;
                         source.localScale = local.lossyScale;
                     }
-                    _animation.ApplySnapshot(_temporaryActiveStates, _temporaryEnabledStates, _materialStates, _temporaryShapes);
+                    _animation.ApplySnapshot(_temporaryActiveStates, _temporaryEnabledStates, _materialStates, _temporaryShapes, _temporaryComponentStates, _temporaryPropertyBlocks);
                 }
                 var poseMatrices = new Dictionary<Transform, Matrix4x4>();
                 var attachments = _animation == null && (_rotations.Count > 0 || _scales.Count > 0)
@@ -402,6 +408,11 @@ namespace Ee4v.Core.AvatarEvaluation
 
         private void RestoreRenderingStates()
         {
+            foreach (var pair in _temporaryPropertyBlocks) if (pair.Key != null) pair.Key.SetPropertyBlock(pair.Value);
+            _temporaryPropertyBlocks.Clear();
+            foreach (var pair in _temporaryComponentStates)
+                if (pair.Key != null) AvatarPreviewAnimation.SetComponentEnabled(pair.Key, pair.Value);
+            _temporaryComponentStates.Clear();
             foreach (var pair in _temporaryEnabledStates) if (pair.Key != null) pair.Key.enabled = pair.Value;
             _temporaryEnabledStates.Clear();
             foreach (var pair in _temporaryActiveStates) if (pair.Key != null) pair.Key.SetActive(pair.Value);
@@ -432,6 +443,7 @@ namespace Ee4v.Core.AvatarEvaluation
             RestoreRenderingStates();
             _animation?.Dispose();
             _animation = null;
+            _animationSampler = null;
             _session.Dispose();
             if (_invisibleMaterial != null) Object.DestroyImmediate(_invisibleMaterial);
             if (_ownsRoot && Root != null) Object.DestroyImmediate(Root);

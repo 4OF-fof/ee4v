@@ -97,7 +97,7 @@ namespace Ee4v.UI
         private bool _cameraAnimationSubscribed;
         private bool _flexibleLayout;
         private readonly bool _isolatedSnapshot;
-        private Action<GameObject> _snapshotAnimation;
+        private Action<AvatarAnimationFrame> _animationSampler;
         private bool _viewToggleVisible = true;
         private bool _fitWholeAvatar = true;
         private BodyPartCategory? _focusedBodyPart;
@@ -212,11 +212,10 @@ namespace Ee4v.UI
 
         public VisualElement FeatureOverlay => _viewport.FeatureOverlay;
 
-        public void SetSnapshotAnimation(Action<GameObject> sample)
+        public void SetAnimationSampler(Action<AvatarAnimationFrame> sample)
         {
-            if (!_isolatedSnapshot) throw new InvalidOperationException("Animation sampling requires an isolated preview.");
-            _snapshotAnimation = sample;
-            if (_utility != null) _utility.SnapshotAnimation = sample;
+            if (_utility != null) _utility.SetAnimationSampler(sample);
+            _animationSampler = sample;
             RequestPreviewRepaint();
         }
 
@@ -768,6 +767,7 @@ namespace Ee4v.UI
         public void Dispose()
         {
             CleanupPreview();
+            _animationSampler = null;
             _viewport.Dispose();
         }
 
@@ -796,7 +796,8 @@ namespace Ee4v.UI
 
             try
             {
-                _utility = new AvatarPreviewRenderer(_prefab, _isolatedSnapshot) { SnapshotAnimation = _snapshotAnimation };
+                _utility = new AvatarPreviewRenderer(_prefab, _isolatedSnapshot);
+                if (_animationSampler != null) _utility.SetAnimationSampler(_animationSampler);
                 _instance = _utility.Root;
                 _utility.IsVisible = renderer => IsInScope(renderer) && !_hiddenPartRenderers.Contains(renderer);
                 _utility.IsMaterialVisible = material => !_hiddenMaterials.Contains(material);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ee4v.AvatarEditing;
+using Ee4v.Core.AvatarEvaluation;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using nadena.dev.modular_avatar.core;
@@ -26,7 +27,7 @@ namespace Ee4v.ExpressionMenu
         internal ExpressionMenuPreview(AvatarEditingContext context, MenuEntry entry, Action back)
         {
             AddToClassList("ee4v-expression-menu__preview-column");
-            _preview = new PrefabScenePreview(isolatedSnapshot: true) { name = "expressionMenuPreview" };
+            _preview = new PrefabScenePreview() { name = "expressionMenuPreview" };
             _preview.AddToClassList("ee4v-expression-menu__preview");
             _preview.SetFlexibleLayout(true);
             _preview.SetFullBodyFraming(false);
@@ -122,7 +123,7 @@ namespace Ee4v.ExpressionMenu
                 }
                 else
                 {
-                    _preview.SetSnapshotAnimation(root => _animation.Sample(root, _values,
+                    _preview.SetAnimationSampler(frame => _animation.Sample(frame, _values,
                         (float)(EditorApplication.timeSinceStartup - _changedAt)));
                     UpdateParameters();
                 }
@@ -138,7 +139,7 @@ namespace Ee4v.ExpressionMenu
             {
                 if (evt.target != this) return;
                 _disposed = true;
-                _preview.SetSnapshotAnimation(null);
+                _preview.SetAnimationSampler(null);
                 _preview.Dispose();
                 _animation?.Dispose();
             });
@@ -368,8 +369,6 @@ namespace Ee4v.ExpressionMenu
             private readonly ModularAvatarMenuItem _item;
             private readonly ExpressionMenuAnimationRecipe _recipe;
             private readonly List<PreparedAction> _clips;
-            private readonly Dictionary<Material, Material> _materials = new Dictionary<Material, Material>();
-            private GameObject _snapshot;
             private bool _buttonExecuted;
 
             internal PreviewAnimation(AvatarEditingContext context, ModularAvatarMenuItem item, ExpressionMenuAnimationRecipe recipe)
@@ -378,39 +377,10 @@ namespace Ee4v.ExpressionMenu
                 _item = item;
                 _recipe = recipe;
                 _clips = recipe.PrepareClips(context, item);
-                try
-                {
-                    foreach (var clip in _clips.SelectMany(pair => new[] { pair.on, pair.off }).Where(clip => clip != null))
-                    {
-                        clip.hideFlags = HideFlags.HideAndDontSave;
-                        clip.legacy = true;
-                        foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(clip))
-                        {
-                            var keys = AnimationUtility.GetObjectReferenceCurve(clip, binding);
-                            for (var index = 0; index < keys.Length; index++)
-                                if (keys[index].value is Material material) keys[index].value = CopyMaterial(material);
-                            AnimationUtility.SetObjectReferenceCurve(clip, binding, keys);
-                        }
-                    }
-                }
-                catch { Dispose(); throw; }
             }
 
-            private Material CopyMaterial(Material source)
+            internal void Sample(AvatarAnimationFrame frame, float[] values, float elapsed)
             {
-                if (!_materials.TryGetValue(source, out var copy))
-                    _materials[source] = copy = new Material(source) { hideFlags = HideFlags.HideAndDontSave };
-                return copy;
-            }
-
-            internal void Sample(GameObject snapshot, float[] values, float elapsed)
-            {
-                if (_snapshot != snapshot)
-                {
-                    _snapshot = snapshot;
-                    foreach (var renderer in snapshot.GetComponentsInChildren<Renderer>(true))
-                        renderer.sharedMaterials = renderer.sharedMaterials.Select(material => material != null ? CopyMaterial(material) : null).ToArray();
-                }
                 var continuous = IsContinuous(_item);
                 foreach (var pair in _clips)
                 {
@@ -420,19 +390,19 @@ namespace Ee4v.ExpressionMenu
                         ? (values[pair.axis] + 1f) / 2f : values[pair.axis];
                     var time = continuous ? Mathf.Clamp01(normalized) * clip.length :
                         clip.isLooping && clip.length > 0 ? elapsed % clip.length : Mathf.Min(elapsed, clip.length);
-                    clip.SampleAnimation(snapshot, time);
-                    if (pair.transform != null) SampleTransform(snapshot, pair.transform, values);
+                    frame.Sample(clip, time);
+                    if (pair.transform != null) SampleTransform(frame, pair.transform, values);
                 }
             }
 
-            private void SampleTransform(GameObject snapshot, MenuTransformAction action, float[] values)
+            private void SampleTransform(AvatarAnimationFrame frame, MenuTransformAction action, float[] values)
             {
                 var four = AxisCount(_item) == 4;
                 var horizontal = four ? Mathf.Lerp(values[1], -1f, values[3]) : values[action.SourceAxis];
                 var vertical = four ? Mathf.Lerp(values[0], -1f, values[2]) : 0f;
                 foreach (var target in action.Targets.Where(target => target.Path != null))
                 {
-                    var destination = target.Path.Length == 0 ? snapshot.transform : snapshot.transform.Find(target.Path);
+                    var destination = frame.ResolveTransform(target.Path);
                     var source = ResolveTransform(_context, target.Path);
                     if (destination == null || source == null) continue;
                     foreach (var property in TransformProperties(target, source))
@@ -469,8 +439,6 @@ namespace Ee4v.ExpressionMenu
             public void Dispose()
             {
                 DestroyTemporaryClips(_clips);
-                foreach (var material in _materials.Values) if (material != null) Object.DestroyImmediate(material);
-                _materials.Clear();
                 if (_recipe != null) Object.DestroyImmediate(_recipe);
             }
         }
