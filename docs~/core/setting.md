@@ -129,4 +129,6 @@ Project の保存では `ProjectSettings` フォルダがなければ作成し�
 
 現行の Unity 2022.3 実装では、文字を持つ Settings UI を `UiTextFactory` 経由で作成します。
 
+Project Settingsの「部位プレビューのアニメーション」は、Core公開APIの`AvatarPreviewMotionSettings`が登録する8件の`SettingDefinition<PreviewMotionSelection>`を表示します。各行はAnimationClipのObjectFieldとループToggleを持ち、`AvatarPreviewMotionSettingDrawer`が変更を通常の設定保存へ渡します。ClipはGlobalObjectIdの文字列で保存し、FBX内のsub-assetも識別します。ループの既定値はtrue、Clipの既定値は未指定です。プレビューの再生・停止・優先順位は[Avatarのプレビュー描画](./avatar-preview.md)を参照します。
+
 パス入力の幅は、入力中の文字の描画幅と余白・選択アイコンの幅から求めます。内容の追加・削除、選択ダイアログでの変更、Window幅の変更で再計測し、最小幅と枠内の利用可能幅の間に収めます。

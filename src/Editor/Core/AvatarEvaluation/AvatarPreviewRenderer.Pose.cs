@@ -35,8 +35,9 @@ namespace Ee4v.Core.AvatarEvaluation
                 }
                 var up = animator.transform.up;
                 var right = animator.transform.right;
-                var leftDirection = tPose ? -right : (-right * 0.5f - up * 0.8660254f);
-                var rightDirection = tPose ? right : (right * 0.5f - up * 0.8660254f);
+                // The unassigned preview pose is an A-pose, with straight arms 45 degrees below horizontal.
+                var leftDirection = tPose ? -right : (-right - up).normalized;
+                var rightDirection = tPose ? right : (right - up).normalized;
                 AlignBone(animator.GetBoneTransform(HumanBodyBones.LeftUpperArm),
                     animator.GetBoneTransform(HumanBodyBones.LeftLowerArm), leftDirection);
                 AlignBone(animator.GetBoneTransform(HumanBodyBones.LeftLowerArm),

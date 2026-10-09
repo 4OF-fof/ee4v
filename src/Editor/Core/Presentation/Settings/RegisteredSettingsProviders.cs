@@ -37,6 +37,11 @@ namespace Ee4v.Core.Settings
                     "settings",
                     "project",
                     "injector",
+                    "preview",
+                    "animation",
+                    "motion",
+                    "clip",
+                    "loop",
                     "assets",
                     "folder",
                     "root"

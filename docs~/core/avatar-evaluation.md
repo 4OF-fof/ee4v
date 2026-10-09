@@ -12,7 +12,7 @@ Preview sessionの接続は`AvatarPreviewSession`、表示用ポーズとMA骨�
 
 ## アニメーションプレビュー
 
-`AvatarPreviewRenderer.SetAnimation(clip)`はEdit Modeで再生するClipを指定し、`SampleAnimation(time)`は秒単位で姿勢を評価します。`Animation`と`AnimationTime`は現在のClipと評価時間を返します。ループClipは時間を折り返し、非ループClipは0〜長さへ制限します。再生時計、再描画、再生・停止などのUIは利用側が所有します。`SetAnimation(null)`は停止し、サンプリング用コピーとGraphを解放します。Clip切替・停止時はNDMF sessionも再接続し、古いアニメーション値をProxyへ残しません。
+`AvatarPreviewRenderer.SetAnimation(clip, loop: null)`はEdit Modeで再生するClipを指定し、`SampleAnimation(time)`は秒単位で姿勢を評価します。`Animation`と`AnimationTime`は現在のClipと評価時間を返します。loop未指定ではClipのループ設定を使用し、true／false指定では再生用コピーのloopTimeだけを上書きします。ループ時は時間を折り返し、非ループ時は0〜長さへ制限して末尾を保持します。元ClipとImporterは変更しません。Hierarchy再構築でもloop指定を引き継ぎます。再生時計、再描画、再生・停止などのUIは利用側が所有します。`SetAnimation(null)`は停止し、サンプリング用コピーとGraphを解放します。Clip切替・停止時はNDMF sessionも再接続し、古いアニメーション値をProxyへ残しません。
 
 内部の`AvatarPreviewAnimation`は専用Preview Sceneにスクリプトを除いたコピーを一つ保持し、Unityの手動更新PlayableGraphでClipを評価します。MA Merge Armatureの対応骨はmerge先へ、Bone Proxyはtarget・attachment mode・matchScaleに従ってコピー内で付け替えます。Clipはメモリ内のコピーで参照pathを変更し、Merge ArmatureのTransform曲線はmerge先へ向けます。変更後に同じプロパティへ複数の曲線が向く場合は例外を返します。素材ClipとSceneのアバターへ書き込みません。
 

@@ -296,6 +296,7 @@ namespace Ee4v.UI
 
         private void CleanupPreview()
         {
+            _bodyPartAnimation = null;
             StopCameraAnimation();
             _orbit.CancelTransition();
             _pendingTransformScales.Clear();

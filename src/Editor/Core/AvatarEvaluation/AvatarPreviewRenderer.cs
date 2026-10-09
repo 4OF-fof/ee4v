@@ -103,12 +103,12 @@ namespace Ee4v.Core.AvatarEvaluation
         public float AnimationTime => _animation?.Time ?? 0f;
 
         /// <summary>Selects a clip for Edit Mode preview. Null stops playback and releases the sampling copy.</summary>
-        public void SetAnimation(AnimationClip clip)
+        public void SetAnimation(AnimationClip clip, bool? loop = null)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(AvatarPreviewRenderer));
             if (clip != null && EditorApplication.isPlayingOrWillChangePlaymode)
                 throw new InvalidOperationException("Animation preview is available only in Edit Mode.");
-            var next = clip == null ? null : new AvatarPreviewAnimation(Root, clip, _poseBindings);
+            var next = clip == null ? null : new AvatarPreviewAnimation(Root, clip, _poseBindings, loop: loop);
             _animation?.Dispose();
             _animation = next;
             _animationSampler = null;
@@ -141,6 +141,7 @@ namespace Ee4v.Core.AvatarEvaluation
         public void RefreshHierarchy()
         {
             var clip = Animation;
+            var loop = _animation?.Loop;
             var time = AnimationTime;
             var sampler = _animationSampler;
             _sourceRenderers = Root == null ? Array.Empty<Renderer>() : Root.GetComponentsInChildren<Renderer>(true);
@@ -148,7 +149,7 @@ namespace Ee4v.Core.AvatarEvaluation
             if (sampler != null) SetAnimationSampler(sampler);
             else if (clip != null)
             {
-                SetAnimation(clip);
+                SetAnimation(clip, loop);
                 SampleAnimation(time);
             }
             _hierarchyDirty = true;

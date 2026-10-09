@@ -184,16 +184,23 @@ namespace Ee4v.UI
 
             RegisterCallback<AttachToPanelEvent>(_ =>
             {
+                AvatarPreviewMotionSettings.Changed += OnPreviewMotionSettingsChanged;
+                EditorApplication.playModeStateChanged += OnPreviewMotionPlayModeChanged;
                 RebuildPreview();
             });
             RegisterCallback<DetachFromPanelEvent>(_ =>
             {
+                UnsubscribePreviewMotion();
                 CleanupPreview();
             });
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             schedule.Execute(() =>
             {
-                if (_utility != null && _instance != null) RequestPreviewRepaint();
+                if (_utility != null && _instance != null)
+                {
+                    UpdateBodyPartAnimationTime();
+                    RequestPreviewRepaint();
+                }
             }).Every(33);
         }
 
@@ -214,6 +221,8 @@ namespace Ee4v.UI
         {
             if (_utility != null) _utility.SetAnimationSampler(sample);
             _animationSampler = sample;
+            if (sample == null) ApplyBodyPartPose();
+            else ApplyBodyPartMotion();
             RequestPreviewRepaint();
         }
 
@@ -743,6 +752,7 @@ namespace Ee4v.UI
 
         private void ApplyBodyPartPose()
         {
+            ApplyBodyPartMotion();
             if (_bodyPartPoseEnabled && _utility != null)
             {
                 _utility.SetHumanoidPose(_tPose);
@@ -764,6 +774,7 @@ namespace Ee4v.UI
 
         public void Dispose()
         {
+            UnsubscribePreviewMotion();
             CleanupPreview();
             _animationSampler = null;
             _viewport.Dispose();

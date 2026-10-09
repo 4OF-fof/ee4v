@@ -39,13 +39,15 @@ namespace Ee4v.Core.AvatarEvaluation
         private AnimationClipPlayable _playable;
 
         public AnimationClip Clip { get; }
+        public bool? Loop { get; }
         public float Time { get; private set; }
 
         internal AvatarPreviewAnimation(GameObject source, AnimationClip clip,
-            IReadOnlyDictionary<Transform, AvatarBoneBinding> bindings, Action<AvatarAnimationFrame> sampler = null)
+            IReadOnlyDictionary<Transform, AvatarBoneBinding> bindings, Action<AvatarAnimationFrame> sampler = null, bool? loop = null)
         {
             _source = source;
             Clip = clip;
+            Loop = loop;
             _sampler = sampler;
             _bindings = bindings;
             try
@@ -81,6 +83,12 @@ namespace Ee4v.Core.AvatarEvaluation
                     .Select(t => (t, t.localPosition, t.localRotation, t.localScale)).ToArray();
                 if (clip != null)
                 {
+                    if (loop.HasValue)
+                    {
+                        var clipSettings = AnimationUtility.GetAnimationClipSettings(samplingClip);
+                        clipSettings.loopTime = loop.Value;
+                        AnimationUtility.SetAnimationClipSettings(samplingClip, clipSettings);
+                    }
                     _graph = PlayableGraph.Create("ee4v animation preview");
                     _graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
                     _playable = AnimationClipPlayable.Create(_graph, samplingClip);
@@ -282,7 +290,7 @@ namespace Ee4v.Core.AvatarEvaluation
             IReadOnlyDictionary<Transform, Quaternion> rotations = null)
         {
             if (float.IsNaN(time) || float.IsInfinity(time)) throw new ArgumentOutOfRangeException(nameof(time));
-            Time = Clip == null ? time : Clip.isLooping && Clip.length > 0f ? Mathf.Repeat(time, Clip.length) : Mathf.Clamp(time, 0f, Clip.length);
+            Time = Clip == null ? time : (Loop ?? Clip.isLooping) && Clip.length > 0f ? Mathf.Repeat(time, Clip.length) : Mathf.Clamp(time, 0f, Clip.length);
             var parent = _source.transform.parent;
             _container.transform.position = parent == null ? Vector3.zero : parent.position;
             _container.transform.rotation = parent == null ? Quaternion.identity : parent.rotation;

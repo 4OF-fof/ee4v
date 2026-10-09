@@ -2,7 +2,8 @@
   "settings": {
     "section": {
       "localization": "Localization",
-      "assets": "Assets"
+      "assets": "Assets",
+      "previewMotion": "Body part preview animations"
     },
     "language": {
       "label": "Language",
@@ -23,6 +24,19 @@
     "projectAssetRootFolderName": {
       "label": "Project asset root folder",
       "tooltip": "Folder directly under Assets used when the project override is enabled."
+    },
+    "previewMotion": {
+      "Other": "Whole body",
+      "Head": "Head / neck",
+      "Shoulders": "Shoulders / arms",
+      "Hands": "Hands",
+      "Chest": "Chest",
+      "Waist": "Waist / torso",
+      "Legs": "Legs",
+      "Feet": "Feet",
+      "tooltip": "AnimationClip to play when this body part is selected. None uses the A-pose. Use a Humanoid clip or a Generic clip whose bone paths match the avatar.",
+      "loop": "Loop",
+      "loopTooltip": "Overrides the clip import setting. When disabled, plays once and holds the final pose."
     },
     "listInput": {
       "itemPlaceholder": "Enter an item",

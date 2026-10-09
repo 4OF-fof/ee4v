@@ -169,8 +169,6 @@ MAは`src/package.json`の対応範囲（1.18.2以上2.0.0未満）で内部reso
 
 Unity 2022.3で以下を確認します。新規自動テストは追加しません。
 
-`ee4v/Debug/Expression Menu Action Cards`は表示確認専用のデバッグWindowです。Toggle・数値・Button・Puppetの2 Axis／4 Axisを並べ、本番の描画処理で各動作カードとマテリアル設定の入力形式を表示します。保存済みAnimation Clipのカードも表示します。入力と操作は受け付けず、確認用ObjectはPreview Scene、Material・Mesh・Shader・recipeはメモリ内だけに保持して再生成・Window終了時に破棄します。Scene・アバター・アセットを変更しません。実装は`ExpressionMenuActionDebugWindow.cs`の1ファイルにまとめ、削除時に本番コードへの依存を残しません。
-
 - Toggleのパラメータ変更は「設定する値」の下に「メニューOFF時」「メニューON時」を表示し、各Bool値をFalse／Trueで選択できること。OFF・ONとも独立に変更でき、生成・Undo／Redoに反映されること。数値とButtonの入力形式が変わらないこと。
 
 - マテリアル設定の型に合う入力、Color・HDR・Vector・Float／Range・Shader Integer・Texture・倍率／オフセット・キーワード・Shader・各設定の選択。Toggleの現在値OFFとON、連続値の両端・中間・負の値・逆方向の補間。非アニメーション項目がToggle専用であること。Texture／キーワード等が生成Materialへまとめられ、元Materialとslot別のOFF参照が保持されること。生成MaterialのController保存・再読込・Undo／Redo、dimension不一致とbinding競合の拒否、行保持・消失の再指定・同期とLocalOnly gate。

@@ -2,7 +2,8 @@
   "settings": {
     "section": {
       "localization": "ローカライズ",
-      "assets": "アセット"
+      "assets": "アセット",
+      "previewMotion": "部位プレビューのアニメーション"
     },
     "language": {
       "label": "言語",
@@ -23,6 +24,19 @@
     "projectAssetRootFolderName": {
       "label": "プロジェクトのルートフォルダー名",
       "tooltip": "上書きが有効な場合に使う、Assets直下の生成アセット用フォルダー名です。"
+    },
+    "previewMotion": {
+      "Other": "全身",
+      "Head": "頭・首",
+      "Shoulders": "肩・腕",
+      "Hands": "手",
+      "Chest": "胸",
+      "Waist": "腰・胴",
+      "Legs": "脚",
+      "Feet": "足",
+      "tooltip": "この部位を選択したときに再生するAnimationClipです。NoneならAポーズを使用します。Humanoid Clip、またはアバターと骨のパスが一致するGeneric Clipを指定してください。",
+      "loop": "ループ",
+      "loopTooltip": "Clipのインポート設定より優先します。OFFでは一度再生し、最後の姿勢を保持します。"
     },
     "listInput": {
       "itemPlaceholder": "項目を入力",
