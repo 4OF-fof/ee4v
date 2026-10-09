@@ -34,6 +34,10 @@ namespace Ee4v.AvatarMaterials
         private IReadOnlyDictionary<Transform, BodyPartCategory>
             _materialBoneCategoriesCache;
 
+        private readonly Dictionary<Transform, BodyPartCategory>
+            _materialResolvedBoneCategoriesCache =
+                new Dictionary<Transform, BodyPartCategory>();
+
         private readonly HashSet<Material> _hiddenMaterials =
             new HashSet<Material>();
     }

@@ -6,6 +6,8 @@
 
 `AvatarMaterialsEditor(AvatarEditingContext)`へ対象、選択範囲、Preview、編集可否とホストの通知を渡し、`BuildControls`でUIを生成します。`SelectPreviewMaterial`でPreviewからの選択を受け取ります。Material使用箇所の収集、部位・Prefab範囲の絞り込み、一時的な表示切り替え、割り当ての変更、Inspectorとキャッシュはこの機能が所有します。
 
+初回の部位分類では、骨と未分類の親階層から解決した部位を全Renderer・Material slot間で共有します。分類不能の結果も保持し、同じ骨の名前と親階層を繰り返し調べません。Humanoid対応・骨名・親階層の順で解決する規則は維持します。このキャッシュは機能インスタンスが所有し、`ClearData`と`ResetEditingState`で既存のMaterial分類キャッシュとともに破棄します。
+
 `ReplaceMaterialAssignments`は選択範囲のRendererをUndoに記録し、作業対象の割り当てを変更します。`RefreshAfterMaterialReplacement`が選択・表示とUIを更新します。事前にホストの`FlushChanges`を呼び、体型・パーツの保留変更を確定します。範囲外でも共有されるMaterialの直接編集は`IsMaterialSharedOutsideSelectedPrefab`で拒否します。
 
 編集可能なMaterialかどうか、保護された元素材の扱い、Material Variantを保存するフォルダーと作成処理はホストが決めます。AssetManagerのDB、作業Scene、AssetProtectionには依存しません。他のAvatar機能へのassembly参照もありません。

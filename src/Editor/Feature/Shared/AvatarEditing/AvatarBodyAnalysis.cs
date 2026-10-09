@@ -88,7 +88,7 @@ namespace Ee4v.AvatarEditing
             }
 
             return terms.Any(term => normalized.IndexOf(
-                NormalizeBlendShapeName(term),
+                term,
                 StringComparison.Ordinal) >= 0);
         }
 
@@ -139,23 +139,46 @@ namespace Ee4v.AvatarEditing
             Transform bone,
             IReadOnlyDictionary<Transform, BodyPartCategory> humanoidCategories)
         {
-            for (var current = bone; current != null;
-                 current = current.parent)
+            return GetMaterialBoneCategory(bone, humanoidCategories, null);
+        }
+
+        // Share only within the same hierarchy and Humanoid mapping; discard on changes.
+        public static BodyPartCategory GetMaterialBoneCategory(
+            Transform bone,
+            IReadOnlyDictionary<Transform, BodyPartCategory> humanoidCategories,
+            Dictionary<Transform, BodyPartCategory> cache)
+        {
+            var current = bone;
+            var category = BodyPartCategory.Other;
+            for (; current != null; current = current.parent)
             {
-                if (humanoidCategories.TryGetValue(
-                        current, out var category))
+                if (cache != null && cache.TryGetValue(current, out category))
                 {
-                    return category;
+                    break;
+                }
+                if (humanoidCategories.TryGetValue(current, out category))
+                {
+                    break;
                 }
 
                 category = ClassifyBodyPart(current.name, string.Empty);
                 if (category != BodyPartCategory.Other)
                 {
-                    return category;
+                    break;
                 }
             }
 
-            return BodyPartCategory.Other;
+            if (cache != null)
+            {
+                // Unclassified children inherit the same result, including Other.
+                for (var target = bone; target != null && target != current;
+                     target = target.parent)
+                {
+                    cache[target] = category;
+                }
+                if (current != null) { cache[current] = category; }
+            }
+            return category;
         }
 
         public static bool MatchesBodyPartGroup(
@@ -173,6 +196,7 @@ namespace Ee4v.AvatarEditing
             var result = new HashSet<BodyPartCategory>();
             if (root == null) { return result; }
             var humanoidBones = new Dictionary<Transform, BodyPartCategory>();
+            var boneCategories = new Dictionary<Transform, BodyPartCategory>();
             foreach (var animator in root.GetComponentsInChildren<Animator>(true))
             {
                 if (animator.avatar == null || !animator.avatar.isValid || !animator.isHuman)
@@ -195,7 +219,7 @@ namespace Ee4v.AvatarEditing
                 {
                     continue;
                 }
-                if (skinned != null && TryGetWeightedMeshParts(skinned, humanoidBones, out var parts))
+                if (skinned != null && TryGetWeightedMeshParts(skinned, humanoidBones, boneCategories, out var parts))
                 {
                     result.UnionWith(parts);
                     continue;
@@ -203,7 +227,7 @@ namespace Ee4v.AvatarEditing
                 var category = ClassifyBodyPart(renderer.name, mesh.name);
                 if (category == BodyPartCategory.Other)
                 {
-                    category = GetMaterialBoneCategory(renderer.transform, humanoidBones);
+                    category = GetMaterialBoneCategory(renderer.transform, humanoidBones, boneCategories);
                 }
                 if (category != BodyPartCategory.Other) { result.Add(category); }
             }
@@ -212,6 +236,7 @@ namespace Ee4v.AvatarEditing
 
         private static bool TryGetWeightedMeshParts(SkinnedMeshRenderer renderer,
             IReadOnlyDictionary<Transform, BodyPartCategory> humanoidBones,
+            Dictionary<Transform, BodyPartCategory> boneCategories,
             out IReadOnlyCollection<BodyPartCategory> parts)
         {
             var result = new HashSet<BodyPartCategory>();
@@ -223,7 +248,7 @@ namespace Ee4v.AvatarEditing
             {
                 var weights = mesh.boneWeights;
                 if (weights.Length != mesh.vertexCount) { return false; }
-                var categories = bones.Select(bone => GetMaterialBoneCategory(bone, humanoidBones)).ToArray();
+                var categories = bones.Select(bone => GetMaterialBoneCategory(bone, humanoidBones, boneCategories)).ToArray();
                 var usedVertices = new HashSet<int>();
                 for (var slot = 0; slot < mesh.subMeshCount; slot++)
                 {
@@ -255,6 +280,7 @@ namespace Ee4v.AvatarEditing
             }
         }
 
+        // Terms are already normalized; normalize only the input, not every comparison.
         private static readonly string[] HeadBlendShapeTerms =
         {
             "head", "neck", "face", "facial", "hair", "ear",

@@ -189,6 +189,7 @@ namespace Ee4v.AvatarMaterials
             DisposeMaterialEditor();
             _avatarMaterialsCache = null;
             _materialBoneCategoriesCache = null;
+            _materialResolvedBoneCategoriesCache.Clear();
             _materialGeometryCache.Clear();
             _materialsOutsideSelectedPrefab.Clear();
         }

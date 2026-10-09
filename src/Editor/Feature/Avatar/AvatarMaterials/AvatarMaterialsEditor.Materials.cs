@@ -413,7 +413,7 @@ namespace Ee4v.AvatarMaterials
             return false;
         }
 
-        private static bool TryGetSkinnedMaterialCategories(
+        private bool TryGetSkinnedMaterialCategories(
             SkinnedMeshRenderer renderer,
             int slotIndex,
             IReadOnlyDictionary<Transform, BodyPartCategory> humanoidCategories,
@@ -446,7 +446,8 @@ namespace Ee4v.AvatarMaterials
             }
 
             var boneParts = bones.Select(bone =>
-                    GetMaterialBoneCategory(bone, humanoidCategories))
+                    GetMaterialBoneCategory(bone, humanoidCategories,
+                        _materialResolvedBoneCategoriesCache))
                 .ToArray();
             var usedVertices = new bool[weights.Length];
             var counts = new int[Enum.GetValues(typeof(BodyPartCategory)).Length];
