@@ -31,6 +31,8 @@ CameraはPreview Sceneの描画資源と照明を使用し、NDMFのProxy Scene�
 
 `PrefabScenePreview.FocusBodyPart`は頭・胸・全身などの部位フォーカスと描画用ポーズを連動させます。現時点では全部位に共通の仮ポーズ（両腕を水平から60度下げる）を使用します。Preview右下のFluent AccessibilityアイコンでTポーズへ切り替え、再度押すと部位ポーズへ戻します。選択中のアイコンは青い背景・枠で示し、tooltipで切替先を表示します。切替状態は部位・左右・前後の移動やPreview再構築で保持します。`SetTPose`は同じ操作を公開APIから行います。
 
+AssetManagerの編集Previewは作成時に現在の部位選択（未選択なら全身）で`FocusBodyPart`を初期化します。HumanoidのTポーズ切替はPreviewが使用可能になった時点で表示し、部位選択・カテゴリ変更や概要情報の非同期更新を待ちません。初期化ではカメラ位置を保持し、UIへ接続する際に通常の初期構図を設定します。
+
 `accessibility.png`はMicrosoftの[Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Accessibility/SVG/ic_fluent_accessibility_24_regular.svg)（MIT、Copyright Microsoft Corporation）の24px Regular SVGから白色・透過の512px PNGへ変換したものです。
 
 Coreの`SetHumanoidPose`は有効なHumanoid Avatarの基準骨格回転を使用し、上腕と前腕を左右の水平（Tポーズ）または仮ポーズの方向へ合わせます。Scene本体、Prefab、AnimationClipへ書き込まず、NDMF描画用骨へ回転を適用します。隔離Previewでは描画中だけ回転を変更して復元します。骨格スケールとBlendShapeのoverrideは併用できます。`GetTransformPosition`は描画用回転・スケールを含む位置を返し、腕・手などのフォーカスも現在のポーズへ追従します。

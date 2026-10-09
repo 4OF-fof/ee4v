@@ -22,41 +22,12 @@ namespace Ee4v.AvatarMaterials
                     FormatMaterialUsageSummary(entry),
                     CreateMaterialIcon(material),
                     material == _context.SelectedMaterial),
-                () =>
-                {
-                    _context.SelectedMaterial = material;
-                    _context.Host.ShowMaterials();
-                });
+                () => NavigateToMaterial(material));
             choice.AddToClassList(
                 "ee4v-modification-workflow__material-item");
             choice.userData = new KeyValuePair<Material, int>(
                 material, entry.Usages[0].PrefabSiblingIndex);
             choice.tooltip = FormatMaterialUsageTooltip(entry);
-            var materialField = UiTextFactory.CreateObjectField(
-                string.Empty,
-                "ee4v-modification-workflow__material-slot");
-            materialField.objectType = typeof(Material);
-            materialField.allowSceneObjects = false;
-            materialField.SetValueWithoutNotify(material);
-            materialField.SetEnabled(_context.Edits.CanEditPrefab());
-            materialField.RegisterCallback<PointerDownEvent>(
-                evt => evt.StopPropagation());
-            materialField.RegisterCallback<ClickEvent>(
-                evt => evt.StopPropagation());
-            materialField.RegisterValueChangedCallback(evt =>
-            {
-                var replacement = evt.newValue as Material;
-                if (replacement == null || replacement == material ||
-                    !EditorUtility.IsPersistent(replacement))
-                {
-                    materialField.SetValueWithoutNotify(material);
-                    return;
-                }
-                ReplaceWorkflowMaterial(material, replacement);
-            });
-            var titleContainer = choice.Row.TitleText.parent;
-            titleContainer.Insert(0, materialField);
-            choice.Row.TitleText.RemoveFromHierarchy();
             if (!_context.Edits.CanEditMaterial(material))
             {
                 choice.Trailing.Add(new Badge(
@@ -81,22 +52,72 @@ namespace Ee4v.AvatarMaterials
             return choice;
         }
 
-        private VisualElement BuildMaterialEditor(Material material)
+        private VisualElement BuildMaterialEditor(AvatarMaterialEntry entry)
         {
+            var material = entry.Material;
             var section = new VisualElement();
             section.AddToClassList(
                 "ee4v-modification-workflow__material-editor-section");
 
             var header = new ItemRow(new ItemRowState(
                 material.name,
+                FormatMaterialUsageSummary(entry),
                 icon: CreateMaterialIcon(material)));
             header.AddToClassList(
                 "ee4v-modification-workflow__material-editor-header");
+            header.tooltip = FormatMaterialUsageTooltip(entry);
+            var materialField = UiTextFactory.CreateObjectField(
+                string.Empty,
+                "ee4v-modification-workflow__material-slot");
+            materialField.objectType = typeof(Material);
+            materialField.allowSceneObjects = false;
+            materialField.SetValueWithoutNotify(material);
+            materialField.SetEnabled(_context.Edits.CanEditPrefab());
+            materialField.RegisterValueChangedCallback(evt =>
+            {
+                var replacement = evt.newValue as Material;
+                if (replacement == null || replacement == material ||
+                    !EditorUtility.IsPersistent(replacement))
+                {
+                    materialField.SetValueWithoutNotify(material);
+                    return;
+                }
+                ReplaceWorkflowMaterial(material, replacement);
+            });
+            header.TitleText.parent.Insert(0, materialField);
+            header.TitleText.RemoveFromHierarchy();
 
             var surface = new VisualElement();
             surface.AddToClassList(
                 "ee4v-modification-workflow__material-editor-surface");
             surface.Add(header);
+            var showOnly = UiTextFactory.CreateToggle(
+                I18N.Get("workflow.appearance.showOnlySelectedMaterial"),
+                "ee4v-modification-workflow__material-show-only");
+            showOnly.SetValueWithoutNotify(_showOnlySelectedMaterial);
+            showOnly.RegisterValueChangedCallback(evt =>
+            {
+                _showOnlySelectedMaterial = evt.newValue;
+                RefreshMaterialVisibility();
+            });
+            surface.Add(showOnly);
+
+            if (!_context.Edits.CanEditMaterial(material))
+            {
+                header.Trailing.Add(new Badge(
+                    I18N.Get("workflow.appearance.readOnly")));
+                section.Add(surface);
+                if (_context.Edits.CanEditPrefab())
+                {
+                    var makeEditable = new UiButton(
+                        I18N.Get("workflow.appearance.makeEditable"),
+                        () => _context.Edits.CreateMaterialVariant(material));
+                    makeEditable.AddToClassList(
+                        "ee4v-modification-workflow__make-material-editable");
+                    section.Add(makeEditable);
+                }
+                return section;
+            }
 
             _materialInspector = new EmbeddedMaterialInspector(
                 material,
@@ -145,7 +166,7 @@ namespace Ee4v.AvatarMaterials
             {
                 _hiddenMaterials.Remove(material);
             }
-            _context.Preview?.SetHiddenMaterials(_hiddenMaterials);
+            RefreshMaterialVisibility();
             RefreshMaterialVisibilityButtons(
                 _materialVisibilityButtons.Keys.ToArray());
         }
@@ -163,7 +184,7 @@ namespace Ee4v.AvatarMaterials
                 _hiddenMaterials.UnionWith(materials);
             }
 
-            _context.Preview?.SetHiddenMaterials(_hiddenMaterials);
+            RefreshMaterialVisibility();
             RefreshMaterialVisibilityButtons(materials);
         }
 
@@ -206,6 +227,13 @@ namespace Ee4v.AvatarMaterials
             {
                 _allMaterialsVisibilityButton.tooltip = allTooltip;
             }
+        }
+
+        private void RefreshMaterialVisibility()
+        {
+            _context.Preview?.SetListSelection(null, null);
+            _context.Preview?.SetHiddenMaterials(PreviewHiddenMaterials);
+            _context.Host.SyncPreviewSelection();
         }
 
         private IReadOnlyList<AvatarMaterialEntry> GetAvatarMaterials()
@@ -661,7 +689,7 @@ namespace Ee4v.AvatarMaterials
             _context.Feedback = string.Empty;
             _context.Host.ClearCaches();
             _context.Edits.Changed();
-            _context.Preview?.SetHiddenMaterials(_hiddenMaterials);
+            RefreshMaterialVisibility();
             _context.Preview?.ReloadPrefabPreservingView(_context.Root);
             _context.Host.ShowMaterials();
         }

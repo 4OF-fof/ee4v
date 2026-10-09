@@ -1,3 +1,8 @@
+.ee4v-modification-workflow__material-back.ee4v-ui-button {
+    align-self: flex-start;
+    margin-bottom: var(--ee4v-space-md);
+}
+
 .ee4v-modification-workflow__make-material-editable.ee4v-ui-button {
     width: 100%;
     margin-top: var(--ee4v-space-lg);
@@ -81,6 +86,10 @@
     padding: var(--ee4v-space-md);
     border-bottom-width: var(--ee4v-border-hairline);
     border-bottom-color: var(--ee4v-color-border-default);
+}
+
+.ee4v-modification-workflow__material-show-only {
+    margin: var(--ee4v-space-md);
 }
 
 .ee4v-modification-workflow__material-editor {

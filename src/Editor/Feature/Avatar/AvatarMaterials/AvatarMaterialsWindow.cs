@@ -3,6 +3,7 @@ using System.IO;
 using Ee4v.AvatarEditing;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Ee4v.AvatarMaterials
 {
@@ -22,7 +23,13 @@ namespace Ee4v.AvatarMaterials
                 if (CanEditMaterial(material)) AssetDatabase.SaveAssetIfDirty(material);
             };
         }
-        protected override void RenderFeature() => Context.ControlsHost.Add(_editor.BuildControls());
+        protected override void RenderFeature()
+        {
+            Context.ControlsHost.Add(_editor.BuildControls());
+            FeatureHeader.style.display = Context.SelectedMaterial != null
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
+        }
         protected override void ClearFeatureData() => _editor?.ClearData();
         protected override void DisposeFeature() { _editor?.Dispose(); _editor = null; }
         protected override void SelectPreview(string key, Material material) => _editor.SelectPreviewMaterial(material, -1);

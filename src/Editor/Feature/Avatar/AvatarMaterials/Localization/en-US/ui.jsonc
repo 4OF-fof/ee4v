@@ -15,6 +15,8 @@
       "materialUsage": "{0} / slot {1}",
       "moreUsages": "+{0} more",
       "allMaterials": "All",
+      "backToMaterials": "Back to Materials",
+      "showOnlySelectedMaterial": "Show only this Material (hide others)",
       "hideMaterial": "Hide this Material",
       "showMaterial": "Show this Material",
       "hideAll": "Hide all Materials",

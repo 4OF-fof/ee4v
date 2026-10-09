@@ -14,6 +14,10 @@ namespace Ee4v.AvatarMaterials
 
         private EmbeddedMaterialInspector _materialInspector;
 
+        private Vector2 _materialListScrollOffset;
+
+        private bool _showOnlySelectedMaterial;
+
         private readonly HashSet<int> _expandedMaterialPrefabGroups =
             new HashSet<int>();
 

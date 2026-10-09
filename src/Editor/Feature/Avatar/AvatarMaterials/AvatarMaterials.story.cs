@@ -17,7 +17,7 @@ namespace Ee4v.AvatarMaterials
                 "Editor/Feature/Avatar/AvatarMaterials/avatar-materials.uss" };
             return new[] {
                 new UiStory("avatar-materials-editor", "Domain/AvatarMaterials/Containers", "AvatarMaterialsEditor",
-                    "使用Materialとプレビュー表示を管理します。サンプルの割り当ては読み取り専用です。",
+                    "一覧からMaterialの詳細編集へ遷移し、一覧へ戻れます。サンプルの割り当ては読み取り専用です。",
                     "Material編集機能です。", Build,
                     usageLocations: new[] { "Editor/AssetManager/UI/AssetModificationWorkflowView.MaterialAssets.cs",
                         "Editor/Feature/Avatar/AvatarMaterials/AvatarMaterialsWindow.cs" },
@@ -42,7 +42,7 @@ namespace Ee4v.AvatarMaterials
             controls.style.maxHeight = 420;
             AvatarMaterialsEditor editor = null;
             var context = new AvatarEditingContext(
-                new AvatarEditingServices(() => false, _ => false, () => true,
+                new AvatarEditingServices(() => false, _ => true, () => true,
                     () => string.Empty, _ => { }, () => { }, _ => { }, _ => { }),
                 new AvatarEditingHost(Render, Render, () => { }, parent.MarkDirtyRepaint, () => { }))
             {

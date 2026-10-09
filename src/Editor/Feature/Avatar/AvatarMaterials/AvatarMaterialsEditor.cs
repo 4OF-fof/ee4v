@@ -18,24 +18,28 @@ namespace Ee4v.AvatarMaterials
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        private void ScrollToMaterial(
-            Material material,
-            int prefabSiblingIndex)
+        private void NavigateToMaterial(Material material)
         {
-            var row = _context.ControlsHost.Query<NavigationItem>(
-                    className: "ee4v-modification-workflow__material-item")
-                .ToList()
-                .FirstOrDefault(item =>
-                    item.userData is KeyValuePair<Material, int> choice &&
-                    choice.Key == material &&
-                    choice.Value == prefabSiblingIndex);
-            if (row != null)
+            var controls = _context.ControlsHost;
+            if (_context.SelectedMaterial == null && material != null)
             {
-                _context.ControlsHost.schedule.Execute(() =>
+                _materialListScrollOffset = controls?.scrollOffset ?? Vector2.zero;
+            }
+            if (material == null) { _showOnlySelectedMaterial = false; }
+            _context.Preview?.SetListSelection(null, null);
+            _context.SelectedMaterial = material;
+            _context.Host.InvalidateControls(AvatarEditorPanel.Material);
+            _context.Host.ShowMaterials();
+            if (controls != null)
+            {
+                var offset = material != null ? Vector2.zero : _materialListScrollOffset;
+                controls.scrollOffset = offset;
+                controls.schedule.Execute(() =>
                 {
-                    if (row.panel != null)
+                    if (_context.ControlsHost == controls &&
+                        _context.SelectedMaterial == material)
                     {
-                        _context.ControlsHost.ScrollTo(row);
+                        controls.scrollOffset = offset;
                     }
                 });
             }
@@ -49,11 +53,8 @@ namespace Ee4v.AvatarMaterials
                     usage.PrefabSiblingIndex == prefabSiblingIndex &&
                     GetMaterialUsageCategories(usage, material).Any(_context.MatchesSelectedBodyPart))))
             { _context.SelectedBodyPart = null; }
-            _context.SelectedMaterial = material;
             if (prefabSiblingIndex >= 0) { _expandedMaterialPrefabGroups.Add(prefabSiblingIndex); }
-            _context.Host.InvalidateControls(AvatarEditorPanel.Material);
-            _context.Host.ShowMaterials();
-            ScrollToMaterial(material, prefabSiblingIndex);
+            NavigateToMaterial(material);
         }
 
         public VisualElement BuildControls()
@@ -90,6 +91,8 @@ namespace Ee4v.AvatarMaterials
             if (filteredMaterials.Count == 0)
             {
                 _context.SelectedMaterial = null;
+                _showOnlySelectedMaterial = false;
+                RefreshMaterialVisibility();
                 panel.Add(AvatarEditingUi.CreateEmptyState(
                     I18N.Get("workflow.appearance.emptyTitle"),
                     I18N.Get(_context.SelectedBodyPart.HasValue
@@ -104,13 +107,28 @@ namespace Ee4v.AvatarMaterials
             {
                 _context.SelectedMaterial = null;
             }
+            if (_context.SelectedMaterial == null) { _showOnlySelectedMaterial = false; }
             var availableMaterials = new HashSet<Material>(
                 filteredMaterials.Select(entry => entry.Material));
             var allAvailableMaterials = new HashSet<Material>(
                 allMaterials.Select(entry => entry.Material));
             _hiddenMaterials.RemoveWhere(material => material == null ||
                 !allAvailableMaterials.Contains(material));
-            _context.Preview?.SetHiddenMaterials(_hiddenMaterials);
+            RefreshMaterialVisibility();
+
+            if (_context.SelectedMaterial != null)
+            {
+                var back = new UiButton(
+                    I18N.Get("workflow.appearance.backToMaterials"),
+                    () => NavigateToMaterial(null),
+                    icon: FluentUiIcons.CreateState("arrow_left.png", UiSizeTokens.Size18),
+                    variant: UiButtonVariant.Ghost);
+                back.AddToClassList("ee4v-modification-workflow__material-back");
+                panel.Add(back);
+                panel.Add(BuildMaterialEditor(filteredMaterials.First(entry =>
+                    entry.Material == _context.SelectedMaterial)));
+                return panel;
+            }
 
             var materialChoices = new VisualElement();
             materialChoices.AddToClassList(
@@ -160,27 +178,6 @@ namespace Ee4v.AvatarMaterials
             RefreshMaterialVisibilityButtons(availableMaterials);
             panel.Add(materialChoices);
 
-            if (_context.SelectedMaterial == null)
-            {
-                return panel;
-            }
-
-            if (!_context.Edits.CanEditMaterial(_context.SelectedMaterial))
-            {
-                if (_context.Edits.CanEditPrefab())
-                {
-                    var sourceMaterial = _context.SelectedMaterial;
-                    var makeEditable = new UiButton(
-                        I18N.Get("workflow.appearance.makeEditable"),
-                        () => _context.Edits.CreateMaterialVariant(sourceMaterial));
-                    makeEditable.AddToClassList(
-                        "ee4v-modification-workflow__make-material-editable");
-                    panel.Add(makeEditable);
-                }
-                return panel;
-            }
-
-            panel.Add(BuildMaterialEditor(_context.SelectedMaterial));
             return panel;
         }
 
@@ -197,7 +194,9 @@ namespace Ee4v.AvatarMaterials
         public void ResetEditingState()
         {
             _hiddenMaterials.Clear();
+            _showOnlySelectedMaterial = false;
             _expandedMaterialPrefabGroups.Clear();
+            _materialListScrollOffset = Vector2.zero;
             ClearData();
         }
 
@@ -205,6 +204,26 @@ namespace Ee4v.AvatarMaterials
 
         public void ClearExpandedGroups() { _expandedMaterialPrefabGroups.Clear(); }
 
-        public HashSet<Material> HiddenMaterials { get => _hiddenMaterials; }
+        public HashSet<Material> HiddenMaterials => _hiddenMaterials;
+
+        public IEnumerable<Material> PreviewHiddenMaterials
+        {
+            get
+            {
+                if (!_showOnlySelectedMaterial || _context.SelectedMaterial == null ||
+                    _context.Root == null)
+                {
+                    return _hiddenMaterials;
+                }
+                var hidden = new HashSet<Material>(_hiddenMaterials);
+                foreach (var renderer in _context.Root.GetComponentsInChildren<Renderer>(true))
+                {
+                    hidden.UnionWith(renderer.sharedMaterials.Where(material =>
+                        material != null && material != _context.SelectedMaterial));
+                }
+                hidden.Remove(_context.SelectedMaterial);
+                return hidden;
+            }
+        }
     }
 }

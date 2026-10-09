@@ -540,6 +540,7 @@ namespace Ee4v.AssetManager.UI
                 _avatarContext.HiddenPrefabSiblingIndices);
             _avatarContext.Preview.SetHiddenParts(_avatarContext.HiddenPreviewParts);
             _avatarContext.Preview.SetPrefab(_avatarContext.Root);
+            _avatarContext.Preview.FocusBodyPart(_avatarContext.SelectedBodyPart, true);
             SyncPreviewSelection();
             _previewPane.Content.Add(_avatarContext.Preview);
             return _previewPane;
@@ -615,7 +616,7 @@ namespace Ee4v.AssetManager.UI
             }
             _avatarContext.Preview?.SetHiddenMaterials(
                 category == WorkflowCategory.Material
-                    ? _materials.HiddenMaterials
+                    ? _materials.PreviewHiddenMaterials
                     : null);
             _categoryRail?.SetSelected(category);
 
@@ -703,7 +704,6 @@ namespace Ee4v.AssetManager.UI
             {
                 if (child != _bodyPartSelector) { child.RemoveFromHierarchy(); }
             }
-            _appearanceHeader.style.display = DisplayStyle.Flex;
             if (_bodyPartSelector == null)
             {
                 _bodyPartSelector = BuildBodyPartSelector();
@@ -757,6 +757,10 @@ namespace Ee4v.AssetManager.UI
                     "ee4v-modification-workflow__hidden",
                     pair.Key != appearancePanel);
             }
+            _appearanceHeader.style.display = category == WorkflowCategory.Material &&
+                _avatarContext.SelectedMaterial != null
+                    ? DisplayStyle.None
+                    : DisplayStyle.Flex;
             if (categoryChanged)
             {
                 _avatarContext.ControlsHost.scrollOffset = Vector2.zero;
