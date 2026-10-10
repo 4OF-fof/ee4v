@@ -161,7 +161,8 @@
       "sourcePrefab": "Source Prefab",
       "name": "Derived asset name",
       "assetDescription": "Description",
-      "openManager": "Open AssetManager"
+      "openManager": "Open AssetManager",
+      "backToEditing": "Back to editing"
     },
     "asset": {
       "change": "Change"

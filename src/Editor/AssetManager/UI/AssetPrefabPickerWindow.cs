@@ -42,6 +42,7 @@ namespace Ee4v.AssetManager.UI
         private GameObject _selectedPrefab;
         private string _itemQuery = string.Empty;
         private Action<GameObject> _select;
+        private Action _openAssetManager;
         private SearchField _search;
         private VisualElement _sourceHeader;
         private VisualElement _browser;
@@ -57,9 +58,10 @@ namespace Ee4v.AssetManager.UI
         private IReadOnlyList<GameObject> _filteredPrefabs = Array.Empty<GameObject>();
 
         internal static void Show(VisualElement anchor,
-            IReadOnlyList<VariantSourceOption> sources, IAssetManager manager, Action<GameObject> select)
+            IReadOnlyList<VariantSourceOption> sources, IAssetManager manager,
+            Action<GameObject> select, Action openAssetManager)
         {
-            if (anchor == null || sources == null || sources.Count == 0 || manager == null || select == null)
+            if (anchor == null || sources == null || manager == null || select == null)
             {
                 return;
             }
@@ -72,6 +74,7 @@ namespace Ee4v.AssetManager.UI
             window._manager = manager;
             window._imageCache = new CachedImageCache();
             window._select = select;
+            window._openAssetManager = openAssetManager;
             window.ShowAsPopup(anchor, new Vector2(1040f, 720f));
         }
 
@@ -98,6 +101,13 @@ namespace Ee4v.AssetManager.UI
                 _searchRebuild = _search.schedule.Execute(RebuildOptions).StartingIn(150);
             };
             toolbar.Add(_search);
+            toolbar.Add(AssetManagerControls.CreateIconTextButton(
+                I18N.Get("workflow.selection.openManager"), "library.png", () =>
+                {
+                    var openAssetManager = _openAssetManager;
+                    Close();
+                    openAssetManager?.Invoke();
+                }, "ee4v-asset-prefab-picker__manager"));
             body.Add(toolbar);
             _browser = new VisualElement();
             _browser.AddToClassList("ee4v-asset-prefab-picker__browser");
@@ -258,8 +268,11 @@ namespace Ee4v.AssetManager.UI
             }
             if (options.childCount == 0)
             {
+                var emptyMessage = prefabStage ? "workflow.assets.noMatchingPrefabs"
+                    : _sources.Count == 0 ? "workflow.assets.noSourceDescription"
+                    : "workflow.assets.noMatchingItems";
                 var empty = new EmptyState(new EmptyStateState(string.Empty,
-                    I18N.Get(prefabStage ? "workflow.assets.noMatchingPrefabs" : "workflow.assets.noMatchingItems")));
+                    I18N.Get(emptyMessage)));
                 empty.AddToClassList("ee4v-asset-prefab-picker__empty");
                 options.Add(empty);
             }
@@ -531,6 +544,7 @@ namespace Ee4v.AssetManager.UI
             _imageCache = null;
             _manager = null;
             _select = null;
+            _openAssetManager = null;
             _sources = null;
             _source = null;
             _selectedPrefab = null;

@@ -161,7 +161,8 @@
       "sourcePrefab": "作成元のPrefab",
       "name": "派生アセット名",
       "assetDescription": "説明",
-      "openManager": "AssetManagerを開く"
+      "openManager": "AssetManagerを開く",
+      "backToEditing": "編集に戻る"
     },
     "asset": {
       "change": "変更"

@@ -21,6 +21,7 @@ namespace Ee4v.AssetManager.UI
     {
         private void BuildWindow()
         {
+            var browsingAssets = IsBrowsingAssets;
             HideVariantChangesHover();
             InvalidateVariantSaveStatus();
             ApplyEditorMode();
@@ -29,6 +30,7 @@ namespace Ee4v.AssetManager.UI
             ClearAppearanceCaches();
             var root = this;
             root.Clear();
+            _editingWorkspace = null;
             AssetManagerWindowSession.PrepareWorkflowRoot(root);
             root.AddToClassList("ee4v-modification-workflow");
 
@@ -56,13 +58,16 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            _editingWorkspace = new VisualElement();
+            _editingWorkspace.AddToClassList("ee4v-modification-workflow__editing-workspace");
+            root.Add(_editingWorkspace);
             _workspaceHeader = BuildWorkspaceHeader();
-            root.Add(_workspaceHeader);
+            _editingWorkspace.Add(_workspaceHeader);
             var preview = EditorApplication.isPlaying
                 ? new VisualElement() : BuildPreviewPane();
             _editorLayout = new WorkflowEditorLayout(
                 BuildCategoryRail(), preview);
-            root.Add(_editorLayout);
+            _editingWorkspace.Add(_editorLayout);
             _customizerHost = _editorLayout.AppearanceHost;
             _appearanceHeader = _editorLayout.AppearanceHeader;
             _bodyPartSelector = null;
@@ -70,6 +75,7 @@ namespace Ee4v.AssetManager.UI
             _faceExpressionHost = _editorLayout.FaceExpressionHost;
             _executionHost = _editorLayout.ExecutionHost;
             ShowCategory(_currentCategory, false);
+            if (browsingAssets) { ShowTemporaryAssetManager(); }
         }
 
         private VisualElement BuildWorkspaceHeader()
@@ -176,30 +182,28 @@ namespace Ee4v.AssetManager.UI
                         I18N.Get("workflow.assets.readFailed"),
                         HelpBoxMessageType.Error));
                 }
-                var sources = GetVariantSources();
                 UiButton add = null;
                 add = new UiButton(
                     "+",
-                    () => OpenAssetPicker(add, sources),
+                    () => OpenAssetPicker(add),
                     I18N.Get("workflow.assets.add"),
                     variant: UiButtonVariant.Ghost);
                 add.SetLabelFontSize(20);
                 add.SetLabelTextAlign(TextAnchor.MiddleCenter);
                 add.AddToClassList(
                     "ee4v-modification-workflow__header-add");
-                add.SetEnabled(sources.Count > 0);
                 strip.Add(add);
-                if (sources.Count == 0)
-                {
-                    add.tooltip = I18N.Get(
-                        "workflow.assets.noSourceDescription");
-                }
             }
             if (selectedCard != null)
             {
                 var cardToReveal = selectedCard;
                 strip.schedule.Execute(() => strip.ScrollTo(cardToReveal));
             }
+            cards.Add(new UiButton(
+                I18N.Get("workflow.selection.openManager"),
+                ShowTemporaryAssetManager,
+                icon: FluentUiIcons.CreateState("library.png", UiSizeTokens.Size12),
+                variant: UiButtonVariant.Ghost));
             var discard = new UiButton(
                 I18N.Get("variant.discardChanges"),
                 DiscardVariantChanges,

@@ -456,11 +456,10 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void OpenAssetPicker(
-            VisualElement anchor,
-            IReadOnlyList<VariantSourceOption> sources)
+        private void OpenAssetPicker(VisualElement anchor)
         {
             var target = _avatarContext.Root;
+            var sources = GetVariantSources();
             AssetPrefabPickerWindow.Show(
                 anchor,
                 sources,
@@ -470,6 +469,13 @@ namespace Ee4v.AssetManager.UI
                     if (!_disposed && _avatarContext.Root == target)
                     {
                         AddPrefab(prefab);
+                    }
+                },
+                () =>
+                {
+                    if (!_disposed && _avatarContext.Root == target)
+                    {
+                        ShowTemporaryAssetManager();
                     }
                 });
         }

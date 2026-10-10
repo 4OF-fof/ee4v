@@ -10,6 +10,7 @@ namespace Ee4v.AssetManager.UI
     {
         [SerializeField] private string _derivedAssetGuid;
         [SerializeField] private WorkflowCategory _editingCategory;
+        [SerializeField] private bool _browsingAssets;
         private AssetModificationWorkflowView _view;
 
         [MenuItem("ee4v/ee4v", false, 0)]
@@ -35,6 +36,11 @@ namespace Ee4v.AssetManager.UI
 
         private void CreateGUI()
         {
+            if (_view != null)
+            {
+                _editingCategory = _view.EditingCategory;
+                _browsingAssets = _view.IsBrowsingAssets;
+            }
             _view?.Dispose();
             rootVisualElement.Clear();
             AssetManagerWindowSession.PrepareWorkflowRoot(rootVisualElement);
@@ -48,6 +54,7 @@ namespace Ee4v.AssetManager.UI
             {
                 _view.SelectDerivedAsset(asset);
                 _view.RestoreEditingCategory(_editingCategory);
+                if (_browsingAssets) { _view.ShowTemporaryAssetManager(); }
             }
         }
 
@@ -60,6 +67,7 @@ namespace Ee4v.AssetManager.UI
         private void OnDisable()
         {
             _editingCategory = _view?.EditingCategory ?? _editingCategory;
+            _browsingAssets = _view?.IsBrowsingAssets ?? _browsingAssets;
             I18N.Reloaded -= ConfigureWindow;
             _view?.Dispose();
             _view = null;

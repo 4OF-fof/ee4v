@@ -27,6 +27,11 @@
     min-width: 0;
 }
 
+.ee4v-asset-prefab-picker__manager {
+    flex-shrink: 0;
+    margin-left: 12px;
+}
+
 .ee4v-asset-prefab-picker__browser {
     flex-direction: row;
     flex-grow: 1;
@@ -281,6 +286,33 @@
     min-width: 0;
     min-height: 0;
     flex-grow: 1;
+}
+
+.ee4v-modification-workflow__editing-workspace {
+    min-width: 0;
+    min-height: 0;
+    flex-grow: 1;
+}
+
+.ee4v-modification-workflow__editing-workspace--hidden {
+    visibility: hidden;
+}
+
+.ee4v-modification-workflow__temporary-library {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--ee4v-color-panel);
+}
+
+.ee4v-modification-workflow__library-toolbar {
+    flex-shrink: 0;
+    flex-direction: row;
+    padding: var(--ee4v-space-lg);
+    border-bottom-width: var(--ee4v-border-hairline);
+    border-bottom-color: var(--ee4v-color-border-default);
 }
 
 .ee4v-modification-workflow__selection-header {

@@ -191,6 +191,12 @@ namespace Ee4v.AssetManager.UI
 
         private AssetManagerWorkspaceView _assetManagerView;
 
+        private VisualElement _editingWorkspace;
+        private VisualElement _temporaryAssetManagerPage;
+        private AssetManagerWorkspaceView _temporaryAssetManagerView;
+
+        internal bool IsBrowsingAssets => _temporaryAssetManagerPage != null;
+
         private AssetManagerViewState _assetManagerViewState = new AssetManagerViewState();
 
         internal event Action<DerivedAssetInfo> DerivedAssetChanged;
@@ -535,6 +541,12 @@ namespace Ee4v.AssetManager.UI
             ReleaseVariantStatusManager();
             _manager = null;
             _assetManagerViewState = new AssetManagerViewState();
+            if (IsBrowsingAssets)
+            {
+                CloseTemporaryAssetManager();
+                ShowTemporaryAssetManager();
+                return;
+            }
             Rebuild();
         }
 
@@ -550,6 +562,7 @@ namespace Ee4v.AssetManager.UI
 
         private void DisposeEditors()
         {
+            CloseTemporaryAssetManager();
             _executionView?.Dispose();
             _executionView = null;
             _inspectionView?.Dispose();

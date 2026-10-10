@@ -14,6 +14,61 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed partial class AssetModificationWorkflowView
     {
+        internal void ShowTemporaryAssetManager()
+        {
+            if (_disposed || IsBrowsingAssets || _editingWorkspace == null ||
+                _avatarContext.Root == null || EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                return;
+            }
+            HideVariantChangesHover();
+            var page = new VisualElement();
+            page.AddToClassList("ee4v-modification-workflow__selection-page");
+            page.AddToClassList("ee4v-modification-workflow__temporary-library");
+            var toolbar = new VisualElement();
+            toolbar.AddToClassList("ee4v-modification-workflow__library-toolbar");
+            toolbar.Add(new UiButton(
+                I18N.Get("workflow.selection.backToEditing"),
+                () =>
+                {
+                    CloseTemporaryAssetManager();
+                    RequestRepaint();
+                },
+                icon: FluentUiIcons.CreateState("arrow_left.png", UiSizeTokens.Size12),
+                variant: UiButtonVariant.Ghost));
+            page.Add(toolbar);
+            try
+            {
+                _temporaryAssetManagerView = new AssetManagerWorkspaceView(
+                    null,
+                    createView: (mode, createDerivedAsset) => new AssetManagerView(
+                        _manager = _manager ?? AssetManagerWindowSession.GetManager(),
+                        _assetManagerViewState,
+                        mode));
+                page.Add(_temporaryAssetManagerView);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                page.Add(UiTextFactory.CreateHelpBox(
+                    I18N.Get("workflow.selection.managerLoadFailed"),
+                    HelpBoxMessageType.Error));
+            }
+            _temporaryAssetManagerPage = page;
+            _editingWorkspace.AddToClassList("ee4v-modification-workflow__editing-workspace--hidden");
+            Add(page);
+            RequestRepaint();
+        }
+
+        private void CloseTemporaryAssetManager()
+        {
+            _temporaryAssetManagerView?.Dispose();
+            _temporaryAssetManagerView = null;
+            _temporaryAssetManagerPage?.RemoveFromHierarchy();
+            _temporaryAssetManagerPage = null;
+            _editingWorkspace?.RemoveFromClassList("ee4v-modification-workflow__editing-workspace--hidden");
+        }
+
         private VisualElement BuildDerivedAssetSelection()
         {
             var page = new VisualElement();
