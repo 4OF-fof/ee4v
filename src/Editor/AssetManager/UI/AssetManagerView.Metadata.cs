@@ -116,7 +116,7 @@ namespace Ee4v.AssetManager.UI
                         }
                     }
                     if (ShowsInformation &&
-                        (_viewState.DetailVariantId ?? _viewState.SelectedVariantId) != variant.VariantId)
+                        InformationVariantId != variant.VariantId)
                     {
                         RefreshDetail();
                     }

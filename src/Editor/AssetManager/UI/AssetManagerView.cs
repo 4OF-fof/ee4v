@@ -660,7 +660,7 @@ namespace Ee4v.AssetManager.UI
         {
             _importedItemIdsInProject = null;
             if (_variantState.VariantMetadataSaveCount > 0) { return; }
-            if (ShowsVariants || !string.IsNullOrEmpty(_viewState.DetailVariantId) ||
+            if (ShowsVariants || _viewState.Page == AssetManagerPage.Archived || !string.IsNullOrEmpty(_viewState.DetailVariantId) ||
                 !string.IsNullOrEmpty(_viewState.DetailItemId))
             {
                 Refresh();
@@ -687,6 +687,14 @@ namespace Ee4v.AssetManager.UI
         {
             switch (change)
             {
+                case AssetManagerViewStateChange.ArchiveSelection:
+                    if (ShowsMain)
+                    {
+                        _itemGrid.SetSelectedItemIds(
+                            _viewState.SelectedArchiveEntryIds, _viewState.SelectedArchiveEntryId);
+                    }
+                    if (ShowsInformation) { RefreshDetail(); }
+                    break;
                 case AssetManagerViewStateChange.VariantSelection:
                     if (ShowsMain)
                     {

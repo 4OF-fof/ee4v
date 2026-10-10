@@ -55,6 +55,9 @@ namespace Ee4v.AssetManager.UI
                 case AssetManagerPage.Variants:
                     BuildVariants();
                     break;
+                case AssetManagerPage.Archived:
+                    BuildArchived();
+                    break;
                 case AssetManagerPage.Tags:
                     if (string.IsNullOrEmpty(_viewState.TagPath))
                     {
@@ -87,6 +90,7 @@ namespace Ee4v.AssetManager.UI
             _defersManagerRefresh = true;
             try
             {
+                if (_viewState.Page == AssetManagerPage.Archived) { _variantManager?.RebuildIndex(); }
                 if (_manager is IAssetDatasourceManager)
                 {
                     AssetManagerWindowSession.SyncSelectedDatasource(_manager);
@@ -127,6 +131,96 @@ namespace Ee4v.AssetManager.UI
             OnGridVisibleItemsChanged(_itemGrid.GetVisibleItemIds());
         }
 
+        private const string ArchiveVariantPrefix = "variant:";
+
+        private static bool TryGetArchiveVariantId(string entryId, out string variantId)
+        {
+            variantId = entryId != null && entryId.StartsWith(ArchiveVariantPrefix, StringComparison.Ordinal)
+                ? entryId.Substring(ArchiveVariantPrefix.Length) : null;
+            return !string.IsNullOrEmpty(variantId);
+        }
+
+        private void BuildArchived()
+        {
+            CancelGridThumbnails();
+            _content.Clear();
+            _search.style.display = DisplayStyle.Flex;
+            _sortButton.style.display = DisplayStyle.Flex;
+            _gridControls.style.display = DisplayStyle.Flex;
+            var icon = AssetManagerControls.LoadFluentIconState(
+                "cube.png", UiSizeTokens.Size24,
+                I18N.Get("navigation.variants"), UiColorTokens.TextMuted);
+            var entries = GetVisibleItems().Select(item => new
+                {
+                    Grid = new AssetItemGridEntry(item.Id, item.Name),
+                    item.CreatedAt, item.UpdatedAt, FileCount = item.Files?.Count ?? 0
+                })
+                .Concat(GetVariants().Where(variant => variant.IsArchived && AssetManagerSearch.MatchesVariant(
+                    variant, _search.Value, _viewState.SearchTargets)).Select(variant => new
+                {
+                    Grid = new AssetItemGridEntry(ArchiveVariantPrefix + variant.VariantId, variant.Name)
+                    {
+                        PlaceholderIcon = icon
+                    },
+                    CreatedAt = DateTime.MinValue, variant.UpdatedAt, FileCount = 0
+                }));
+            var reverse = _viewState.IsItemSortReversed;
+            var ordered = reverse
+                ? entries.OrderByDescending(entry => entry.Grid.Name, StringComparer.OrdinalIgnoreCase)
+                : entries.OrderBy(entry => entry.Grid.Name, StringComparer.OrdinalIgnoreCase);
+            switch (_viewState.ItemSortField)
+            {
+                case AssetManagerItemSortField.CreatedAt:
+                    ordered = reverse ? entries.OrderByDescending(entry => entry.CreatedAt)
+                        : entries.OrderBy(entry => entry.CreatedAt);
+                    break;
+                case AssetManagerItemSortField.UpdatedAt:
+                    ordered = reverse ? entries.OrderByDescending(entry => entry.UpdatedAt)
+                        : entries.OrderBy(entry => entry.UpdatedAt);
+                    break;
+                case AssetManagerItemSortField.FileCount:
+                    ordered = reverse ? entries.OrderByDescending(entry => entry.FileCount)
+                        : entries.OrderBy(entry => entry.FileCount);
+                    break;
+            }
+            ordered = reverse
+                ? ordered.ThenByDescending(entry => entry.Grid.Name, StringComparer.OrdinalIgnoreCase)
+                    .ThenByDescending(entry => entry.Grid.Id, StringComparer.Ordinal)
+                : ordered.ThenBy(entry => entry.Grid.Name, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(entry => entry.Grid.Id, StringComparer.Ordinal);
+            var gridEntries = ordered.Select(entry => entry.Grid).ToArray();
+            if (gridEntries.Length == 0)
+            {
+                _content.Add(AssetManagerControls.CreateNotice(I18N.Get("notice.noItems")));
+            }
+            _itemGrid.SetItems(gridEntries);
+            _itemGrid.SetSelectedItemIds(_viewState.SelectedArchiveEntryIds, _viewState.SelectedArchiveEntryId);
+            _content.Add(_itemGrid);
+            OnGridVisibleItemsChanged(_itemGrid.GetVisibleItemIds());
+        }
+
+        private void ShowArchiveContextMenu(IReadOnlyList<string> entryIds)
+        {
+            var variantIds = entryIds.Where(id => TryGetArchiveVariantId(id, out _))
+                .Select(id => id.Substring(ArchiveVariantPrefix.Length)).ToArray();
+            var itemIds = entryIds.Where(id => !TryGetArchiveVariantId(id, out _)).ToArray();
+            var menu = new GenericMenu();
+            var restore = UiTextFactory.CreateGuiContent(I18N.Get("action.restore"));
+            var delete = UiTextFactory.CreateGuiContent(I18N.Get("action.delete"));
+            if (_variantManager == null || _variantState.VariantBusy)
+            {
+                menu.AddDisabledItem(restore);
+                menu.AddDisabledItem(delete);
+            }
+            else
+            {
+                menu.AddItem(restore, false, () => ChangeVariantLifecycle(variantIds, false, itemIds));
+                menu.AddSeparator(string.Empty);
+                menu.AddItem(delete, false, () => ChangeVariantLifecycle(variantIds, null, itemIds));
+            }
+            menu.ShowAsContext();
+        }
+
         private void BuildTags()
         {
             CancelGridThumbnails();
@@ -153,7 +247,7 @@ namespace Ee4v.AssetManager.UI
             _sortButton.style.display = DisplayStyle.Flex;
             _gridControls.style.display = DisplayStyle.Flex;
             var variants = AssetManagerItemSort.Apply(
-                GetVariants().Where(variant => AssetManagerSearch.MatchesVariant(
+                GetVariants().Where(variant => !variant.IsArchived && AssetManagerSearch.MatchesVariant(
                     variant, _search.Value, _viewState.SearchTargets)),
                 _viewState.ItemSortField,
                 _viewState.IsItemSortReversed);
@@ -166,7 +260,7 @@ namespace Ee4v.AssetManager.UI
                 "cube.png", UiSizeTokens.Size24,
                 I18N.Get("navigation.variants"), UiColorTokens.TextMuted);
             _itemGrid.SetItems(variants.Select(variant => new AssetItemGridEntry(
-                variant.VariantId, variant.Name)
+                variant.VariantId, variant.IsArchived ? variant.Name + " (" + I18N.Get("detail.item.archived") + ")" : variant.Name)
             {
                 PlaceholderIcon = icon
             }).ToArray());
@@ -180,6 +274,11 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyList<string> itemIds,
             string primaryItemId)
         {
+            if (_viewState.Page == AssetManagerPage.Archived)
+            {
+                _viewState.SelectArchiveEntries(itemIds, primaryItemId);
+                return;
+            }
             if (ShowsVariants)
             {
                 _viewState.SelectVariants(itemIds, primaryItemId);
@@ -190,6 +289,11 @@ namespace Ee4v.AssetManager.UI
 
         private void OpenItemDetail(string itemId)
         {
+            if (_viewState.Page == AssetManagerPage.Archived && TryGetArchiveVariantId(itemId, out var variantId))
+            {
+                _viewState.OpenVariantDetail(variantId);
+                return;
+            }
             if (ShowsVariants)
             {
                 _viewState.OpenVariantDetail(itemId);
@@ -208,8 +312,15 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyList<string> itemIds,
             VisualElement anchor)
         {
+            if (_viewState.Page == AssetManagerPage.Archived &&
+                itemIds.Any(id => TryGetArchiveVariantId(id, out _)))
+            {
+                ShowArchiveContextMenu(itemIds);
+                return;
+            }
             if (ShowsVariants)
             {
+                ShowVariantContextMenu(itemIds);
                 return;
             }
             var items = (itemIds ?? Array.Empty<string>())

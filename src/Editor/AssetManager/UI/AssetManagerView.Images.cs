@@ -40,7 +40,7 @@ namespace Ee4v.AssetManager.UI
         {
             var cancellation = new CancellationTokenSource();
             _gridThumbnailCancellation = cancellation;
-            var savedVariants = ShowsVariants && _variantManager != null
+            var savedVariants = (ShowsVariants || _viewState.Page == AssetManagerPage.Archived) && _variantManager != null
                 ? _variantManager.GetVariants().ToDictionary(variant => variant.Id, StringComparer.Ordinal)
                 : null;
             try
@@ -57,10 +57,12 @@ namespace Ee4v.AssetManager.UI
                         try
                         {
                             AssetThumbnail thumbnail;
-                            if (ShowsVariants)
+                            var isArchiveVariant = TryGetArchiveVariantId(itemId, out var archiveVariantId);
+                            if (ShowsVariants || isArchiveVariant)
                             {
-                                thumbnail = savedVariants != null && savedVariants.TryGetValue(itemId, out var variant)
-                                    ? await _variantManager.GetRevisionThumbnail(itemId, variant.HeadRevisionId, cancellation.Token)
+                                var variantId = isArchiveVariant ? archiveVariantId : itemId;
+                                thumbnail = savedVariants != null && savedVariants.TryGetValue(variantId, out var variant)
+                                    ? await _variantManager.GetRevisionThumbnail(variantId, variant.HeadRevisionId, cancellation.Token)
                                     : null;
                             }
                             else

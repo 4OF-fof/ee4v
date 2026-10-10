@@ -14,6 +14,7 @@ namespace Ee4v.AssetManager.Infrastructure
         public string Description { get; set; }
         public string SourceGuid { get; set; }
         public string AssetPath { get; set; }
+        public bool IsArchived { get; set; }
     }
 
     public static class DerivedAssetCatalog
@@ -28,20 +29,22 @@ namespace Ee4v.AssetManager.Infrastructure
             public string name;
             public string description;
             public string sourceGuid;
+            public bool isArchived;
         }
 
         public static string Serialize(
             string parentItemId,
             string name,
             string description,
-            string sourceGuid)
+            string sourceGuid, bool isArchived = false)
         {
             return MetadataPrefix + JsonUtility.ToJson(new Metadata
             {
                 parentItemId = parentItemId ?? string.Empty,
                 name = name ?? string.Empty,
                 description = description ?? string.Empty,
-                sourceGuid = sourceGuid ?? string.Empty
+                sourceGuid = sourceGuid ?? string.Empty,
+                isArchived = isArchived
             });
         }
 
@@ -125,7 +128,8 @@ namespace Ee4v.AssetManager.Infrastructure
                         : metadata.name,
                     Description = metadata.description ?? string.Empty,
                     SourceGuid = metadata.sourceGuid ?? string.Empty,
-                    AssetPath = assetPath
+                    AssetPath = assetPath,
+                    IsArchived = metadata.isArchived
                 };
             }
             catch (ArgumentException)

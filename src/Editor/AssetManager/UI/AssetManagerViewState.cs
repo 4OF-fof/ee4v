@@ -30,7 +30,8 @@ namespace Ee4v.AssetManager.UI
         ItemDetailPage,
         ItemSort,
         SearchTargets,
-        VariantSelection
+        VariantSelection,
+        ArchiveSelection
     }
 
     internal sealed class AssetManagerViewState
@@ -57,6 +58,8 @@ namespace Ee4v.AssetManager.UI
         public string SelectedFileId { get; private set; }
         public IReadOnlyList<string> SelectedVariantIds => _selectedVariantIds;
         public string SelectedVariantId { get; private set; }
+        public IReadOnlyList<string> SelectedArchiveEntryIds { get; private set; } = Array.Empty<string>();
+        public string SelectedArchiveEntryId { get; private set; }
         public bool CanGoBack => _backHistory.Count > 0;
         public bool CanGoForward => _forwardHistory.Count > 0;
         public AssetManagerItemSortField ItemSortField { get; private set; } =
@@ -253,6 +256,19 @@ namespace Ee4v.AssetManager.UI
             Changed?.Invoke(AssetManagerViewStateChange.VariantSelection);
         }
 
+        public void SelectArchiveEntries(IEnumerable<string> ids, string primaryId)
+        {
+            var selected = (ids ?? Array.Empty<string>())
+                .Where(id => !string.IsNullOrEmpty(id))
+                .Distinct(StringComparer.Ordinal).ToArray();
+            var primary = selected.Contains(primaryId, StringComparer.Ordinal)
+                ? primaryId : selected.LastOrDefault();
+            if (SelectedArchiveEntryId == primary && SelectedArchiveEntryIds.SequenceEqual(selected)) { return; }
+            SelectedArchiveEntryIds = selected;
+            SelectedArchiveEntryId = primary;
+            Changed?.Invoke(AssetManagerViewStateChange.ArchiveSelection);
+        }
+
         public void SetItemSortField(AssetManagerItemSortField field)
         {
             if (ItemSortField == field)
@@ -325,6 +341,8 @@ namespace Ee4v.AssetManager.UI
             SelectedFileId = null;
             _selectedVariantIds = Array.Empty<string>();
             SelectedVariantId = null;
+            SelectedArchiveEntryIds = Array.Empty<string>();
+            SelectedArchiveEntryId = null;
         }
 
         private bool HasSameItemSelection(

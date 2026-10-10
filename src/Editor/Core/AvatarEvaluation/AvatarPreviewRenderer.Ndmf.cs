@@ -185,9 +185,10 @@ namespace Ee4v.Core.AvatarEvaluation
             }
             private static void SetLocalMatrix(Transform target, Matrix4x4 matrix)
             {
-                target.localPosition = matrix.GetColumn(3);
-                target.localRotation = matrix.rotation;
-                target.localScale = matrix.lossyScale;
+                AvatarPreviewPose.Decompose(matrix, out var position, out var rotation, out var scale);
+                target.localPosition = position;
+                target.localRotation = rotation;
+                target.localScale = scale;
             }
             public void Dispose()
             {

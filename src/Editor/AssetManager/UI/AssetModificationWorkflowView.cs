@@ -162,6 +162,7 @@ namespace Ee4v.AssetManager.UI
                         EditorSceneManager.MarkSceneDirty(
                             _workingSceneSession.Root.scene);
                     }
+                    if (value) { QueueWorkingSceneSave(); }
                 }
             }
         }
@@ -209,7 +210,8 @@ namespace Ee4v.AssetManager.UI
                         return !_parts.BodyScaleDirty && _parts.FlushPendingPartVisibility();
                     },
                     GetWorkingAssetPath, value => _workingSceneDirty = value,
-                    InvalidateVariantSaveStatus, ShowAssetError, CreateEditableMaterialVariant),
+                    () => { QueueWorkingSceneSave(); InvalidateVariantSaveStatus(); },
+                    ShowAssetError, CreateEditableMaterialVariant),
                 new AvatarEditingHost(() => ShowCategory(_currentCategory, false),
                     BuildWindow, ClearAppearanceCaches, RequestRepaint, SyncPreviewSelection)
                 {

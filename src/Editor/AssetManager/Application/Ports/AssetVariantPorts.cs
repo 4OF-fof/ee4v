@@ -10,6 +10,7 @@ namespace Ee4v.AssetManager.Application.Ports
         AssetVariantSnapshot Read(string variantId, string revisionId);
         AssetVariantSnapshot Save(AssetVariantSnapshot snapshot, string stagingPath);
         void UpdateMetadata(AssetVariant variant);
+        Action Delete(string variantId);
         byte[] ReadPreview(AssetVariantSnapshot snapshot);
         IReadOnlyList<AssetVariantGalleryImage> ReadGallery(string variantId);
         byte[] ReadGalleryImage(string variantId, string imageId);
@@ -39,6 +40,9 @@ namespace Ee4v.AssetManager.Application.Ports
         void SetBaseRevision(string variantId, string revisionId);
         // Returns an undo action, or null when the Prefab is absent from this Project.
         Action UpdateMetadata(string variantId, string name, string description);
+        Action SetArchived(string variantId, bool archived);
+        void ValidateDelete(string variantId);
+        void Delete(string variantId);
         bool HasAssets(AssetVariantDependency dependency);
         void ValidateRestore(AssetVariantSnapshot snapshot, string rootAssetPath);
     }

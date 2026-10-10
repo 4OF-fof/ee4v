@@ -173,3 +173,5 @@ Unity version の差異は公開 API の利用側ではなく、これらの bac
 `BodyPartCategory`は編集補助ツールとプレビューが共有する部位の分類です。Head、Chest、Waist、Shoulders、Arms、Hands、Legs、Feet、Otherを持ち、機能固有の改変カテゴリやUI状態は含みません。
 
 `PrefabHierarchyUtility.SplitName`は区切り文字とcamel caseで名前を小文字の語へ分割します。`IsInScope`は指定Transformが対象root内の選択範囲へ含まれるかを判定します。選択indexがnullならroot全体、0以上ならその子階層、負なら構成Prefabのindex集合を除いたroot側を対象とします。共通のPrefabScenePreviewとAssetManagerの部位・Material分類が使用し、SceneやPrefabを変更しません。
+
+`EditorSceneApi.SaveAfterEdit(scene)`はee4v編集ホストからだけ呼ぶScene保存APIです。UI操作後に対象の名前付きAssets内Sceneがdirtyなら保存し、同一Sceneの連続要求を集約します。Preview Scene・無名Scene・Play Modeを除外し、全Sceneの一括保存やPrefabへの適用は行いません。

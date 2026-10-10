@@ -49,3 +49,5 @@ MCPの明示測定も`AvatarPlayModePerformanceCache.CanBake`／`Bake`／`Get`�
 単独Windowのメニューは`ee4v/Window/Avatar/Avatar Info`です。`AvatarInfoWindow`は共有`AvatarPrefabEditorWindow`のHierarchy入力とPreviewを使い、AssetManagerと同じView、編集補助、PC／Quest切替を提供します。部位選択と変更を戻すボタンは表示せず、Blueprint ID等のPrefab overrideに対して「Prefabに保存」を表示します。Scene保存とGit保存は行いません。装着設定を開く操作はホストがSelectionとInspectorへ接続します。Viewはそれらを操作せず、`UI/avatar-info.uss`を自身で読み込みます。
 
 Catalogは`Domain/AvatarInfo/Displays/AvatarInfoView`へ登録します。Storyでは名前編集、一覧取得前の選択不可、サンプル一覧取得後のID選択と新規選択、ID設定有無、結果の有無、PC／Quest切替、アイテム別の色分けバーと凡例、ビルド前の推定表示、測定ボタンからサンプル結果への切り替えを確認できます。StoryはScene編集、SDKへの通信、ベイク、ビルド、Play Mode切替を実行しません。
+
+性能summary・各指標カードは、評価の文字・左枠・バーと同じ色を基準に、背景へ8%の色を混ぜます。Medium／Poor／VeryPoorの背景もバーと同じ評価色になり、未取得のカードは中立色で表示します。

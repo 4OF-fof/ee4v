@@ -16,6 +16,44 @@ namespace Ee4v.Core.AvatarEvaluation
     /// <summary>Evaluates display pose overrides using MA bone bindings; does not merge hierarchy or retarget animation.</summary>
     public static class AvatarPreviewPose
     {
+        // Matrix.rotation asserts for collapsed axes and some sheared attachment matrices.
+        // Keep finite position/scale, and derive an orthonormal rotation without native decomposition.
+        internal static void Decompose(Matrix4x4 matrix, out Vector3 position,
+            out Quaternion rotation, out Vector3 scale)
+        {
+            position = matrix.GetColumn(3);
+            var x = (Vector3)matrix.GetColumn(0);
+            var y = (Vector3)matrix.GetColumn(1);
+            var z = (Vector3)matrix.GetColumn(2);
+            bool Finite(Vector3 v) => !float.IsNaN(v.x) && !float.IsInfinity(v.x) &&
+                !float.IsNaN(v.y) && !float.IsInfinity(v.y) && !float.IsNaN(v.z) && !float.IsInfinity(v.z);
+            if (!Finite(position) || !Finite(x) || !Finite(y) || !Finite(z))
+            {
+                position = Finite(position) ? position : Vector3.zero;
+                rotation = Quaternion.identity;
+                scale = Vector3.zero;
+                return;
+            }
+            if (matrix.ValidTRS())
+            {
+                rotation = matrix.rotation;
+                scale = matrix.lossyScale;
+                return;
+            }
+            scale = new Vector3(x.magnitude, y.magnitude, z.magnitude);
+            if (Vector3.Dot(Vector3.Cross(x, y), z) < 0f) { x = -x; scale.x = -scale.x; }
+            if (z.sqrMagnitude < 0.00000001f) z = Vector3.Cross(x, y);
+            if (y.sqrMagnitude < 0.00000001f) y = Vector3.Cross(z, x);
+            if (z.sqrMagnitude < 0.00000001f && y.sqrMagnitude > 0.00000001f)
+                z = Vector3.Cross(Mathf.Abs(y.normalized.x) < 0.9f ? Vector3.right : Vector3.forward, y);
+            if (z.sqrMagnitude < 0.00000001f) z = Vector3.forward;
+            z.Normalize();
+            y -= z * Vector3.Dot(y, z);
+            if (y.sqrMagnitude < 0.00000001f)
+                y = Vector3.Cross(z, Mathf.Abs(z.x) < 0.9f ? Vector3.right : Vector3.up);
+            rotation = Quaternion.LookRotation(z, y.normalized);
+        }
+
         public static IReadOnlyDictionary<Transform, AvatarBoneBinding> GetBindings(GameObject avatar)
         {
             if (avatar == null) throw new ArgumentNullException(nameof(avatar));
@@ -64,14 +102,15 @@ namespace Ee4v.Core.AvatarEvaluation
                         matrix = Evaluate(binding.Target) * relative;
                     else
                     {
+                        Decompose(relative, out var position, out var rotation, out var scale);
                         var keepPosition = binding.Mode == BoneProxyAttachmentMode.AsChildKeepWorldPose ||
                             binding.Mode == BoneProxyAttachmentMode.AsChildKeepPosition;
                         var keepRotation = binding.Mode == BoneProxyAttachmentMode.AsChildKeepWorldPose ||
                             binding.Mode == BoneProxyAttachmentMode.AsChildKeepRotation;
                         matrix = Evaluate(binding.Target) * Matrix4x4.TRS(
-                            keepPosition ? (Vector3)relative.GetColumn(3) : Vector3.zero,
-                            keepRotation ? relative.rotation : Quaternion.identity,
-                            binding.MatchScale ? Vector3.one : relative.lossyScale);
+                            keepPosition ? position : Vector3.zero,
+                            keepRotation ? rotation : Quaternion.identity,
+                            binding.MatchScale ? Vector3.one : scale);
                     }
                 }
                 else

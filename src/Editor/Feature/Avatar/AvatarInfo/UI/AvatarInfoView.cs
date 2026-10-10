@@ -312,11 +312,10 @@ namespace Ee4v.AvatarInfo
 
         private static void ApplyPerformanceRatingStyle(VisualElement element, string rating)
         {
-            element.EnableInClassList("ee4v-avatar-info__performance--warning",
-                rating == "Medium" || rating == "Poor");
-            element.EnableInClassList("ee4v-avatar-info__performance--critical",
-                rating == "VeryPoor");
-            element.style.borderLeftColor = GetPerformanceRatingColor(rating);
+            var color = GetPerformanceRatingColor(rating);
+            element.style.borderLeftColor = color;
+            element.style.backgroundColor = string.IsNullOrEmpty(rating)
+                ? (Color)UiColorTokens.Panel : Color.Lerp(UiColorTokens.Panel, color, 0.08f);
         }
 
         private static string GetOverviewRatingLabel(string rating)

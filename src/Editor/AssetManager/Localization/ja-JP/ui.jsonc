@@ -341,6 +341,7 @@
     "analysisUnavailable": "File Treeを読み込めませんでした。Consoleを確認してください。"
   },
   "variant": {
+    "deleteConfirm": "選択した{0}件のVariantの全保存版とギャラリーを削除し、Project内の専用フォルダーをゴミ箱へ移動します。共有の素材は削除しません。続けますか？",
     "noTargetChanges": "この操作の対象となる変更はありません。",
     "changesFailed": "変更内容を取得できませんでした。",
     "added": "追加",
@@ -498,6 +499,7 @@
     "createDerivedAsset": "派生アセットを作成"
   },
   "confirm": {
+    "deleteArchiveEntries": "選択した{0}件を削除します。Itemは所属Fileも削除します。Variantは全保存版とギャラリーを削除し、Project内の専用フォルダーをゴミ箱へ移動します。共有の素材は削除しません。続けますか？",
     "deleteItem": {
       "title": "Itemを削除",
       "message": "このItemと所属Fileを削除しますか？"

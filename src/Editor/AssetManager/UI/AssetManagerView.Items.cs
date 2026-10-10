@@ -117,6 +117,12 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            if (_viewState.Page == AssetManagerPage.Archived)
+            {
+                ShowArchiveSelectionDetail();
+                return;
+            }
+
             if (!string.IsNullOrEmpty(_viewState.SelectedFileId))
             {
                 ShowFileDetail(_manager.GetFile(
@@ -148,8 +154,49 @@ namespace Ee4v.AssetManager.UI
                     : I18N.Get("notice.selectItem"));
         }
 
+        private void ShowArchiveSelectionDetail()
+        {
+            var selected = _viewState.SelectedArchiveEntryIds;
+            if (selected.Count == 0)
+            {
+                ShowEmptyDetail(I18N.Get("notice.selectItem"));
+                return;
+            }
+            if (selected.Count == 1)
+            {
+                if (TryGetArchiveVariantId(selected[0], out var variantId)) { ShowVariantDetail(variantId); }
+                else { ShowItemDetail(_manager.GetItem(selected[0])); }
+                return;
+            }
+            if (!selected.Any(id => TryGetArchiveVariantId(id, out _)))
+            {
+                ShowItemSelectionDetail(selected.Select(_manager.GetItem).Where(item => item != null).ToArray(),
+                    _viewState.SelectedArchiveEntryId);
+                return;
+            }
+            _detail.Clear();
+            _detail.Add(UiTextFactory.Create(I18N.Get("detail.item.selectedCount", selected.Count),
+                UiClassNames.SelectionCount));
+            var variants = GetVariants().ToDictionary(variant => variant.VariantId, StringComparer.Ordinal);
+            foreach (var id in selected)
+            {
+                if (TryGetArchiveVariantId(id, out var variantId))
+                {
+                    if (variants.TryGetValue(variantId, out var variant))
+                    {
+                        _detail.Add(new InfoCard(new InfoCardState(variant.Name, variant.Description)));
+                    }
+                }
+                else
+                {
+                    var item = _manager.GetItem(id);
+                    if (item != null) { _detail.Add(new InfoCard(new InfoCardState(item.Name, item.Description))); }
+                }
+            }
+        }
+
         private void ShowItemSelectionDetail(
-            IReadOnlyList<AssetItem> items)
+            IReadOnlyList<AssetItem> items, string primaryItemId = null)
         {
             _detail.Clear();
             if (items == null || items.Count == 0)
@@ -161,7 +208,7 @@ namespace Ee4v.AssetManager.UI
             var orderedItems = items
                 .OrderBy(item => string.Equals(
                     item.Id,
-                    _viewState.SelectedItemId,
+                    primaryItemId ?? _viewState.SelectedItemId,
                     StringComparison.Ordinal)
                     ? 1
                     : 0)
@@ -677,7 +724,7 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__derived-assets-grid");
             foreach (var derivedAsset in
                      GetVariants()
-                         .Where(variant => string.Equals(
+                         .Where(variant => !variant.IsArchived && string.Equals(
                              variant.ParentItemId, itemId, StringComparison.Ordinal))
                          .OrderBy(variant => variant.Name, StringComparer.OrdinalIgnoreCase)
                          .ThenBy(variant => variant.VariantId, StringComparer.Ordinal))
@@ -706,6 +753,7 @@ namespace Ee4v.AssetManager.UI
                 {
                     _viewState.OpenVariantDetail(derivedAsset.VariantId);
                 };
+                assetCard.ContextClicked += (_, __) => ShowVariantContextMenu(new[] { derivedAsset.VariantId });
                 assetCard.RegisterCallback<DetachFromPanelEvent>(_ =>
                     assetCard.Dispose());
                 grid.Add(assetCard);

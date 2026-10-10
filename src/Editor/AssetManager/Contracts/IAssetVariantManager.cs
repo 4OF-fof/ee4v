@@ -28,6 +28,8 @@ namespace Ee4v.AssetManager.Contracts
         Task MoveGalleryImageToFront(string variantId, string imageId);
         Task<AssetVariantRevision> Save(AssetVariantSaveRequest request);
         Task UpdateMetadata(string variantId, UpdateAssetVariantRequest request);
+        Task SetArchived(string variantId, bool archived);
+        Task Delete(string variantId);
         Task<string> Restore(string variantId, string revisionId);
         void RebuildIndex();
     }
@@ -44,6 +46,7 @@ namespace Ee4v.AssetManager.Contracts
         public string RootAssetPath { get; set; }
         public string HeadRevisionId { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public bool IsArchived { get; set; }
     }
 
     public sealed class AssetVariantRevision

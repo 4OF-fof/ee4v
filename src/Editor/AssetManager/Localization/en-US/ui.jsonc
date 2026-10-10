@@ -341,6 +341,7 @@
     "analysisUnavailable": "The file tree could not be loaded. Check the Console."
   },
   "variant": {
+    "deleteConfirm": "Delete all saved versions and gallery images of {0} selected Variant(s), and move their Project folders to Trash? Shared source assets are retained.",
     "noTargetChanges": "There are no changes for this operation.",
     "changesFailed": "Could not load changes.",
     "added": "Added",
@@ -498,6 +499,7 @@
     "createDerivedAsset": "Create derived asset"
   },
   "confirm": {
+    "deleteArchiveEntries": "Delete the selected {0} archived entries? Items and their files will be deleted. All saved versions and gallery images of Variants will be deleted, and their Project folders moved to Trash. Shared source assets are retained.",
     "deleteItem": {
       "title": "Delete item",
       "message": "Delete this item and its files?"

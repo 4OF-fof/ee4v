@@ -65,8 +65,10 @@ namespace Ee4v.Core.AvatarEvaluation
             var matrix = GetPoseMatrix(bone);
             var current = GetTransformPosition(child) - matrix.MultiplyPoint3x4(Vector3.zero);
             if (current.sqrMagnitude < 0.000001f) return;
-            var worldRotation = Quaternion.FromToRotation(current, direction) * matrix.rotation;
-            _rotations[bone] = Quaternion.Inverse(GetPoseMatrix(bone.parent).rotation) * worldRotation;
+            AvatarPreviewPose.Decompose(matrix, out _, out var rotation, out _);
+            AvatarPreviewPose.Decompose(GetPoseMatrix(bone.parent), out _, out var parentRotation, out _);
+            var worldRotation = Quaternion.FromToRotation(current, direction) * rotation;
+            _rotations[bone] = Quaternion.Inverse(parentRotation) * worldRotation;
         }
     }
 }

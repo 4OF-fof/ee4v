@@ -18,7 +18,13 @@ namespace Ee4v.AssetManager.UI
             bool archived)
         {
             Run(() =>
-                _manager.SetItemArchived(itemIds, archived));
+            {
+                _manager.SetItemArchived(itemIds, archived);
+                if (_viewState.Page == AssetManagerPage.Archived)
+                {
+                    _viewState.SelectArchiveEntries(Array.Empty<string>(), null);
+                }
+            });
         }
 
         private void DeleteItems(IReadOnlyList<string> itemIds)
@@ -41,6 +47,10 @@ namespace Ee4v.AssetManager.UI
             {
                 _manager.DeleteItem(itemIds);
                 _viewState.SelectItem(null);
+                if (_viewState.Page == AssetManagerPage.Archived)
+                {
+                    _viewState.SelectArchiveEntries(Array.Empty<string>(), null);
+                }
             });
         }
 

@@ -31,6 +31,7 @@ namespace Ee4v.AssetManager.UI
         public string AssetPath { get; set; }
         public string ScenePath { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public bool IsArchived { get; set; }
         public GameObject Prefab { get; set; }
     }
 
@@ -344,6 +345,7 @@ namespace Ee4v.AssetManager.UI
                 ParentItemId = record.ParentItemId,
                 Name = record.Name,
                 Description = record.Description,
+                IsArchived = record.IsArchived,
                 AssetPath = record.AssetPath,
                 ScenePath = GetWorkingScenePath(record.AssetPath),
                 UpdatedAt = File.GetLastWriteTimeUtc(record.AssetPath),

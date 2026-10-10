@@ -258,11 +258,3 @@
 .ee4v-avatar-info__performance-card-budget-label {
     margin-top: var(--ee4v-space-sm);
 }
-
-.ee4v-avatar-info__performance--warning {
-    background-color: var(--ee4v-color-warning-surface-soft);
-}
-
-.ee4v-avatar-info__performance--critical {
-    background-color: var(--ee4v-color-error-surface-soft);
-}
