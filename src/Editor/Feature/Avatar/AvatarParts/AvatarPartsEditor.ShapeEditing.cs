@@ -11,6 +11,33 @@ namespace Ee4v.AvatarParts
 {
     public sealed partial class AvatarPartsEditor
     {
+        public void MatchAddedPrefabBodyScale(GameObject added)
+        {
+            if (_context.Root == null || added == null ||
+                added.transform.parent != _context.Root.transform ||
+                !_context.Edits.CanEditPrefab())
+            {
+                return;
+            }
+
+            var scales = ResolveAddedPrefabBodyScales(added);
+            if (scales.Count == 0)
+            {
+                return;
+            }
+            Undo.RecordObjects(scales.Keys.Cast<UnityEngine.Object>().ToArray(),
+                I18N.Get("workflow.appearance.sizeUndo"));
+            foreach (var pair in scales)
+            {
+                pair.Key.localScale = pair.Value;
+                if (PrefabUtility.IsPartOfPrefabInstance(pair.Key))
+                {
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(pair.Key);
+                }
+                EditorUtility.SetDirty(pair.Key);
+            }
+        }
+
         private void ApplyBodyScale(
             IReadOnlyList<string> targetPaths,
             Vector3 multipliers,

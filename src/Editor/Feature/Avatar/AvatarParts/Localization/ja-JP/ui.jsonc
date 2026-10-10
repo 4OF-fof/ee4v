@@ -15,8 +15,6 @@
       "invalidTarget": "このパーツの外側にある、同じアバター内の装着先を指定してください。"
     },
     "appearance": {
-      "sizeHumanoidRequired": "高度な骨格スケールには、Humanoid Avatarが設定されたAnimatorが必要です。身長と見た目用BlendShapeは引き続き使用できます。",
-      "heightDescriptorRequired": "VRChatアップロード時の身長を取得するには、VRC Avatar Descriptorと有効なView Positionが必要です。",
       "sizeProtected": "このPrefabは派生アセット外にあります。元素材を守るため、サイズを変更できません。",
       "sizeSaveFailed": "サイズを派生Prefabへ保存できませんでした。Consoleを確認してください。",
       "sizeUndo": "体のサイズを変更",
@@ -49,6 +47,7 @@
         "z": "Z"
       },
       "sizePart": {
+        "prefab": "Prefab倍率",
         "wholeBody": "身長",
         "head": "頭",
         "chest": "胸",
@@ -71,8 +70,8 @@
       "empty": "表示を切り替えられるパーツがありません。",
       "turnOn": "このパーツを表示",
       "turnOff": "このパーツを非表示",
-      "enable": "Enable",
-      "disable": "Disable",
+      "enable": "有効化",
+      "disable": "無効化",
       "parentHidden": "親のパーツが非表示です。"
     },
     "shapeParts": {

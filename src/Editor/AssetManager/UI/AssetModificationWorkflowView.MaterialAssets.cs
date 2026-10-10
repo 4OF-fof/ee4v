@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Ee4v.Core.I18n;
 using UnityEditor;
 using UnityEngine;
@@ -79,6 +80,19 @@ namespace Ee4v.AssetManager.UI
         {
             InvalidateVariantSaveStatus();
             ClearAppearanceCaches();
+            if (IsEditableWorkflowPrefab() &&
+                !ReadAssetChildren().Select(child => child.SiblingIndex)
+                    .SequenceEqual(_avatarContext.PrefabSiblingIndices))
+            {
+                _workingSceneDirty = true;
+                _avatarContext.SelectedPrefabSiblingIndex = null;
+                _avatarContext.SelectedPrefabName = string.Empty;
+                _avatarContext.HiddenPrefabSiblingIndices.Clear();
+                _prefabPreviewVisibilityInitialized = false;
+                _parts.InvalidateShapeTargets();
+                BuildWindow();
+                return;
+            }
             if (_currentCategory != WorkflowCategory.ShapeParts ||
                 _parts.Section != ShapePartsSection.Shape)
             {

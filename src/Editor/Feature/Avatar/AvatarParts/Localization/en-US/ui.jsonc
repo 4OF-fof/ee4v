@@ -15,8 +15,6 @@
       "invalidTarget": "Select a target within this avatar and outside this part."
     },
     "appearance": {
-      "sizeHumanoidRequired": "A Humanoid Animator is required for advanced skeleton scaling. Height and appearance BlendShapes remain available.",
-      "heightDescriptorRequired": "A VRC Avatar Descriptor with a valid View Position is required to read the upload-time avatar height.",
       "sizeProtected": "This Prefab is outside the derived asset. Its size cannot be changed so the source remains protected.",
       "sizeSaveFailed": "The size could not be saved to the derived Prefab. Check the Console.",
       "sizeUndo": "Change body size",
@@ -49,6 +47,7 @@
         "z": "Z"
       },
       "sizePart": {
+        "prefab": "Prefab scale",
         "wholeBody": "Height",
         "head": "Head",
         "chest": "Chest",

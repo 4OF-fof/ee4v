@@ -61,9 +61,7 @@ namespace Ee4v.AvatarParts
             }
 
             var animator = FindHumanoidAnimator();
-            if (!_context.SelectedBodyPart.HasValue &&
-                (!_context.SelectedPrefabSiblingIndex.HasValue ||
-                 _context.SelectedPrefabSiblingIndex == -1))
+            if (!_context.SelectedBodyPart.HasValue)
             {
                 var primaryScaleList = new VisualElement();
                 primaryScaleList.AddToClassList(
@@ -73,7 +71,9 @@ namespace Ee4v.AvatarParts
                 var wholeBodyTargets = ResolveBodyScaleTargets(
                     wholeBody,
                     animator);
-                if (TryGetWorkingAvatarViewPosition(
+                var isAvatarScope = !_context.SelectedPrefabSiblingIndex.HasValue ||
+                                    _context.SelectedPrefabSiblingIndex == -1;
+                if (isAvatarScope && TryGetWorkingAvatarViewPosition(
                         out var avatarDescriptor,
                         out var currentViewPosition))
                 {
@@ -88,9 +88,17 @@ namespace Ee4v.AvatarParts
                 }
                 else
                 {
-                    primaryScaleList.Add(UiTextFactory.CreateHelpBox(
-                        I18N.Get("workflow.appearance.heightDescriptorRequired"),
-                        HelpBoxMessageType.Warning));
+                    var prefabTargets = ResolvePrefabScaleTargets();
+                    if (prefabTargets.Count > 0)
+                    {
+                        primaryScaleList.Add(BuildBodyScaleControl(
+                            new BodyScaleDefinition(
+                                "workflow.appearance.sizePart.prefab",
+                                false,
+                                false),
+                            GetTransformPaths(prefabTargets),
+                            GetBodyScaleMultipliers(prefabTargets)));
+                    }
                 }
                 content.Add(primaryScaleList);
             }
@@ -260,20 +268,6 @@ namespace Ee4v.AvatarParts
                 {
                     content.Add(BuildAdvancedBodyScaleFoldout(
                         advancedList));
-                }
-            }
-            else if (_context.SelectedBodyPart != BodyPartCategory.Other)
-            {
-                var warning = UiTextFactory.CreateHelpBox(
-                    I18N.Get("workflow.appearance.sizeHumanoidRequired"),
-                    HelpBoxMessageType.Warning);
-                if (_context.SelectedBodyPart.HasValue)
-                {
-                    content.Insert(0, warning);
-                }
-                else
-                {
-                    content.Add(warning);
                 }
             }
             return content;
