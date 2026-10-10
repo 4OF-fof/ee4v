@@ -108,7 +108,8 @@ namespace Ee4v.AvatarInfo
         }
 
         internal static void Capture(GameObject avatar, Record record,
-            AvatarInfoParameterSource[] parameterSources)
+            AvatarInfoParameterSource[] parameterSources,
+            Func<UnityEngine.Object, AvatarInfoAnalysis.PerformanceOrigin> performanceOrigin = null)
         {
             if (!AvatarInfoAnalysis.TryReadPerformance(avatar, false,
                     out var desktopRating, out var desktopMetrics, out var error) ||
@@ -119,6 +120,8 @@ namespace Ee4v.AvatarInfo
                 { Rating = desktopRating, Metrics = desktopMetrics };
             record.Mobile = new AvatarInfoAnalysis.PerformanceReport
                 { Rating = mobileRating, Metrics = mobileMetrics };
+            AvatarInfoAnalysis.CapturePerformanceDetails(avatar, false, desktopMetrics, performanceOrigin);
+            AvatarInfoAnalysis.CapturePerformanceDetails(avatar, true, mobileMetrics, performanceOrigin);
             record.ParameterMemory = AvatarInfoSdk.Provider.ReadParameterMemory(avatar);
             record.ParameterMemory?.SetItemUsage(parameterSources, false);
             record.CapturedAt = DateTime.Now;

@@ -16,6 +16,16 @@ namespace Ee4v.AssetManager.UI
         private void RefreshMain()
         {
             _variantState.VariantGalleryView = null;
+            var supportsFilters = !ShowsVariants && !ShowsFileList &&
+                string.IsNullOrEmpty(_viewState.DetailItemId) &&
+                string.IsNullOrEmpty(_viewState.DetailVariantId) &&
+                _viewState.Page != AssetManagerPage.Tags;
+            _filterButton.style.display = supportsFilters ? DisplayStyle.Flex : DisplayStyle.None;
+            var hasFilter = _viewState.SearchFilter != null;
+            _filterButton.EnableInClassList("ee4v-asset-manager__filter--active", hasFilter);
+            _filterButton.tooltip = I18N.Get(hasFilter ? "searchFilter.active" : "searchFilter.open");
+            _filterButton.SetIcon(AssetManagerControls.LoadFluentIconState("filter.png", UiSizeTokens.Size16,
+                _filterButton.tooltip, hasFilter ? UiColorTokens.Focus : UiColorTokens.TextPrimary));
             HideVariantRevisionTooltip();
             Cancel(ref _variantState.VariantPreviewCancellation);
             _variantState.VariantPreviewCancellation = new CancellationTokenSource();
@@ -59,14 +69,7 @@ namespace Ee4v.AssetManager.UI
                     BuildArchived();
                     break;
                 case AssetManagerPage.Tags:
-                    if (string.IsNullOrEmpty(_viewState.TagPath))
-                    {
-                        BuildTags();
-                    }
-                    else
-                    {
-                        BuildItems();
-                    }
+                    BuildTags();
                     break;
                 case AssetManagerPage.UnassignedFiles:
                     BuildUnassignedFiles();
@@ -155,7 +158,9 @@ namespace Ee4v.AssetManager.UI
                     Grid = new AssetItemGridEntry(item.Id, item.Name),
                     item.CreatedAt, item.UpdatedAt, FileCount = item.Files?.Count ?? 0
                 })
-                .Concat(GetVariants().Where(variant => variant.IsArchived && AssetManagerSearch.MatchesVariant(
+                .Concat(GetVariants().Where(variant =>
+                    _viewState.SearchFilter == null &&
+                    variant.IsArchived && AssetManagerSearch.MatchesVariant(
                     variant, _search.Value, _viewState.SearchTargets)).Select(variant => new
                 {
                     Grid = new AssetItemGridEntry(ArchiveVariantPrefix + variant.VariantId, variant.Name)

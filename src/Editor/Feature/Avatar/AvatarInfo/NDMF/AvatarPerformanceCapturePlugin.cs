@@ -17,6 +17,7 @@ namespace Ee4v.AvatarInfo
         public override string QualifiedName => "dev.4of.ee4v.avatar-performance-capture";
         public override string DisplayName => "ee4v Avatar Performance Capture";
         private static GameObject _measurementAvatar;
+        private static AvatarPerformanceOrigins _measurementOrigins;
 
         private sealed class CaptureState
         {
@@ -44,6 +45,7 @@ namespace Ee4v.AvatarInfo
                 avatar = UnityEngine.Object.Instantiate(source);
                 SceneManager.MoveGameObjectToScene(avatar, scene);
                 avatar.name = source.name;
+                _measurementOrigins = new AvatarPerformanceOrigins(source, avatar);
                 if (PrefabUtility.IsPartOfPrefabInstance(avatar))
                     PrefabUtility.UnpackPrefabInstance(avatar, PrefabUnpackMode.Completely,
                         InteractionMode.AutomatedAction);
@@ -55,12 +57,13 @@ namespace Ee4v.AvatarInfo
                     if (!context.Successful)
                         throw new InvalidOperationException("NDMF bake failed. Check the NDMF error report.");
                     AvatarPlayModePerformanceCache.Capture(context.AvatarRootObject, record,
-                        context.GetState<CaptureState>().Parameters.Values.ToArray());
+                        context.GetState<CaptureState>().Parameters.Values.ToArray(), _measurementOrigins.Resolve);
                 }
             }
             finally
             {
                 _measurementAvatar = null;
+                _measurementOrigins = null;
                 try
                 {
                     EditorSceneManager.ClosePreviewScene(scene);
@@ -101,8 +104,11 @@ namespace Ee4v.AvatarInfo
         protected override void Configure()
         {
             InPhase(BuildPhase.FirstChance).Run("Remember measurement avatar", context =>
-                context.GetState<CaptureState>().Measuring = _measurementAvatar != null &&
-                    context.AvatarRootObject == _measurementAvatar);
+            {
+                var state = context.GetState<CaptureState>();
+                state.Measuring = _measurementAvatar != null && context.AvatarRootObject == _measurementAvatar;
+                if (state.Measuring) { _measurementOrigins.Track(context.ObjectRegistry); }
+            });
             InPhase(BuildPhase.Transforming).BeforePlugin("nadena.dev.modular-avatar")
                 .Run("Remember parameter items", context =>
                 {

@@ -339,6 +339,7 @@ namespace Ee4v.AssetManager.UI
         private SearchField _search;
         private AssetTagListView _tagList;
         private UiButton _sortButton;
+        private UiButton _filterButton;
         private UiButton _reloadButton;
         private UiButton _backButton;
         private UiButton _forwardButton;

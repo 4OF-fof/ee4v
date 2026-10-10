@@ -29,6 +29,7 @@ namespace Ee4v.UI
                     {
                         "Editor/Core/Presentation/Background/BackgroundStatusOverlayHost.cs",
                         "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",
+                        "Editor/Feature/Avatar/AvatarInfo/UI/AvatarInfoView.cs",
                         "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuView.cs"
                     }));
             }

@@ -1,4 +1,11 @@
 {
+  "searchFilter": {
+    "open": "絞り込み",
+    "active": "絞り込み中",
+    "clear": "絞り込みを解除",
+    "save": "コレクションとして登録",
+    "apply": "適用"
+  },
   "window": {
     "title": "Asset Manager",
     "navigationTitle": "Asset Manager · ナビゲーション",
@@ -459,19 +466,35 @@
     "nameContains": "名前に含む",
     "descriptionContains": "説明に含む",
     "hasTag": "タグを含む",
-    "hasFileExtension": "拡張子を含む"
+    "hasFileExtension": "拡張子を含む",
+    "nameContainsInverted": "名前に含まない",
+    "descriptionContainsInverted": "説明に含まない",
+    "hasTagInverted": "タグを含まない",
+    "hasFileExtensionInverted": "拡張子を含まない"
   },
   "filterEditor": {
-    "matchMode": "条件の一致方法",
-    "matchAll": "すべての条件に一致",
-    "matchAny": "いずれかの条件に一致",
+    "matchMode": "条件の組み合わせ",
+    "matchAll": "すべて一致",
+    "matchAny": "いずれか一致",
+    "matchAllInverted": "全てには一致しない",
+    "matchAnyInverted": "どれにも一致しない",
     "conditions": "条件",
+    "group": "グループ",
     "addCondition": "条件を追加",
-    "addGroup": "条件グループを追加",
+    "addGroup": "グループを追加",
     "removeCondition": "条件を削除",
+    "selectTag": "タグを選択",
+    "empty": "絞り込み条件なし",
+    "textValue": "検索する文字を入力",
+    "extensionValue": "拡張子を入力（例：zip）",
+    "add": {
+      "NameContains": "名前",
+      "DescriptionContains": "説明",
+      "HasTag": "タグ",
+      "HasFileExtension": "拡張子"
+    },
     "removeGroup": "条件グループを削除",
-    "inverted": "反転",
-    "invertGroup": "グループを反転",
+    "inverted": "条件を反転",
     "groupConditionRequired": "すべてのグループに条件または条件グループを1つ以上追加してください。",
     "valueRequired": "すべての条件に値を入力してください。"
   },

@@ -39,7 +39,7 @@ namespace Ee4v.AssetManager.UI
                     "Domain/AssetManager",
                     "AssetManagerView · Main",
                     "AssetManager Main Windowの一覧と詳細操作を確認する画面です。",
-                    "実画面と同じMain modeのAssetManagerViewをサンプルデータで表示します。Item一覧、File Tree、Target設定を操作できます。",
+                    "実画面と同じMain modeのAssetManagerViewをサンプルデータで表示します。Item一覧、File Tree、Target設定、絞り込みアイコンと文字検索以外の条件が有効な状態を確認できます。",
                     Build,
                     dependencies: new[]
                     {
@@ -147,7 +147,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.Collections.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Collections.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Navigation.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -168,7 +169,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -309,8 +311,8 @@ namespace Ee4v.AssetManager.UI
                     "asset-manager-filter-editor",
                     "Domain/AssetManager/Inputs",
                     "AssetFilterEditor",
-                    "Collection条件を入れ子で編集するパーツです。",
-                    "条件GroupをANDまたはORで組み合わせ、反転、追加、削除を編集できます。",
+                    "絞り込みとCollectionの条件を編集するパーツです。",
+                    "種類別の追加ボタン、種類と値を並べた条件行、一致方法の切り替えと入れ子Groupを表示します。",
                     BuildFilterEditor,
                     dependencies: new[]
                     {
@@ -495,9 +497,15 @@ namespace Ee4v.AssetManager.UI
                 AssetFilterNode.Condition(
                     AssetFilterConditionType.HasTag,
                     "Avatar"),
-                AssetFilterNode.Not(AssetFilterNode.Condition(
-                    AssetFilterConditionType.HasFileExtension,
-                    "zip"))));
+                AssetFilterNode.Or(
+                    AssetFilterNode.Condition(AssetFilterConditionType.NameContains, "Shinano"),
+                    AssetFilterNode.Not(AssetFilterNode.Condition(
+                        AssetFilterConditionType.HasFileExtension,
+                        "zip")))), tagOptions: new[]
+                {
+                    new AssetTagOption("Avatar", 12),
+                    new AssetTagOption("Cloth", 8)
+                });
             editor.style.width = 620f;
             parent.Add(editor);
         }
@@ -844,7 +852,8 @@ namespace Ee4v.AssetManager.UI
                 AssetCollectionCreationPopup.Show(
                     createButton,
                     null,
-                    (_, __, ___) => true);
+                    (_, __, ___) => true,
+                    tagOptions: new[] { new AssetTagOption("Avatar", 12), new AssetTagOption("Cloth", 8) });
             surface.Add(createButton);
 
             var sample = new AssetCollection
@@ -880,7 +889,8 @@ namespace Ee4v.AssetManager.UI
                         sample.Icon = icon;
                         sample.Root = root;
                         return true;
-                    });
+                    },
+                    tagOptions: new[] { new AssetTagOption("Avatar", 12), new AssetTagOption("Cloth", 8) });
             surface.Add(editButton);
             parent.Add(surface);
         }

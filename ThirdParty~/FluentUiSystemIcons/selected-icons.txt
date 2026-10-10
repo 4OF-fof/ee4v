@@ -34,6 +34,8 @@ eye
 eye_16
 eye_off
 eye_off_16
+filter
+filter_16
 folder
 folder_16
 folder_zip

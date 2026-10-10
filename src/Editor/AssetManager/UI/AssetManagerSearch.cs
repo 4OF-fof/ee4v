@@ -106,6 +106,33 @@ namespace Ee4v.AssetManager.UI
                 : AssetFilterNode.Or(filters);
         }
 
+        public static AssetFilterNode CombineFilters(params AssetFilterNode[] filters)
+        {
+            var nodes = filters.Where(node => node != null).ToArray();
+            return nodes.Length == 0 ? null : nodes.Length == 1 ? nodes[0] : AssetFilterNode.And(nodes);
+        }
+
+        public static AssetFilterNode AddTagCondition(AssetFilterNode root, string tag)
+        {
+            if (string.IsNullOrWhiteSpace(tag)) { return root; }
+            tag = tag.Trim();
+            bool MatchesTag(AssetFilterNode node) =>
+                node.Type == AssetFilterNodeType.Condition &&
+                node.ConditionType == AssetFilterConditionType.HasTag &&
+                string.Equals(node.Value, tag, StringComparison.OrdinalIgnoreCase);
+            if (root != null && MatchesTag(root)) { return root; }
+            var condition = AssetFilterNode.Condition(AssetFilterConditionType.HasTag, tag);
+            if (root == null) { return condition; }
+            if (root.Type == AssetFilterNodeType.And || root.Type == AssetFilterNodeType.Or)
+            {
+                if (root.Children.Any(MatchesTag)) { return root; }
+                var children = root.Children.Concat(new[] { condition }).ToArray();
+                return root.Type == AssetFilterNodeType.Or
+                    ? AssetFilterNode.Or(children) : AssetFilterNode.And(children);
+            }
+            return AssetFilterNode.And(root, condition);
+        }
+
         private static bool HasTarget(
             AssetManagerSearchTarget targets,
             AssetManagerSearchTarget target)

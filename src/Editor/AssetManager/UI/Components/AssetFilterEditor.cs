@@ -10,12 +10,46 @@ namespace Ee4v.AssetManager.UI
     internal sealed class AssetFilterEditor : VisualElement
     {
         private readonly FilterGroupEditor _rootGroup;
+        private readonly IReadOnlyList<AssetTagOption> _tagOptions;
+        private AssetTagPickerWindow _tagPicker;
+        private VisualElement _tagPickerAnchor;
 
-        internal AssetFilterEditor(AssetFilterNode root)
+        internal AssetFilterEditor(AssetFilterNode root, bool allowEmptyRoot = false,
+            IReadOnlyList<AssetTagOption> tagOptions = null)
         {
+            _tagOptions = tagOptions ?? Array.Empty<AssetTagOption>();
             AddToClassList("ee4v-asset-manager-filter-editor");
-            _rootGroup = CreateRootEditor(root);
+            _rootGroup = CreateRootEditor(root, allowEmptyRoot);
             Add(_rootGroup.Root);
+            RegisterCallback<DetachFromPanelEvent>(_ => CloseTagPicker());
+        }
+
+        internal bool IsTagPickerOpen { get; private set; }
+        internal event Action TagPickerClosed;
+
+        internal void CloseTagPicker() => _tagPicker?.Close();
+
+        private void CloseTagPicker(VisualElement anchor)
+        {
+            if (_tagPickerAnchor == anchor) { CloseTagPicker(); }
+        }
+
+        private void OpenTagPicker(VisualElement anchor, string value, Action<string> selected)
+        {
+            CloseTagPicker();
+            // Set before Show transfers focus away from the containing popup.
+            IsTagPickerOpen = true;
+            _tagPickerAnchor = anchor;
+            _tagPicker = AssetTagPickerWindow.Show(anchor, null, _tagOptions,
+                string.IsNullOrWhiteSpace(value) ? Array.Empty<string>() : new[] { value },
+                values => selected(values[0]),
+                () =>
+                {
+                    IsTagPickerOpen = false;
+                    _tagPicker = null;
+                    _tagPickerAnchor = null;
+                    TagPickerClosed?.Invoke();
+                }, singleSelection: true);
         }
 
         internal bool TryCreateNode(
@@ -25,8 +59,8 @@ namespace Ee4v.AssetManager.UI
             return _rootGroup.TryCreateNode(out node, out errorKey);
         }
 
-        private static FilterGroupEditor CreateRootEditor(
-            AssetFilterNode root)
+        private FilterGroupEditor CreateRootEditor(
+            AssetFilterNode root, bool allowEmptyRoot)
         {
             var inverted = false;
             root = UnwrapNot(root, ref inverted);
@@ -35,22 +69,24 @@ namespace Ee4v.AssetManager.UI
                  root.Type == AssetFilterNodeType.Or))
             {
                 return new FilterGroupEditor(
+                    this,
                     root.Type,
                     root.Children,
                     inverted,
                     null,
-                    true);
+                    true, allowEmptyRoot);
             }
 
             return new FilterGroupEditor(
+                this,
                 AssetFilterNodeType.And,
                 root == null ? null : new[] { root },
                 inverted,
                 null,
-                true);
+                true, allowEmptyRoot);
         }
 
-        private static IFilterNodeEditor CreateNodeEditor(
+        private IFilterNodeEditor CreateNodeEditor(
             AssetFilterNode node,
             Action<IFilterNodeEditor> remove)
         {
@@ -61,6 +97,7 @@ namespace Ee4v.AssetManager.UI
                  node.Type == AssetFilterNodeType.Or))
             {
                 return new FilterGroupEditor(
+                    this,
                     node.Type,
                     node.Children,
                     inverted,
@@ -68,6 +105,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             return new ConditionRow(
+                this,
                 node != null &&
                 node.Type == AssetFilterNodeType.Condition
                     ? node
@@ -92,13 +130,18 @@ namespace Ee4v.AssetManager.UI
             return node;
         }
 
-        private static string FormatMatchMode(Enum value)
+        private static Toggle CreateInvertToggle(string className)
         {
-            return I18N.Get(
-                value is FilterMatchMode mode &&
-                mode == FilterMatchMode.Any
-                    ? "filterEditor.matchAny"
-                    : "filterEditor.matchAll");
+            var text = I18N.Get("filterEditor.inverted");
+            var toggle = UiTextFactory.CreateToggle(string.Empty, className);
+            toggle.tooltip = text;
+            var label = UiTextFactory.Create(text,
+                UiClassNames.FormLabel,
+                "ee4v-asset-manager-filter-editor__invert-label");
+            label.SetWhiteSpace(WhiteSpace.NoWrap);
+            label.pickingMode = PickingMode.Ignore;
+            toggle.Q<VisualElement>(className: Toggle.inputUssClassName).Add(label);
+            return toggle;
         }
 
         private enum FilterMatchMode
@@ -118,41 +161,61 @@ namespace Ee4v.AssetManager.UI
 
         private sealed class FilterGroupEditor : IFilterNodeEditor
         {
+            private readonly AssetFilterEditor _owner;
             private readonly List<IFilterNodeEditor> _children =
                 new List<IFilterNodeEditor>();
-            private readonly AssetManagerEnumField _matchMode;
+            private FilterMatchMode _matchMode;
+            private readonly UiButton _matchAll;
+            private readonly UiButton _matchAny;
             private readonly Toggle _inverted;
             private readonly VisualElement _childrenRoot;
+            private readonly bool _allowEmpty;
+            private readonly VisualElement _header;
+            private readonly UiTextElement _empty;
 
             internal FilterGroupEditor(
+                AssetFilterEditor owner,
                 AssetFilterNodeType type,
                 IReadOnlyList<AssetFilterNode> initialChildren,
                 bool inverted,
                 Action<IFilterNodeEditor> remove,
-                bool isRoot = false)
+                bool isRoot = false, bool allowEmpty = false)
             {
+                _owner = owner;
+                _allowEmpty = isRoot && allowEmpty;
                 Root = new VisualElement();
                 Root.AddToClassList(
                     "ee4v-asset-manager__collection-popup-group");
                 Root.EnableInClassList(
                     "ee4v-asset-manager__collection-popup-group--root",
                     isRoot);
+                Root.EnableInClassList(
+                    "ee4v-asset-manager__collection-popup-group--nested",
+                    !isRoot);
 
                 var header = new ActionBar();
+                _header = header;
                 header.AddToClassList(
                     "ee4v-asset-manager__collection-popup-group-header");
-                _matchMode = AssetManagerControls.CreateEnumField(
-                    I18N.Get("filterEditor.matchMode"),
-                    type == AssetFilterNodeType.Or
-                        ? FilterMatchMode.Any
-                        : FilterMatchMode.All,
-                    FormatMatchMode,
-                    "ee4v-asset-manager__collection-popup-group-mode");
-                _inverted = UiTextFactory.CreateToggle(
-                    I18N.Get("filterEditor.invertGroup"),
+                header.Leading.Add(UiTextFactory.Create(
+                    I18N.Get(isRoot ? "filterEditor.matchMode" : "filterEditor.group"),
+                    UiClassNames.SectionTitle,
+                    "ee4v-asset-manager__collection-popup-group-title"));
+                var matchModes = new VisualElement();
+                matchModes.AddToClassList("ee4v-asset-manager-filter-editor__match-modes");
+                _matchAll = new UiButton(I18N.Get("filterEditor.matchAll"),
+                    () => SetMatchMode(FilterMatchMode.All), variant: UiButtonVariant.Ghost);
+                _matchAny = new UiButton(I18N.Get("filterEditor.matchAny"),
+                    () => SetMatchMode(FilterMatchMode.Any), variant: UiButtonVariant.Ghost);
+                matchModes.Add(_matchAll);
+                matchModes.Add(_matchAny);
+                header.Leading.Add(matchModes);
+                SetMatchMode(type == AssetFilterNodeType.Or ? FilterMatchMode.Any : FilterMatchMode.All);
+                _inverted = CreateInvertToggle(
                     "ee4v-asset-manager__collection-popup-group-inverted");
                 _inverted.value = inverted;
-                header.Leading.Add(_matchMode);
+                _inverted.RegisterValueChangedCallback(_ => RefreshMatchLabels());
+                RefreshMatchLabels();
                 header.Leading.Add(_inverted);
                 if (!isRoot)
                 {
@@ -160,6 +223,8 @@ namespace Ee4v.AssetManager.UI
                         AssetManagerControls.CreateIconButton(
                             I18N.Get("filterEditor.removeGroup"),
                             "dismiss.png",
+                            UiSizeTokens.Size12,
+                            UiButtonVariant.Ghost,
                             () => remove?.Invoke(this),
                             "ee4v-asset-manager__collection-popup-remove-group"));
                 }
@@ -170,15 +235,28 @@ namespace Ee4v.AssetManager.UI
                     "ee4v-asset-manager__collection-popup-group-children");
                 Root.Add(_childrenRoot);
 
-                var actions = new ActionBar();
+                _empty = UiTextFactory.Create(I18N.Get("filterEditor.empty"),
+                    UiClassNames.FormLabel,
+                    "ee4v-asset-manager-filter-editor__empty");
+                _empty.SetTextAlign(UnityEngine.TextAnchor.MiddleCenter);
+                Root.Add(_empty);
+                var actions = new VisualElement();
                 actions.AddToClassList(
                     "ee4v-asset-manager__collection-popup-group-actions");
-                actions.Actions.Add(
-                    AssetManagerControls.CreateIconTextButton(
-                        I18N.Get("filterEditor.addCondition"),
-                        "add.png",
-                        AddCondition));
-                actions.Actions.Add(
+                actions.Add(UiTextFactory.Create(I18N.Get("filterEditor.addCondition"),
+                    UiClassNames.FormLabel,
+                    "ee4v-asset-manager-filter-editor__add-label"));
+                foreach (AssetFilterConditionType conditionType in Enum.GetValues(typeof(AssetFilterConditionType)))
+                {
+                    var choice = conditionType;
+                    var button = new UiButton(I18N.Get("filterEditor.add." + choice),
+                        () => AddCondition(choice),
+                        tooltip: AssetManagerControls.FormatFilterCondition(choice),
+                        variant: UiButtonVariant.Ghost);
+                    button.AddToClassList("ee4v-asset-manager-filter-editor__add-condition");
+                    actions.Add(button);
+                }
+                actions.Add(
                     AssetManagerControls.CreateIconTextButton(
                         I18N.Get("filterEditor.addGroup"),
                         "add.png",
@@ -189,15 +267,16 @@ namespace Ee4v.AssetManager.UI
                                Array.Empty<AssetFilterNode>();
                 for (var i = 0; i < children.Count; i++)
                 {
-                    AddEditor(CreateNodeEditor(
+                    AddEditor(_owner.CreateNodeEditor(
                         children[i],
                         RemoveChild));
                 }
 
-                if (_children.Count == 0)
+                if (_children.Count == 0 && !_allowEmpty)
                 {
-                    AddCondition();
+                    AddCondition(AssetFilterConditionType.NameContains);
                 }
+                RefreshGroup();
             }
 
             public VisualElement Root { get; }
@@ -209,8 +288,8 @@ namespace Ee4v.AssetManager.UI
                 if (_children.Count == 0)
                 {
                     node = null;
-                    errorKey = "filterEditor.groupConditionRequired";
-                    return false;
+                    errorKey = _allowEmpty ? null : "filterEditor.groupConditionRequired";
+                    return _allowEmpty;
                 }
 
                 var nodes = new AssetFilterNode[_children.Count];
@@ -227,8 +306,7 @@ namespace Ee4v.AssetManager.UI
 
                 node = nodes.Length == 1
                     ? nodes[0]
-                    : (FilterMatchMode)_matchMode.value ==
-                      FilterMatchMode.Any
+                    : _matchMode == FilterMatchMode.Any
                         ? AssetFilterNode.Or(nodes)
                         : AssetFilterNode.And(nodes);
                 if (_inverted.value)
@@ -240,14 +318,40 @@ namespace Ee4v.AssetManager.UI
                 return true;
             }
 
-            private void AddCondition()
+            private void SetMatchMode(FilterMatchMode mode)
             {
-                AddEditor(new ConditionRow(null, false, RemoveChild));
+                _matchMode = mode;
+                _matchAll.EnableInClassList("ee4v-asset-manager-filter-editor__match--selected", mode == FilterMatchMode.All);
+                _matchAny.EnableInClassList("ee4v-asset-manager-filter-editor__match--selected", mode == FilterMatchMode.Any);
+                _matchAll.SetLabelColor(mode == FilterMatchMode.All ? UiColorTokens.Focus : UiColorTokens.TextPrimary);
+                _matchAny.SetLabelColor(mode == FilterMatchMode.Any ? UiColorTokens.Focus : UiColorTokens.TextPrimary);
+            }
+
+            private void RefreshMatchLabels()
+            {
+                _matchAll.SetLabel(I18N.Get(_inverted.value
+                    ? "filterEditor.matchAllInverted" : "filterEditor.matchAll"));
+                _matchAny.SetLabel(I18N.Get(_inverted.value
+                    ? "filterEditor.matchAnyInverted" : "filterEditor.matchAny"));
+            }
+
+            private void RefreshGroup()
+            {
+                _header.style.display = _allowEmpty && _children.Count == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+                _empty.style.display = _children.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            private void AddCondition(AssetFilterConditionType type)
+            {
+                var row = new ConditionRow(_owner, AssetFilterNode.Condition(type, string.Empty), false, RemoveChild);
+                AddEditor(row);
+                row.FocusValue();
             }
 
             private void AddGroup()
             {
                 AddEditor(new FilterGroupEditor(
+                    _owner,
                     AssetFilterNodeType.And,
                     null,
                     false,
@@ -263,6 +367,7 @@ namespace Ee4v.AssetManager.UI
 
                 _children.Add(editor);
                 _childrenRoot.Add(editor.Root);
+                RefreshGroup();
             }
 
             private void RemoveChild(IFilterNodeEditor editor)
@@ -273,55 +378,114 @@ namespace Ee4v.AssetManager.UI
                 }
 
                 editor.Root.RemoveFromHierarchy();
+                RefreshGroup();
             }
         }
 
         private sealed class ConditionRow : IFilterNodeEditor
         {
+            private readonly AssetFilterEditor _owner;
             private readonly AssetManagerEnumField _condition;
             private readonly AssetManagerTextField _value;
             private readonly Toggle _inverted;
+            private readonly UiButton _tag;
 
             internal ConditionRow(
+                AssetFilterEditor owner,
                 AssetFilterNode initialCondition,
                 bool inverted,
                 Action<IFilterNodeEditor> remove)
             {
+                _owner = owner;
                 Root = new VisualElement();
                 Root.AddToClassList(
                     "ee4v-asset-manager__collection-popup-condition");
 
-                var controls = new ActionBar();
+                var controls = new VisualElement();
                 controls.AddToClassList(
                     "ee4v-asset-manager__collection-popup-condition-controls");
                 _condition = AssetManagerControls.CreateEnumField(
                     string.Empty,
                     initialCondition?.ConditionType ??
                     AssetFilterConditionType.NameContains,
-                    AssetManagerControls.FormatFilterCondition,
+                    value => AssetManagerControls.FormatFilterCondition(value, _inverted?.value == true),
                     "ee4v-asset-manager__collection-popup-condition-type");
-                _inverted = UiTextFactory.CreateToggle(
-                    I18N.Get("filterEditor.inverted"),
+                _inverted = CreateInvertToggle(
                     "ee4v-asset-manager__collection-popup-condition-inverted");
                 _inverted.value = inverted;
-                controls.Leading.Add(_condition);
-                controls.Leading.Add(_inverted);
-                controls.Actions.Add(
+                _inverted.RegisterValueChangedCallback(_ => RefreshConditionLabel());
+                RefreshConditionLabel();
+                controls.Add(_condition);
+                var valueContainer = new VisualElement();
+                valueContainer.AddToClassList("ee4v-asset-manager-filter-editor__value");
+                controls.Add(valueContainer);
+                controls.Add(
                     AssetManagerControls.CreateIconButton(
                         I18N.Get("filterEditor.removeCondition"),
                         "dismiss.png",
+                        UiSizeTokens.Size12,
+                        UiButtonVariant.Ghost,
                         () => remove?.Invoke(this),
                         "ee4v-asset-manager__collection-popup-remove-condition"));
                 Root.Add(controls);
 
                 _value = AssetManagerControls.CreateTextField(
-                    I18N.Get("field.value"),
+                    string.Empty,
                     "ee4v-asset-manager__collection-popup-condition-value");
                 _value.value = initialCondition?.Value ?? string.Empty;
-                Root.Add(_value);
+                valueContainer.Add(_value);
+                _tag = AssetManagerControls.CreateIconTextButton(
+                    string.Empty, "tag.png", OpenTagPicker,
+                    "ee4v-asset-manager__collection-popup-condition-tag");
+                _tag.SetContentAlignment(Justify.FlexStart);
+                valueContainer.Add(_tag);
+                Root.Add(_inverted);
+                _condition.RegisterCallback<ChangeEvent<Enum>>(_ => RefreshValueInput());
+                Root.RegisterCallback<DetachFromPanelEvent>(_ => _owner.CloseTagPicker(_tag));
+                RefreshValueInput();
             }
 
             public VisualElement Root { get; }
+
+            private void RefreshConditionLabel()
+            {
+                _condition.SetValueWithoutNotify(_condition.value);
+            }
+
+            internal void FocusValue()
+            {
+                Root.schedule.Execute(() =>
+                {
+                    if ((AssetFilterConditionType)_condition.value == AssetFilterConditionType.HasTag)
+                    {
+                        _tag.Focus();
+                    }
+                    else { _value.FocusInput(); }
+                });
+            }
+
+            private void OpenTagPicker()
+            {
+                _owner.OpenTagPicker(_tag, _value.value, value =>
+                {
+                    _value.value = value;
+                    RefreshValueInput();
+                });
+            }
+
+            private void RefreshValueInput()
+            {
+                var isTag = (AssetFilterConditionType)_condition.value == AssetFilterConditionType.HasTag;
+                ((InputField)_value.Input).SetPlaceholder(I18N.Get(
+                    (AssetFilterConditionType)_condition.value == AssetFilterConditionType.HasFileExtension
+                        ? "filterEditor.extensionValue" : "filterEditor.textValue"));
+                if (!isTag) { _owner.CloseTagPicker(_tag); }
+                _value.style.display = isTag ? DisplayStyle.None : DisplayStyle.Flex;
+                _tag.style.display = isTag ? DisplayStyle.Flex : DisplayStyle.None;
+                var value = (_value.value ?? string.Empty).Trim();
+                _tag.SetLabel(value.Length == 0 ? I18N.Get("filterEditor.selectTag") : value);
+                _tag.tooltip = value.Length == 0 ? I18N.Get("filterEditor.selectTag") : value;
+            }
 
             public bool TryCreateNode(
                 out AssetFilterNode node,

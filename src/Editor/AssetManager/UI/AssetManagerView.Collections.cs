@@ -211,7 +211,8 @@ namespace Ee4v.AssetManager.UI
             AssetCollectionCreationPopup.Show(
                 anchor,
                 null,
-                CreateCollection);
+                CreateCollection,
+                tagOptions: GetAvailableTagOptions());
         }
 
         private void ShowCollectionEditor(
@@ -230,7 +231,8 @@ namespace Ee4v.AssetManager.UI
                     collection.Id,
                     name,
                     icon,
-                    root));
+                    root),
+                tagOptions: GetAvailableTagOptions());
         }
 
         private bool UpdateCollection(

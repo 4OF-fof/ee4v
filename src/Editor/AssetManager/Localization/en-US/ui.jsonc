@@ -1,4 +1,11 @@
 {
+  "searchFilter": {
+    "open": "Filter",
+    "active": "Filter active",
+    "clear": "Clear filters",
+    "save": "Register as collection",
+    "apply": "Apply"
+  },
   "window": {
     "title": "Asset Manager",
     "navigationTitle": "Asset Manager · Navigation",
@@ -459,19 +466,35 @@
     "nameContains": "Name contains",
     "descriptionContains": "Description contains",
     "hasTag": "Has tag",
-    "hasFileExtension": "Has file extension"
+    "hasFileExtension": "Has file extension",
+    "nameContainsInverted": "Name does not contain",
+    "descriptionContainsInverted": "Description does not contain",
+    "hasTagInverted": "Does not have tag",
+    "hasFileExtensionInverted": "Does not have file extension"
   },
   "filterEditor": {
-    "matchMode": "Condition matching",
-    "matchAll": "Match all conditions",
-    "matchAny": "Match any condition",
+    "matchMode": "Combine conditions",
+    "matchAll": "Match all",
+    "matchAny": "Match any",
+    "matchAllInverted": "Not all match",
+    "matchAnyInverted": "None match",
     "conditions": "Conditions",
+    "group": "Group",
     "addCondition": "Add condition",
     "addGroup": "Add group",
     "removeCondition": "Remove condition",
+    "selectTag": "Select tag",
+    "empty": "No filter conditions",
+    "textValue": "Enter search text",
+    "extensionValue": "Enter an extension (e.g. zip)",
+    "add": {
+      "NameContains": "Name",
+      "DescriptionContains": "Description",
+      "HasTag": "Tag",
+      "HasFileExtension": "Extension"
+    },
     "removeGroup": "Remove group",
-    "inverted": "Invert",
-    "invertGroup": "Invert group",
+    "inverted": "Invert condition",
     "groupConditionRequired": "Add at least one condition or group to every group.",
     "valueRequired": "Enter a value for every condition."
   },
