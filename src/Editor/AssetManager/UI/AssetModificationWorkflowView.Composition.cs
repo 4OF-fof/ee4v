@@ -235,7 +235,6 @@ namespace Ee4v.AssetManager.UI
             if (!_parts.FlushPendingPartVisibility()) { return; }
             _avatarContext.SelectedPrefabSiblingIndex = siblingIndex;
             _avatarContext.SelectedPrefabName = name ?? string.Empty;
-            _avatarContext.SelectedBodyPart = null;
             _avatarContext.SelectedPartKey = null;
             _avatarContext.SelectedMaterial = null;
             if (siblingIndex.HasValue &&
@@ -251,7 +250,7 @@ namespace Ee4v.AssetManager.UI
             _workspaceHeader = BuildWorkspaceHeader();
             Insert(0, _workspaceHeader);
             _categoryRail?.SetPrefabScope(siblingIndex.HasValue);
-            _avatarContext.Preview?.FocusBodyPart(null, true);
+            _avatarContext.Preview?.FocusBodyPart(_avatarContext.SelectedBodyPart, true);
             ShowCategory(_currentCategory, false, true);
             SyncPreviewSelection();
             RequestRepaint();

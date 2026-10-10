@@ -694,12 +694,6 @@ namespace Ee4v.AssetManager.UI
                 SetPreviewTitle("workflow.preview.appearanceTitle");
                 return;
             }
-            if (_avatarContext.SelectedBodyPart.HasValue &&
-                !HasAvailableBodyPart(_avatarContext.SelectedBodyPart.Value))
-            {
-                _avatarContext.SelectedBodyPart = null;
-                _avatarContext.Preview?.FocusBodyPart(null, preservePreviewCamera);
-            }
             foreach (var child in _appearanceHeader.Children().ToArray())
             {
                 if (child != _bodyPartSelector) { child.RemoveFromHierarchy(); }
