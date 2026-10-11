@@ -369,7 +369,14 @@
       "destination": "保存先",
       "destinationPlaceholder": "有効な名前を入力すると保存先が表示されます。"
     },
-    "deleteConfirm": "選択した{0}件のマイアセットの全保存版とギャラリーを削除し、Project内の専用フォルダーをゴミ箱へ移動します。共有の素材は削除しません。続けますか？",
+    "deleteConfirm": "選択した{0}件のマイアセットを削除しますか？\nギャラリーに登録された画像も削除されます。",
+    "deleteError": {
+      "workingSceneOpen": "削除するには、作業シーンを閉じてください。",
+      "instanceInOpenScene": "削除するには、開いているシーンからこのマイアセットを取り除いてください。",
+      "dedicatedFolderRequired": "専用フォルダーにあるマイアセットだけ削除できます。",
+      "linkedPath": "リンクを含むフォルダーは削除できません。",
+      "trashFailed": "マイアセットのフォルダーをゴミ箱へ移動できませんでした。"
+    },
     "noTargetChanges": "この操作の対象となる変更はありません。",
     "changesFailed": "変更内容を取得できませんでした。",
     "added": "追加",
@@ -557,7 +564,7 @@
     "createDerivedAsset": "派生アセットを作成"
   },
   "confirm": {
-    "deleteArchiveEntries": "選択した{0}件を削除します。Itemは所属Fileも削除します。マイアセットは全保存版とギャラリーを削除し、Project内の専用フォルダーをゴミ箱へ移動します。共有の素材は削除しません。続けますか？",
+    "deleteArchiveEntries": "選択した{0}件を削除しますか？\nギャラリーに登録された画像も削除されます。",
     "deleteItem": {
       "title": "Itemを削除",
       "message": "このItemと所属Fileを削除しますか？"

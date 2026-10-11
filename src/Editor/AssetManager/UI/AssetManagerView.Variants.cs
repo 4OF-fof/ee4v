@@ -1059,12 +1059,12 @@ namespace Ee4v.AssetManager.UI
             if (_variantManager == null || _variantState.VariantBusy)
             {
                 menu.AddDisabledItem(archive);
-                menu.AddDisabledItem(delete);
+                if (archived) menu.AddDisabledItem(delete);
             }
             else
             {
                 menu.AddItem(archive, false, () => ChangeVariantLifecycle(ids, !archived));
-                menu.AddItem(delete, false, () => ChangeVariantLifecycle(ids, null));
+                if (archived) menu.AddItem(delete, false, () => ChangeVariantLifecycle(ids, null));
             }
             menu.ShowAsContext();
         }
@@ -1087,9 +1087,10 @@ namespace Ee4v.AssetManager.UI
                     (!archived.HasValue || variant.IsOriginal)).Select(variant => variant.VariantId))
                 .Distinct(StringComparer.Ordinal).ToArray();
             itemIds = ownerIds;
+            var deleteMessageKey = itemIds.Count == 0 ? "variant.deleteConfirm" :
+                ids.Count == 0 ? "confirm.deleteItems.message" : "confirm.deleteArchiveEntries";
             if (!archived.HasValue && !Confirm(I18N.Get("action.delete"),
-                I18N.Get(itemIds != null && itemIds.Count > 0 ? "confirm.deleteArchiveEntries" : "variant.deleteConfirm",
-                    selectedCount))) return;
+                I18N.Get(deleteMessageKey, selectedCount))) return;
             _variantState.VariantBusy = true;
             Refresh();
             try

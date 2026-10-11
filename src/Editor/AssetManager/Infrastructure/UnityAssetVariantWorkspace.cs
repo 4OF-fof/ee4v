@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
+using Ee4v.Core.I18n;
 using UnityEditor;
 using UnityEngine;
 
@@ -58,7 +59,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 Path.GetDirectoryName(folder).Replace('\\', '/') != DerivedAssetCatalog.VariantRoot ||
                 DerivedAssetCatalog.FindAll().Any(record => record.AssetPath != path &&
                     record.AssetPath.StartsWith(folder + "/", StringComparison.Ordinal)))
-                throw new InvalidOperationException("A dedicated ee4v Variant folder is required.");
+                throw new InvalidOperationException(CoreLocalization.Current.ForScope("AssetManager")
+                    .Get("variant.deleteError.dedicatedFolderRequired"));
             var directories = new Stack<string>();
             directories.Push(fullFolder);
             while (directories.Count > 0)
@@ -67,7 +69,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 {
                     var attributes = File.GetAttributes(entry);
                     if ((attributes & FileAttributes.ReparsePoint) != 0)
-                        throw new IOException("Linked paths cannot be deleted as Variant assets.");
+                        throw new IOException(CoreLocalization.Current.ForScope("AssetManager")
+                            .Get("variant.deleteError.linkedPath"));
                     if ((attributes & FileAttributes.Directory) != 0) directories.Push(entry);
                 }
             }
@@ -77,10 +80,12 @@ namespace Ee4v.AssetManager.Infrastructure
                 if (!scene.isLoaded || UnityEditor.SceneManagement.EditorSceneManager.IsPreviewScene(scene) ||
                     !scene.path.StartsWith("Assets/", StringComparison.Ordinal)) continue;
                 if (scene.path.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("Close the Variant working Scene before deleting it.");
+                    throw new InvalidOperationException(CoreLocalization.Current.ForScope("AssetManager")
+                        .Get("variant.deleteError.workingSceneOpen"));
                 if (scene.GetRootGameObjects().Any(root => root.GetComponentsInChildren<Transform>(true)
                     .Any(transform => PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(transform.gameObject) == path)))
-                    throw new InvalidOperationException("Remove the Variant instance from open Scenes before deleting it.");
+                    throw new InvalidOperationException(CoreLocalization.Current.ForScope("AssetManager")
+                        .Get("variant.deleteError.instanceInOpenScene"));
             }
         }
 
@@ -89,7 +94,8 @@ namespace Ee4v.AssetManager.Infrastructure
             ValidateDelete(variantId);
             var path = AssetDatabase.GUIDToAssetPath(variantId);
             if (AssetExists(path) && !AssetDatabase.MoveAssetToTrash(Path.GetDirectoryName(path).Replace('\\', '/')))
-                throw new IOException("The Variant folder could not be moved to Trash.");
+                throw new IOException(CoreLocalization.Current.ForScope("AssetManager")
+                    .Get("variant.deleteError.trashFailed"));
         }
 
         public AssetVariantSnapshot Inspect(string rootAssetPath)

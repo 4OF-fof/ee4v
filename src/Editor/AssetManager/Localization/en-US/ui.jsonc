@@ -369,7 +369,14 @@
       "destination": "Save location",
       "destinationPlaceholder": "Enter a valid name to see the save location."
     },
-    "deleteConfirm": "Delete all saved versions and gallery images of {0} selected asset(s), and move their Project folders to Trash? Shared source assets are retained.",
+    "deleteConfirm": "Delete {0} selected asset(s)?\nImages registered in the gallery will also be deleted.",
+    "deleteError": {
+      "workingSceneOpen": "Close the working Scene before deleting this asset.",
+      "instanceInOpenScene": "Remove this asset from open Scenes before deleting it.",
+      "dedicatedFolderRequired": "Only assets in dedicated folders can be deleted.",
+      "linkedPath": "Folders containing linked paths cannot be deleted.",
+      "trashFailed": "The asset folder could not be moved to Trash."
+    },
     "noTargetChanges": "There are no changes for this operation.",
     "changesFailed": "Could not load changes.",
     "added": "Added",
@@ -557,7 +564,7 @@
     "createDerivedAsset": "Create derived asset"
   },
   "confirm": {
-    "deleteArchiveEntries": "Delete the selected {0} archived entries? Items and their files will be deleted. All saved versions and gallery images of assets will be deleted, and their Project folders moved to Trash. Shared source assets are retained.",
+    "deleteArchiveEntries": "Delete {0} selected entries?\nImages registered in the gallery will also be deleted.",
     "deleteItem": {
       "title": "Delete item",
       "message": "Delete this item and its files?"
