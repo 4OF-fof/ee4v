@@ -82,7 +82,7 @@ namespace Ee4v.AssetManager.Infrastructure
                     : null),
                 new EagleAssetSource(),
                 new Ee4vAssetSource(),
-                new AssetTargetImporter(),
+                new AssetTargetImporter(System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(databasePath))),
                 new AssetFileAnalyzer(databasePath),
                 new AssetThumbnailProvider(databasePath),
                 new ExternalAssetSource(), scopeCatalog ? datasource : (AssetDatasourceKind?)null);

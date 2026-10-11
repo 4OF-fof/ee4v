@@ -43,9 +43,11 @@ namespace Ee4v.Core.EditorIntegration
             TryStartNextPackage();
         }
 
-        public static void Refresh()
+        public static void Refresh() => Refresh(false);
+
+        public static void Refresh(bool synchronous)
         {
-            AssetDatabase.Refresh();
+            AssetDatabase.Refresh(synchronous ? ImportAssetOptions.ForceSynchronousImport : ImportAssetOptions.Default);
         }
 
         private static void TryStartNextPackage()

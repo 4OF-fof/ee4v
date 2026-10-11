@@ -746,7 +746,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 Dependencies = snapshot.Dependencies.Select(dependency => new
                 {
                     dependency.SourceType, dependency.SourceId,
-                    dependency.TargetPaths, dependency.AssetGuids
+                    dependency.TargetPaths, dependency.AssetGuids, dependency.SourceHash
                 })
             });
             using (var hash = SHA256.Create())

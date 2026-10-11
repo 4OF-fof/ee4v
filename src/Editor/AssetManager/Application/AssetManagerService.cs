@@ -561,7 +561,7 @@ namespace Ee4v.AssetManager.Application
 
                 var normalizedGuids =
                     AssetManagerRequestValidator.NormalizeAssetGuids(
-                        result.AssetGuids);
+                        _store.GetFileImportedAssetGuids(file.Id).Concat(result.AssetGuids).ToArray());
                 _store.ReplaceFileImportedAssetGuids(
                     file.Id,
                     normalizedGuids);

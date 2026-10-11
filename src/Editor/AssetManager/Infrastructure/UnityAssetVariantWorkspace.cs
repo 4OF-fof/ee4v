@@ -342,6 +342,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 return new AssetVariantDependency
                 {
                     FileId = file.Id, SourceType = file.SourceType, SourceId = file.SourceId,
+                    SourceHash = ImportedAssetLibrary.SourceHash(file),
                     AssetGuids = dependencies[fileId].Distinct().OrderBy(guid => guid).ToArray(),
                     TargetPaths = ResolveTargetPaths(file)
                 };
@@ -460,8 +461,20 @@ namespace Ee4v.AssetManager.Infrastructure
             return hash;
         }
 
-        public bool HasAssets(AssetVariantDependency dependency) =>
-            dependency.AssetGuids.All(guid => AssetExists(AssetDatabase.GUIDToAssetPath(guid)));
+        public bool HasAssets(AssetVariantDependency dependency)
+        {
+            if (dependency.AssetGuids.All(guid => AssetExists(AssetDatabase.GUIDToAssetPath(guid)))) return true;
+            var file = FindDependencyFile(dependency);
+            if (!string.IsNullOrEmpty(dependency.SourceHash) && file != null &&
+                ImportedAssetLibrary.SourceHash(file) != dependency.SourceHash)
+                throw new InvalidOperationException("The dependency source has changed. Restore its saved source revision before importing: " + file.FileName);
+            return false;
+        }
+
+        private AssetFile FindDependencyFile(AssetVariantDependency dependency) =>
+            _manager.SearchItems(new AssetItemQuery { IncludeArchived = true }).Items
+                .SelectMany(item => _manager.GetFiles(item.Id, true))
+                .FirstOrDefault(candidate => candidate.SourceType == dependency.SourceType && candidate.SourceId == dependency.SourceId);
 
         private bool AssetExists(string path) => !string.IsNullOrEmpty(path) &&
             (File.Exists(Path.Combine(_projectRoot, path)) || Directory.Exists(Path.Combine(_projectRoot, path)));
@@ -509,6 +522,7 @@ namespace Ee4v.AssetManager.Infrastructure
 
         public string Restore(AssetVariantSnapshot snapshot, string stagingPath, string rootAssetPath)
         {
+            ValidateRestore(snapshot, rootAssetPath);
             foreach (var asset in snapshot.Assets)
             {
                 var source = Path.Combine(stagingPath, asset.Path);
