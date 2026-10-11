@@ -50,6 +50,7 @@ namespace Ee4v.AssetManager.Application
         {
             var variants = _index.GetVariants();
             foreach (var variant in variants)
+            {
                 if (_snapshots.TryGetValue((variant.Id, variant.HeadRevisionId), out var snapshot))
                 {
                     variant.IsArchived = snapshot.Variant.IsArchived;
@@ -57,6 +58,9 @@ namespace Ee4v.AssetManager.Application
                     variant.CreatedAt = snapshot.Variant.CreatedAt;
                     variant.FileSizeBytes = snapshot.Variant.FileSizeBytes;
                 }
+                if (!string.IsNullOrEmpty(variant.SourcePrefabGuid))
+                    variant.Tags = Array.Empty<string>();
+            }
             return variants;
         }
 
@@ -281,12 +285,13 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.Require(request.Name, "variant name");
             var name = request.Name.Trim();
             var description = request.Description ?? string.Empty;
-            var tags = request.Tags == null ? null : AssetManagerRequestValidator.NormalizeTags(request.Tags);
             var variant = GetStoredVariants().FirstOrDefault(candidate => candidate.Id == variantId)
                 ?? _workspace.GetMetadata(variantId);
             if (variant == null) throw new InvalidOperationException("The Variant was not found.");
             var owner = GetStandaloneOwner(variant);
-            var updatedTags = tags ?? (owner == null ? variant.Tags : owner.Tags.Select(tag => tag.Path).ToArray());
+            var updatedTags = !string.IsNullOrEmpty(variant.SourcePrefabGuid) ? Array.Empty<string>() :
+                request.Tags != null ? AssetManagerRequestValidator.NormalizeTags(request.Tags) :
+                owner == null ? variant.Tags : owner.Tags.Select(tag => tag.Path).ToArray();
             _busy = true;
             try
             {
@@ -376,6 +381,7 @@ namespace Ee4v.AssetManager.Application
                         await Task.Run(() => _repository.UpdateMetadata(new AssetVariant
                         {
                             Id = variant.Id, ParentItemId = variant.ParentItemId,
+                            SourcePrefabGuid = variant.SourcePrefabGuid,
                             Name = variant.Name, Description = variant.Description,
                             Tags = variant.Tags, CreatedAt = variant.CreatedAt,
                             RootAssetPath = variant.RootAssetPath, IsArchived = archived, UpdatedAt = DateTime.UtcNow

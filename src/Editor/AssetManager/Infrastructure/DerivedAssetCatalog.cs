@@ -51,7 +51,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 parentItemId = parentItemId ?? string.Empty,
                 name = name ?? string.Empty,
                 description = description ?? string.Empty,
-                tags = (tags ?? Array.Empty<string>()).ToArray(),
+                tags = string.IsNullOrEmpty(sourceGuid)
+                    ? (tags ?? Array.Empty<string>()).ToArray() : Array.Empty<string>(),
                 createdAt = (createdAt ?? DateTime.UtcNow).ToString("O"),
                 updatedAt = DateTime.UtcNow.ToString("O"),
                 sourceGuid = sourceGuid ?? string.Empty,
@@ -138,7 +139,8 @@ namespace Ee4v.AssetManager.Infrastructure
                         ? Path.GetFileNameWithoutExtension(assetPath)
                         : metadata.name,
                     Description = metadata.description ?? string.Empty,
-                    Tags = metadata.tags ?? Array.Empty<string>(),
+                    Tags = string.IsNullOrEmpty(metadata.sourceGuid)
+                        ? metadata.tags ?? Array.Empty<string>() : Array.Empty<string>(),
                     CreatedAt = ParseTimestamp(metadata.createdAt, File.GetCreationTimeUtc(assetPath)),
                     UpdatedAt = new[] { ParseTimestamp(metadata.updatedAt, default),
                         File.GetLastWriteTimeUtc(assetPath) }.Max(),

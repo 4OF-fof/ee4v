@@ -41,6 +41,7 @@ namespace Ee4v.AssetManager.Contracts
         public string SourcePrefabGuid { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        /// <summary>Tags for a standalone creation. Empty when a base Prefab is present.</summary>
         public IReadOnlyList<string> Tags { get; set; } = Array.Empty<string>();
         /// <summary>The AssetManager Item that owns this Variant and its Git repository.</summary>
         public string ParentItemId { get; set; }
@@ -73,6 +74,7 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string Name { get; set; }
         public string Description { get; set; }
+        /// <summary>Tags for a standalone creation. Ignored when a base Prefab is present.</summary>
         public IReadOnlyList<string> Tags { get; set; }
     }
 

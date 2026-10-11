@@ -75,7 +75,8 @@ namespace Ee4v.AssetManager.Infrastructure
                         }
                         latest.Variant.Name = metadata.Name;
                         latest.Variant.Description = metadata.Description ?? string.Empty;
-                        latest.Variant.Tags = metadata.Tags ?? Array.Empty<string>();
+                        latest.Variant.Tags = string.IsNullOrEmpty(latest.Variant.SourcePrefabGuid)
+                            ? metadata.Tags ?? Array.Empty<string>() : Array.Empty<string>();
                         latest.Variant.CreatedAt = metadata.CreatedAt;
                         if (!string.IsNullOrEmpty(metadata.RootAssetPath))
                         {
@@ -125,7 +126,10 @@ namespace Ee4v.AssetManager.Infrastructure
             ValidateId(snapshot.Variant.Id);
             ValidateId(snapshot.Variant.ParentItemId);
             if (!string.IsNullOrEmpty(snapshot.Variant.SourcePrefabGuid))
+            {
                 ValidateId(snapshot.Variant.SourcePrefabGuid);
+                snapshot.Variant.Tags = Array.Empty<string>();
+            }
             var previewCachePath = PreviewCachePath(snapshot.PreviewHash);
             Directory.CreateDirectory(_root);
             var repository = RepositoryPath(snapshot.Variant.ParentItemId);
@@ -308,7 +312,9 @@ namespace Ee4v.AssetManager.Infrastructure
                 JsonConvert.SerializeObject(new VariantMetadata
                 {
                     Name = variant.Name, Description = variant.Description ?? string.Empty,
-                    Tags = (variant.Tags ?? Array.Empty<string>()).ToArray(), CreatedAt = variant.CreatedAt,
+                    Tags = string.IsNullOrEmpty(variant.SourcePrefabGuid)
+                        ? (variant.Tags ?? Array.Empty<string>()).ToArray() : Array.Empty<string>(),
+                    CreatedAt = variant.CreatedAt,
                     RootAssetPath = variant.RootAssetPath,
                     UpdatedAt = variant.UpdatedAt, IsArchived = variant.IsArchived
                 }, Formatting.Indented), new UTF8Encoding(false));
@@ -723,6 +729,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 ValidateId(asset.Guid);
             }
             ValidateAssetPath(snapshot.Variant.RootAssetPath);
+            if (!string.IsNullOrEmpty(snapshot.Variant.SourcePrefabGuid))
+                snapshot.Variant.Tags = Array.Empty<string>();
             snapshot.ContentHash = ComputeContentHash(snapshot);
             snapshot.Revision.CommitId = commit;
             return snapshot;

@@ -115,16 +115,21 @@ namespace Ee4v.AssetManager.UI
             var standalone = IsStandaloneAsset(variant);
             name.isReadOnly = description.IsReadOnly = _variantManager == null || _variantState.VariantBusy ||
                 (standalone && variant.IsArchived);
-            var tagsContainer = new VisualElement();
-            tagsContainer.AddToClassList("ee4v-asset-manager-control-field");
-            tagsContainer.AddToClassList("ee4v-asset-manager__item-metadata-field");
-            tagsContainer.Add(UiTextFactory.Create(I18N.Get("field.tags"),
-                UiClassNames.FormLabel, "ee4v-asset-manager-control-field__label"));
-            var tags = new AssetTagField(standalone ? _viewState.SelectTag : (Action<string>)null,
-                isReadOnly: variant.IsArchived ||
-                _variantManager == null || _variantState.VariantBusy);
-            tags.SetValues(standalone ? GetAvailableTagOptions() : GetAvailableVariantTagOptions(), variant.Tags);
-            tagsContainer.Add(tags);
+            VisualElement tagsContainer = null;
+            AssetTagField tags = null;
+            if (standalone)
+            {
+                tagsContainer = new VisualElement();
+                tagsContainer.AddToClassList("ee4v-asset-manager-control-field");
+                tagsContainer.AddToClassList("ee4v-asset-manager__item-metadata-field");
+                tagsContainer.Add(UiTextFactory.Create(I18N.Get("field.tags"),
+                    UiClassNames.FormLabel, "ee4v-asset-manager-control-field__label"));
+                tags = new AssetTagField(_viewState.SelectTag,
+                    isReadOnly: variant.IsArchived ||
+                    _variantManager == null || _variantState.VariantBusy);
+                tags.SetValues(GetAvailableTagOptions(), variant.Tags);
+                tagsContainer.Add(tags);
+            }
             var metadataError = new VisualElement();
             Action saveMetadata = () =>
             {
@@ -135,14 +140,15 @@ namespace Ee4v.AssetManager.UI
                     return;
                 }
                 ((InputField)name.Input).SetValueWithoutNotify(normalizedName);
-                SaveVariantMetadataAutomatically(variant, normalizedName, description.Value, tags.Values, metadataError);
+                SaveVariantMetadataAutomatically(variant, normalizedName, description.Value,
+                    tags?.Values ?? Array.Empty<string>(), metadataError);
             };
             name.RegisterCallback<FocusOutEvent>(_ => saveMetadata());
             description.RegisterCallback<FocusOutEvent>(_ => saveMetadata());
-            tags.ValuesCommitted += () => saveMetadata();
+            if (tags != null) { tags.ValuesCommitted += () => saveMetadata(); }
             detail.Add(name);
             detail.Add(descriptionContainer);
-            detail.Add(tagsContainer);
+            if (tagsContainer != null) { detail.Add(tagsContainer); }
             detail.Add(metadataError);
         }
 
