@@ -121,12 +121,6 @@ namespace Ee4v.AssetManager.UI
             _sortButton.style.display = DisplayStyle.Flex;
             _gridControls.style.display = DisplayStyle.Flex;
 
-            if (items.Count == 0)
-            {
-                _content.Add(AssetManagerControls.CreateNotice(
-                    I18N.Get("notice.noItems")));
-            }
-
             _itemGrid.SetItems(items.Select(item =>
                     new AssetItemGridEntry(
                         item.Id,
@@ -135,6 +129,12 @@ namespace Ee4v.AssetManager.UI
             _itemGrid.SetSelectedItemIds(
                 _viewState.SelectedItemIds,
                 _viewState.SelectedItemId);
+            if (items.Count == 0)
+            {
+                _content.Add(AssetManagerControls.CreateEmptyState(
+                    I18N.Get("notice.noItems")));
+                return;
+            }
             _content.Add(_itemGrid);
             OnGridVisibleItemsChanged(_itemGrid.GetVisibleItemIds());
         }
@@ -199,12 +199,14 @@ namespace Ee4v.AssetManager.UI
                 : ordered.ThenBy(entry => entry.Grid.Name, StringComparer.OrdinalIgnoreCase)
                     .ThenBy(entry => entry.Grid.Id, StringComparer.Ordinal);
             var gridEntries = ordered.Select(entry => entry.Grid).ToArray();
-            if (gridEntries.Length == 0)
-            {
-                _content.Add(AssetManagerControls.CreateNotice(I18N.Get("notice.noItems")));
-            }
             _itemGrid.SetItems(gridEntries);
             _itemGrid.SetSelectedItemIds(_viewState.SelectedArchiveEntryIds, _viewState.SelectedArchiveEntryId);
+            if (gridEntries.Length == 0)
+            {
+                _content.Add(AssetManagerControls.CreateEmptyState(
+                    I18N.Get("notice.noItems")));
+                return;
+            }
             _content.Add(_itemGrid);
             OnGridVisibleItemsChanged(_itemGrid.GetVisibleItemIds());
         }
@@ -263,8 +265,10 @@ namespace Ee4v.AssetManager.UI
                 _viewState.IsItemSortReversed);
             if (variants.Count == 0 && !string.IsNullOrWhiteSpace(_search.Value))
             {
-                _content.Add(AssetManagerControls.CreateNotice(
-                    I18N.Get("notice.noVariants")));
+                _itemGrid.SetItems(Array.Empty<AssetItemGridEntry>());
+                _content.Add(AssetManagerControls.CreateEmptyState(
+                    I18N.Get("notice.noVariants"), "cube.png"));
+                return;
             }
             var icon = AssetManagerControls.LoadFluentIconState(
                 "cube.png", UiSizeTokens.Size24,

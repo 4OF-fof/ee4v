@@ -318,19 +318,17 @@ namespace Ee4v.AssetManager.UI
                         _viewState.SearchTargets)),
                 _viewState.ItemSortField,
                 _viewState.IsItemSortReversed);
-            var list = new ScrollView(ScrollViewMode.Vertical);
-            list.AddToClassList("ee4v-asset-manager__file-list");
             if (files.Count == 0)
             {
-                list.Add(AssetManagerControls.CreateNotice(
-                    I18N.Get("notice.noUnassignedFiles")));
+                _content.Add(AssetManagerControls.CreateEmptyState(
+                    I18N.Get("notice.noItems")));
+                return;
             }
-            else
+            var list = new ScrollView(ScrollViewMode.Vertical);
+            list.AddToClassList("ee4v-asset-manager__file-list");
+            for (var index = 0; index < files.Count; index++)
             {
-                for (var index = 0; index < files.Count; index++)
-                {
-                    list.Add(CreateFileButton(files[index]));
-                }
+                list.Add(CreateFileButton(files[index]));
             }
             _content.Add(list);
         }

@@ -46,6 +46,11 @@ namespace Ee4v.AssetManager.UI
 
         private void ShowVariantDetail(string variantId = null)
         {
+            if (string.IsNullOrEmpty(variantId ?? InformationVariantId))
+            {
+                ShowLibraryDetail();
+                return;
+            }
             _detail.Clear();
             var variant = GetVariants().FirstOrDefault(candidate =>
                 candidate.VariantId == (variantId ?? InformationVariantId));
@@ -127,7 +132,8 @@ namespace Ee4v.AssetManager.UI
                 candidate.VariantId == _viewState.DetailVariantId);
             if (variant == null)
             {
-                _content.Add(AssetManagerControls.CreateNotice(I18N.Get("variant.missing")));
+                _content.Add(AssetManagerControls.CreateEmptyState(
+                    I18N.Get("variant.missing"), "cube.png"));
                 return;
             }
 

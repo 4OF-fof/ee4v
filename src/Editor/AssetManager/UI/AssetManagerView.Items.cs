@@ -148,10 +148,40 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            ShowEmptyDetail(
-                _viewState.Page == AssetManagerPage.UnassignedFiles
-                    ? I18N.Get("notice.selectFile")
-                    : I18N.Get("notice.selectItem"));
+            ShowLibraryDetail();
+        }
+
+        private void ShowLibraryDetail()
+        {
+            _detail.Clear();
+            var items = _manager.SearchItems(new AssetItemQuery
+            {
+                IncludeArchived = true
+            }).Items;
+            var unassignedFiles = _manager.GetUnassignedFiles(includeArchived: true);
+            var fileCount = items.Sum(item => item.Files?.Count ?? 0) + unassignedFiles.Count;
+            var information = new AssetDetailSection(I18N.Get("library.title"));
+            information.AddToClassList("ee4v-asset-manager__library-information");
+            var counts = new AssetDetailSettingList();
+            var datasource = AssetManagerSettings.SelectedDatasource;
+            AddLibraryValue(counts, "settings.datasource.label",
+                datasource == AssetDatasourceKind.BoothLibraryManager
+                    ? "BOOTH Library Manager"
+                    : datasource == AssetDatasourceKind.Ee4v ? "ee4v" : "Eagle");
+            AddLibraryValue(counts, "library.itemCount", items.Count.ToString("N0"));
+            AddLibraryValue(counts, "field.fileCount", fileCount.ToString("N0"));
+            AddLibraryValue(counts, "library.unassignedFileCount", unassignedFiles.Count.ToString("N0"));
+            AddLibraryValue(counts, "library.variantCount", GetVariants().Count.ToString("N0"));
+            AddLibraryValue(counts, "library.tagCount", _manager.GetTags().Count.ToString("N0"));
+            AddLibraryValue(counts, "library.collectionCount", _manager.GetCollections().Count.ToString("N0"));
+            information.Add(counts);
+            _detail.Add(information);
+        }
+
+        private static void AddLibraryValue(AssetDetailSettingList list, string labelKey, string value)
+        {
+            list.AddRow(new AssetDetailSettingRow(I18N.Get(labelKey),
+                CreateMonoValue(string.IsNullOrWhiteSpace(value) ? I18N.Get("common.none") : value)));
         }
 
         private void ShowArchiveSelectionDetail()
@@ -159,7 +189,7 @@ namespace Ee4v.AssetManager.UI
             var selected = _viewState.SelectedArchiveEntryIds;
             if (selected.Count == 0)
             {
-                ShowEmptyDetail(I18N.Get("notice.selectItem"));
+                ShowLibraryDetail();
                 return;
             }
             if (selected.Count == 1)
@@ -247,8 +277,8 @@ namespace Ee4v.AssetManager.UI
             var item = _manager.GetItem(_viewState.DetailItemId);
             if (item == null)
             {
-                _content.Add(AssetManagerControls.CreateNotice(
-                    I18N.Get("notice.itemMissing")));
+                _content.Add(AssetManagerControls.CreateEmptyState(
+                    I18N.Get("notice.itemMissing"), "library.png"));
                 return;
             }
 

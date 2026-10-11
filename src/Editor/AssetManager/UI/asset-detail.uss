@@ -56,6 +56,12 @@
     border-top-color: var(--ee4v-color-border-subtle);
 }
 
+.ee4v-asset-manager__library-information.ee4v-asset-manager__item-detail-section {
+    margin-top: var(--ee4v-space-none);
+    padding-top: var(--ee4v-space-none);
+    border-top-width: 0;
+}
+
 .ee4v-asset-manager__section-header {
     flex-direction: row;
     align-items: center;

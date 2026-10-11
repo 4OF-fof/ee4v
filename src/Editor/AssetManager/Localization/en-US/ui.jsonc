@@ -333,7 +333,7 @@
     "syncDatabaseMissing": "The BOOTH Library Manager database was not found: {0}",
     "noVariants": "No assets match your search.",
     "selectVariant": "Select an asset to view its details.",
-    "noItems": "No items match this view.",
+    "noItems": "There are no items to display.",
     "noTags": "There are no tags.",
     "selectedItemMissing": "The selected item no longer exists.",
     "selectedFileMissing": "The selected file no longer exists.",
@@ -341,7 +341,6 @@
     "selectItem": "Select an item to inspect its files and metadata.",
     "itemMissing": "The item no longer exists.",
     "noAssignedFiles": "There are no files assigned to this item.",
-    "noUnassignedFiles": "There are no unassigned files.",
     "collectionNameRequired": "Enter a collection name.",
     "collectionSaveFailed": "The collection could not be saved. Check the Console.",
     "derivedAssetNameInvalid": "Enter a name without characters that are invalid in file names.",
@@ -412,6 +411,14 @@
     "searchPlaceholder": "Search assets",
     "reload": "Reload assets from the project",
     "selectedCount": "{0} assets selected"
+  },
+  "library": {
+    "title": "Library information",
+    "itemCount": "Items",
+    "unassignedFileCount": "Unassigned files",
+    "variantCount": "My assets",
+    "tagCount": "Tags",
+    "collectionCount": "Collections"
   },
   "detail": {
     "information": "INFORMATION",

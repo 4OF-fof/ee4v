@@ -16,6 +16,18 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager__danger-action";
         private const string IconButtonClassName =
             "ee4v-asset-manager__icon-button";
+
+        public static EmptyState CreateEmptyState(string text, string iconFileName = "info.png")
+        {
+            var empty = new EmptyState(new EmptyStateState(
+                string.Empty,
+                text,
+                LoadFluentIconState(iconFileName, 48f,
+                    tintColor: UiColorTokens.TextMuted)));
+            empty.AddToClassList("ee4v-asset-manager__empty-state");
+            return empty;
+        }
+
         public static UiButton CreateButton(
             string text = "",
             Action onClick = null,

@@ -22,6 +22,7 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildEmptyStateStory(parent),
                     new[]
                     {
+                        "Editor/AssetManager/UI/AssetManagerControls.cs",
                         "Editor/AssetManager/UI/AssetTagField.cs",
                         "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs",
                         "Editor/Feature/Shared/AvatarEditing/AvatarEditingUi.cs",

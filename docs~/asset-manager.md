@@ -100,6 +100,12 @@ Storyは実部品を使用し、編集・保存やPlay Modeの切り替えを行
 
 `AssetManagerView`は生成・購読・破棄を管理するホストです。partialは`Navigation`（Toolbarと移動）、`Catalog`（一覧と検索）、`Items`（Item詳細と派生作成）、`Files`（File詳細）、`Targets`（Target表示とGroup操作）、`Collections`（Collection編集）、`Variants`（版・Galleryと復元）、`Images`（画像取得とPreview）、`Metadata`（自動保存）、`Actions`（取り込みと削除）に分けます。Variant詳細の選択、Preview要求、Gallery操作と自動保存の状態は`VariantPageState`へまとめます。
 
+MainのItem・アーカイブ・未所属File・タグ一覧やマイアセットの検索結果が空の場合は、共有`EmptyState`で48pxのFluentアイコンと案内文を表示します。背景や枠を付けず、一覧の残り領域の水平・垂直中央へ配置し、空のGridやScrollViewを同時に配置しません。詳細対象のItem・マイアセットが見つからない場合も同じスタイルを使用します。マイアセットの通常一覧には作成カードを維持します。
+
+Item・アーカイブ・未所属Fileの空表示は、Fluentの`Info`アイコンと「表示する項目はありません。」へ統一します。
+
+Information（inspector）でItem・File・マイアセットが未選択の場合は「ライブラリ情報」の見出しとライブラリ情報の一覧を表示します。見出しの上にはセクションの罫線や区切り用の余白を置きません。先頭行に現在のデータソース（ee4v・BOOTH Library Manager・Eagle）を表示し、その下に検索・絞り込みと独立して、アーカイブ済みを含むItem数、所属・未所属を合計したFile数、未所属File数、マイアセット数、タグ数、コレクション数を表示します。選択すると従来の選択対象の情報へ切り替わり、選択解除でライブラリ情報の一覧へ戻ります。
+
 Variant作成画面は`VariantCreationView`をAssetManagerのItem詳細と統合ee4vで共有します。上部は最小高さ48pxのナビゲーション行とし、Ghostの戻るアイコン、画面名、縦の区切り線、Libraryアイコンと作成元Item名を左から並べます。大きな説明欄や読み取り専用フォームは置きません。Item名は長い場合に右端で切り、全文をtooltipで確認できます。作成元Prefabのラベルとselectorは左ペインのプレビュー上部で横一列に並べ、selectorは高さ32px・Prefab名だけの表示とします。Project内pathはtooltipで確認できます。画面幅が940px未満ならItem情報を同じHeader内の次の行へ折り返します。
 
 作成元PrefabのPickerは構成Prefabの追加と同じ`AssetPrefabPickerWindow`を使用します。`ShowForSource`は現在のItemの取り込み済みPrefab一覧へ直接進み、検索欄、Prefab一覧、大きな3Dプレビューと選択ボタンを追加時と共有します。現在選択中のPrefabを初期選択とし、候補はPrefab名またはProject内pathで検索できます。この入口には別Itemへの移動とAssetManager起動を表示せず、確定ボタンの名称は「このPrefabを選択」とします。`PrefabSelector`の`showPicker`でこの入口へ接続し、候補外Prefabの拒否とドラッグ受け入れは共通selectorで維持します。Previewと右の入力ペインはPickerからの選択確定に応じて同じ画面で更新します。
@@ -132,9 +138,9 @@ PC／Questの切り替えは総合評価カード右上の小さな2択ボタン
 
 #### マイアセットの新規作成
 
-UI上の総称は「マイアセット」です。新規作成カードは通常カードと同じ幅・高さを保ち、独立した下部ラベル帯は表示せず、1つの面の中央にFluentの＋アイコンと「新しく作る」を並べます。補足文は表示しません。通常は控えめな枠を使用し、ホバー時だけ枠を強調します。通常アセットカードの画像・下部名ラベル・選択表示は維持します。カードのStoryでは通常表示と作成操作の表示を並べて確認できます。Gridで項目のないslotは`display: none`で子要素ごと非表示にし、別ページの同位置で使用したカードの画像・名前を残しません。
+UI上の総称は「マイアセット」です。新規作成カードは通常カードと同じ幅・高さを保ち、独立した下部ラベル帯は表示せず、1つの面の中央にFluentの＋アイコンと「新規作成」を並べます。補足文は表示しません。通常は控えめな枠を使用し、ホバー時だけ枠を強調します。通常アセットカードの画像・下部名ラベル・選択表示は維持します。カードのStoryでは通常表示と作成操作の表示を並べて確認できます。Gridで項目のないslotは`display: none`で子要素ごと非表示にし、別ページの同位置で使用したカードの画像・名前を残しません。
 
-AssetManagerの「マイアセット」タブはベースを継承するVariantとベースなしの制作物を同じ一覧に表示します。Gridの先頭には「新しく作る」の追加カードを常に表示し、検索・並び替え・制作物が0件の場合もその位置を維持します。追加カードは選択・範囲選択・サムネイル取得・context menuの対象から除外し、クリックまたはEnter／Spaceで作成画面を開きます。統合ee4vではホストの作成画面へ、単独AssetManagerでは同じ作成フォームへ接続します。
+AssetManagerの「マイアセット」タブはベースを継承するVariantとベースなしの制作物を同じ一覧に表示します。Gridの先頭には「新規作成」の追加カードを常に表示し、検索・並び替え・制作物が0件の場合もその位置を維持します。追加カードは選択・範囲選択・サムネイル取得・context menuの対象から除外し、クリックまたはEnter／Spaceで作成画面を開きます。統合ee4vではホストの作成画面へ、単独AssetManagerでは同じ作成フォームへ接続します。
 
 名前、任意の説明と「ベースPrefab（任意）」を指定します。説明用のHelpBoxは表示しません。ベース未選択の場合は`DerivedAssetCreationRequest.CreateOriginal`をtrueとして、ベースを継承しない通常Prefab・作業Sceneを作成し、`sourceGuid`は空文字列になります。ベース選択時は同Requestをfalseとして、選択Prefabを継承するPrefab Variant・Material Variant・作業Sceneを作成します。候補は選択中Sourceで取り込み済みのPrefabと、制作物Itemに所有されるProject内の未Archive Prefabです。候補の取得は`AssetPrefabPickerWindow.FindSources`を統合・単独画面で共用し、作成時にも候補を再検証します。選択したベースは解除でき、解除後は名前だけで作成できます。解除ボタンはベース選択時だけ表示し、未選択時と解除後は非表示にします。FormInputの右端に32px四方で配置し、選択欄と高さを揃えます。選択状態はフォーム再構築時にも保持します。
 

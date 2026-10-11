@@ -737,6 +737,15 @@
     min-height: 0;
 }
 
+.ee4v-asset-manager__empty-state.ee4v-ui-empty-state {
+    border-width: 0;
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-asset-manager__empty-state > .ee4v-ui-empty-state__actions {
+    display: none;
+}
+
 .ee4v-asset-manager__tag-list {
     flex-grow: 1;
     min-width: 0;
@@ -891,11 +900,6 @@
     min-width: 12px;
     margin-left: var(--ee4v-space-md);
     -unity-text-align: middle-right;
-}
-
-.ee4v-asset-manager__tag-list-empty {
-    flex-grow: 1;
-    -unity-text-align: middle-center;
 }
 
 .ee4v-asset-manager__collection-popup-form {

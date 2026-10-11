@@ -151,7 +151,7 @@
     },
     "original": {
       "create": "新しいマイアセットを作成",
-      "createCard": "新しく作る",
+      "createCard": "新規作成",
       "title": "マイアセットを作成",
       "optionalBase": "ベースPrefab（任意）",
       "clearBase": "ベースを解除",
@@ -333,7 +333,7 @@
     "syncDatabaseMissing": "BOOTH Library Managerのデータベースが見つかりません：{0}",
     "noVariants": "検索に一致するマイアセットはありません。",
     "selectVariant": "詳細を確認するマイアセットを選択してください。",
-    "noItems": "この表示に一致するItemはありません。",
+    "noItems": "表示する項目はありません。",
     "noTags": "タグはありません。",
     "selectedItemMissing": "選択したItemは存在しません。",
     "selectedFileMissing": "選択したFileは存在しません。",
@@ -341,7 +341,6 @@
     "selectItem": "Fileやメタデータを確認するItemを選択してください。",
     "itemMissing": "Itemは存在しません。",
     "noAssignedFiles": "このItemに所属するFileはありません。",
-    "noUnassignedFiles": "未所属のFileはありません。",
     "collectionNameRequired": "コレクション名を入力してください。",
     "collectionSaveFailed": "コレクションを保存できませんでした。Consoleを確認してください。",
     "derivedAssetNameInvalid": "名前を入力してください。ファイル名に使えない文字は指定できません。",
@@ -412,6 +411,14 @@
     "searchPlaceholder": "マイアセットを検索",
     "reload": "Projectのマイアセット一覧を再読み込み",
     "selectedCount": "{0} 個のマイアセットを選択"
+  },
+  "library": {
+    "title": "ライブラリ情報",
+    "itemCount": "Item数",
+    "unassignedFileCount": "未所属File数",
+    "variantCount": "マイアセット数",
+    "tagCount": "タグ数",
+    "collectionCount": "コレクション数"
   },
   "detail": {
     "information": "情報",
