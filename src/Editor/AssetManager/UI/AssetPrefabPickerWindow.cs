@@ -61,13 +61,15 @@ namespace Ee4v.AssetManager.UI
         private IReadOnlyList<VariantSourceOption> _filteredItems = Array.Empty<VariantSourceOption>();
         private IReadOnlyList<GameObject> _filteredPrefabs = Array.Empty<GameObject>();
 
-        internal static IReadOnlyList<VariantSourceOption> FindSources(IAssetManager manager)
+        internal static IReadOnlyList<VariantSourceOption> FindSources(IAssetManager manager,
+            Func<GameObject, bool> canSelect = null)
         {
             return manager.SearchItems(new AssetItemQuery()).Items
                 .Where(item => item != null && !item.IsArchived)
                 .Select(item => new VariantSourceOption
                 {
                     Item = item, Prefabs = DerivedAssetCreator.FindPrefabCandidates(manager, item)
+                        .Where(prefab => canSelect == null || canSelect(prefab)).ToArray()
                 })
                 .Where(source => source.Prefabs.Count > 0)
                 .OrderBy(source => source.Item.Name, StringComparer.OrdinalIgnoreCase).ToArray();

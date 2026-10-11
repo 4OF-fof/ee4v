@@ -51,16 +51,17 @@ namespace Ee4v.AssetManager.UI
         }
 
         private void SaveVariantMetadataAutomatically(DerivedAssetInfo variant, string name,
-            string description, VisualElement error)
+            string description, IReadOnlyList<string> tags, VisualElement error)
         {
             if (_variantManager == null || _variantState.VariantBusy) { return; }
             if (_variantState.VariantMetadataSaveCount == 0 && variant.Name == name &&
-                (variant.Description ?? string.Empty) == description) { return; }
+                (variant.Description ?? string.Empty) == description &&
+                variant.Tags.SequenceEqual(tags, StringComparer.OrdinalIgnoreCase)) { return; }
             var queue = VariantMetadataSaveQueues.GetValue(_variantManager, _ => new VariantMetadataSaveQueue());
             var previousSave = queue.Pending;
             _variantState.VariantMetadataSaveCount++;
             _variantState.VariantMetadataSaveTask = SaveVariantMetadataAsync(previousSave, variant,
-                new UpdateAssetVariantRequest { Name = name, Description = description }, error);
+                new UpdateAssetVariantRequest { Name = name, Description = description, Tags = tags.ToArray() }, error);
             queue.Pending = _variantState.VariantMetadataSaveTask;
         }
 
@@ -75,12 +76,25 @@ namespace Ee4v.AssetManager.UI
                 await previousSave;
                 var current = GetVariants().FirstOrDefault(candidate => candidate.VariantId == variant.VariantId);
                 if (current == null || (current.Name == request.Name &&
-                    (current.Description ?? string.Empty) == request.Description)) { return; }
+                    (current.Description ?? string.Empty) == request.Description &&
+                    current.Tags.SequenceEqual(request.Tags, StringComparer.OrdinalIgnoreCase))) { return; }
                 await _variantManager.UpdateMetadata(variant.VariantId, request);
+                var saved = GetVariants().First(candidate => candidate.VariantId == variant.VariantId);
                 variant.Name = request.Name;
                 variant.Description = request.Description;
+                variant.Tags = saved.Tags;
                 if (variant.Prefab != null) { variant.AssetPath = AssetDatabase.GetAssetPath(variant.Prefab); }
                 error.Clear();
+                if (_variantState.VariantMetadataSaveCount == 1)
+                {
+                    error.parent?.Q<AssetTagField>()?.SetValues(IsStandaloneAsset(variant)
+                        ? GetAvailableTagOptions() : GetAvailableVariantTagOptions(), variant.Tags);
+                }
+                if (!_disposed && ShowsInformation && InformationVariantId == variant.VariantId)
+                {
+                    _detail.Q<VisualElement>(className: "ee4v-asset-manager__variant-information")?.RemoveFromHierarchy();
+                    AddVariantInformation(_detail, saved);
+                }
             }
             catch (Exception exception)
             {
@@ -204,6 +218,18 @@ namespace Ee4v.AssetManager.UI
                     option => option.Path,
                     StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+        }
+
+        private IReadOnlyList<AssetTagOption> GetAvailableVariantTagOptions()
+        {
+            return GetAvailableTagOptions()
+                .Concat(GetVariants().Where(variant => !IsStandaloneAsset(variant))
+                    .SelectMany(variant => variant.Tags.Distinct(StringComparer.OrdinalIgnoreCase))
+                    .Select(path => new AssetTagOption(path, 1)))
+                .GroupBy(option => option.Path, StringComparer.OrdinalIgnoreCase)
+                .Select(group => new AssetTagOption(group.Key, group.Sum(option => option.UsageCount)))
+                .OrderByDescending(option => option.UsageCount)
+                .ThenBy(option => option.Path, StringComparer.OrdinalIgnoreCase).ToArray();
         }
 
         private static IReadOnlyList<string> GetTagPaths(AssetItem item)

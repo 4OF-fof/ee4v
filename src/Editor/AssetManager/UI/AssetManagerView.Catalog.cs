@@ -165,6 +165,7 @@ namespace Ee4v.AssetManager.UI
                 })
                 .Concat(GetVariants().Where(variant =>
                     _viewState.SearchFilter == null &&
+                    !IsStandaloneAsset(variant) &&
                     variant.IsArchived && AssetManagerSearch.MatchesVariant(
                     variant, _search.Value, _viewState.SearchTargets)).Select(variant => new
                 {

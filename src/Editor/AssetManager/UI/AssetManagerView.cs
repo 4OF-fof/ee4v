@@ -643,6 +643,12 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            if (_variantState.VariantMetadataSaveCount > 0)
+            {
+                if (ShowsNavigation) RebuildNavigation();
+                return;
+            }
+
             if (change.Kind ==
                 AssetManagerChangeKind.FileImportedAssetGuidsChanged)
             {

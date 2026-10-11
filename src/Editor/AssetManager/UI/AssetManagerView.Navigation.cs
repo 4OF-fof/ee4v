@@ -145,13 +145,10 @@ namespace Ee4v.AssetManager.UI
                 menu,
                 "toolbar.search.description",
                 AssetManagerSearchTarget.Description);
-            if (!ShowsVariants)
-            {
-                AddSearchTargetMenuItem(
-                    menu,
-                    "toolbar.search.tags",
-                    AssetManagerSearchTarget.Tags);
-            }
+            AddSearchTargetMenuItem(
+                menu,
+                "toolbar.search.tags",
+                AssetManagerSearchTarget.Tags);
             menu.DropDown(_search.SearchActionAnchor.worldBound);
         }
 

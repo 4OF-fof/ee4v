@@ -32,6 +32,9 @@ namespace Ee4v.AssetManager.UI
         public string Name { get; set; }
         public string Description { get; set; }
         public string AssetPath { get; set; }
+        public IReadOnlyList<string> Tags { get; set; } = Array.Empty<string>();
+        public DateTime CreatedAt { get; set; }
+        public long? FileSizeBytes { get; set; }
         public string ScenePath { get; set; }
         public DateTime UpdatedAt { get; set; }
         public bool IsArchived { get; set; }
@@ -210,22 +213,10 @@ namespace Ee4v.AssetManager.UI
                     request.Description,
                     request.CreateOriginal ? string.Empty : AssetDatabase.AssetPathToGUID(sourcePath));
                 importer.SaveAndReimport();
-                var scenePath = EnsureWorkingScene(rootPath);
+                EnsureWorkingScene(rootPath);
                 AssetDatabase.SaveAssets();
 
-                return new DerivedAssetInfo
-                {
-                    VariantId = AssetDatabase.AssetPathToGUID(rootPath),
-                    ParentItemId = request.ParentItemId ?? string.Empty,
-                    Name = name,
-                    Description = request.Description ?? string.Empty,
-                    IsOriginal = request.CreateOriginal,
-                    AssetPath = rootPath,
-                    ScenePath = scenePath,
-                    UpdatedAt = File.GetLastWriteTimeUtc(rootPath),
-                    Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                        rootPath)
-                };
+                return ToInfo(DerivedAssetCatalog.Read(rootPath));
             }
             catch
             {
@@ -371,14 +362,36 @@ namespace Ee4v.AssetManager.UI
                 ParentItemId = record.ParentItemId,
                 Name = record.Name,
                 Description = record.Description,
+                Tags = record.Tags,
+                CreatedAt = record.CreatedAt,
                 IsArchived = record.IsArchived,
                 IsOriginal = string.IsNullOrEmpty(record.SourceGuid),
                 AssetPath = record.AssetPath,
                 ScenePath = GetWorkingScenePath(record.AssetPath),
-                UpdatedAt = File.GetLastWriteTimeUtc(record.AssetPath),
+                UpdatedAt = record.UpdatedAt,
                 Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                     record.AssetPath)
             };
+        }
+
+        internal static long? GetVariantFileSize(string assetPath, out DateTime updatedAt)
+        {
+            updatedAt = default;
+            try
+            {
+                var folder = Path.GetDirectoryName(assetPath);
+                var files = AssetDatabase.FindAssets(string.Empty, new[] { folder.Replace('\\', '/') })
+                    .Select(AssetDatabase.GUIDToAssetPath)
+                    .Where(File.Exists).Select(path => new FileInfo(path)).ToArray();
+                updatedAt = files.Select(file => file.LastWriteTimeUtc).DefaultIfEmpty().Max();
+                return files.Sum(file => file.Length);
+            }
+            catch (Exception exception) when (exception is IOException ||
+                exception is UnauthorizedAccessException || exception is ArgumentException ||
+                exception is NotSupportedException || exception is OverflowException)
+            {
+                return null;
+            }
         }
 
         public static string GetWorkingScenePath(string prefabPath)

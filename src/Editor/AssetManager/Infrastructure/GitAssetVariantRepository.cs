@@ -27,6 +27,8 @@ namespace Ee4v.AssetManager.Infrastructure
         {
             public string Name { get; set; }
             public string Description { get; set; }
+            public string[] Tags { get; set; }
+            public DateTime CreatedAt { get; set; }
             public string RootAssetPath { get; set; }
             public DateTime UpdatedAt { get; set; }
             public bool IsArchived { get; set; }
@@ -73,6 +75,8 @@ namespace Ee4v.AssetManager.Infrastructure
                         }
                         latest.Variant.Name = metadata.Name;
                         latest.Variant.Description = metadata.Description ?? string.Empty;
+                        latest.Variant.Tags = metadata.Tags ?? Array.Empty<string>();
+                        latest.Variant.CreatedAt = metadata.CreatedAt;
                         if (!string.IsNullOrEmpty(metadata.RootAssetPath))
                         {
                             ValidateAssetPath(metadata.RootAssetPath);
@@ -80,6 +84,10 @@ namespace Ee4v.AssetManager.Infrastructure
                         }
                         latest.Variant.UpdatedAt = metadata.UpdatedAt;
                         latest.Variant.IsArchived = metadata.IsArchived;
+                    }
+                    if (latest.Variant.CreatedAt == default)
+                    {
+                        latest.Variant.CreatedAt = group.Min(snapshot => snapshot.Revision.CreatedAt);
                     }
                     foreach (var snapshot in group)
                     {
@@ -300,6 +308,7 @@ namespace Ee4v.AssetManager.Infrastructure
                 JsonConvert.SerializeObject(new VariantMetadata
                 {
                     Name = variant.Name, Description = variant.Description ?? string.Empty,
+                    Tags = (variant.Tags ?? Array.Empty<string>()).ToArray(), CreatedAt = variant.CreatedAt,
                     RootAssetPath = variant.RootAssetPath,
                     UpdatedAt = variant.UpdatedAt, IsArchived = variant.IsArchived
                 }, Formatting.Indented), new UTF8Encoding(false));

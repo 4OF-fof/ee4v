@@ -459,7 +459,8 @@ namespace Ee4v.AssetManager.UI
         private void OpenAssetPicker(VisualElement anchor)
         {
             var target = _avatarContext.Root;
-            var sources = GetVariantSources();
+            var variantPath = GetWorkingAssetPath();
+            var sources = GetVariantSources(prefab => CanAddPrefab(prefab, variantPath));
             AssetPrefabPickerWindow.Show(
                 anchor,
                 sources,
@@ -494,16 +495,7 @@ namespace Ee4v.AssetManager.UI
             var previousBodyPart = _avatarContext.SelectedBodyPart;
             try
             {
-                var prefabPath = AssetDatabase.GetAssetPath(prefab);
-                var variantPath = GetWorkingAssetPath();
-                if (string.IsNullOrEmpty(prefabPath) ||
-                    !prefabPath.EndsWith(".prefab",
-                        StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(prefabPath, variantPath,
-                        StringComparison.OrdinalIgnoreCase) ||
-                    AssetDatabase.GetDependencies(prefabPath, true).Any(path =>
-                        string.Equals(path, variantPath,
-                            StringComparison.OrdinalIgnoreCase)))
+                if (!CanAddPrefab(prefab, GetWorkingAssetPath()))
                 {
                     ShowAssetError("workflow.assets.invalidPrefab");
                     return;
@@ -542,6 +534,17 @@ namespace Ee4v.AssetManager.UI
                 Debug.LogException(exception);
                 ShowAssetError("workflow.assets.saveFailed");
             }
+        }
+
+        private static bool CanAddPrefab(GameObject prefab, string variantPath)
+        {
+            if (prefab == null) return false;
+            var prefabPath = AssetDatabase.GetAssetPath(prefab);
+            return !string.IsNullOrEmpty(prefabPath) &&
+                prefabPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(prefabPath, variantPath, StringComparison.OrdinalIgnoreCase) &&
+                !AssetDatabase.GetDependencies(prefabPath, true).Any(path =>
+                    string.Equals(path, variantPath, StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool IsAddedAssetChild(GameObject root, GameObject child)

@@ -22,6 +22,13 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            var standalone = FindStandaloneAsset(item.Id);
+            if (standalone != null)
+            {
+                ShowVariantDetail(standalone.VariantId);
+                return;
+            }
+
             var thumbnailStack = CreateDetailThumbnailStack(
                 new[] { item.Id });
             _detail.Add(thumbnailStack);
@@ -370,6 +377,13 @@ namespace Ee4v.AssetManager.UI
             if (_viewState.IsDerivedAssetsPage)
             {
                 BuildDerivedAssetsPage();
+                return;
+            }
+
+            var standalone = FindStandaloneAsset(item.Id);
+            if (standalone != null)
+            {
+                BuildVariantDetailPage(standalone);
                 return;
             }
 

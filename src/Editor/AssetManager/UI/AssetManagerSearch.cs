@@ -67,7 +67,9 @@ namespace Ee4v.AssetManager.UI
                 ((HasTarget(targets, AssetManagerSearchTarget.Name) &&
                   Contains(variant.Name, search.Trim())) ||
                  (HasTarget(targets, AssetManagerSearchTarget.Description) &&
-                  Contains(variant.Description, search.Trim())));
+                  Contains(variant.Description, search.Trim())) ||
+                 (HasTarget(targets, AssetManagerSearchTarget.Tags) &&
+                  variant.Tags.Any(tag => Contains(tag, search.Trim()))));
         }
 
         public static AssetFilterNode BuildBackendFilter(

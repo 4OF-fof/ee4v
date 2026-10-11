@@ -41,10 +41,13 @@ namespace Ee4v.AssetManager.Contracts
         public string SourcePrefabGuid { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public IReadOnlyList<string> Tags { get; set; } = Array.Empty<string>();
         /// <summary>The AssetManager Item that owns this Variant and its Git repository.</summary>
         public string ParentItemId { get; set; }
         public string RootAssetPath { get; set; }
         public string HeadRevisionId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public long? FileSizeBytes { get; set; }
         public DateTime UpdatedAt { get; set; }
         public bool IsArchived { get; set; }
     }
@@ -70,6 +73,7 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string Name { get; set; }
         public string Description { get; set; }
+        public IReadOnlyList<string> Tags { get; set; }
     }
 
     public sealed class AssetVariantChangeStatus

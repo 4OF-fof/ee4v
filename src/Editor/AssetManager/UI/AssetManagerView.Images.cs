@@ -40,7 +40,7 @@ namespace Ee4v.AssetManager.UI
         {
             var cancellation = new CancellationTokenSource();
             _gridThumbnailCancellation = cancellation;
-            var savedVariants = (ShowsVariants || _viewState.Page == AssetManagerPage.Archived) && _variantManager != null
+            var savedVariants = _variantManager != null
                 ? _variantManager.GetVariants().ToDictionary(variant => variant.Id, StringComparer.Ordinal)
                 : null;
             try
@@ -67,7 +67,12 @@ namespace Ee4v.AssetManager.UI
                             }
                             else
                             {
-                                thumbnail = await _manager.GetThumbnail(itemId, cancellation.Token);
+                                var standalone = savedVariants?.Values.FirstOrDefault(variant =>
+                                    string.IsNullOrEmpty(variant.SourcePrefabGuid) && variant.ParentItemId == itemId &&
+                                    FindVariantItem(itemId)?.IsOriginal == true);
+                                thumbnail = standalone != null
+                                    ? await _variantManager.GetRevisionThumbnail(standalone.Id, standalone.HeadRevisionId, cancellation.Token)
+                                    : await _manager.GetThumbnail(itemId, cancellation.Token);
                             }
                             if (!ReferenceEquals(
                                     _gridThumbnailCancellation,
@@ -168,6 +173,10 @@ namespace Ee4v.AssetManager.UI
             }
 
             _importedItemIdsInProject = itemIds;
+            foreach (var asset in DerivedAssetCreator.FindAll().Where(asset => asset.IsOriginal))
+            {
+                if (FindVariantItem(asset.ParentItemId)?.IsOriginal == true) itemIds.Add(asset.ParentItemId);
+            }
             return _importedItemIdsInProject;
         }
 

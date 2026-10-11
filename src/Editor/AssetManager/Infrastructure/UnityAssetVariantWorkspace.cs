@@ -39,10 +39,11 @@ namespace Ee4v.AssetManager.Infrastructure
             if (!AssetExists(path)) return null;
             var record = DerivedAssetCatalog.Read(path);
             if (record == null) throw new InvalidOperationException("An ee4v Variant is required.");
+            if (record.IsArchived == archived) return () => { };
             var importer = AssetImporter.GetAtPath(path);
             var previous = importer.userData;
             importer.userData = DerivedAssetCatalog.Serialize(record.ParentItemId, record.Name,
-                record.Description, record.SourceGuid, archived);
+                record.Description, record.SourceGuid, archived, record.Tags, record.CreatedAt);
             AssetDatabase.WriteImportSettingsIfDirty(path);
             return () => { importer.userData = previous; AssetDatabase.WriteImportSettingsIfDirty(path); };
         }
@@ -96,6 +97,20 @@ namespace Ee4v.AssetManager.Infrastructure
             return Capture(new AssetVariantSaveRequest { RootAssetPath = rootAssetPath }, false).Snapshot;
         }
 
+        public AssetVariant GetMetadata(string variantId)
+        {
+            var path = variantId.StartsWith("Assets/", StringComparison.Ordinal)
+                ? variantId : AssetDatabase.GUIDToAssetPath(variantId);
+            var record = DerivedAssetCatalog.Read(path);
+            return record == null ? null : new AssetVariant
+            {
+                Id = AssetDatabase.AssetPathToGUID(path), Name = record.Name, Description = record.Description,
+                Tags = record.Tags, CreatedAt = record.CreatedAt, UpdatedAt = record.UpdatedAt,
+                SourcePrefabGuid = record.SourceGuid, ParentItemId = record.ParentItemId,
+                RootAssetPath = path, IsArchived = record.IsArchived
+            };
+        }
+
         public bool HasChangedRootAsset(string rootAssetPath, AssetVariantSnapshot saved)
         {
             var root = saved.Assets?.FirstOrDefault(asset =>
@@ -113,7 +128,8 @@ namespace Ee4v.AssetManager.Infrastructure
             return File.Exists(path) && GetFileHash(path) != root.Hash;
         }
 
-        public Action UpdateMetadata(string variantId, string name, string description)
+        public Action UpdateMetadata(string variantId, string name, string description,
+            IReadOnlyList<string> tags = null, DateTime? createdAt = null)
         {
             ValidateName(name);
             var path = AssetDatabase.GUIDToAssetPath(variantId);
@@ -127,6 +143,13 @@ namespace Ee4v.AssetManager.Infrastructure
             if (Path.GetDirectoryName(folder).Replace('\\', '/') != DerivedAssetCatalog.VariantRoot)
             {
                 throw new InvalidOperationException("A dedicated ee4v Variant folder is required.");
+            }
+            var currentTags = tags ?? record.Tags;
+            var currentCreatedAt = createdAt ?? record.CreatedAt;
+            if (record.Name == name && record.Description == description &&
+                record.Tags.SequenceEqual(currentTags) && record.CreatedAt == currentCreatedAt)
+            {
+                return () => { };
             }
             var renamedFolder = DerivedAssetCatalog.VariantRoot + "/" + name;
             var scenePath = Path.ChangeExtension(path, ".unity").Replace('\\', '/');
@@ -165,7 +188,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 }
                 currentPath = AssetDatabase.GUIDToAssetPath(variantId);
                 var importer = AssetImporter.GetAtPath(currentPath);
-                var data = DerivedAssetCatalog.Serialize(record.ParentItemId, name, description, record.SourceGuid, record.IsArchived);
+                var data = DerivedAssetCatalog.Serialize(record.ParentItemId, name, description,
+                    record.SourceGuid, record.IsArchived, currentTags, currentCreatedAt);
                 if (importer.userData != data)
                 {
                     importer.userData = data;
@@ -334,6 +358,10 @@ namespace Ee4v.AssetManager.Infrastructure
                     {
                         Id = id, SourcePrefabGuid = record.SourceGuid,
                         Name = record.Name, Description = record.Description,
+                        Tags = record.Tags, CreatedAt = record.CreatedAt,
+                        FileSizeBytes = assets.Where(asset => !asset.IsFolder &&
+                            asset.Path.StartsWith(rootFolder + "/", StringComparison.Ordinal))
+                            .Sum(asset => new FileInfo(ProjectAssetPath(asset.Path)).Length),
                         ParentItemId = record.ParentItemId, RootAssetPath = request.RootAssetPath,
                         IsArchived = record.IsArchived
                     },

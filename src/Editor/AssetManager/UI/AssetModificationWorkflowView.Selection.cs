@@ -230,12 +230,12 @@ namespace Ee4v.AssetManager.UI
             BuildWindow();
         }
 
-        private IReadOnlyList<VariantSourceOption> GetVariantSources()
+        private IReadOnlyList<VariantSourceOption> GetVariantSources(Func<GameObject, bool> canSelect = null)
         {
             try
             {
                 _manager = _manager ?? AssetManagerWindowSession.GetManager();
-                return AssetPrefabPickerWindow.FindSources(_manager);
+                return AssetPrefabPickerWindow.FindSources(_manager, canSelect);
             }
             catch (Exception exception)
             {
