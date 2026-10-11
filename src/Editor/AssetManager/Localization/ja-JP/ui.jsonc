@@ -404,7 +404,7 @@
     "openSource": "素材の詳細を開く",
     "noHistory": "保存された版はありません。",
     "revision": "v{0} · {1}",
-    "modify": "このマイアセットを編集",
+    "modify": "編集",
     "missing": "マイアセットが見つかりません。",
     "restore": "この版を復元",
     "restoreConfirm": "選択した版を復元し、現在のマイアセットを置き換えます。未保存の変更を残す場合は、先にバージョンを保存してください。",
@@ -414,11 +414,17 @@
   },
   "library": {
     "title": "ライブラリ情報",
-    "itemCount": "Item数",
-    "unassignedFileCount": "未所属File数",
-    "variantCount": "マイアセット数",
-    "tagCount": "タグ数",
-    "collectionCount": "コレクション数"
+    "sourceSummary": "{0} のライブラリ",
+    "itemCount": "アイテム",
+    "fileCount": "ファイル",
+    "unassignedFileCount": "未所属ファイル",
+    "variantCount": "マイアセット",
+    "tagCount": "タグ",
+    "collectionCount": "コレクション",
+    "organization": "整理",
+    "summary": "内訳",
+    "archivedItemCount": "アーカイブ済みアイテム",
+    "latestItemUpdate": "アイテムの最終更新"
   },
   "detail": {
     "information": "情報",

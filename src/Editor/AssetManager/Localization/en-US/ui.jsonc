@@ -404,7 +404,7 @@
     "openSource": "Open source asset details",
     "noHistory": "No versions have been saved.",
     "revision": "v{0} · {1}",
-    "modify": "Edit this asset",
+    "modify": "Edit",
     "missing": "Asset not found.",
     "restore": "Restore this version",
     "restoreConfirm": "Restore this version and replace the current asset. Save a version first to keep any changes you have not saved.",
@@ -414,11 +414,17 @@
   },
   "library": {
     "title": "Library information",
+    "sourceSummary": "{0} library",
     "itemCount": "Items",
+    "fileCount": "Files",
     "unassignedFileCount": "Unassigned files",
     "variantCount": "My assets",
     "tagCount": "Tags",
-    "collectionCount": "Collections"
+    "collectionCount": "Collections",
+    "organization": "Organization",
+    "summary": "Details",
+    "archivedItemCount": "Archived items",
+    "latestItemUpdate": "Latest item update"
   },
   "detail": {
     "information": "INFORMATION",

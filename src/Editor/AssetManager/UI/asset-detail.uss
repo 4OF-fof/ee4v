@@ -57,9 +57,109 @@
 }
 
 .ee4v-asset-manager__library-information.ee4v-asset-manager__item-detail-section {
+    min-width: 0;
     margin-top: var(--ee4v-space-none);
     padding-top: var(--ee4v-space-none);
     border-top-width: 0;
+}
+
+.ee4v-asset-manager__library-information > .ee4v-asset-manager__section-header {
+    margin-bottom: 22px;
+}
+
+.ee4v-asset-manager__library-source {
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+}
+
+.ee4v-asset-manager__library-icon {
+    flex-shrink: 0;
+    margin-right: var(--ee4v-space-md);
+}
+
+.ee4v-asset-manager__library-source-text {
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.ee4v-asset-manager__library-metrics {
+    flex-direction: row;
+    align-items: stretch;
+    min-width: 0;
+    margin-top: var(--ee4v-space-4xl);
+}
+
+.ee4v-asset-manager__library-metric {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+}
+
+.ee4v-asset-manager__library-metric--separated {
+    margin-left: 14px;
+    padding-left: 22px;
+    border-left-width: var(--ee4v-border-hairline);
+    border-left-color: var(--ee4v-color-border-subtle);
+}
+
+.ee4v-asset-manager__library-metric-value {
+    min-width: 0;
+    margin-bottom: var(--ee4v-space-xs);
+}
+
+.ee4v-asset-manager__library-my-assets {
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    margin-top: var(--ee4v-space-3xl);
+    padding: var(--ee4v-space-xl);
+    border-radius: var(--ee4v-radius-md);
+    background-color: var(--ee4v-color-surface-soft);
+}
+
+.ee4v-asset-manager__library-my-assets-label {
+    flex-grow: 1;
+    min-width: 0;
+    margin-right: var(--ee4v-space-xl);
+}
+
+.ee4v-asset-manager__library-my-assets-value {
+    flex-shrink: 0;
+}
+
+.ee4v-asset-manager__library-organization,
+.ee4v-asset-manager__library-summary {
+    min-width: 0;
+    margin-top: var(--ee4v-space-3xl);
+    padding-top: var(--ee4v-space-3xl);
+    border-top-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-subtle);
+}
+
+.ee4v-asset-manager__library-row {
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 30px;
+}
+
+.ee4v-asset-manager__library-organization > .ee4v-ui-section-header,
+.ee4v-asset-manager__library-summary > .ee4v-ui-section-header {
+    margin-bottom: var(--ee4v-space-xl);
+}
+
+.ee4v-asset-manager__library-row-label {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    margin-right: var(--ee4v-space-xl);
+}
+
+.ee4v-asset-manager__library-row-value {
+    flex-shrink: 1;
+    min-width: 0;
+    max-width: 60%;
 }
 
 .ee4v-asset-manager__section-header {

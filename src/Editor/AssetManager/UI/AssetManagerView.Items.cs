@@ -162,26 +162,111 @@ namespace Ee4v.AssetManager.UI
             var fileCount = items.Sum(item => item.Files?.Count ?? 0) + unassignedFiles.Count;
             var information = new AssetDetailSection(I18N.Get("library.title"));
             information.AddToClassList("ee4v-asset-manager__library-information");
-            var counts = new AssetDetailSettingList();
             var datasource = AssetManagerSettings.SelectedDatasource;
-            AddLibraryValue(counts, "settings.datasource.label",
-                datasource == AssetDatasourceKind.BoothLibraryManager
-                    ? "BOOTH Library Manager"
-                    : datasource == AssetDatasourceKind.Ee4v ? "ee4v" : "Eagle");
-            AddLibraryValue(counts, "library.itemCount", items.Count.ToString("N0"));
-            AddLibraryValue(counts, "field.fileCount", fileCount.ToString("N0"));
-            AddLibraryValue(counts, "library.unassignedFileCount", unassignedFiles.Count.ToString("N0"));
-            AddLibraryValue(counts, "library.variantCount", GetVariants().Count.ToString("N0"));
-            AddLibraryValue(counts, "library.tagCount", _manager.GetTags().Count.ToString("N0"));
-            AddLibraryValue(counts, "library.collectionCount", _manager.GetCollections().Count.ToString("N0"));
-            information.Add(counts);
+            var sourceName = datasource == AssetDatasourceKind.BoothLibraryManager
+                ? "BOOTH Library Manager"
+                : datasource == AssetDatasourceKind.Ee4v ? "ee4v" : "Eagle";
+            var source = new VisualElement();
+            source.AddToClassList("ee4v-asset-manager__library-source");
+            AddLibraryIcon(source, "library.png");
+            var sourceText = UiTextFactory.Create(
+                I18N.Get("library.sourceSummary", sourceName),
+                UiClassNames.FormLabel,
+                "ee4v-asset-manager__library-source-text");
+            sourceText.SetColor(UiColorTokens.TextMuted);
+            sourceText.SetWhiteSpace(WhiteSpace.Normal);
+            source.Add(sourceText);
+            information.Add(source);
+
+            var metrics = new VisualElement();
+            metrics.AddToClassList("ee4v-asset-manager__library-metrics");
+            metrics.Add(CreateLibraryMetric("library.itemCount", items.Count));
+            var filesMetric = CreateLibraryMetric("library.fileCount", fileCount);
+            filesMetric.AddToClassList("ee4v-asset-manager__library-metric--separated");
+            metrics.Add(filesMetric);
+            information.Add(metrics);
+
+            var myAssets = new VisualElement();
+            myAssets.AddToClassList("ee4v-asset-manager__library-my-assets");
+            AddLibraryIcon(myAssets, "cube.png");
+            myAssets.Add(UiTextFactory.Create(
+                I18N.Get("library.variantCount"),
+                "ee4v-asset-manager__library-my-assets-label"));
+            var variantCount = UiTextFactory.Create(
+                GetVariants().Count.ToString("N0"),
+                "ee4v-asset-manager__library-my-assets-value");
+            variantCount.SetFontSize(20);
+            myAssets.Add(variantCount);
+            information.Add(myAssets);
+
+            var organization = new VisualElement();
+            organization.AddToClassList("ee4v-asset-manager__library-organization");
+            organization.Add(new SectionHeader(I18N.Get("library.organization")));
+            AddLibraryValue(organization, "library.collectionCount", _manager.GetCollections().Count);
+            AddLibraryValue(organization, "library.tagCount", _manager.GetTags().Count);
+            AddLibraryValue(organization, "library.unassignedFileCount", unassignedFiles.Count);
+            information.Add(organization);
+            var summary = new VisualElement();
+            summary.AddToClassList("ee4v-asset-manager__library-summary");
+            summary.Add(new SectionHeader(I18N.Get("library.summary")));
+            AddLibraryValue(summary, "library.archivedItemCount", items.Count(item => item.IsArchived));
+            AddLibraryValue(summary, "library.latestItemUpdate",
+                FormatTimestamp(items.Select(item => item.UpdatedAt).DefaultIfEmpty().Max()));
+            information.Add(summary);
             _detail.Add(information);
         }
 
-        private static void AddLibraryValue(AssetDetailSettingList list, string labelKey, string value)
+        private static VisualElement CreateLibraryMetric(string labelKey, int count)
         {
-            list.AddRow(new AssetDetailSettingRow(I18N.Get(labelKey),
-                CreateMonoValue(string.IsNullOrWhiteSpace(value) ? I18N.Get("common.none") : value)));
+            var metric = new VisualElement();
+            metric.AddToClassList("ee4v-asset-manager__library-metric");
+            var value = UiTextFactory.Create(
+                count.ToString("N0"),
+                "ee4v-asset-manager__library-metric-value");
+            value.SetFontSize(36);
+            metric.Add(value);
+            var label = UiTextFactory.Create(
+                I18N.Get(labelKey),
+                UiClassNames.FormLabel,
+                "ee4v-asset-manager__library-metric-label");
+            label.SetColor(UiColorTokens.TextMuted);
+            metric.Add(label);
+            return metric;
+        }
+
+        private static void AddLibraryValue(VisualElement information, string labelKey, int count)
+        {
+            AddLibraryValue(information, labelKey, count.ToString("N0"));
+        }
+
+        private static void AddLibraryValue(VisualElement information, string labelKey, string text)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("ee4v-asset-manager__library-row");
+            var label = UiTextFactory.Create(
+                I18N.Get(labelKey),
+                UiClassNames.FormLabel,
+                "ee4v-asset-manager__library-row-label");
+            label.SetColor(UiColorTokens.TextMuted);
+            label.SetWhiteSpace(WhiteSpace.Normal);
+            row.Add(label);
+            var value = UiTextFactory.Create(text,
+                "ee4v-asset-manager__library-row-value");
+            value.SetTextAlign(TextAnchor.MiddleRight);
+            value.SetWhiteSpace(WhiteSpace.Normal);
+            row.Add(value);
+            information.Add(row);
+        }
+
+        private static void AddLibraryIcon(VisualElement row, string iconFileName)
+        {
+            var icon = AssetManagerControls.CreateIcon(
+                iconFileName, UiSizeTokens.Size16, UiColorTokens.TextMuted);
+            if (icon != null)
+            {
+                icon.AddToClassList("ee4v-asset-manager__library-icon");
+                row.Add(icon);
+            }
         }
 
         private void ShowArchiveSelectionDetail()
