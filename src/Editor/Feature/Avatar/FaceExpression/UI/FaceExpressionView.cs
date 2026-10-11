@@ -1006,11 +1006,7 @@ namespace Ee4v.FaceExpression
                     UiSizeTokens.Size28,
                     () => BackRequested?.Invoke()));
             }
-            items.Add(CreateIconLibraryItem(
-                _newClip,
-                "add.png",
-                UiSizeTokens.Size28,
-                () => NewClipRequested?.Invoke()));
+            items.Add(CreateNewClipLibraryItem());
             if (folders != null)
             {
                 for (var index = 0; index < folders.Count; index++)
@@ -1074,6 +1070,37 @@ namespace Ee4v.FaceExpression
             }
 
             RefreshFilter();
+        }
+
+        private VisualElement CreateNewClipLibraryItem()
+        {
+            var item = new UiButton(
+                _newClip,
+                () => NewClipRequested?.Invoke(),
+                _newClip,
+                FluentUiIcons.CreateState("add.png", UiSizeTokens.Size28),
+                UiButtonVariant.Ghost);
+            item.AddToClassList("ee4v-face-expression__library-item");
+            item.AddToClassList("ee4v-face-expression__library-item--create");
+            item.SetLabelFontSize(UiTypographyTokens.BodyFontSize);
+            item.SetLabelTextAlign(TextAnchor.MiddleCenter);
+            item.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter &&
+                    evt.keyCode != KeyCode.Space) { return; }
+                NewClipRequested?.Invoke();
+                evt.PreventDefault();
+                evt.StopImmediatePropagation();
+            }, TrickleDown.TrickleDown);
+            item.RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                var height = Mathf.Max(1f, evt.newRect.width - 2f) + LibraryItemLabelHeight;
+                if (!Mathf.Approximately(item.resolvedStyle.height, height))
+                {
+                    item.style.height = height;
+                }
+            });
+            return item;
         }
 
         private VisualElement CreateClipLibraryItem(

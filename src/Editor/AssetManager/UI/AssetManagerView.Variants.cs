@@ -949,10 +949,10 @@ namespace Ee4v.AssetManager.UI
                         (Func<Task<AssetThumbnail>>)(() => _manager.GetThumbnail(item.Id)));
                     preview.AddToClassList("ee4v-asset-manager__variant-card-preview");
                     card.Insert(0, preview);
-                    if (item != null)
+                    if (item != null && !item.IsArchived)
                     {
                         card.Body.Add(AssetManagerControls.CreateButton(I18N.Get("variant.openSource"),
-                            () => _viewState.OpenItemDetail(item.Id)));
+                            () => OpenAssetItemDetail(item.Id)));
                     }
                     var content = new VisualElement();
                     content.AddToClassList("ee4v-asset-manager__variant-dependency-content");

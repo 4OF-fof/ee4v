@@ -164,10 +164,17 @@ namespace Ee4v.AssetManager.UI
 
         public void ShowPageRoot()
         {
-            Navigate(new NavigationLocation(
+            ShowPageRoot(rememberCurrentLocation: true);
+        }
+
+        public void ShowPageRoot(bool rememberCurrentLocation)
+        {
+            var location = new NavigationLocation(
                 Page,
                 CollectionId,
-                null));
+                null);
+            if (rememberCurrentLocation) { Navigate(location); }
+            else { ApplyLocation(location); }
         }
 
         public void GoBack()

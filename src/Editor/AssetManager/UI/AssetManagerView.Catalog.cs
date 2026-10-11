@@ -15,6 +15,16 @@ namespace Ee4v.AssetManager.UI
     {
         private void RefreshMain()
         {
+            var hasDetail = !string.IsNullOrEmpty(_viewState.DetailItemId) ||
+                !string.IsNullOrEmpty(_viewState.DetailVariantId);
+            if (hasDetail && (_viewState.Page == AssetManagerPage.Archived ||
+                FindVariantItem(_viewState.DetailItemId)?.IsArchived == true ||
+                (!string.IsNullOrEmpty(_viewState.DetailVariantId) && GetVariants().Any(variant =>
+                    variant.VariantId == _viewState.DetailVariantId && variant.IsArchived))))
+            {
+                _viewState.ShowPageRoot(rememberCurrentLocation: false);
+                return;
+            }
             _variantState.VariantGalleryView = null;
             var supportsFilters = !ShowsVariants && !ShowsFileList &&
                 string.IsNullOrEmpty(_viewState.DetailItemId) &&
@@ -310,16 +320,17 @@ namespace Ee4v.AssetManager.UI
 
         private void OpenItemDetail(string itemId)
         {
-            if (_viewState.Page == AssetManagerPage.Archived && TryGetArchiveVariantId(itemId, out var variantId))
-            {
-                _viewState.OpenVariantDetail(variantId);
-                return;
-            }
+            if (_viewState.Page == AssetManagerPage.Archived) { return; }
             if (ShowsVariants)
             {
-                _viewState.OpenVariantDetail(itemId);
+                OpenVariantDetail(itemId);
                 return;
             }
+            OpenAssetItemDetail(itemId);
+        }
+
+        private void OpenAssetItemDetail(string itemId)
+        {
             var item = _manager.GetItem(itemId);
             if (item == null || item.IsArchived)
             {
@@ -327,6 +338,13 @@ namespace Ee4v.AssetManager.UI
             }
 
             _viewState.OpenItemDetail(itemId);
+        }
+
+        private void OpenVariantDetail(string variantId)
+        {
+            var variant = GetVariants().FirstOrDefault(candidate => candidate.VariantId == variantId);
+            if (variant == null || variant.IsArchived) { return; }
+            _viewState.OpenVariantDetail(variantId);
         }
 
         private void ShowItemContextMenu(
