@@ -38,6 +38,7 @@ namespace Ee4v.Core.EditorIntegration
             public string MainTextureKey;
             public string[] TextureKeys;
             public AssetPickerClipKind ClipKind;
+            public string AssetTypeName;
         }
 
         [Serializable]
@@ -190,6 +191,7 @@ namespace Ee4v.Core.EditorIntegration
                 file.Path != path || file.Hash != DependencyHash(path)) return false;
             entries = file.Entries;
             return entries != null && entries.All(entry => entry != null &&
+                (type != typeof(Object) || !string.IsNullOrEmpty(entry.AssetTypeName)) &&
                 (!typeof(Material).IsAssignableFrom(type) || entry.TextureKeys != null) &&
                 (!typeof(AnimationClip).IsAssignableFrom(type) || entry.ClipKind != AssetPickerClipKind.None));
         }

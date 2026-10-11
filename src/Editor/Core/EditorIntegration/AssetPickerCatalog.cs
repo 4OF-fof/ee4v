@@ -59,7 +59,8 @@ namespace Ee4v.Core.EditorIntegration
             : this(guid, localId, path, origin, asset.name,
                 asset is Material material ? AssetPickerCache.GetAssetKey(material.mainTexture) : string.Empty,
                 AssetPickerCatalog.GetTextureKeys(asset as Material),
-                asset is AnimationClip clip ? AssetPickerCatalog.ClassifyClip(clip) : AssetPickerClipKind.None)
+                asset is AnimationClip clip ? AssetPickerCatalog.ClassifyClip(clip) : AssetPickerClipKind.None,
+                asset.GetType().Name)
         {
             _asset = asset;
             _resolved = true;
@@ -67,7 +68,7 @@ namespace Ee4v.Core.EditorIntegration
         }
 
         internal AssetPickerCandidate(string guid, long localId, string path, AssetPickerOrigin origin,
-            string name, string mainTextureKey, string[] textureKeys, AssetPickerClipKind clipKind)
+            string name, string mainTextureKey, string[] textureKeys, AssetPickerClipKind clipKind, string assetTypeName)
         {
             Guid = guid;
             LocalId = localId;
@@ -79,6 +80,7 @@ namespace Ee4v.Core.EditorIntegration
             MainTextureKey = mainTextureKey ?? string.Empty;
             TextureKeys = textureKeys ?? Array.Empty<string>();
             ClipKind = clipKind;
+            AssetTypeName = assetTypeName ?? string.Empty;
         }
 
         public Object Asset
@@ -98,6 +100,7 @@ namespace Ee4v.Core.EditorIntegration
         internal string MainTextureKey { get; }
         internal string[] TextureKeys { get; }
         public AssetPickerClipKind ClipKind { get; }
+        public string AssetTypeName { get; }
         public string Guid { get; }
         public long LocalId { get; }
         public string Path { get; }
@@ -108,7 +111,7 @@ namespace Ee4v.Core.EditorIntegration
         public bool IsAsset(Object asset) => asset != null && Key == AssetPickerCache.GetAssetKey(asset);
 
         internal AssetPickerCandidate WithOrigin(AssetPickerOrigin origin) =>
-            new AssetPickerCandidate(Guid, LocalId, Path, origin, Name, MainTextureKey, TextureKeys, ClipKind)
+            new AssetPickerCandidate(Guid, LocalId, Path, origin, Name, MainTextureKey, TextureKeys, ClipKind, AssetTypeName)
             { _asset = this._asset, _resolved = this._resolved };
     }
 
@@ -142,17 +145,24 @@ namespace Ee4v.Core.EditorIntegration
                 throw new ArgumentException("A Unity Object type is required.", nameof(type));
 
             var version = AssetPickerCache.Version;
-            foreach (var guid in AssetDatabase.FindAssets("t:" + type.Name))
+            var allTypes = type == typeof(Object);
+            var guids = AssetDatabase.FindAssets(allTypes ? string.Empty : "t:" + type.Name);
+            foreach (var guid in guids.OrderBy(value => origins.ContainsKey(value) ? 0 : 1))
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (AssetDatabase.IsValidFolder(path)) continue;
                 origins.TryGetValue(guid, out var origin);
                 if (AssetPickerCache.TryGetCandidateFile(type, guid, path, out var cached))
                 {
                     yield return cached.Select(entry => new AssetPickerCandidate(guid, entry.LocalId, path, origin,
-                        entry.Name, entry.MainTextureKey, entry.TextureKeys, entry.ClipKind)).ToArray();
+                        entry.Name, entry.MainTextureKey, entry.TextureKeys, entry.ClipKind,
+                        entry.AssetTypeName ?? type.Name)).ToArray();
                     continue;
                 }
-                var objects = AssetDatabase.LoadAllAssetsAtPath(path);
+                var objects = allTypes
+                    ? new[] { AssetDatabase.LoadMainAssetAtPath(path) }
+                        .Concat(AssetDatabase.LoadAllAssetRepresentationsAtPath(path)).ToArray()
+                    : AssetDatabase.LoadAllAssetsAtPath(path);
                 var candidates = new List<AssetPickerCandidate>();
                 foreach (var asset in objects)
                 {
@@ -168,7 +178,8 @@ namespace Ee4v.Core.EditorIntegration
                     AssetPickerCache.StoreCandidateFile(type, guid, path, candidates.Select(candidate => new AssetPickerCache.CandidateData
                     {
                         LocalId = candidate.LocalId, Name = candidate.Name, MainTextureKey = candidate.MainTextureKey,
-                        TextureKeys = candidate.TextureKeys, ClipKind = candidate.ClipKind
+                        TextureKeys = candidate.TextureKeys, ClipKind = candidate.ClipKind,
+                        AssetTypeName = candidate.AssetTypeName
                     }).ToArray(), version);
                 yield return candidates;
             }

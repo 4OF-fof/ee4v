@@ -18,6 +18,7 @@
       "title": "アセットブラウザー",
       "open": "アセットを探す",
       "assetType": "種類",
+      "allTypes": "すべて",
       "reference": "参照元",
       "animationFilter": "絞り込み",
       "animationAll": "すべて",

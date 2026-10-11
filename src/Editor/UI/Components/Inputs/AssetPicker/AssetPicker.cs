@@ -40,7 +40,7 @@ namespace Ee4v.UI
         }
 
         public static Type GetReferenceType(Type objectType) =>
-            typeof(AnimationClip).IsAssignableFrom(objectType) ? null :
+            objectType == typeof(Object) || typeof(AnimationClip).IsAssignableFrom(objectType) ? null :
             typeof(Texture).IsAssignableFrom(objectType) ? typeof(Material) : objectType;
 
     }

@@ -18,6 +18,7 @@
       "title": "Asset browser",
       "open": "Browse assets",
       "assetType": "Type",
+      "allTypes": "All",
       "reference": "Source reference",
       "animationFilter": "Filter",
       "animationAll": "All",
