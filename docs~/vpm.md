@@ -31,7 +31,7 @@
 
 配布用manifestへZIPの`url`と一覧の`repo`を追加します。リリース添付manifestとVPM一覧にはZIPの`zipSHA256`も記載し、ZIP内のmanifestには含めません。成果物はrunnerの一時フォルダーへ生成し、元のソースファイルを書き換えません。`VPM_OUTPUT`は各stepの`env`で`runner.temp`から指定します。
 
-`publish`はDraftへZIPとmanifestをアップロードしてから公開します。`listing`はGitHub APIで全公開リリースを取得し、各ReleaseのmanifestとZIPを照合して`index.json`を生成します。DraftとPrereleaseは一覧へ含めません。ZIPやmanifestが壊れている場合は公開一覧の更新を停止します。
+`publish`はDraftへZIPとmanifestをアップロードしてから公開します。`listing`はGitHub APIで全公開リリースを取得し、各ReleaseのmanifestとZIPを照合して`index.json`を生成します。一覧の`name`は`4of`とし、VCCのパッケージソース名として表示します。DraftとPrereleaseは一覧へ含めません。ZIPやmanifestが壊れている場合は公開一覧の更新を停止します。
 
 ## インストール
 

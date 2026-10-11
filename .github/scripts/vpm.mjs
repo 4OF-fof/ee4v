@@ -171,7 +171,7 @@ async function listing() {
   const sitePath = path.join(output, 'site');
   await mkdir(sitePath, { recursive: true });
   await jsonFile(path.join(sitePath, 'index.json'), {
-    name: 'ee4v Packages',
+    name: '4of',
     id: `${manifest.name}.repository`,
     author: owner,
     url: listingUrl,
