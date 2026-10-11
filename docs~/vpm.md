@@ -2,7 +2,7 @@
 
 `src/package.json`をパッケージ名・バージョン・依存範囲の正本とし、`.github/workflows/publish-vpm.yml`でGitHub ReleasesとGitHub Pagesへ配布します。Unityの起動や追加のSecrets、Repository Variablesは不要です。
 
-開発用の既定ブランチは`dev`、リリース用ブランチは`master`です。`dev`へのpushでは公開せず、`master`を対象としたPull Requestのマージ完了時に自動リリースします。マージ後のcommit SHAをcheckoutし、同じSHAへリリースタグを作成します。
+開発用の既定ブランチは`dev`、リリース用ブランチは`master`です。`dev`へのpushでは公開せず、`master`を対象としたPull Requestのマージ完了時に自動リリースします。PRの実行は環境を使用せず、`actions: write`権限で同じworkflowを`workflow_dispatch`の`master`参照として起動します。マージ後のcommit SHAを`release_sha`へ渡してcheckoutし、masterの履歴に含まれることを確認してから、同じSHAへリリースタグを作成します。公開jobはmaster参照の手動・自動dispatchだけを受け付けるため、`github-pages`環境はmasterだけを許可できます。
 
 ## GitHubでの初期設定
 
@@ -23,7 +23,7 @@
 - 新版を配布するときは`dev`で`src/package.json`の`version`を未公開の値へ変更し、`master`へPull Requestでマージします。タグの作成やReleaseの手動作成は不要です。
 - 公開済みの同じversionを再度マージしてもZIPとmanifestは上書きしません。ソース変更を配布するにはversionを上げます。旧版も一覧へ保持します。
 - アップロード失敗で残ったDraft Releaseは再実行時に添付ファイルを更新して公開します。公開済みの同名タグに必要な添付がない場合はエラーにし、新しいversionでの公開を求めます。
-- Pagesだけ失敗した場合、`Actions → Publish VPM → Re-run jobs`で再実行できます。`Run workflow`でも`master`を指定して実行できます。`dev`を指定した手動実行は公開jobをスキップします。
+- 公開・Pages処理が失敗した場合、master参照の`Publish VPM`実行を`Re-run jobs`で再実行できます。`Run workflow`でも`master`を指定して実行できます。`release_sha`を省略すると選択したmasterのcommitを使い、指定した場合はmasterの履歴に含まれる40桁のcommit SHAを使います。PR側の実行が失敗した場合は、その再実行でmaster参照の公開実行を起動します。`dev`を指定した手動実行は公開jobをスキップします。
 
 ## 配布物
 
