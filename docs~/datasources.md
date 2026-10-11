@@ -20,7 +20,7 @@ BOOTH Library Manager DBは `SQLiteOpenFlags.ReadOnly` で開き、一つのread
 
 Eagleライブラリ、ee4v共通データ、BOOTH Library Managerのfolderlibraryは共通`PathField`でフォルダーを選択します。BOOTH Library Manager DBは`.db`ファイルを選択します。手入力も可能です。Eagleの同期対象ルートはライブラリ内のフォルダー名を表すため通常の文字列入力です。
 
-Fileは指定folderlibrary直下の `<registered_items.id>/` 以下の実ファイルを再帰列挙します。この配置は過去connector (`142a6558` の `new/Editor/AssetManager/api/connecter/blm/BlmConnectorApi.cs`、`ReadRegisteredItemFiles`) の `Path.Combine(itemDirectoryPath, registeredItemId)` と一致します。directoryをFileにしない現構成の制約に合わせて実Fileだけを再帰列挙します。フォルダーが未配置でもメタデータItemは取り込めます。symlink/junctionと相対path traversalは拒否します。rootは明示指定し、BLM preferencesの自動読取は行いません。実ユーザーDBや実File配置は検証で参照しません。
+Fileは指定folderlibrary直下の `<registered_items.id>/` 以下の実ファイルを再帰列挙します。directoryはFileとして登録しません。フォルダーが未配置でもメタデータItemは取り込めます。symlink/junctionと相対path traversalは拒否します。rootは明示指定し、BLM preferencesの自動読取は行いません。実ユーザーDBや実File配置は検証で参照しません。
 
 ## ee4vライブラリと待受server
 
@@ -42,4 +42,4 @@ UnityでDatasourceをEe4v、共通データの保存先をserverの`--library`�
 
 ## 検証
 
-新規自動テストやケースは追加しません。JavaScript構文、隔離フォルダーでの一時loopback通信・コピー・重複取り込みを手動検証します。Unityは2022.3の隔離VerifyProjectから自worktreeのsrcだけを参照し、既存AssetManagerのEditModeテストを実行します。実ユーザーDB・ブラウザ設定への書込、Unity6検証は行いません。
+連携はJavaScript構文と、隔離フォルダーでの一時loopback通信・コピー・重複取り込みで確認します。Unity側の同期とCatalogの保証範囲は[test.md](./test.md)のAssetManagerテストを参照してください。実ユーザーDB・ブラウザ設定への書き込みは行いません。

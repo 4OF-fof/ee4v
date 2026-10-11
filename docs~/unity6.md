@@ -13,7 +13,7 @@
 - `src/Editor/UI/Foundation/Typography/TypographyStyleResolver.cs`
 - `src/Editor/UI/Test/Editor/UiTextFactoryTests.cs`
 
-移行時は `UiTextFactory.Create*` を Unity 6 の標準 UI Toolkit 要素へ置き換えます。`ImguiUiTextElement` と `UiTextButton` も削除対象です。文字の見た目は USS と既存の色・余白 token へ寄せます。
+移行時は `UiTextFactory.Create*` を Unity 6 の標準 UI Toolkit 要素へ置き換え、Factory内の`ImguiUiTextElement`などのIMGUI fallbackを除きます。文字の見た目は USS と既存の色・余白 token へ寄せます。
 
 置換後は `AGENTS.md` にある `UiTextFactory` の使用規則も削除または更新します。Unity 2022.3 を対象としている間は現行規則を維持します。
 
