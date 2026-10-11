@@ -327,6 +327,11 @@ namespace Ee4v.AssetManager.UI
         private readonly AssetManagerViewState _viewState;
         private readonly AssetManagerViewMode _mode;
         private readonly Action<string> _createDerivedAsset;
+        private Action _createOriginalAsset;
+        private bool _creatingOriginalAsset;
+        private string _originalAssetName = string.Empty;
+        private string _originalAssetDescription = string.Empty;
+        private GameObject _originalAssetPrefab;
         private readonly CachedImageCache _imageCache;
         private readonly bool _ownsImageCache;
         private readonly VisualElement _navigation;
@@ -371,6 +376,11 @@ namespace Ee4v.AssetManager.UI
         {
             _modifyVariant = handler;
             Refresh();
+        }
+
+        internal void SetOriginalAssetCreationHandler(Action handler)
+        {
+            _createOriginalAsset = handler;
         }
 
         public AssetManagerView(
@@ -708,6 +718,7 @@ namespace Ee4v.AssetManager.UI
                     }
                     break;
                 case AssetManagerViewStateChange.Navigation:
+                    _creatingOriginalAsset = false;
                     if (ShowsNavigation)
                     {
                         RebuildNavigation();

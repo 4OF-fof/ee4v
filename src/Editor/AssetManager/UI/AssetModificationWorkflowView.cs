@@ -132,6 +132,7 @@ namespace Ee4v.AssetManager.UI
         private WorkflowCategory _editingCategory = WorkflowCategory.Overview;
 
         private bool _creatingDerivedAsset;
+        private bool _creatingOriginalAsset;
 
         private string _creationItemId = string.Empty;
 
@@ -261,7 +262,8 @@ namespace Ee4v.AssetManager.UI
                 if (!_currentCategory.IsPlayMode())
                 {
                     _editingCategory = _currentCategory;
-                    _currentCategory = WorkflowCategory.MenuAndGestures;
+                    _currentCategory = DerivedAssetCreator.IsAvatarPrefab(_avatarContext.Root)
+                        ? WorkflowCategory.MenuAndGestures : WorkflowCategory.Lighting;
                 }
             }
             else if (_currentCategory.IsPlayMode())

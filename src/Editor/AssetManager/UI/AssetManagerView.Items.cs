@@ -296,6 +296,47 @@ namespace Ee4v.AssetManager.UI
             RefreshItemDetailPane(item, files);
         }
 
+        private void StartOriginalAssetCreation()
+        {
+            if (_createOriginalAsset != null)
+            {
+                _createOriginalAsset();
+                return;
+            }
+            _originalAssetName = string.Empty;
+            _originalAssetDescription = string.Empty;
+            _originalAssetPrefab = null;
+            _creatingOriginalAsset = true;
+            RefreshMain();
+        }
+
+        private void BuildOriginalAssetCreationPage()
+        {
+            CancelGridThumbnails();
+            CancelItemOverviewThumbnail();
+            ClearItemOverviewThumbnail();
+            _content.Clear();
+            _search.style.display = DisplayStyle.None;
+            _sortButton.style.display = DisplayStyle.None;
+            _gridControls.style.display = DisplayStyle.None;
+            var sources = AssetPrefabPickerWindow.FindSources(_manager);
+            var prefabs = sources.SelectMany(source => source.Prefabs).Distinct().ToArray();
+            var form = new VariantCreationView(null, prefabs, _originalAssetName, _originalAssetDescription,
+                _originalAssetPrefab, I18N.Get("workflow.original.create"), () =>
+                {
+                    _creatingOriginalAsset = false;
+                    RefreshMain();
+                }, original: true, showPrefabPicker: (anchor, selected, select) =>
+                    AssetPrefabPickerWindow.Show(anchor, sources, _manager, select, null, selectPrefab: true));
+            _originalAssetPrefab = form.Prefab.Value;
+            form.Prefab.ValueChanged += value => _originalAssetPrefab = value;
+            form.Name.ValueChanged += value => _originalAssetName = value;
+            form.Description.ValueChanged += value => _originalAssetDescription = value;
+            form.Create.clicked += () => CreateDerivedAsset(form.Name.Value, form.Prefab.Value, form.Description.Value,
+                form.Feedback, form.Create, original: true);
+            _content.Add(form);
+        }
+
         private void BuildDerivedAssetsPage()
         {
             CancelItemOverviewThumbnail();
@@ -304,8 +345,7 @@ namespace Ee4v.AssetManager.UI
             _fileTreeSelections = Array.Empty<FileTreeSelection>();
             var item = _manager.GetItem(_viewState.DetailItemId);
             var prefabCandidates = DerivedAssetCreator
-                .FindPrefabCandidates(_manager.GetItemImportedAssetGuids(
-                    _viewState.DetailItemId));
+                .FindPrefabCandidates(_manager, item);
             var form = new VariantCreationView(
                 item,
                 prefabCandidates,
@@ -325,7 +365,8 @@ namespace Ee4v.AssetManager.UI
             GameObject prefab,
             string description,
             UiTextElement message,
-            UiButton createButton)
+            UiButton createButton,
+            bool original = false)
         {
             if (!DerivedAssetCreator.IsValidName(name))
             {
@@ -336,17 +377,18 @@ namespace Ee4v.AssetManager.UI
             }
 
             var prefabPath = AssetDatabase.GetAssetPath(prefab);
-            if (string.IsNullOrEmpty(prefabPath) ||
+            if (original && prefab != null && !AssetPrefabPickerWindow.FindSources(_manager)
+                .SelectMany(source => source.Prefabs).Contains(prefab))
+            {
+                SetDerivedAssetFeedback(message, I18N.Get("notice.derivedAssetPrefabInvalid"));
+                return;
+            }
+            if (!original && (string.IsNullOrEmpty(prefabPath) ||
                 !prefabPath.EndsWith(
                     ".prefab",
                     StringComparison.OrdinalIgnoreCase) ||
-                !IsAllowedPrefab(
-                    prefab,
-                    new HashSet<string>(
-                        _manager.GetItemImportedAssetGuids(
-                            _viewState.DetailItemId) ??
-                        Array.Empty<string>(),
-                        StringComparer.OrdinalIgnoreCase)))
+                !DerivedAssetCreator.FindPrefabCandidates(
+                    _manager, _manager.GetItem(_viewState.DetailItemId)).Contains(prefab)))
             {
                 SetDerivedAssetFeedback(
                     message,
@@ -364,29 +406,58 @@ namespace Ee4v.AssetManager.UI
             }
 
             createButton.SetPrimaryActionEnabled(false);
+            var wasDeferringRefresh = _defersManagerRefresh;
+            _defersManagerRefresh = true;
+            AssetItem owner = null;
+            var created = false;
             try
             {
+                if (original)
+                {
+                    owner = _manager.CreateItem(new CreateAssetItemRequest
+                    {
+                        Name = name.Trim(), Description = description, IsOriginal = true
+                    });
+                }
                 var result = DerivedAssetCreator.Create(
                     new DerivedAssetCreationRequest
                     {
-                        ParentItemId = _viewState.DetailItemId,
+                        ParentItemId = owner?.Id ?? _viewState.DetailItemId,
                         Name = name,
                         Prefab = prefab,
-                        Description = description
+                        Description = description,
+                        CreateOriginal = original && prefab == null
                     });
+                created = true;
                 Selection.activeObject = result.Prefab;
                 EditorGUIUtility.PingObject(result.Prefab);
-                _viewState.CloseDerivedAssetsPage();
+                if (original)
+                {
+                    _creatingOriginalAsset = false;
+                    _viewState.OpenVariantDetail(result.VariantId);
+                }
+                else { _viewState.CloseDerivedAssetsPage(); }
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
+                if (!created && owner != null)
+                {
+                    try
+                    {
+                        _manager.SetItemArchived(new[] { owner.Id }, true);
+                        _manager.DeleteItem(new[] { owner.Id });
+                    }
+                    catch (Exception cleanupException) { Debug.LogException(cleanupException); }
+                }
                 SetDerivedAssetFeedback(
                     message,
                     I18N.Get("notice.derivedAssetCreateFailed"));
             }
             finally
             {
+                _defersManagerRefresh = wasDeferringRefresh;
+                if (!wasDeferringRefresh) { _managerRefreshPending = false; }
                 createButton.SetPrimaryActionEnabled(true);
             }
         }

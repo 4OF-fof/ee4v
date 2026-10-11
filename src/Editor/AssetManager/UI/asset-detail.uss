@@ -709,10 +709,25 @@
 }
 
 .ee4v-variant-creation__prefab.ee4v-ui-prefab-selector {
+    width: auto;
+    min-width: 0;
+    flex-basis: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
     height: 32px;
     min-height: 32px;
     margin: var(--ee4v-space-none);
     border-radius: var(--ee4v-radius-sm);
+}
+
+.ee4v-variant-creation__clear-base.ee4v-ui-button {
+    flex-shrink: 0;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    margin-left: var(--ee4v-space-md);
+    padding: var(--ee4v-space-none);
 }
 
 .ee4v-variant-creation--compact .ee4v-variant-creation__header {

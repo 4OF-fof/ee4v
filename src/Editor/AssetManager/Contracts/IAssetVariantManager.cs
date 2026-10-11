@@ -37,7 +37,7 @@ namespace Ee4v.AssetManager.Contracts
     public sealed class AssetVariant
     {
         public string Id { get; set; }
-        /// <summary>The original Prefab, retained as provenance independently of the owning asset.</summary>
+        /// <summary>The optional base Prefab, retained as provenance independently of the owning Item.</summary>
         public string SourcePrefabGuid { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }

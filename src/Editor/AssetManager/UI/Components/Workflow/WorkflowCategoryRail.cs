@@ -12,7 +12,7 @@ namespace Ee4v.AssetManager.UI
             new Dictionary<WorkflowCategory, UiButton>();
         private readonly Action<WorkflowCategory> _selected;
 
-        internal WorkflowCategoryRail(Action<WorkflowCategory> selected, bool playMode = false)
+        internal WorkflowCategoryRail(Action<WorkflowCategory> selected, bool playMode = false, bool avatar = true)
         {
             _selected = selected;
             AddToClassList("ee4v-modification-workflow__category-rail");
@@ -20,8 +20,9 @@ namespace Ee4v.AssetManager.UI
             Actions.AddToClassList("ee4v-modification-workflow__category-actions");
             if (playMode)
             {
-                AddCategoryButton(WorkflowCategory.MenuAndGestures,
-                    "workflow.category.menuAndGestures", "arrow_clockwise.png");
+                if (avatar)
+                    AddCategoryButton(WorkflowCategory.MenuAndGestures,
+                        "workflow.category.menuAndGestures", "arrow_clockwise.png");
                 AddCategoryButton(WorkflowCategory.Lighting,
                     "workflow.category.lighting", "weather_sunny.png");
                 return;
@@ -38,12 +39,15 @@ namespace Ee4v.AssetManager.UI
                 WorkflowCategory.Material,
                 "workflow.category.material",
                 "image.png");
-            AddCategoryButton(
-                WorkflowCategory.ExpressionAnimation,
-                "workflow.category.expressionAnimation",
-                "star.png");
-            AddCategoryButton(WorkflowCategory.ExpressionMenu,
-                "workflow.category.expressionMenu", "arrow_clockwise.png");
+            if (avatar)
+            {
+                AddCategoryButton(
+                    WorkflowCategory.ExpressionAnimation,
+                    "workflow.category.expressionAnimation",
+                    "star.png");
+                AddCategoryButton(WorkflowCategory.ExpressionMenu,
+                    "workflow.category.expressionMenu", "arrow_clockwise.png");
+            }
             Add(Actions);
         }
 

@@ -149,6 +149,19 @@
       "shape": "Shape",
       "parts": "Parts"
     },
+    "original": {
+      "create": "Create a new asset",
+      "createCard": "Create new",
+      "title": "Create an asset",
+      "optionalBase": "Base Prefab (optional)",
+      "clearBase": "Clear base",
+      "fittingAvatar": "Fitting avatar",
+      "fittingDescription": "The fitting avatar is saved in the working Scene and excluded from the asset's Prefab. Adjust attachment settings in the Scene.",
+      "removeFittingAvatar": "Remove fitting avatar",
+      "showFittingScene": "Show in Scene",
+      "fittingFailed": "The fitting avatar could not be changed. Check the Console.",
+      "externalSceneReference": "{0} / {1} directly references {2} outside this asset. Configure a reusable attachment before saving."
+    },
     "selection": {
       "createAndStart": "Start customizing",
       "backToAssets": "Back to asset selection",
@@ -277,7 +290,7 @@
     "no": "No"
   },
   "navigation": {
-    "variants": "Variants",
+    "variants": "My Assets",
     "library": "All",
     "imported": "Imported",
     "archived": "Archived",
@@ -318,8 +331,8 @@
     "syncDatabaseRequired": "Set the BOOTH Library Manager database path.",
     "syncFolderMissing": "The datasource folder was not found: {0}",
     "syncDatabaseMissing": "The BOOTH Library Manager database was not found: {0}",
-    "noVariants": "No Variants match this view in the current project. Check the search filters if you are searching by name or description.",
-    "selectVariant": "Select a Variant to view its details.",
+    "noVariants": "No assets match your search.",
+    "selectVariant": "Select an asset to view its details.",
     "noItems": "No items match this view.",
     "noTags": "There are no tags.",
     "selectedItemMissing": "The selected item no longer exists.",
@@ -352,19 +365,19 @@
     "creation": {
       "title": "Create a Variant",
       "selectPrefab": "Select this Prefab",
-      "information": "Variant information",
+      "information": "Asset information",
       "informationDescription": "Set a name and an optional description.",
       "destination": "Save location",
       "destinationPlaceholder": "Enter a valid name to see the save location."
     },
-    "deleteConfirm": "Delete all saved versions and gallery images of {0} selected Variant(s), and move their Project folders to Trash? Shared source assets are retained.",
+    "deleteConfirm": "Delete all saved versions and gallery images of {0} selected asset(s), and move their Project folders to Trash? Shared source assets are retained.",
     "noTargetChanges": "There are no changes for this operation.",
     "changesFailed": "Could not load changes.",
     "added": "Added",
     "modified": "Modified",
     "removed": "Removed",
     "dependencyContent": "Dependency · {0}",
-    "metadataContent": "Variant metadata · {0}",
+    "metadataContent": "Asset metadata · {0}",
     "sceneProperty": "{0} · {1}: {2} → {3}",
     "pendingParts": "Pending part visibility changes",
     "pendingShape": "Pending shape or BlendShape changes",
@@ -392,13 +405,13 @@
     "openSource": "Open source asset details",
     "noHistory": "No versions have been saved.",
     "revision": "v{0} · {1}",
-    "modify": "Modify this avatar",
-    "missing": "Variant not found.",
+    "modify": "Edit this asset",
+    "missing": "Asset not found.",
     "restore": "Restore this version",
-    "restoreConfirm": "Restore this version and replace the current Variant. Save a version first to keep any changes you have not saved.",
-    "searchPlaceholder": "Search Variants",
-    "reload": "Reload Variants from the project",
-    "selectedCount": "{0} Variants selected"
+    "restoreConfirm": "Restore this version and replace the current asset. Save a version first to keep any changes you have not saved.",
+    "searchPlaceholder": "Search assets",
+    "reload": "Reload assets from the project",
+    "selectedCount": "{0} assets selected"
   },
   "detail": {
     "information": "INFORMATION",
@@ -531,7 +544,7 @@
     "createDerivedAsset": "Create derived asset"
   },
   "confirm": {
-    "deleteArchiveEntries": "Delete the selected {0} archived entries? Items and their files will be deleted. All saved versions and gallery images of Variants will be deleted, and their Project folders moved to Trash. Shared source assets are retained.",
+    "deleteArchiveEntries": "Delete the selected {0} archived entries? Items and their files will be deleted. All saved versions and gallery images of assets will be deleted, and their Project folders moved to Trash. Shared source assets are retained.",
     "deleteItem": {
       "title": "Delete item",
       "message": "Delete this item and its files?"

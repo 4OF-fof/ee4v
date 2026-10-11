@@ -137,7 +137,7 @@ namespace Ee4v.AssetManager.UI
             baseCard.SetSelected(_avatarContext.SelectedPrefabSiblingIndex == -1);
             baseCard.RegisterCallback<ClickEvent>(
                 _ => SelectPrefabCard(-1, _avatarContext.Root.name));
-            strip.Add(baseCard);
+            if (_workingAsset?.IsOriginal != true || HasMeshInPrefabScope(-1)) { strip.Add(baseCard); }
             if (_avatarContext.SelectedPrefabSiblingIndex == -1)
             {
                 selectedCard = baseCard;
@@ -515,7 +515,8 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement BuildCategoryRail()
         {
-            _categoryRail = new WorkflowCategoryRail(category => ShowCategory(category), EditorApplication.isPlaying);
+            _categoryRail = new WorkflowCategoryRail(category => ShowCategory(category), EditorApplication.isPlaying,
+                DerivedAssetCreator.IsAvatarPrefab(_avatarContext.Root));
             _categoryRail.SetPrefabScope(_avatarContext.SelectedPrefabSiblingIndex.HasValue);
             _categoryRail.SetSelected(_currentCategory);
             if (!EditorApplication.isPlaying)
@@ -574,6 +575,12 @@ namespace Ee4v.AssetManager.UI
         {
             if (EditorApplication.isPlaying && !category.IsPlayMode()) { category = WorkflowCategory.MenuAndGestures; }
             else if (!EditorApplication.isPlaying && category.IsPlayMode()) { category = _editingCategory; }
+            if (!DerivedAssetCreator.IsAvatarPrefab(_avatarContext.Root))
+            {
+                if (category == WorkflowCategory.MenuAndGestures) { category = WorkflowCategory.Lighting; }
+                else if (category == WorkflowCategory.ExpressionAnimation || category == WorkflowCategory.ExpressionMenu)
+                    category = WorkflowCategory.Overview;
+            }
             if (category != WorkflowCategory.ShapeParts ||
                 _parts.Section != ShapePartsSection.Parts)
             {
@@ -788,6 +795,10 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement BuildOverviewControls()
         {
+            if (!DerivedAssetCreator.IsAvatarPrefab(_avatarContext.Root))
+            {
+                return BuildOriginalOverviewControls();
+            }
             return new AvatarInfoView(_avatarContext.Root.name,
                 AvatarInfoAnalysis.GetBlueprintId(_avatarContext.Root),
                 AvatarInfoAnalysis.FindAttachmentWarnings(_avatarContext.Root),

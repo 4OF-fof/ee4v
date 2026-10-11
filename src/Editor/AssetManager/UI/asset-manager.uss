@@ -1306,6 +1306,26 @@
     color: var(--ee4v-color-text-primary);
 }
 
+.ee4v-asset-grid-card__action-content {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    padding: var(--ee4v-space-md);
+}
+
+.ee4v-asset-grid-card__action-icon {
+    margin-bottom: var(--ee4v-space-md);
+}
+
+.ee4v-asset-grid-card__action-title {
+    align-self: stretch;
+    min-width: 0;
+}
+
 .ee4v-asset-manager__thumbnail-stack,
 .ee4v-asset-manager__variant-information-thumbnail {
     width: 80%;

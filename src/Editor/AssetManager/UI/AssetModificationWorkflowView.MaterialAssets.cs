@@ -78,6 +78,7 @@ namespace Ee4v.AssetManager.UI
 
         private void RefreshAfterUndoRedo()
         {
+            if (_disposed || _avatarContext.Root == null) { return; }
             InvalidateVariantSaveStatus();
             ClearAppearanceCaches();
             if (IsEditableWorkflowPrefab() &&

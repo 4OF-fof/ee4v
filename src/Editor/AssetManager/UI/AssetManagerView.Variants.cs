@@ -957,6 +957,7 @@ namespace Ee4v.AssetManager.UI
                         {
                             VariantId = saved.Id, Name = saved.Name, Description = saved.Description,
                             ParentItemId = saved.ParentItemId, AssetPath = saved.RootAssetPath,
+                            IsOriginal = string.IsNullOrEmpty(saved.SourcePrefabGuid),
                             UpdatedAt = saved.UpdatedAt, IsArchived = saved.IsArchived
                         });
                     }

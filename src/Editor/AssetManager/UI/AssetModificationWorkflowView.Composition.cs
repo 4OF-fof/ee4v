@@ -564,6 +564,11 @@ namespace Ee4v.AssetManager.UI
             var basePath = basePrefab != null
                 ? AssetDatabase.GetAssetPath(basePrefab)
                 : string.Empty;
+            if (string.IsNullOrEmpty(basePath) && variant != null &&
+                PrefabUtility.GetPrefabAssetType(variant) == PrefabAssetType.Regular)
+            {
+                return true;
+            }
             return !string.IsNullOrEmpty(basePath) &&
                    PrefabUtility.GetCorrespondingObjectFromSourceAtPath(
                        child, basePath) == null;

@@ -35,7 +35,7 @@ namespace Ee4v.AssetManager.UI
                 ? "variant.searchPlaceholder" : "toolbar.search.tooltip");
             _reloadButton.tooltip = I18N.Get(ShowsVariants
                 ? "variant.reload" : "toolbar.reload");
-            _toolbar.style.display = _viewState.IsDerivedAssetsPage
+            _toolbar.style.display = _viewState.IsDerivedAssetsPage || _creatingOriginalAsset
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
             RefreshHistoryNavigation();
@@ -47,6 +47,11 @@ namespace Ee4v.AssetManager.UI
             _content.EnableInClassList(
                 "ee4v-asset-manager__content--item-detail",
                 showsItemDetail || showsVariantDetail);
+            if (_creatingOriginalAsset)
+            {
+                BuildOriginalAssetCreationPage();
+                return;
+            }
             if (showsVariantDetail)
             {
                 BuildVariantDetailPage();
@@ -256,7 +261,7 @@ namespace Ee4v.AssetManager.UI
                     variant, _search.Value, _viewState.SearchTargets)),
                 _viewState.ItemSortField,
                 _viewState.IsItemSortReversed);
-            if (variants.Count == 0)
+            if (variants.Count == 0 && !string.IsNullOrWhiteSpace(_search.Value))
             {
                 _content.Add(AssetManagerControls.CreateNotice(
                     I18N.Get("notice.noVariants")));
@@ -264,11 +269,17 @@ namespace Ee4v.AssetManager.UI
             var icon = AssetManagerControls.LoadFluentIconState(
                 "cube.png", UiSizeTokens.Size24,
                 I18N.Get("navigation.variants"), UiColorTokens.TextMuted);
-            _itemGrid.SetItems(variants.Select(variant => new AssetItemGridEntry(
+            var createCard = new AssetItemGridEntry("create-original-work", I18N.Get("workflow.original.createCard"))
+            {
+                PlaceholderIcon = AssetManagerControls.LoadFluentIconState(
+                    "add.png", UiSizeTokens.Size24, I18N.Get("workflow.original.create"), UiColorTokens.TextMuted),
+                Activate = StartOriginalAssetCreation
+            };
+            _itemGrid.SetItems(new[] { createCard }.Concat(variants.Select(variant => new AssetItemGridEntry(
                 variant.VariantId, variant.IsArchived ? variant.Name + " (" + I18N.Get("detail.item.archived") + ")" : variant.Name)
             {
                 PlaceholderIcon = icon
-            }).ToArray());
+            })).ToArray());
             _itemGrid.SetSelectedItemIds(
                 _viewState.SelectedVariantIds, _viewState.SelectedVariantId);
             _content.Add(_itemGrid);

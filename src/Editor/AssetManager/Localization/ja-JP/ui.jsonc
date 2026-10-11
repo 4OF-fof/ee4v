@@ -149,6 +149,19 @@
       "shape": "体型",
       "parts": "パーツ"
     },
+    "original": {
+      "create": "新しいマイアセットを作成",
+      "createCard": "新しく作る",
+      "title": "マイアセットを作成",
+      "optionalBase": "ベースPrefab（任意）",
+      "clearBase": "ベースを解除",
+      "fittingAvatar": "試着アバター",
+      "fittingDescription": "試着アバターは作業Sceneに保存し、マイアセットのPrefabには含めません。装着設定はSceneで調整できます。",
+      "removeFittingAvatar": "試着アバターを外す",
+      "showFittingScene": "Sceneで確認",
+      "fittingFailed": "試着アバターを変更できませんでした。Consoleを確認してください。",
+      "externalSceneReference": "「{0}」の「{1}」がマイアセットの外にある「{2}」を直接参照しています。装着先をマイアセットから再利用できる設定へ変更してから保存してください。"
+    },
     "selection": {
       "createAndStart": "改変を開始",
       "backToAssets": "アセット選択へ戻る",
@@ -277,7 +290,7 @@
     "no": "いいえ"
   },
   "navigation": {
-    "variants": "Variant",
+    "variants": "マイアセット",
     "library": "全件",
     "imported": "Import済み",
     "archived": "アーカイブ",
@@ -318,8 +331,8 @@
     "syncDatabaseRequired": "BOOTH Library Managerのデータベースの場所を設定してください。",
     "syncFolderMissing": "保存先フォルダーが見つかりません：{0}",
     "syncDatabaseMissing": "BOOTH Library Managerのデータベースが見つかりません：{0}",
-    "noVariants": "このProjectに表示できるVariantはありません。名前や説明で検索を絞り込んでいる場合は、検索条件を確認してください。",
-    "selectVariant": "詳細を確認するVariantを選択してください。",
+    "noVariants": "検索に一致するマイアセットはありません。",
+    "selectVariant": "詳細を確認するマイアセットを選択してください。",
     "noItems": "この表示に一致するItemはありません。",
     "noTags": "タグはありません。",
     "selectedItemMissing": "選択したItemは存在しません。",
@@ -352,19 +365,19 @@
     "creation": {
       "title": "Variantを作成",
       "selectPrefab": "このPrefabを選択",
-      "information": "Variantの情報",
+      "information": "マイアセットの情報",
       "informationDescription": "名前と説明を設定します。説明は省略できます。",
       "destination": "保存先",
       "destinationPlaceholder": "有効な名前を入力すると保存先が表示されます。"
     },
-    "deleteConfirm": "選択した{0}件のVariantの全保存版とギャラリーを削除し、Project内の専用フォルダーをゴミ箱へ移動します。共有の素材は削除しません。続けますか？",
+    "deleteConfirm": "選択した{0}件のマイアセットの全保存版とギャラリーを削除し、Project内の専用フォルダーをゴミ箱へ移動します。共有の素材は削除しません。続けますか？",
     "noTargetChanges": "この操作の対象となる変更はありません。",
     "changesFailed": "変更内容を取得できませんでした。",
     "added": "追加",
     "modified": "変更",
     "removed": "削除",
     "dependencyContent": "依存素材 · {0}",
-    "metadataContent": "Variant情報 · {0}",
+    "metadataContent": "マイアセット情報 · {0}",
     "sceneProperty": "{0} · {1}: {2} → {3}",
     "pendingParts": "反映待ちのパーツ表示変更",
     "pendingShape": "反映待ちの体型・BlendShape変更",
@@ -392,13 +405,13 @@
     "openSource": "素材の詳細を開く",
     "noHistory": "保存された版はありません。",
     "revision": "v{0} · {1}",
-    "modify": "このアバターを改変",
-    "missing": "Variantが見つかりません。",
+    "modify": "このマイアセットを編集",
+    "missing": "マイアセットが見つかりません。",
     "restore": "この版を復元",
-    "restoreConfirm": "選択した版を復元し、現在のVariantを置き換えます。未保存の変更を残す場合は、先にバージョンを保存してください。",
-    "searchPlaceholder": "Variantを検索",
-    "reload": "ProjectのVariant一覧を再読み込み",
-    "selectedCount": "{0} 個のVariantを選択"
+    "restoreConfirm": "選択した版を復元し、現在のマイアセットを置き換えます。未保存の変更を残す場合は、先にバージョンを保存してください。",
+    "searchPlaceholder": "マイアセットを検索",
+    "reload": "Projectのマイアセット一覧を再読み込み",
+    "selectedCount": "{0} 個のマイアセットを選択"
   },
   "detail": {
     "information": "情報",
@@ -531,7 +544,7 @@
     "createDerivedAsset": "派生アセットを作成"
   },
   "confirm": {
-    "deleteArchiveEntries": "選択した{0}件を削除します。Itemは所属Fileも削除します。Variantは全保存版とギャラリーを削除し、Project内の専用フォルダーをゴミ箱へ移動します。共有の素材は削除しません。続けますか？",
+    "deleteArchiveEntries": "選択した{0}件を削除します。Itemは所属Fileも削除します。マイアセットは全保存版とギャラリーを削除し、Project内の専用フォルダーをゴミ箱へ移動します。共有の素材は削除しません。続けますか？",
     "deleteItem": {
       "title": "Itemを削除",
       "message": "このItemと所属Fileを削除しますか？"

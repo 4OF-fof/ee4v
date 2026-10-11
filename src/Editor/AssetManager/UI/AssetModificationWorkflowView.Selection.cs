@@ -87,7 +87,8 @@ namespace Ee4v.AssetManager.UI
                         _manager = _manager ?? AssetManagerWindowSession.GetManager(),
                         _assetManagerViewState,
                         mode,
-                        createDerivedAsset: createDerivedAsset));
+                        createDerivedAsset: createDerivedAsset),
+                    createOriginalAsset: StartOriginalAssetCreation);
                 page.Add(_assetManagerView);
             }
             catch (Exception exception)
@@ -103,14 +104,20 @@ namespace Ee4v.AssetManager.UI
         private VisualElement BuildDerivedAssetCreation()
         {
             var selectedSource = GetSelectedVariantSource();
+            var sources = _creatingOriginalAsset ? GetVariantSources() : null;
+            var prefabs = sources != null ? sources.SelectMany(source => source.Prefabs).Distinct().ToArray()
+                : selectedSource?.Prefabs;
             var form = new VariantCreationView(
                 selectedSource?.Item,
-                selectedSource?.Prefabs,
+                prefabs,
                 _derivedName,
                 _derivedDescription,
                 _creationPrefab,
                 I18N.Get("workflow.selection.createAndStart"),
-                CancelDerivedAssetCreation);
+                CancelDerivedAssetCreation,
+                _creatingOriginalAsset,
+                sources == null ? null : (anchor, selected, select) =>
+                    AssetPrefabPickerWindow.Show(anchor, sources, _manager, select, null, selectPrefab: true));
             _creationPrefab = form.Prefab.Value;
             form.Prefab.ValueChanged += prefab => _creationPrefab = prefab;
             form.Name.ValueChanged += value => _derivedName = value;
@@ -136,15 +143,89 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             _creationItemId = item.Id;
+            _creatingOriginalAsset = false;
             _creationPrefab = null;
             _derivedName = item.Name + " Variant";
             _derivedDescription = string.Empty;
             StartDerivedAssetCreation();
         }
 
+        private void StartOriginalAssetCreation()
+        {
+            _creatingOriginalAsset = true;
+            _creationItemId = null;
+            _creationPrefab = null;
+            _derivedName = string.Empty;
+            _derivedDescription = string.Empty;
+            StartDerivedAssetCreation();
+        }
+
+        private VisualElement BuildOriginalOverviewControls()
+        {
+            var controls = new VisualElement();
+            var fittingAvatar = DerivedAssetCreator.GetFittingAvatar(_avatarContext.Root);
+            var candidates = GetVariantSources().SelectMany(source => source.Prefabs)
+                .Where(DerivedAssetCreator.IsAvatarPrefab).Distinct().ToArray();
+            var currentPrefab = fittingAvatar != null
+                ? PrefabUtility.GetCorrespondingObjectFromSource(fittingAvatar) as GameObject : null;
+            if (currentPrefab != null && !candidates.Contains(currentPrefab))
+            {
+                candidates = candidates.Append(currentPrefab).ToArray();
+            }
+            var selector = new PrefabSelector(candidates, (anchor, selected, select) =>
+                AssetPrefabPickerWindow.Show(anchor, GetVariantSources().Select(source => new VariantSourceOption
+                {
+                    Item = source.Item,
+                    Prefabs = source.Prefabs.Where(DerivedAssetCreator.IsAvatarPrefab).ToArray()
+                }).Where(source => source.Prefabs.Count > 0).ToArray(), _manager, select, ShowTemporaryAssetManager));
+            selector.SetValueWithoutNotify(currentPrefab);
+            selector.ValueChanged += prefab => ChangeFittingAvatar(prefab);
+            controls.Add(new FormInput(I18N.Get("workflow.original.fittingAvatar"), selector));
+            controls.Add(UiTextFactory.CreateHelpBox(
+                I18N.Get("workflow.original.fittingDescription"), HelpBoxMessageType.Info));
+            if (fittingAvatar != null)
+            {
+                var actions = new VisualElement();
+                actions.Add(new UiButton(I18N.Get("workflow.original.removeFittingAvatar"),
+                    () => ChangeFittingAvatar(null), variant: UiButtonVariant.Ghost));
+                actions.Add(new UiButton(I18N.Get("workflow.original.showFittingScene"), () =>
+                {
+                    Selection.activeGameObject = fittingAvatar;
+                    SceneView.lastActiveSceneView?.FrameSelected();
+                }, variant: UiButtonVariant.Ghost));
+                controls.Add(actions);
+                var preview = new PrefabScenePreview();
+                preview.SetFullBodyFraming(true);
+                preview.SetPrefab(fittingAvatar);
+                controls.Add(preview);
+            }
+            return controls;
+        }
+
+        private void ChangeFittingAvatar(GameObject prefab)
+        {
+            try
+            {
+                _parts.EndBodyScaleDrag();
+                _parts.SaveBodyScalePrefab();
+                if (_parts.BodyScaleDirty || !_parts.FlushPendingPartVisibility()) { return; }
+                DerivedAssetCreator.SetFittingAvatar(_avatarContext.Root, prefab);
+                _workingSceneDirty = true;
+                QueueWorkingSceneSave();
+                InvalidateVariantSaveStatus();
+                BuildWindow();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                ShowAssetError("workflow.original.fittingFailed");
+            }
+        }
+
         private void CancelDerivedAssetCreation()
         {
             _creatingDerivedAsset = false;
+            _creatingOriginalAsset = false;
             _avatarContext.Feedback = string.Empty;
             BuildWindow();
         }
@@ -154,13 +235,7 @@ namespace Ee4v.AssetManager.UI
             try
             {
                 _manager = _manager ?? AssetManagerWindowSession.GetManager();
-                return _manager.SearchItems(new AssetItemQuery())
-                    .Items
-                    .Where(item => item != null && !item.IsArchived)
-                    .Select(CreateVariantSource)
-                    .Where(source => source.Prefabs.Count > 0)
-                    .OrderBy(source => source.Item.Name, StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
+                return AssetPrefabPickerWindow.FindSources(_manager);
             }
             catch (Exception exception)
             {
@@ -174,8 +249,7 @@ namespace Ee4v.AssetManager.UI
             return new VariantSourceOption
             {
                 Item = item,
-                Prefabs = DerivedAssetCreator.FindPrefabCandidates(
-                    _manager.GetItemImportedAssetGuids(item.Id))
+                Prefabs = DerivedAssetCreator.FindPrefabCandidates(_manager, item)
             };
         }
 
@@ -206,12 +280,18 @@ namespace Ee4v.AssetManager.UI
                     HelpBoxMessageType.Error);
                 return;
             }
-            if (string.IsNullOrEmpty(_creationItemId) ||
-                _creationPrefab == null)
+            if (!_creatingOriginalAsset && (string.IsNullOrEmpty(_creationItemId) ||
+                _creationPrefab == null))
             {
                 SetCreationFeedback(
                     I18N.Get("notice.derivedAssetPrefabInvalid"),
                     HelpBoxMessageType.Error);
+                return;
+            }
+            if (_creatingOriginalAsset && _creationPrefab != null &&
+                !GetVariantSources().SelectMany(source => source.Prefabs).Contains(_creationPrefab))
+            {
+                SetCreationFeedback(I18N.Get("notice.derivedAssetPrefabInvalid"), HelpBoxMessageType.Error);
                 return;
             }
             if (AssetDatabase.IsValidFolder(
@@ -223,22 +303,44 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            AssetItem owner = null;
+            var created = false;
             try
             {
+                if (_creatingOriginalAsset)
+                {
+                    _manager = _manager ?? AssetManagerWindowSession.GetManager();
+                    owner = _manager.CreateItem(new CreateAssetItemRequest
+                    {
+                        Name = _derivedName.Trim(), Description = _derivedDescription, IsOriginal = true
+                    });
+                }
                 var result = DerivedAssetCreator.Create(
                     new DerivedAssetCreationRequest
                     {
-                        ParentItemId = _creationItemId,
+                        ParentItemId = owner?.Id ?? _creationItemId,
                         Name = _derivedName,
                         Description = _derivedDescription,
-                        Prefab = _creationPrefab
+                        Prefab = _creationPrefab,
+                        CreateOriginal = _creatingOriginalAsset && _creationPrefab == null
                     });
+                created = true;
                 _creatingDerivedAsset = false;
+                _creatingOriginalAsset = false;
                 SelectDerivedAsset(result);
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
+                if (!created && owner != null)
+                {
+                    try
+                    {
+                        _manager.SetItemArchived(new[] { owner.Id }, true);
+                        _manager.DeleteItem(new[] { owner.Id });
+                    }
+                    catch (Exception cleanupException) { Debug.LogException(cleanupException); }
+                }
                 SetCreationFeedback(
                     I18N.Get("notice.derivedAssetCreateFailed"),
                     HelpBoxMessageType.Error);

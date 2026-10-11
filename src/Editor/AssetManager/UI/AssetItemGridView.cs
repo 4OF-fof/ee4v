@@ -24,6 +24,7 @@ namespace Ee4v.AssetManager.UI
         public string Name { get; }
         public byte[] ThumbnailData { get; }
         public IconState PlaceholderIcon { get; set; }
+        public Action Activate { get; set; }
     }
 
     internal sealed class AssetItemGridView : VisualElement, IDisposable
@@ -172,7 +173,8 @@ namespace Ee4v.AssetManager.UI
             {
                 foreach (var itemId in itemIds)
                 {
-                    if (!string.IsNullOrEmpty(itemId))
+                    if (!string.IsNullOrEmpty(itemId) &&
+                        (!_itemIndices.TryGetValue(itemId, out var index) || _items[index].Activate == null))
                     {
                         nextSelection.Add(itemId);
                     }
@@ -231,10 +233,10 @@ namespace Ee4v.AssetManager.UI
             var lastIndex = Mathf.Min(
                 _items.Count,
                 (_boundFirstRow + _boundVisibleRowCount) * _itemsPerRow);
-            var result = new string[lastIndex - firstIndex];
+            var result = new List<string>(lastIndex - firstIndex);
             for (var index = firstIndex; index < lastIndex; index++)
             {
-                result[index - firstIndex] = _items[index].Id;
+                if (_items[index].Activate == null) { result.Add(_items[index].Id); }
             }
 
             return result;
@@ -302,9 +304,9 @@ namespace Ee4v.AssetManager.UI
                 slot.style.marginRight = column + 1 < _itemsPerRow
                     ? _columnGap
                     : 0f;
-                slot.style.visibility = item == null
-                    ? Visibility.Hidden
-                    : Visibility.Visible;
+                slot.style.display = item == null
+                    ? DisplayStyle.None
+                    : DisplayStyle.Flex;
                 if (item == null)
                 {
                     card?.Dispose();
@@ -354,6 +356,13 @@ namespace Ee4v.AssetManager.UI
             if (string.IsNullOrEmpty(itemId) ||
                 !_itemIndices.ContainsKey(itemId))
             {
+                return;
+            }
+
+            var action = _items[_itemIndices[itemId]].Activate;
+            if (action != null)
+            {
+                action();
                 return;
             }
 
@@ -423,7 +432,7 @@ namespace Ee4v.AssetManager.UI
             var end = Math.Max(anchorIndex, itemIndex);
             for (var index = start; index <= end; index++)
             {
-                _selectedItemIds.Add(_items[index].Id);
+                if (_items[index].Activate == null) { _selectedItemIds.Add(_items[index].Id); }
             }
         }
 
@@ -479,11 +488,13 @@ namespace Ee4v.AssetManager.UI
 
         private void OpenItem(string itemId)
         {
+            if (_itemIndices.TryGetValue(itemId, out var index) && _items[index].Activate != null) { return; }
             ItemDoubleClicked?.Invoke(itemId);
         }
 
         private void OpenContextMenu(string itemId, VisualElement anchor)
         {
+            if (_itemIndices.TryGetValue(itemId, out var index) && _items[index].Activate != null) { return; }
             if (!_selectedItemIds.Contains(itemId))
             {
                 SelectItem(itemId, toggle: false, range: false);

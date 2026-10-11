@@ -116,7 +116,8 @@ namespace Ee4v.AssetManager.Infrastructure
         {
             ValidateId(snapshot.Variant.Id);
             ValidateId(snapshot.Variant.ParentItemId);
-            ValidateId(snapshot.Variant.SourcePrefabGuid);
+            if (!string.IsNullOrEmpty(snapshot.Variant.SourcePrefabGuid))
+                ValidateId(snapshot.Variant.SourcePrefabGuid);
             var previewCachePath = PreviewCachePath(snapshot.PreviewHash);
             Directory.CreateDirectory(_root);
             var repository = RepositoryPath(snapshot.Variant.ParentItemId);
@@ -700,7 +701,8 @@ namespace Ee4v.AssetManager.Infrastructure
             }
             ValidateId(snapshot.Variant.Id);
             ValidateId(snapshot.Variant.ParentItemId);
-            ValidateId(snapshot.Variant.SourcePrefabGuid);
+            if (!string.IsNullOrEmpty(snapshot.Variant.SourcePrefabGuid))
+                ValidateId(snapshot.Variant.SourcePrefabGuid);
             ValidateId(snapshot.Revision.Id);
             if (snapshot.Variant.Id != variantId || snapshot.Revision.VariantId != snapshot.Variant.Id)
             {

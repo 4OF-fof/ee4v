@@ -21,7 +21,7 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_list_variants",
-                "Lists Project Variants with their working Scene, source Prefab, root path, and editable Material Variants.",
+                "Lists Project works, including compositions without a base, with their working Scene, source Prefab, root path, and editable Material Variants.",
                 McpSchemas.Object(new JObject { ["itemId"] = McpSchemas.String() }, "itemId"),
                 arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
                     ListVariants(McpJson.RequireString(arguments, "itemId"))))),
@@ -43,7 +43,7 @@ namespace Ee4v.Mcp
 
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_add_prefab_to_variant",
-                "Adds an AssetManager-imported Prefab under the Variant instance in its working Scene. Keeps the source Prefab linked and unmodified; rejects dependency cycles. Apply it to the Variant Prefab with ee4v_asset_save_variant.",
+                "Adds an AssetManager-imported Prefab or an original Item's Project work under the work instance in its working Scene. Keeps the source Prefab linked and unmodified; rejects dependency cycles. Apply it to the work Prefab with ee4v_asset_save_variant.",
                 McpSchemas.Object(new JObject
                 {
                     ["variantGuid"] = McpSchemas.String(),
@@ -96,12 +96,13 @@ namespace Ee4v.Mcp
             var sourceGuid = McpJson.RequireString(arguments, "sourcePrefabGuid");
             var name = McpJson.RequireString(arguments, "name");
             var manager = AssetManagerMcpTools.Manager();
-            manager.GetItem(itemId);
-            if (!manager.GetItemImportedAssetGuids(itemId)
+            var item = manager.GetItem(itemId);
+            if (!DerivedAssetCreator.FindPrefabCandidates(manager, item)
+                    .Select(prefab => AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(prefab)))
                     .Contains(sourceGuid, StringComparer.OrdinalIgnoreCase))
             {
                 throw new McpToolException("source_not_imported_for_item",
-                    "sourcePrefabGuid must belong to an imported Prefab of itemId.");
+                    "sourcePrefabGuid must belong to an imported Prefab or an original Project work of itemId.");
             }
             var source = AssetManagerPrefabMcpTools.Resolve(sourceGuid, null);
             if (!DerivedAssetCreator.IsValidName(name))
@@ -130,11 +131,15 @@ namespace Ee4v.Mcp
             var variant = ResolveVariant(McpJson.RequireString(arguments, "variantGuid"));
             var sourceGuid = McpJson.RequireString(arguments, "sourcePrefabGuid");
             var source = AssetManagerPrefabMcpTools.Resolve(sourceGuid, null);
-            if (!AssetManagerMcpTools.Manager()
-                    .GetImportedAssetAssociations(new[] { sourceGuid }).Any())
+            var manager = AssetManagerMcpTools.Manager();
+            var sourceRecord = DerivedAssetCatalog.Read(source.Path);
+            if (!manager.GetImportedAssetAssociations(new[] { sourceGuid }).Any() &&
+                (sourceRecord == null ||
+                    !DerivedAssetCreator.FindPrefabCandidates(manager, manager.GetItem(sourceRecord.ParentItemId))
+                        .Contains(source.Asset)))
             {
                 throw new McpToolException("source_not_imported",
-                    "sourcePrefabGuid must be imported through AssetManager.");
+                    "sourcePrefabGuid must be imported through AssetManager or belong to an original Item's Project work.");
             }
             if (string.Equals(source.Path, variant.AssetPath, StringComparison.OrdinalIgnoreCase) ||
                 AssetDatabase.GetDependencies(source.Path, true)
@@ -253,13 +258,15 @@ namespace Ee4v.Mcp
         {
             var path = AssetDatabase.GUIDToAssetPath(variantGuid);
             var record = DerivedAssetCatalog.Read(path);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            var prefabType = prefab != null ? PrefabUtility.GetPrefabAssetType(prefab) : PrefabAssetType.NotAPrefab;
             if (record == null || !path.StartsWith(
                     DerivedAssetCatalog.VariantRoot + "/", StringComparison.Ordinal) ||
-                PrefabUtility.GetPrefabAssetType(
-                    AssetDatabase.LoadAssetAtPath<GameObject>(path)) != PrefabAssetType.Variant)
+                (prefabType != PrefabAssetType.Variant &&
+                    !(prefabType == PrefabAssetType.Regular && string.IsNullOrEmpty(record.SourceGuid))))
             {
                 throw new McpToolException("variant_not_found",
-                    "variantGuid must resolve to an ee4v Prefab Variant in the current Project.");
+                    "variantGuid must resolve to an ee4v Prefab Variant or a composition without a base in the current Project.");
             }
             AssetManagerMcpTools.Manager().GetItem(record.ParentItemId);
             return record;
@@ -278,6 +285,7 @@ namespace Ee4v.Mcp
                 record.ParentItemId,
                 record.Name,
                 record.Description,
+                IsOriginal = string.IsNullOrEmpty(record.SourceGuid),
                 SourcePrefabGuid = record.SourceGuid,
                 SourcePrefabPath = AssetDatabase.GUIDToAssetPath(record.SourceGuid),
                 MaterialVariants = AssetDatabase.IsValidFolder(materialsFolder)

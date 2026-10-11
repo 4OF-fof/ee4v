@@ -12,6 +12,7 @@ namespace Ee4v.AssetManager.UI
     internal sealed class VariantCreationView : VisualElement
     {
         private readonly UiTextElement _destination;
+        private readonly bool _original;
 
         internal VariantCreationView(
             AssetItem item,
@@ -20,15 +21,19 @@ namespace Ee4v.AssetManager.UI
             string description,
             GameObject selectedPrefab,
             string submitLabel,
-            Action goBack)
+            Action goBack,
+            bool original = false,
+            Action<VisualElement, GameObject, Action<GameObject>> showPrefabPicker = null)
         {
+            _original = original;
             AddToClassList("ee4v-variant-creation");
             var header = new VisualElement();
             header.AddToClassList("ee4v-variant-creation__header");
             header.Add(AssetManagerControls.CreateIconButton(
                 I18N.Get("toolbar.back"), "arrow_left.png", UiSizeTokens.Size18,
                 UiButtonVariant.Ghost, goBack, "ee4v-variant-creation__back"));
-            var title = UiTextFactory.Create(I18N.Get("variant.creation.title"),
+            var title = UiTextFactory.Create(I18N.Get(original
+                    ? "workflow.original.title" : "variant.creation.title"),
                 UiClassNames.SectionTitle, "ee4v-variant-creation__title");
             title.SetFontSize(UiTypographyTokens.TitleFontSize);
             header.Add(title);
@@ -48,6 +53,7 @@ namespace Ee4v.AssetManager.UI
             itemNameText.tooltip = itemName;
             context.Add(itemNameText);
             header.Add(context);
+            divider.style.display = context.style.display = original ? DisplayStyle.None : DisplayStyle.Flex;
             Add(header);
 
             var body = new VisualElement();
@@ -60,13 +66,21 @@ namespace Ee4v.AssetManager.UI
                 Item = item,
                 Prefabs = prefabs
             };
-            Prefab = new PrefabSelector(prefabs, (anchor, selected, select) =>
-                AssetPrefabPickerWindow.ShowForSource(anchor, pickerSource, selected, select));
+            Prefab = new PrefabSelector(prefabs, showPrefabPicker ?? ((anchor, selected, select) =>
+                AssetPrefabPickerWindow.ShowForSource(anchor, pickerSource, selected, select)), allowEmpty: original);
             Prefab.AddToClassList("ee4v-variant-creation__prefab");
-            var sourceToolbar = new FormInput(I18N.Get("workflow.selection.sourcePrefab"), Prefab);
+            UiButton clearBase = null;
+            if (original)
+            {
+                clearBase = AssetManagerControls.CreateIconButton(I18N.Get("workflow.original.clearBase"),
+                    "dismiss.png", UiSizeTokens.Size16, UiButtonVariant.Ghost, Prefab.ClearValue,
+                    "ee4v-variant-creation__clear-base");
+            }
+            var sourceToolbar = new FormInput(I18N.Get(original
+                ? "workflow.original.optionalBase" : "workflow.selection.sourcePrefab"), Prefab, clearBase);
             sourceToolbar.AddToClassList("ee4v-variant-creation__source-toolbar");
             source.Add(sourceToolbar);
-            if (prefabs.Count == 0)
+            if (!original && prefabs.Count == 0)
             {
                 Prefab.SetEnabled(false);
                 source.Add(UiTextFactory.CreateHelpBox(
@@ -126,6 +140,10 @@ namespace Ee4v.AssetManager.UI
             {
                 Prefab.Row.DescriptionText.style.display = DisplayStyle.None;
                 preview.SetPrefab(prefab);
+                if (clearBase != null)
+                {
+                    clearBase.style.display = prefab != null ? DisplayStyle.Flex : DisplayStyle.None;
+                }
                 SetFeedback(string.Empty);
                 RefreshAction();
             };
@@ -136,7 +154,12 @@ namespace Ee4v.AssetManager.UI
                     ? I18N.Get("notice.derivedAssetNameInvalid") : string.Empty);
                 RefreshAction();
             };
-            Prefab.SetValueWithoutNotify(prefabs.Contains(selectedPrefab) ? selectedPrefab : prefabs.FirstOrDefault());
+            Prefab.SetValueWithoutNotify(prefabs.Contains(selectedPrefab) ? selectedPrefab :
+                original ? null : prefabs.FirstOrDefault());
+            if (clearBase != null)
+            {
+                clearBase.style.display = Prefab.Value != null ? DisplayStyle.Flex : DisplayStyle.None;
+            }
             Prefab.Row.DescriptionText.style.display = DisplayStyle.None;
             preview.SetPrefab(Prefab.Value);
             SetFeedback(string.Empty);
@@ -160,7 +183,7 @@ namespace Ee4v.AssetManager.UI
         private void RefreshAction()
         {
             var validName = DerivedAssetCreator.IsValidName(Name.Value);
-            Create.SetPrimaryActionEnabled(validName && Prefab.Value != null);
+            Create.SetPrimaryActionEnabled(validName && (_original || Prefab.Value != null));
             var normalizedName = Name.Value.Trim();
             var path = validName
                 ? DerivedAssetCreator.GetVariantFolder(normalizedName) + "/" + normalizedName + ".prefab"

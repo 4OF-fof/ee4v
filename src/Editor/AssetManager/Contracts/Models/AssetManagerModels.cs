@@ -8,6 +8,7 @@ namespace Ee4v.AssetManager.Contracts
         public string Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public bool IsOriginal { get; set; }
         public AssetBoothMetadata Booth { get; set; }
         public string ThumbnailUrl { get; set; }
         public AssetSourceType? SourceType { get; set; }

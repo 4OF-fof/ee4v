@@ -8,15 +8,18 @@ namespace Ee4v.AssetManager.UI
     {
         private readonly List<AssetManagerView> _panes = new List<AssetManagerView>();
         private readonly Action<DerivedAssetInfo> _openDerivedAsset;
+        private readonly Action _createOriginalAsset;
         private readonly Func<AssetManagerViewMode, AssetManagerView> _createView;
         private bool _disposed;
 
         internal AssetManagerWorkspaceView(
             Action<DerivedAssetInfo> openDerivedAsset,
             Action<string> createDerivedAsset = null,
-            Func<AssetManagerViewMode, Action<string>, AssetManagerView> createView = null)
+            Func<AssetManagerViewMode, Action<string>, AssetManagerView> createView = null,
+            Action createOriginalAsset = null)
         {
             _openDerivedAsset = openDerivedAsset;
+            _createOriginalAsset = createOriginalAsset;
             var factory = createView ?? AssetManagerWindowSession.CreateView;
             _createView = mode => factory(mode, createDerivedAsset);
             AddToClassList("ee4v-workspace__library");
@@ -62,6 +65,7 @@ namespace Ee4v.AssetManager.UI
         private AssetManagerView AddPane(AssetManagerViewMode mode)
         {
             var pane = _createView(mode);
+            pane.SetOriginalAssetCreationHandler(_createOriginalAsset);
             pane.SetVariantModificationHandler(_openDerivedAsset);
             _panes.Add(pane);
             return pane;
