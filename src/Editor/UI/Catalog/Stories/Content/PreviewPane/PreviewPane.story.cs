@@ -18,6 +18,7 @@ namespace Ee4v.UI
                     usageLocations: new[]
                     {
                         "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",
+                        "Editor/UI/Components/Inputs/AssetPicker/AssetPickerWindow.cs",
                         "Editor/AssetManager/Simulation/AvatarExecutionView.cs"
                     },
                     styleSheetPaths: new[]

@@ -199,11 +199,6 @@ namespace Ee4v.AssetManager.UI
                 var cardToReveal = selectedCard;
                 strip.schedule.Execute(() => strip.ScrollTo(cardToReveal));
             }
-            cards.Add(new UiButton(
-                I18N.Get("workflow.selection.openManager"),
-                ShowTemporaryAssetManager,
-                icon: FluentUiIcons.CreateState("library.png", UiSizeTokens.Size12),
-                variant: UiButtonVariant.Ghost));
             var discard = new UiButton(
                 I18N.Get("variant.discardChanges"),
                 DiscardVariantChanges,
@@ -515,11 +510,32 @@ namespace Ee4v.AssetManager.UI
             return new SelectionTab(name, variant);
         }
 
+        private bool IsExpressionAssignmentOpen => _currentCategory == WorkflowCategory.ExpressionAnimation &&
+            _faceExpressionEditor?.IsAssignmentView == true;
+
         private VisualElement BuildCategoryRail()
         {
             _categoryRail = new WorkflowCategoryRail(category => ShowCategory(category), EditorApplication.isPlaying);
             _categoryRail.SetPrefabScope(_avatarContext.SelectedPrefabSiblingIndex.HasValue);
             _categoryRail.SetSelected(_currentCategory);
+            if (!EditorApplication.isPlaying)
+            {
+                var findAsset = AssetPicker.CreateButton(
+                    () => IsExpressionAssignmentOpen ? typeof(AnimationClip) : typeof(Material),
+                    () => _currentCategory == WorkflowCategory.Material
+                        ? _avatarContext.SelectedMaterial : null,
+                    () => _avatarContext.Root,
+                    () => IsExpressionAssignmentOpen ? AssetPickerAnimationFilter.Facial : AssetPickerAnimationFilter.All);
+                findAsset.AddToClassList("ee4v-modification-workflow__category-button");
+                _categoryRail.Actions.Add(findAsset);
+                var openManager = new UiButton(
+                    I18N.Get("workflow.selection.openManager"),
+                    ShowTemporaryAssetManager,
+                    icon: FluentUiIcons.CreateState("library.png", UiSizeTokens.Size12),
+                    variant: UiButtonVariant.Ghost);
+                openManager.AddToClassList("ee4v-modification-workflow__category-button");
+                _categoryRail.Actions.Add(openManager);
+            }
             return _categoryRail;
         }
 

@@ -27,7 +27,7 @@ namespace Ee4v.AssetManager.UI
                     "改変画面のカテゴリ、プレビュー、編集ペインと専用画面の配置を管理します。",
                     BuildLayout, "AssetModificationWorkflowView.Workspace.cs"),
                 Story("workflow-category-rail", "Inputs", "WorkflowCategoryRail",
-                    "編集時とPlayMode時のカテゴリ、選択表示とPrefab選択中の操作可否を管理します。",
+                    "編集時とPlayMode時のカテゴリ、選択表示とPrefab選択中の操作可否を管理します。Edit Modeでは最下部のActionsへAssetManagerとアセット検索の操作を配置します。",
                     BuildCategoryRail, "AssetModificationWorkflowView.Workspace.cs"),
 
             };

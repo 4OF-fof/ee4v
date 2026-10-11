@@ -1253,9 +1253,11 @@ namespace Ee4v.FaceExpression
             }
         }
 
+        internal bool IsAssigning => !_hasClip && _assignmentPane.childCount > 0;
+
         private void RefreshFilter()
         {
-            var assigning = !_hasClip && _assignmentPane.childCount > 0;
+            var assigning = IsAssigning;
             _previewPane.style.display = assigning ? DisplayStyle.None : DisplayStyle.Flex;
             _assignmentPane.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
             _assignmentSettings.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;

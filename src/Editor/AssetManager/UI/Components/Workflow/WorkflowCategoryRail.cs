@@ -16,6 +16,8 @@ namespace Ee4v.AssetManager.UI
         {
             _selected = selected;
             AddToClassList("ee4v-modification-workflow__category-rail");
+            Actions = new VisualElement();
+            Actions.AddToClassList("ee4v-modification-workflow__category-actions");
             if (playMode)
             {
                 AddCategoryButton(WorkflowCategory.MenuAndGestures,
@@ -42,7 +44,10 @@ namespace Ee4v.AssetManager.UI
                 "star.png");
             AddCategoryButton(WorkflowCategory.ExpressionMenu,
                 "workflow.category.expressionMenu", "arrow_clockwise.png");
+            Add(Actions);
         }
+
+        internal VisualElement Actions { get; }
 
         private void AddCategoryButton(
             WorkflowCategory category,

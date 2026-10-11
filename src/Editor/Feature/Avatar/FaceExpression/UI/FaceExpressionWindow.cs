@@ -68,6 +68,8 @@ namespace Ee4v.FaceExpression
     {
         private readonly FaceExpressionEditor _editor;
 
+        public bool IsAssignmentView => _editor.IsAssignmentView;
+
         public FaceExpressionEmbeddedView(
             VisualElement root,
             Action repaint)
@@ -152,6 +154,7 @@ namespace Ee4v.FaceExpression
         private bool _initialized;
 
         private bool HasClipReference => !ReferenceEquals(_clip, null);
+        internal bool IsAssignmentView => !_disposed && _view?.IsAssigning == true;
         private bool IsClipMissing => HasClipReference && _clip == null;
         private bool HasUnsavedChanges => _assignmentAssetsDirty ||
             _assignments.Revision != _savedAssignmentRevision || _editedClips.Count > 0 || _saveAttemptNeedsRollback;
