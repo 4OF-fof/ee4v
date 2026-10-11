@@ -150,7 +150,7 @@
       "parts": "Parts"
     },
     "selection": {
-      "createAndStart": "Create Variant and start customizing",
+      "createAndStart": "Start customizing",
       "backToAssets": "Back to asset selection",
       "assetNoSourceTitle": "The selected asset has no imported Prefabs",
       "managerLoadFailed": "AssetManager could not be loaded. Check the Console.",
@@ -349,6 +349,14 @@
     "analysisUnavailable": "The file tree could not be loaded. Check the Console."
   },
   "variant": {
+    "creation": {
+      "title": "Create a Variant",
+      "selectPrefab": "Select this Prefab",
+      "information": "Variant information",
+      "informationDescription": "Set a name and an optional description.",
+      "destination": "Save location",
+      "destinationPlaceholder": "Enter a valid name to see the save location."
+    },
     "deleteConfirm": "Delete all saved versions and gallery images of {0} selected Variant(s), and move their Project folders to Trash? Shared source assets are retained.",
     "noTargetChanges": "There are no changes for this operation.",
     "changesFailed": "Could not load changes.",

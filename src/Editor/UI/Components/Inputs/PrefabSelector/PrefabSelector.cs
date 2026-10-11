@@ -11,13 +11,16 @@ namespace Ee4v.UI
     {
         private readonly IReadOnlyList<GameObject> _candidates;
         private readonly HashSet<string> _candidatePaths;
+        private readonly Action<VisualElement, GameObject, Action<GameObject>> _showPicker;
         private GameObject _value;
 
         public PrefabSelector(
-            IReadOnlyList<GameObject> candidates)
+            IReadOnlyList<GameObject> candidates,
+            Action<VisualElement, GameObject, Action<GameObject>> showPicker = null)
             : base(onClick: null)
         {
             _candidates = candidates ?? Array.Empty<GameObject>();
+            _showPicker = showPicker;
             _candidatePaths = new HashSet<string>(
                 _candidates
                     .Where(candidate => candidate != null)
@@ -63,6 +66,11 @@ namespace Ee4v.UI
 
         private void OpenPopup()
         {
+            if (_showPicker != null)
+            {
+                _showPicker(this, _value, SetValue);
+                return;
+            }
             PrefabPickerWindow.Show(
                 this,
                 _candidates,

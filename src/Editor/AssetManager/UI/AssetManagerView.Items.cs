@@ -302,114 +302,22 @@ namespace Ee4v.AssetManager.UI
             ClearItemOverviewThumbnail();
             _itemDetailPane = null;
             _fileTreeSelections = Array.Empty<FileTreeSelection>();
-            var page = new VisualElement();
-            page.AddToClassList(
-                "ee4v-asset-manager__derived-assets-page");
-            page.Add(AssetManagerControls.CreateIconButton(
-                I18N.Get("toolbar.back"),
-                "arrow_left.png",
-                UiSizeTokens.Size18,
-                UiButtonVariant.Ghost,
-                _viewState.CloseDerivedAssetsPage,
-                "ee4v-asset-manager__derived-assets-back"));
-
-            var form = new VisualElement();
-            form.AddToClassList(
-                "ee4v-asset-manager__derived-assets-form");
-            form.Add(UiTextFactory.Create(
-                I18N.Get("detail.derivedAssetsCreate"),
-                UiClassNames.SectionTitle,
-                "ee4v-asset-manager__derived-assets-form-title"));
-
-            var formLayout = new VisualElement();
-            formLayout.AddToClassList(
-                "ee4v-asset-manager__derived-assets-form-layout");
-            var previewColumn = new VisualElement();
-            previewColumn.AddToClassList(
-                "ee4v-asset-manager__derived-assets-preview-column");
-            var prefabPreview = new PrefabScenePreview();
-            previewColumn.Add(prefabPreview);
-
-            var prefabContainer = new VisualElement();
-            prefabContainer.AddToClassList(
-                "ee4v-asset-manager-control-field");
-            prefabContainer.Add(UiTextFactory.Create(
-                I18N.Get("field.prefab"),
-                UiClassNames.FormLabel,
-                "ee4v-asset-manager-control-field__label"));
+            var item = _manager.GetItem(_viewState.DetailItemId);
             var prefabCandidates = DerivedAssetCreator
                 .FindPrefabCandidates(_manager.GetItemImportedAssetGuids(
-                    _viewState.DetailItemId))
-                .ToList();
-            var prefab = new PrefabSelector(
-                prefabCandidates);
-            prefab.AddToClassList(
-                "ee4v-asset-manager__derived-assets-prefab-field");
-            prefabContainer.Add(prefab);
-            if (prefabCandidates.Count == 0)
-            {
-                prefabContainer.Add(AssetManagerControls.CreateNotice(
-                    I18N.Get("notice.derivedAssetPrefabNotFound"),
-                    "ee4v-asset-manager__derived-assets-prefab-empty"));
-            }
-            previewColumn.Add(prefabContainer);
-            formLayout.Add(previewColumn);
-
-            var fields = new VisualElement();
-            fields.AddToClassList(
-                "ee4v-asset-manager__derived-assets-fields");
-            var name = AssetManagerControls.CreateTextField(
-                I18N.Get("field.name"));
-
-            var description = AssetManagerControls.CreateTextField(
-                I18N.Get("field.description"),
-                "ee4v-asset-manager__derived-assets-description-field");
-            description.SetMultiline(true, 144f);
-            var inputGroup = new InputGroup(
-                I18N.Get("detail.information"),
-                name,
-                description);
-            inputGroup.AddToClassList(
-                "ee4v-asset-manager__derived-assets-input-group");
-            fields.Add(inputGroup);
-
-            var message = UiTextFactory.Create(
+                    _viewState.DetailItemId));
+            var form = new VariantCreationView(
+                item,
+                prefabCandidates,
+                (item?.Name ?? string.Empty) + " Variant",
                 string.Empty,
-                UiClassNames.SecondaryText);
-            message.SetColor(UiColorTokens.StatusFailedText);
-            message.SetWhiteSpace(WhiteSpace.Normal);
-            message.style.display = DisplayStyle.None;
-            fields.Add(message);
-            UiButton create = null;
-            create = AssetManagerControls.CreateButton(
+                null,
                 I18N.Get("action.createDerivedAsset"),
-                () => CreateDerivedAsset(
-                    name.value,
-                    prefab.Value,
-                    description.value,
-                    message,
-                    create),
-                "ee4v-asset-manager__primary-action",
-                "ee4v-asset-manager__derived-assets-create");
-            create.SetEnabled(false);
-            prefab.ValueChanged += selectedPrefab =>
-            {
-                prefabPreview.SetPrefab(selectedPrefab);
-                SetDerivedAssetFeedback(message, string.Empty);
-                create.SetEnabled(selectedPrefab != null);
-            };
-            prefab.SelectionRejected += () =>
-            {
-                create.SetEnabled(prefab.Value != null);
-                SetDerivedAssetFeedback(
-                    message,
-                    I18N.Get("notice.derivedAssetPrefabInvalid"));
-            };
-            fields.Add(create);
-            formLayout.Add(fields);
-            form.Add(formLayout);
-            page.Add(form);
-            _content.Add(page);
+                _viewState.CloseDerivedAssetsPage);
+            form.Create.clicked += () => CreateDerivedAsset(
+                form.Name.Value, form.Prefab.Value, form.Description.Value,
+                form.Feedback, form.Create);
+            _content.Add(form);
         }
 
         private void CreateDerivedAsset(
@@ -455,7 +363,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            createButton.SetEnabled(false);
+            createButton.SetPrimaryActionEnabled(false);
             try
             {
                 var result = DerivedAssetCreator.Create(
@@ -479,7 +387,7 @@ namespace Ee4v.AssetManager.UI
             }
             finally
             {
-                createButton.SetEnabled(true);
+                createButton.SetPrimaryActionEnabled(true);
             }
         }
 

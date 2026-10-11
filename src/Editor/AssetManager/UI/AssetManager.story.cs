@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.Images;
+using Ee4v.Core.I18n;
 using Ee4v.UI;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -15,6 +17,27 @@ namespace Ee4v.AssetManager.UI
         {
             return new[]
             {
+                new UiStory(
+                    "variant-creation",
+                    "Domain/AssetManager",
+                    "VariantCreationView",
+                    "AssetManagerと統合ee4vで共有するVariant作成画面です。",
+                    "表示幅、Prefabの有無、名前の検証、保存先の表示とエラーを確認できます。プレビュー用Prefabを指定すると実際の3Dプレビューを表示します。StoryではAssetを作成しません。",
+                    BuildVariantCreation,
+                    dependencies: new[]
+                    {
+                        "SectionHeader", "FormInput", "InputField", "PrefabSelector", "AssetPrefabPickerWindow", "PrefabScenePreview", "UiButton"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-detail.uss",
+                        "Editor/AssetManager/UI/asset-modification-workflow.uss"
+                    }),
                 new UiStory(
                     "asset-manager-workspace",
                     "Domain/AssetManager",
@@ -658,6 +681,43 @@ namespace Ee4v.AssetManager.UI
             surface.Add(field);
             surface.Add(selected);
             parent.Add(surface);
+        }
+
+        private static void BuildVariantCreation(VisualElement parent)
+        {
+            var width = UiTextFactory.CreateSlider("表示幅", 420f, 1040f);
+            width.value = 1040f;
+            width.showInputField = true;
+            parent.Add(width);
+            var prefab = UiTextFactory.CreateObjectField();
+            prefab.objectType = typeof(GameObject);
+            prefab.allowSceneObjects = false;
+            parent.Add(new FormInput("プレビュー用Prefab", prefab));
+            var surface = new VisualElement();
+            surface.style.height = 620f;
+            surface.style.width = width.value;
+            surface.style.maxWidth = Length.Percent(100f);
+            parent.Add(surface);
+            width.RegisterValueChangedCallback(evt => surface.style.width = evt.newValue);
+            VariantCreationView form = null;
+            System.Action rebuild = () =>
+            {
+                var name = form?.Name.Value ?? "Sample Avatar Variant";
+                var description = form?.Description.Value ?? "衣装・マテリアルを編集するVariant";
+                surface.Clear();
+                var source = prefab.value as GameObject;
+                if (source != null && !AssetDatabase.GetAssetPath(source).EndsWith(
+                    ".prefab", System.StringComparison.OrdinalIgnoreCase)) { source = null; }
+                form = new VariantCreationView(
+                    new AssetItem { Id = "story-variant-source", Name = "Sample Avatar" },
+                    source == null ? System.Array.Empty<GameObject>() : new[] { source },
+                    name, description, source, I18N.Get("workflow.selection.createAndStart"),
+                    () => form.SetFeedback(string.Empty));
+                form.Create.clicked += () => form.SetFeedback(I18N.Get("notice.derivedAssetCreateFailed"));
+                surface.Add(form);
+            };
+            prefab.RegisterValueChangedCallback(_ => rebuild());
+            rebuild();
         }
 
         private static void Build(VisualElement parent)

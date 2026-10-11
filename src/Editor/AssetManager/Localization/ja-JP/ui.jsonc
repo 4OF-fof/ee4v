@@ -150,7 +150,7 @@
       "parts": "パーツ"
     },
     "selection": {
-      "createAndStart": "Variantを作成して改変開始",
+      "createAndStart": "改変を開始",
       "backToAssets": "アセット選択へ戻る",
       "assetNoSourceTitle": "選んだアセットに取り込み済みPrefabがありません",
       "managerLoadFailed": "AssetManagerを読み込めませんでした。Consoleを確認してください。",
@@ -349,6 +349,14 @@
     "analysisUnavailable": "File Treeを読み込めませんでした。Consoleを確認してください。"
   },
   "variant": {
+    "creation": {
+      "title": "Variantを作成",
+      "selectPrefab": "このPrefabを選択",
+      "information": "Variantの情報",
+      "informationDescription": "名前と説明を設定します。説明は省略できます。",
+      "destination": "保存先",
+      "destinationPlaceholder": "有効な名前を入力すると保存先が表示されます。"
+    },
     "deleteConfirm": "選択した{0}件のVariantの全保存版とギャラリーを削除し、Project内の専用フォルダーをゴミ箱へ移動します。共有の素材は削除しません。続けますか？",
     "noTargetChanges": "この操作の対象となる変更はありません。",
     "changesFailed": "変更内容を取得できませんでした。",

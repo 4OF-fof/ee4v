@@ -39,6 +39,8 @@ namespace Ee4v.AssetManager.UI
         private IVisualElementScheduledItem _thumbnailLoading;
         private IVisualElementScheduledItem _previewRendering;
         private VariantSourceOption _source;
+        private VariantSourceOption _fixedSource;
+        private GameObject _initialPrefab;
         private GameObject _selectedPrefab;
         private string _itemQuery = string.Empty;
         private Action<GameObject> _select;
@@ -78,13 +80,34 @@ namespace Ee4v.AssetManager.UI
             window.ShowAsPopup(anchor, new Vector2(1040f, 720f));
         }
 
+        internal static void ShowForSource(VisualElement anchor, VariantSourceOption source,
+            GameObject selectedPrefab, Action<GameObject> select)
+        {
+            if (anchor == null || source?.Item == null || source.Prefabs == null || select == null)
+            {
+                return;
+            }
+            foreach (var existing in Resources.FindObjectsOfTypeAll<AssetPrefabPickerWindow>())
+            {
+                existing.Close();
+            }
+            var window = CreateInstance<AssetPrefabPickerWindow>();
+            window._sources = new[] { source };
+            window._fixedSource = source;
+            window._initialPrefab = selectedPrefab;
+            window._imageCache = new CachedImageCache();
+            window._select = select;
+            window.ShowAsPopup(anchor, new Vector2(1040f, 720f));
+        }
+
         private void CreateGUI()
         {
             var root = rootVisualElement;
             root.Clear();
             AssetManagerWindowSession.PrepareWorkflowRoot(root);
             ConfigureCloseAndSubmitKeys(root, SubmitSelection);
-            var popup = new CustomPopup(I18N.Get("workflow.assets.pickerTitle"),
+            var popup = new CustomPopup(I18N.Get(_fixedSource == null
+                    ? "workflow.assets.pickerTitle" : "workflow.selection.sourcePrefab"),
                 closeTooltip: I18N.Get("workflow.assets.closePicker"));
             var body = new VisualElement();
             body.AddToClassList("ee4v-asset-prefab-picker__body");
@@ -101,13 +124,16 @@ namespace Ee4v.AssetManager.UI
                 _searchRebuild = _search.schedule.Execute(RebuildOptions).StartingIn(150);
             };
             toolbar.Add(_search);
-            toolbar.Add(AssetManagerControls.CreateIconTextButton(
-                I18N.Get("workflow.selection.openManager"), "library.png", () =>
-                {
-                    var openAssetManager = _openAssetManager;
-                    Close();
-                    openAssetManager?.Invoke();
-                }, "ee4v-asset-prefab-picker__manager"));
+            if (_openAssetManager != null)
+            {
+                toolbar.Add(AssetManagerControls.CreateIconTextButton(
+                    I18N.Get("workflow.selection.openManager"), "library.png", () =>
+                    {
+                        var openAssetManager = _openAssetManager;
+                        Close();
+                        openAssetManager?.Invoke();
+                    }, "ee4v-asset-prefab-picker__manager"));
+            }
             body.Add(toolbar);
             _browser = new VisualElement();
             _browser.AddToClassList("ee4v-asset-prefab-picker__browser");
@@ -126,7 +152,8 @@ namespace Ee4v.AssetManager.UI
             body.Add(_browser);
             popup.Content.Add(body);
             SetPopup(popup);
-            ShowItems();
+            if (_fixedSource != null) { ShowPrefabs(_fixedSource, _initialPrefab); }
+            else { ShowItems(); }
         }
 
         private void BuildPreviewPanel()
@@ -157,7 +184,8 @@ namespace Ee4v.AssetManager.UI
             metadata.Add(_previewPath);
             footer.Add(metadata);
             _addButton = AssetManagerControls.CreateIconTextButton(
-                I18N.Get("workflow.assets.addToVariant"), "add.png", () => Select(_selectedPrefab),
+                I18N.Get(_fixedSource == null ? "workflow.assets.addToVariant" : "variant.creation.selectPrefab"),
+                _fixedSource == null ? "add.png" : "checkmark.png", () => Select(_selectedPrefab),
                 "ee4v-asset-prefab-picker__add");
             footer.Add(_addButton);
             _previewPanel.Add(footer);
@@ -174,21 +202,24 @@ namespace Ee4v.AssetManager.UI
             FocusSearch();
         }
 
-        private void ShowPrefabs(VariantSourceOption source)
+        private void ShowPrefabs(VariantSourceOption source, GameObject selectedPrefab = null)
         {
             _itemQuery = _search.Value;
             _source = source;
             _sourceHeader.Clear();
             _sourceHeader.EnableInClassList("ee4v-asset-prefab-picker__source--visible", true);
-            _sourceHeader.Add(AssetManagerControls.CreateIconTextButton(
-                I18N.Get("workflow.assets.backToItems"), "arrow_left.png", ShowItems));
+            if (_fixedSource == null)
+            {
+                _sourceHeader.Add(AssetManagerControls.CreateIconTextButton(
+                    I18N.Get("workflow.assets.backToItems"), "arrow_left.png", ShowItems));
+            }
             var name = UiTextFactory.Create(source.Item.Name, UiClassNames.SectionTitle,
                 "ee4v-asset-prefab-picker__item-name");
             name.tooltip = source.Item.Name;
             _sourceHeader.Add(name);
             _search.SetPlaceholder(I18N.Get("workflow.assets.searchPrefabs"));
             _search.SetValueWithoutNotify(string.Empty);
-            _selectedPrefab = null;
+            _selectedPrefab = selectedPrefab;
             RebuildOptions();
             FocusSearch();
         }
