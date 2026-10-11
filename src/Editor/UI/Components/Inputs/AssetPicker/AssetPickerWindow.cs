@@ -6,13 +6,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ee4v.Core.EditorIntegration;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace Ee4v.UI
 {
-    internal sealed class AssetPickerWindow : CustomPopupWindow
+    internal sealed partial class AssetPickerWindow : CustomPopupWindow
     {
         private Type _type;
         private Object _current;
@@ -27,6 +28,9 @@ namespace Ee4v.UI
         private IEnumerator<bool> _usage;
         private IVisualElementScheduledItem _loading;
         private SearchField _search;
+        private CustomPopup _popup;
+        private ObjectField _referenceField;
+        private PopupField<AssetPickerAnimationFilter> _animationFilterField;
         private ListView _list;
         private UiTextElement _status;
         private StatusOverlay _busy;
@@ -43,6 +47,12 @@ namespace Ee4v.UI
         private UiTextElement _previewPlaceholder;
         private UiTextElement _previewDetails;
         private VisualElement _previewDetailsHost;
+        private VisualElement _previewStage;
+        private VisualElement _animationDetails;
+        private UiTextElement _animationSummary;
+        private ScrollView _animationProperties;
+        private AnimationClip _detailsClip;
+        private int _detailsVersion = -1;
         private UiButton _showInProject;
         private UiButton _materialView;
         private UiButton _textureView;
@@ -145,18 +155,24 @@ namespace Ee4v.UI
             root.RegisterCallback<GeometryChangedEvent>(evt =>
                 root.EnableInClassList("ee4v-ui-asset-picker--compact", evt.newRect.width < 720f));
             ConfigureCloseAndSubmitKeys(root);
-            var popup = new CustomPopup(UiLocalization.Get("ui.assetPicker.title") + " · " + TypeName(_type),
+            _popup = new CustomPopup(UiLocalization.Get("ui.assetPicker.title") + " · " + TypeName(_type),
                 showFooter: true,
                 closeTooltip: UiLocalization.Get("ui.dismiss.tooltip"));
             var body = new VisualElement();
             body.AddToClassList("ee4v-ui-asset-picker__body");
-            body.Add(BuildReferenceControls());
+            var toolbar = new VisualElement();
+            toolbar.AddToClassList("ee4v-ui-asset-picker__toolbar");
+            _sourceHeader = new VisualElement();
+            _sourceHeader.AddToClassList("ee4v-ui-asset-picker__source");
+            toolbar.Add(_sourceHeader);
+            toolbar.Add(BuildReferenceControls());
             _search = new SearchField(new SearchFieldState(
                 placeholder: UiLocalization.Get("ui.assetPicker.search"),
                 searchIconState: FluentUiIcons.CreateState("search.png", UiSizeTokens.Size14),
                 clearIconState: FluentUiIcons.CreateState("dismiss.png", UiSizeTokens.Size10)));
             _search.ValueChanged += _ => RefreshOptions();
-            body.Add(_search);
+            toolbar.Add(_search);
+            body.Add(toolbar);
             _busy = new StatusOverlay(new StatusOverlayState(true, UiLocalization.Get("ui.assetPicker.loading")));
             _busy.AddToClassList("ee4v-ui-asset-picker__busy");
             _busyHost = new VisualElement { pickingMode = PickingMode.Ignore };
@@ -165,9 +181,6 @@ namespace Ee4v.UI
             _status = UiTextFactory.Create(string.Empty);
             _status.AddToClassList("ee4v-ui-asset-picker__status--hidden");
             body.Add(_status);
-            _sourceHeader = new VisualElement();
-            _sourceHeader.AddToClassList("ee4v-ui-asset-picker__source");
-            body.Add(_sourceHeader);
             _browser = new VisualElement();
             _browser.AddToClassList("ee4v-ui-asset-picker__split");
             _overviewPane = new VisualElement();
@@ -230,12 +243,12 @@ namespace Ee4v.UI
             _browser.Add(_candidatePane);
             _browser.Add(BuildPreview());
             body.Add(_browser);
-            popup.Content.Add(body);
+            _popup.Content.Add(body);
             var dragHint = UiTextFactory.Create(UiLocalization.Get("ui.assetPicker.dragHint"));
             dragHint.AddToClassList("ee4v-ui-asset-picker__drag-hint");
-            popup.Footer.Add(dragHint);
-            popup.Footer.Add(new UiButton(UiLocalization.Get("ui.assetPicker.close"), Close));
-            SetPopup(popup);
+            _popup.Footer.Add(dragHint);
+            _popup.Footer.Add(new UiButton(UiLocalization.Get("ui.assetPicker.close"), Close));
+            SetPopup(_popup);
             ShowPreview(_previewAsset);
             RefreshBrowserVisibility();
             _loading = root.schedule.Execute(LoadNext).StartingIn(16).Every(16);
@@ -278,32 +291,25 @@ namespace Ee4v.UI
             typePicker.RegisterValueChangedCallback(evt =>
             {
                 if (evt.newValue == _type) return;
-                Show(position.position, evt.newValue, _current, _context, _animationFilter, _groupKey);
+                SwitchType(evt.newValue);
             });
             controls.Add(typePicker);
-            if (BrowsingAllTypes) return controls;
-            if (typeof(AnimationClip).IsAssignableFrom(_type))
-            {
-                var choices = new List<AssetPickerAnimationFilter> { AssetPickerAnimationFilter.All, AssetPickerAnimationFilter.Facial };
-                Func<AssetPickerAnimationFilter, string> label = value => UiLocalization.Get("ui.assetPicker.animation" + value);
-                var filter = UiTextFactory.CreatePopupField(UiLocalization.Get("ui.assetPicker.animationFilter"),
-                    choices, choices.IndexOf(_animationFilter), label, label,
-                    "ee4v-ui-asset-picker__reference");
-                filter.RegisterValueChangedCallback(evt =>
-                {
-                    _animationFilter = evt.newValue;
-                    _selectFirstInGroup = true;
-                    RefreshOptions();
-                });
-                controls.Add(filter);
-                return controls;
-            }
-            var reference = UiTextFactory.CreateObjectField(UiLocalization.Get("ui.assetPicker.reference"),
+            var choices = new List<AssetPickerAnimationFilter> { AssetPickerAnimationFilter.All, AssetPickerAnimationFilter.Facial };
+            Func<AssetPickerAnimationFilter, string> label = value => UiLocalization.Get("ui.assetPicker.animation" + value);
+            _animationFilterField = UiTextFactory.CreatePopupField(UiLocalization.Get("ui.assetPicker.animationFilter"),
+                choices, choices.IndexOf(_animationFilter), label, label,
                 "ee4v-ui-asset-picker__reference");
-            reference.objectType = AssetPicker.GetReferenceType(_type);
-            reference.allowSceneObjects = false;
-            reference.SetValueWithoutNotify(_current);
-            reference.RegisterValueChangedCallback(evt =>
+            _animationFilterField.RegisterValueChangedCallback(evt =>
+            {
+                _animationFilter = evt.newValue;
+                _selectFirstInGroup = true;
+                RefreshOptions();
+            });
+            controls.Add(_animationFilterField);
+            _referenceField = UiTextFactory.CreateObjectField(UiLocalization.Get("ui.assetPicker.reference"),
+                "ee4v-ui-asset-picker__reference");
+            _referenceField.allowSceneObjects = false;
+            _referenceField.RegisterValueChangedCallback(evt =>
             {
                 _current = evt.newValue;
                 _groupKey = _current == null ? null : RelatedGroup;
@@ -312,8 +318,40 @@ namespace Ee4v.UI
                 ShowPreview(ReferencePreview);
                 RefreshOptions();
             });
-            controls.Add(reference);
+            controls.Add(_referenceField);
+            RefreshReferenceControls();
             return controls;
+        }
+
+        private void RefreshReferenceControls()
+        {
+            var referenceType = AssetPicker.GetReferenceType(_type);
+            _referenceField.objectType = referenceType ?? typeof(Object);
+            _referenceField.SetValueWithoutNotify(_current);
+            _referenceField.EnableInClassList("ee4v-ui-asset-picker__hidden", referenceType == null);
+            _animationFilterField.SetValueWithoutNotify(_animationFilter);
+            _animationFilterField.EnableInClassList("ee4v-ui-asset-picker__hidden",
+                !typeof(AnimationClip).IsAssignableFrom(_type));
+        }
+
+        private void SwitchType(Type type)
+        {
+            var preview = _previewAsset;
+            ResetInvestigation();
+            _type = type;
+            var referenceType = AssetPicker.GetReferenceType(type);
+            if (_current != null && (referenceType == null || !referenceType.IsInstanceOfType(_current)))
+                _current = null;
+            if (!typeof(AnimationClip).IsAssignableFrom(type)) _animationFilter = AssetPickerAnimationFilter.All;
+            if (_groupKey == RelatedGroup && _current == null) _groupKey = null;
+            _folder = string.Empty;
+            _popup.SetTitle(UiLocalization.Get("ui.assetPicker.title") + " · " + TypeName(type));
+            RefreshReferenceControls();
+            ShowPreview(preview != null && type.IsInstanceOfType(preview) ? preview : ReferencePreview);
+            _selectFirstInGroup = _previewAsset == null && _groupKey != null;
+            try { InitializeInvestigation(); }
+            catch (Exception exception) { Fail(exception); }
+            RefreshOptions();
         }
 
         private VisualElement BuildPreview()
@@ -325,23 +363,21 @@ namespace Ee4v.UI
                 variant: UiButtonVariant.Ghost);
             _showInProject.AddManipulator(new AssetDragManipulator(() => _previewAsset));
             _previewPane.Actions.Add(_showInProject);
-            if (typeof(Material).IsAssignableFrom(_type) || BrowsingAllTypes)
+            _materialView = new UiButton(UiLocalization.Get("ui.assetPicker.materialView"), () =>
             {
-                _materialView = new UiButton(UiLocalization.Get("ui.assetPicker.materialView"), () =>
-                {
-                    _showTexture = false;
-                    ShowPreview(_previewAsset);
-                }, variant: UiButtonVariant.Ghost);
-                _textureView = new UiButton(UiLocalization.Get("ui.assetPicker.textureView"), () =>
-                {
-                    _showTexture = true;
-                    ShowPreview(_previewAsset);
-                }, variant: UiButtonVariant.Ghost);
-                _previewPane.Actions.Add(_materialView);
-                _previewPane.Actions.Add(_textureView);
-            }
+                _showTexture = false;
+                ShowPreview(_previewAsset);
+            }, variant: UiButtonVariant.Ghost);
+            _textureView = new UiButton(UiLocalization.Get("ui.assetPicker.textureView"), () =>
+            {
+                _showTexture = true;
+                ShowPreview(_previewAsset);
+            }, variant: UiButtonVariant.Ghost);
+            _previewPane.Actions.Add(_materialView);
+            _previewPane.Actions.Add(_textureView);
             var stage = new VisualElement();
             stage.AddToClassList("ee4v-ui-asset-picker__stage");
+            _previewStage = stage;
             _previewImage = new Image { scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore };
             _previewImage.AddToClassList("ee4v-ui-asset-picker__image");
             stage.Add(_previewImage);
@@ -354,16 +390,15 @@ namespace Ee4v.UI
             _previewPlaceholder.SetWhiteSpace(WhiteSpace.Normal);
             stage.Add(_previewPlaceholder);
             _previewPane.Content.Add(stage);
-            if (!typeof(Material).IsAssignableFrom(_type))
-            {
-                var details = new ScrollView(ScrollViewMode.Vertical);
-                details.AddToClassList("ee4v-ui-asset-picker__details");
-                _previewDetails = UiTextFactory.Create(string.Empty);
-                _previewDetails.SetWhiteSpace(WhiteSpace.Normal);
-                details.Add(_previewDetails);
-                _previewPane.Content.Add(details);
-                _previewDetailsHost = details;
-            }
+            var details = new ScrollView(ScrollViewMode.Vertical);
+            details.AddToClassList("ee4v-ui-asset-picker__details");
+            _previewDetails = UiTextFactory.Create(string.Empty);
+            _previewDetails.SetWhiteSpace(WhiteSpace.Normal);
+            details.Add(_previewDetails);
+            _previewPane.Content.Add(details);
+            _previewDetailsHost = details;
+            _animationDetails = BuildAnimationDetails();
+            _previewPane.Content.Add(_animationDetails);
             return _previewPane;
         }
 
@@ -385,12 +420,20 @@ namespace Ee4v.UI
             _textureView?.SetEnabled(asset is Material material && material.mainTexture is Texture2D);
             _materialView?.EnableInClassList("ee4v-ui-asset-picker__hidden", !(asset is Material));
             _textureView?.EnableInClassList("ee4v-ui-asset-picker__hidden", !(asset is Material));
-            _previewDetailsHost?.EnableInClassList("ee4v-ui-asset-picker__hidden", asset == null || asset is Material);
+            _previewStage.EnableInClassList("ee4v-ui-asset-picker__hidden", asset is AnimationClip);
+            _previewDetailsHost?.EnableInClassList("ee4v-ui-asset-picker__hidden",
+                asset == null || asset is Material || asset is AnimationClip);
+            _animationDetails?.EnableInClassList("ee4v-ui-asset-picker__hidden", !(asset is AnimationClip));
             _materialView?.EnableInClassList("ee4v-ui-asset-picker__view--selected", !_showTexture);
             _textureView?.EnableInClassList("ee4v-ui-asset-picker__view--selected", _showTexture);
             RefreshPreviewDetails();
             _list?.RefreshItems();
             if (asset == null)
+            {
+                SetPreviewTexture(null);
+                return;
+            }
+            if (asset is AnimationClip)
             {
                 SetPreviewTexture(null);
                 return;
@@ -472,27 +515,33 @@ namespace Ee4v.UI
             image.userData = asset;
         }
 
+        private void ResetInvestigation()
+        {
+            _assets?.Dispose();
+            _materialAssets?.Dispose();
+            _usage?.Dispose();
+            _assets = null;
+            _materialAssets = null;
+            _usage = null;
+            _uv = null;
+            _projectUv = null;
+            _candidates.Clear();
+            _textureMaterials.Clear();
+            _thumbnails.Clear();
+            _initialized = false;
+            _failed = false;
+            _scanningProject = false;
+            _scanningContext = false;
+            _nextRefresh = 0;
+            _loading.Resume();
+        }
+
         private void RefreshThumbnails()
         {
             if (_initialized && _cacheVersion != AssetPickerCache.Version)
             {
-                _assets?.Dispose();
-                _materialAssets?.Dispose();
-                _usage?.Dispose();
-                _assets = null;
-                _materialAssets = null;
-                _usage = null;
-                _uv = null;
-                _projectUv = null;
-                _candidates.Clear();
-                _textureMaterials.Clear();
                 _thumbnailTextures.Clear();
-                _thumbnails.Clear();
-                _initialized = false;
-                _failed = false;
-                _scanningProject = false;
-                _scanningContext = false;
-                _loading.Resume();
+                ResetInvestigation();
             }
             RefreshSourceThumbnails();
             var checkedCount = 0;
@@ -539,6 +588,12 @@ namespace Ee4v.UI
         private void RefreshPreviewDetails()
         {
             if (_previewDetails == null) return;
+            if (_previewAsset is AnimationClip clip)
+            {
+                RefreshAnimationDetails(clip);
+                return;
+            }
+            _detailsClip = null;
             if (_previewAsset == null) { _previewDetails.SetText(string.Empty); return; }
             var candidate = _candidates.FirstOrDefault(entry => entry.IsAsset(_previewAsset));
             var usage = _uv?.DescribeUsage(_previewAsset as Material);
@@ -550,8 +605,6 @@ namespace Ee4v.UI
             if (_previewAsset is Material material && material.shader != null)
                 text += "\n" + material.shader.name;
             if (_previewAsset is Texture texture) text += "\n" + texture.width + " × " + texture.height;
-            if (_previewAsset is AnimationClip clip)
-                text += "\n" + clip.length.ToString("0.##") + " s · " + clip.frameRate.ToString("0.##") + " fps";
             _previewDetails.SetText(text);
         }
 
@@ -766,9 +819,13 @@ namespace Ee4v.UI
                 return;
             }
             _sourceHeader.Add(new UiButton(UiLocalization.Get("ui.assetPicker.backToSources"), () => ShowGroup(null),
-                icon: FluentUiIcons.CreateState("arrow_left.png", UiSizeTokens.Size14), variant: UiButtonVariant.Ghost));
-            var title = UiTextFactory.Create(_groupKey == RelatedGroup
-                ? UiLocalization.Get("ui.assetPicker.related") : scope.Count > 0 ? GroupName(scope[0]) : string.Empty);
+                icon: FluentUiIcons.CreateState("arrow_left.png", UiSizeTokens.Size14)));
+            var sourceName = scope.Count > 0 ? GroupName(scope[0]) : UiLocalization.Get("ui.assetPicker.unregistered");
+            if (_groupKey.StartsWith("origin:", StringComparison.Ordinal) &&
+                _origins.TryGetValue(_groupKey.Substring("origin:".Length), out var origin)) sourceName = origin.Name;
+            if (_groupKey == RelatedGroup) sourceName = UiLocalization.Get("ui.assetPicker.related");
+            var title = UiTextFactory.Create(sourceName, UiClassNames.SectionTitle);
+            title.SetFontSize(13);
             title.AddToClassList("ee4v-ui-asset-picker__source-name");
             _sourceHeader.Add(title);
             var folders = new List<string> { string.Empty };
@@ -1066,6 +1123,10 @@ namespace Ee4v.UI
             _previewRefresh?.Pause();
             if (_previewImage != null) _previewImage.image = null;
             _previewAsset = null;
+            _detailsClip = null;
+            _animationPropertyRows.Clear();
+            _selectedAnimationProperty = null;
+            _animationGraph?.SetProperty(null, 0f);
             _loading?.Pause();
             _assets?.Dispose();
             _materialAssets?.Dispose();
