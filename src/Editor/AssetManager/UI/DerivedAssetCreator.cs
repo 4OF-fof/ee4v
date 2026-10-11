@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Ee4v.AssetManager.Infrastructure;
+using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.AvatarEvaluation;
+using Ee4v.Core.I18n;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -20,6 +22,7 @@ namespace Ee4v.AssetManager.UI
         public string Name { get; set; }
         public string Description { get; set; }
         public GameObject Prefab { get; set; }
+        public bool CreateOriginal { get; set; }
     }
 
     public sealed class DerivedAssetInfo
@@ -29,8 +32,13 @@ namespace Ee4v.AssetManager.UI
         public string Name { get; set; }
         public string Description { get; set; }
         public string AssetPath { get; set; }
+        public IReadOnlyList<string> Tags { get; set; } = Array.Empty<string>();
+        public DateTime CreatedAt { get; set; }
+        public long? FileSizeBytes { get; set; }
         public string ScenePath { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public bool IsArchived { get; set; }
+        public bool IsOriginal { get; set; }
         public GameObject Prefab { get; set; }
     }
 
@@ -38,6 +46,7 @@ namespace Ee4v.AssetManager.UI
     {
         internal const string VariantRoot = DerivedAssetCatalog.VariantRoot;
         private const string MaterialsFolderName = "Materials";
+        private const string FittingEnvironmentName = "__ee4vFittingEnvironment";
         private const string WorkingSceneTemplatePath =
             "Editor/Template/AvatarEditing.unity";
 
@@ -124,14 +133,18 @@ namespace Ee4v.AssetManager.UI
             }
 
             var sourcePath = AssetDatabase.GetAssetPath(request.Prefab);
-            if (string.IsNullOrEmpty(sourcePath) ||
+            if (!request.CreateOriginal && (string.IsNullOrEmpty(sourcePath) ||
                 !sourcePath.EndsWith(
                     ".prefab",
-                    StringComparison.OrdinalIgnoreCase))
+                    StringComparison.OrdinalIgnoreCase)))
             {
                 throw new ArgumentException(
                     "A Prefab asset is required.",
                     nameof(request));
+            }
+            if (request.CreateOriginal && request.Prefab != null)
+            {
+                throw new ArgumentException("An original composition has no base Prefab.", nameof(request));
             }
 
             var outputFolder = GetVariantFolder(name);
@@ -154,7 +167,7 @@ namespace Ee4v.AssetManager.UI
             try
             {
                 var assetsFolder = outputFolder + "/Assets";
-                var dependencies = AssetDatabase
+                var dependencies = request.CreateOriginal ? Array.Empty<string>() : AssetDatabase
                     .GetDependencies(sourcePath, true)
                     .Where(IsMaterialDependency)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -178,10 +191,14 @@ namespace Ee4v.AssetManager.UI
                     objectMap);
 
                 var rootPath = outputFolder + "/" + name + ".prefab";
-                CreateRootPrefabVariant(
-                    sourcePath,
-                    rootPath,
-                    objectMap);
+                if (request.CreateOriginal)
+                {
+                    CreateOriginalRootPrefab(name, rootPath);
+                }
+                else
+                {
+                    CreateRootPrefabVariant(sourcePath, rootPath, objectMap);
+                }
 
                 var importer = AssetImporter.GetAtPath(rootPath);
                 if (importer == null)
@@ -194,29 +211,30 @@ namespace Ee4v.AssetManager.UI
                     request.ParentItemId,
                     name,
                     request.Description,
-                    AssetDatabase.AssetPathToGUID(sourcePath));
+                    request.CreateOriginal ? string.Empty : AssetDatabase.AssetPathToGUID(sourcePath));
                 importer.SaveAndReimport();
-                var scenePath = EnsureWorkingScene(rootPath);
+                EnsureWorkingScene(rootPath);
                 AssetDatabase.SaveAssets();
 
-                return new DerivedAssetInfo
-                {
-                    VariantId = AssetDatabase.AssetPathToGUID(rootPath),
-                    ParentItemId = request.ParentItemId ?? string.Empty,
-                    Name = name,
-                    Description = request.Description ?? string.Empty,
-                    AssetPath = rootPath,
-                    ScenePath = scenePath,
-                    UpdatedAt = File.GetLastWriteTimeUtc(rootPath),
-                    Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                        rootPath)
-                };
+                return ToInfo(DerivedAssetCatalog.Read(rootPath));
             }
             catch
             {
                 AssetDatabase.DeleteAsset(outputFolder);
                 throw;
             }
+        }
+
+        public static IReadOnlyList<GameObject> FindPrefabCandidates(IAssetManager manager, AssetItem item)
+        {
+            if (item == null) { return Array.Empty<GameObject>(); }
+            var prefabs = FindPrefabCandidates(manager.GetItemImportedAssetGuids(item.Id));
+            if (!item.IsOriginal) { return prefabs; }
+            return prefabs.Concat(FindByParentItem(item.Id)
+                    .Where(asset => !asset.IsArchived).Select(asset => asset.Prefab))
+                .Where(prefab => prefab != null).Distinct()
+                .OrderBy(prefab => prefab.name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(AssetDatabase.GetAssetPath, StringComparer.OrdinalIgnoreCase).ToArray();
         }
 
         public static string CreateMaterialVariant(
@@ -344,12 +362,36 @@ namespace Ee4v.AssetManager.UI
                 ParentItemId = record.ParentItemId,
                 Name = record.Name,
                 Description = record.Description,
+                Tags = record.Tags,
+                CreatedAt = record.CreatedAt,
+                IsArchived = record.IsArchived,
+                IsOriginal = string.IsNullOrEmpty(record.SourceGuid),
                 AssetPath = record.AssetPath,
                 ScenePath = GetWorkingScenePath(record.AssetPath),
-                UpdatedAt = File.GetLastWriteTimeUtc(record.AssetPath),
+                UpdatedAt = record.UpdatedAt,
                 Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                     record.AssetPath)
             };
+        }
+
+        internal static long? GetVariantFileSize(string assetPath, out DateTime updatedAt)
+        {
+            updatedAt = default;
+            try
+            {
+                var folder = Path.GetDirectoryName(assetPath);
+                var files = AssetDatabase.FindAssets(string.Empty, new[] { folder.Replace('\\', '/') })
+                    .Select(AssetDatabase.GUIDToAssetPath)
+                    .Where(File.Exists).Select(path => new FileInfo(path)).ToArray();
+                updatedAt = files.Select(file => file.LastWriteTimeUtc).DefaultIfEmpty().Max();
+                return files.Sum(file => file.Length);
+            }
+            catch (Exception exception) when (exception is IOException ||
+                exception is UnauthorizedAccessException || exception is ArgumentException ||
+                exception is NotSupportedException || exception is OverflowException)
+            {
+                return null;
+            }
         }
 
         public static string GetWorkingScenePath(string prefabPath)
@@ -475,7 +517,9 @@ namespace Ee4v.AssetManager.UI
                 }
             }
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-            var root = scene.GetRootGameObjects().FirstOrDefault(candidate =>
+            var root = scene.GetRootGameObjects()
+                .SelectMany(candidate => candidate.GetComponentsInChildren<Transform>(true))
+                .Select(transform => transform.gameObject).FirstOrDefault(candidate =>
                 PrefabUtility.GetCorrespondingObjectFromSource(candidate) ==
                 prefab);
             if (root == null && EditorApplication.isPlaying)
@@ -494,10 +538,29 @@ namespace Ee4v.AssetManager.UI
         public static GameObject ApplyWorkingScene(string prefabPath)
         {
             var root = OpenWorkingScene(prefabPath);
+            if (!IsAvatarPrefab(root))
+            {
+                ValidateCompositionReferences(root);
+            }
             if (PrefabUtility.HasPrefabInstanceAnyOverrides(root, false))
             {
-                PrefabUtility.ApplyPrefabInstance(
-                    root, InteractionMode.AutomatedAction);
+                var fittingAvatar = GetFittingAvatar(root);
+                try
+                {
+                    if (fittingAvatar != null) { root.transform.SetParent(null, false); }
+                    if (PrefabUtility.GetOutermostPrefabInstanceRoot(root) != root)
+                    {
+                        throw new InvalidOperationException("The editing root must be an independent Prefab instance.");
+                    }
+                    PrefabUtility.ApplyPrefabInstance(root, InteractionMode.AutomatedAction);
+                }
+                finally
+                {
+                    if (fittingAvatar != null && root != null)
+                    {
+                        root.transform.SetParent(fittingAvatar.transform, false);
+                    }
+                }
             }
             if (!EditorSceneManager.SaveScene(root.scene))
             {
@@ -505,6 +568,114 @@ namespace Ee4v.AssetManager.UI
                     "The Variant working Scene could not be saved.");
             }
             return AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        }
+
+        private static void ValidateCompositionReferences(GameObject root)
+        {
+            foreach (var component in root.GetComponentsInChildren<Component>(true))
+            {
+                if (component == null) { continue; }
+                using (var serialized = new SerializedObject(component))
+                {
+                    var property = serialized.GetIterator();
+                    while (property.Next(true))
+                    {
+                        if (property.propertyType != SerializedPropertyType.ObjectReference ||
+                            component == root.transform && property.propertyPath == "m_Father") { continue; }
+                        var reference = property.objectReferenceValue;
+                        var target = reference as GameObject ?? (reference as Component)?.gameObject;
+                        if (target != null && target.scene.IsValid() && target != root &&
+                            !target.transform.IsChildOf(root.transform))
+                        {
+                            throw new InvalidOperationException(I18N.Get("workflow.original.externalSceneReference",
+                                component.gameObject.name, property.displayName, target.name));
+                        }
+                    }
+                }
+            }
+        }
+
+        internal static bool IsAvatarPrefab(GameObject prefab)
+        {
+            return prefab != null && prefab.GetComponents<Component>().Any(component =>
+                component != null && component.GetType().FullName ==
+                "VRC.SDK3.Avatars.Components.VRCAvatarDescriptor");
+        }
+
+        internal static GameObject GetFittingAvatar(GameObject root)
+        {
+            var avatar = root != null ? root.transform.parent : null;
+            var environment = avatar != null ? avatar.parent : null;
+            return environment != null && environment.parent == null &&
+                   environment.name == FittingEnvironmentName &&
+                   !PrefabUtility.IsPartOfPrefabInstance(environment.gameObject)
+                ? avatar.gameObject : null;
+        }
+
+        internal static void SetFittingAvatar(GameObject root, GameObject prefab)
+        {
+            var record = root != null ? DerivedAssetCatalog.Read(
+                PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root)) : null;
+            if (record == null || EditorApplication.isPlayingOrWillChangePlaymode || IsAvatarPrefab(root))
+            {
+                throw new InvalidOperationException("Fitting requires a non-avatar composition in Edit Mode.");
+            }
+            var previousAvatar = GetFittingAvatar(root);
+            if (root.transform.parent != null && previousAvatar == null)
+            {
+                throw new InvalidOperationException("The composition is inside an unsupported Scene hierarchy.");
+            }
+            if (prefab != null)
+            {
+                var path = AssetDatabase.GetAssetPath(prefab);
+                var rootPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root);
+                if (!IsAvatarPrefab(prefab) || !path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase) ||
+                    AssetDatabase.GetDependencies(path, true).Contains(rootPath))
+                {
+                    throw new InvalidOperationException("Select an avatar Prefab that does not contain this composition.");
+                }
+            }
+            Undo.IncrementCurrentGroup();
+            var undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName("Change fitting avatar");
+            var position = root.transform.localPosition;
+            var rotation = root.transform.localRotation;
+            var scale = root.transform.localScale;
+            try
+            {
+                Undo.SetTransformParent(root.transform, null, "Detach composition");
+                if (previousAvatar != null)
+                {
+                    Undo.DestroyObjectImmediate(previousAvatar.transform.parent.gameObject);
+                }
+                if (prefab != null)
+                {
+                    if (root.scene.GetRootGameObjects().Any(candidate => candidate.name == FittingEnvironmentName))
+                    {
+                        throw new InvalidOperationException("A fitting environment already exists in this Scene.");
+                    }
+                    var environment = new GameObject(FittingEnvironmentName);
+                    SceneManager.MoveGameObjectToScene(environment, root.scene);
+                    Undo.RegisterCreatedObjectUndo(environment, "Create fitting environment");
+                    var avatar = PrefabUtility.InstantiatePrefab(prefab, root.scene) as GameObject;
+                    if (avatar == null) { throw new InvalidOperationException("The fitting avatar could not be instantiated."); }
+                    Undo.RegisterCreatedObjectUndo(avatar, "Create fitting avatar");
+                    avatar.transform.SetParent(environment.transform, false);
+                    Undo.SetTransformParent(root.transform, avatar.transform, "Attach composition for fitting");
+                }
+                Undo.RecordObject(root.transform, "Keep composition transform");
+                root.transform.localPosition = position;
+                root.transform.localRotation = rotation;
+                root.transform.localScale = scale;
+                PrefabUtility.RecordPrefabInstancePropertyModifications(root.transform);
+                EditorSceneManager.MarkSceneDirty(root.scene);
+                Undo.CollapseUndoOperations(undoGroup);
+            }
+            catch
+            {
+                Undo.RevertAllDownToGroup(undoGroup);
+                throw;
+            }
         }
 
         private static void EnsureFolder(string path)
@@ -615,6 +786,22 @@ namespace Ee4v.AssetManager.UI
 
             key = default;
             return false;
+        }
+
+        private static void CreateOriginalRootPrefab(string name, string destinationPath)
+        {
+            var scene = EditorSceneManager.NewPreviewScene();
+            try
+            {
+                var root = new GameObject(name);
+                SceneManager.MoveGameObjectToScene(root, scene);
+                var prefab = PrefabUtility.SaveAsPrefabAsset(root, destinationPath, out var success);
+                if (!success || prefab == null)
+                {
+                    throw new InvalidOperationException("The original Prefab could not be saved: " + destinationPath);
+                }
+            }
+            finally { EditorSceneManager.ClosePreviewScene(scene); }
         }
 
         private static void CreateRootPrefabVariant(

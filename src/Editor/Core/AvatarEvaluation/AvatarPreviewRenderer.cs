@@ -36,6 +36,8 @@ namespace Ee4v.Core.AvatarEvaluation
             new Dictionary<SkinnedMeshRenderer, Dictionary<string, float>>();
         private readonly AvatarPreviewSession _session = new AvatarPreviewSession();
         private AvatarPreviewAnimation _animation;
+        private AvatarPreviewRenderer _initialPreview;
+        private Dictionary<Transform, Transform> _initialTransforms;
         private Action<AvatarAnimationFrame> _animationSampler;
         private Renderer[] _sceneRenderers = Array.Empty<Renderer>();
         private Renderer[] _sourceRenderers = Array.Empty<Renderer>();
@@ -140,6 +142,7 @@ namespace Ee4v.Core.AvatarEvaluation
 
         public void RefreshHierarchy()
         {
+            ReleaseInitialPreview();
             var clip = Animation;
             var loop = _animation?.Loop;
             var time = AnimationTime;
@@ -245,6 +248,14 @@ namespace Ee4v.Core.AvatarEvaluation
                 Camera.Render();
                 var texture = _utility.EndPreview();
                 completed = true;
+                if (!_ownsRoot && !EditorApplication.isPlayingOrWillChangePlaymode &&
+                    (_rotations.Count > 0 || _scales.Count > 0 || _animation != null) &&
+                    _frameProxies.Count == 0)
+                {
+                    RestoreRenderingStates();
+                    return RenderInitialPreview(rect, includeSlot);
+                }
+                ReleaseInitialPreview();
                 return texture;
             }
             finally
@@ -254,6 +265,51 @@ namespace Ee4v.Core.AvatarEvaluation
                 _includeSlot = null;
                 if (!completed) _utility.EndPreview();
             }
+        }
+
+        private Texture RenderInitialPreview(Rect rect, Func<Renderer, Material, int, bool> includeSlot)
+        {
+            if (_initialPreview == null)
+            {
+                var originals = Root.GetComponentsInChildren<Transform>(true);
+                _initialPreview = new AvatarPreviewRenderer(Root, isolatedSnapshot: true);
+                var copies = _initialPreview.Root.GetComponentsInChildren<Transform>(true);
+                _initialTransforms = originals.Select((source, index) => (source, copy: copies[index]))
+                    .ToDictionary(pair => pair.source, pair => pair.copy);
+            }
+            var preview = _initialPreview;
+            preview.ClearOverrides();
+            foreach (var pair in _rotations)
+                if (_initialTransforms.TryGetValue(pair.Key, out var copy)) preview._rotations[copy] = pair.Value;
+            foreach (var pair in _scales)
+                if (_initialTransforms.TryGetValue(pair.Key, out var copy)) preview._scales[copy] = pair.Value;
+            foreach (var pair in _activeStates)
+                if (_initialTransforms.TryGetValue(pair.Key.transform, out var copy)) preview._activeStates[copy.gameObject] = pair.Value;
+            Renderer CopyRenderer(Renderer source) => _initialTransforms[source.transform].GetComponents<Renderer>()[
+                Array.IndexOf(source.GetComponents<Renderer>(), source)];
+            var rendererMap = _sourceRenderers.Where(source => source != null).ToDictionary(CopyRenderer, source => source);
+            foreach (var pair in _shapes)
+                if (pair.Key != null && _initialTransforms.TryGetValue(pair.Key.transform, out var copy))
+                    preview._shapes[(SkinnedMeshRenderer)CopyRenderer(pair.Key)] = pair.Value;
+            if (!ReferenceEquals(preview._animationSampler, _animationSampler)) preview.SetAnimationSampler(_animationSampler);
+            if (_animationSampler == null && preview.Animation != Animation) preview.SetAnimation(Animation);
+            if (_animation != null) preview.SampleAnimation(AnimationTime);
+            preview.FieldOfView = FieldOfView;
+            preview.Camera.transform.SetPositionAndRotation(Camera.transform.position, Camera.transform.rotation);
+            preview.Camera.nearClipPlane = Camera.nearClipPlane;
+            preview.Camera.farClipPlane = Camera.farClipPlane;
+            preview.IsVisible = copy => rendererMap.TryGetValue(copy, out var source) && (IsVisible == null || IsVisible(source));
+            preview.IsMaterialVisible = IsMaterialVisible;
+            return preview.Render(rect, includeSlot == null ? null :
+                (Func<Renderer, Material, int, bool>)((copy, material, slot) =>
+                    rendererMap.TryGetValue(copy, out var source) && includeSlot(source, material, slot)));
+        }
+
+        private void ReleaseInitialPreview()
+        {
+            _initialPreview?.Dispose();
+            _initialPreview = null;
+            _initialTransforms = null;
         }
 
         /// <summary>Reads one preview frame as an sRGB PNG without saving assets.</summary>
@@ -318,9 +374,10 @@ namespace Ee4v.Core.AvatarEvaluation
                         _temporaryPositions[source] = source.localPosition;
                         _temporaryRotations[source] = source.localRotation;
                         _temporaryScales[source] = source.localScale;
-                        source.localPosition = local.GetColumn(3);
-                        source.localRotation = local.rotation;
-                        source.localScale = local.lossyScale;
+                        AvatarPreviewPose.Decompose(local, out var position, out var rotation, out var scale);
+                        source.localPosition = position;
+                        source.localRotation = rotation;
+                        source.localScale = scale;
                     }
                     _animation.ApplySnapshot(_temporaryActiveStates, _temporaryEnabledStates, _materialStates, _temporaryShapes, _temporaryComponentStates, _temporaryPropertyBlocks);
                 }
@@ -353,9 +410,10 @@ namespace Ee4v.Core.AvatarEvaluation
                     _temporaryPositions[source] = source.localPosition;
                     if (!_temporaryRotations.ContainsKey(source)) _temporaryRotations[source] = source.localRotation;
                     if (!_temporaryScales.ContainsKey(source)) _temporaryScales[source] = source.localScale;
-                    source.localPosition = pair.Value.GetColumn(3);
-                    source.localRotation = pair.Value.rotation;
-                    source.localScale = pair.Value.lossyScale;
+                    AvatarPreviewPose.Decompose(pair.Value, out var position, out var rotation, out var scale);
+                    source.localPosition = position;
+                    source.localRotation = rotation;
+                    source.localScale = scale;
                 }
                 foreach (var pair in _shapes)
                 {
@@ -468,6 +526,7 @@ namespace Ee4v.Core.AvatarEvaluation
         {
             if (_disposed) return;
             _disposed = true;
+            ReleaseInitialPreview();
             Camera.onPreCull -= OnPreCull;
             Camera.onPostRender -= OnPostRender;
             EditorApplication.hierarchyChanged -= OnHierarchyChanged;

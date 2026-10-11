@@ -22,7 +22,7 @@ namespace Ee4v.AssetManager.UI
         private readonly SearchField _search;
         private readonly UiButton _usageSortButton;
         private readonly UiButton _nameSortButton;
-        private readonly UiTextElement _empty;
+        private readonly EmptyState _empty;
         private readonly ScrollView _scroll;
         private readonly VisualElement _pills;
         private IReadOnlyList<TagEntry> _entries = Array.Empty<TagEntry>();
@@ -72,11 +72,7 @@ namespace Ee4v.AssetManager.UI
             _pills.AddToClassList("ee4v-asset-manager__tag-pills");
             _scroll.Add(_pills);
             Add(_scroll);
-            _empty = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.SecondaryText,
-                "ee4v-asset-manager__tag-list-empty");
-            _empty.SetWhiteSpace(WhiteSpace.Normal);
+            _empty = AssetManagerControls.CreateEmptyState(string.Empty, "tag.png");
             Add(_empty);
             RefreshPills();
         }
@@ -203,7 +199,7 @@ namespace Ee4v.AssetManager.UI
             _scroll.scrollOffset = Vector2.zero;
             _scroll.style.display = entries.Length > 0
                 ? DisplayStyle.Flex : DisplayStyle.None;
-            _empty.SetText(I18N.Get(
+            _empty.DescriptionText.SetText(I18N.Get(
                 _entries.Count == 0 ? "notice.noTags" : "tagList.noMatches"));
             _empty.style.display = entries.Length == 0
                 ? DisplayStyle.Flex : DisplayStyle.None;

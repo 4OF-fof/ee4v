@@ -1,4 +1,11 @@
 {
+  "searchFilter": {
+    "open": "Filter",
+    "active": "Filter active",
+    "clear": "Clear filters",
+    "save": "Register as collection",
+    "apply": "Apply"
+  },
   "window": {
     "title": "Asset Manager",
     "navigationTitle": "Asset Manager · Navigation",
@@ -142,8 +149,21 @@
       "shape": "Shape",
       "parts": "Parts"
     },
+    "original": {
+      "create": "Create a new asset",
+      "createCard": "Create new",
+      "title": "Create an asset",
+      "optionalBase": "Base Prefab (optional)",
+      "clearBase": "Clear base",
+      "fittingAvatar": "Fitting avatar",
+      "fittingDescription": "The fitting avatar is saved in the working Scene and excluded from the asset's Prefab. Adjust attachment settings in the Scene.",
+      "removeFittingAvatar": "Remove fitting avatar",
+      "showFittingScene": "Show in Scene",
+      "fittingFailed": "The fitting avatar could not be changed. Check the Console.",
+      "externalSceneReference": "{0} / {1} directly references {2} outside this asset. Configure a reusable attachment before saving."
+    },
     "selection": {
-      "createAndStart": "Create Variant and start customizing",
+      "createAndStart": "Start customizing",
       "backToAssets": "Back to asset selection",
       "assetNoSourceTitle": "The selected asset has no imported Prefabs",
       "managerLoadFailed": "AssetManager could not be loaded. Check the Console.",
@@ -154,7 +174,8 @@
       "sourcePrefab": "Source Prefab",
       "name": "Derived asset name",
       "assetDescription": "Description",
-      "openManager": "Open AssetManager"
+      "openManager": "Open AssetManager",
+      "backToEditing": "Back to editing"
     },
     "asset": {
       "change": "Change"
@@ -269,7 +290,7 @@
     "no": "No"
   },
   "navigation": {
-    "variants": "Variants",
+    "variants": "My Assets",
     "library": "All",
     "imported": "Imported",
     "archived": "Archived",
@@ -310,9 +331,9 @@
     "syncDatabaseRequired": "Set the BOOTH Library Manager database path.",
     "syncFolderMissing": "The datasource folder was not found: {0}",
     "syncDatabaseMissing": "The BOOTH Library Manager database was not found: {0}",
-    "noVariants": "No Variants match this view in the current project. Check the search filters if you are searching by name or description.",
-    "selectVariant": "Select a Variant to view its details.",
-    "noItems": "No items match this view.",
+    "noVariants": "No assets match your search.",
+    "selectVariant": "Select an asset to view its details.",
+    "noItems": "There are no items to display.",
     "noTags": "There are no tags.",
     "selectedItemMissing": "The selected item no longer exists.",
     "selectedFileMissing": "The selected file no longer exists.",
@@ -320,7 +341,6 @@
     "selectItem": "Select an item to inspect its files and metadata.",
     "itemMissing": "The item no longer exists.",
     "noAssignedFiles": "There are no files assigned to this item.",
-    "noUnassignedFiles": "There are no unassigned files.",
     "collectionNameRequired": "Enter a collection name.",
     "collectionSaveFailed": "The collection could not be saved. Check the Console.",
     "derivedAssetNameInvalid": "Enter a name without characters that are invalid in file names.",
@@ -341,13 +361,22 @@
     "analysisUnavailable": "The file tree could not be loaded. Check the Console."
   },
   "variant": {
+    "creation": {
+      "title": "Create a Variant",
+      "selectPrefab": "Select this Prefab",
+      "information": "Asset information",
+      "informationDescription": "Set a name and an optional description.",
+      "destination": "Save location",
+      "destinationPlaceholder": "Enter a valid name to see the save location."
+    },
+    "deleteConfirm": "Delete all saved versions and gallery images of {0} selected asset(s), and move their Project folders to Trash? Shared source assets are retained.",
     "noTargetChanges": "There are no changes for this operation.",
     "changesFailed": "Could not load changes.",
     "added": "Added",
     "modified": "Modified",
     "removed": "Removed",
     "dependencyContent": "Dependency · {0}",
-    "metadataContent": "Variant metadata · {0}",
+    "metadataContent": "Asset metadata · {0}",
     "sceneProperty": "{0} · {1}: {2} → {3}",
     "pendingParts": "Pending part visibility changes",
     "pendingShape": "Pending shape or BlendShape changes",
@@ -375,13 +404,27 @@
     "openSource": "Open source asset details",
     "noHistory": "No versions have been saved.",
     "revision": "v{0} · {1}",
-    "modify": "Modify this avatar",
-    "missing": "Variant not found.",
+    "modify": "Edit",
+    "missing": "Asset not found.",
     "restore": "Restore this version",
-    "restoreConfirm": "Restore this version and replace the current Variant. Save a version first to keep any changes you have not saved.",
-    "searchPlaceholder": "Search Variants",
-    "reload": "Reload Variants from the project",
-    "selectedCount": "{0} Variants selected"
+    "restoreConfirm": "Restore this version and replace the current asset. Save a version first to keep any changes you have not saved.",
+    "searchPlaceholder": "Search assets",
+    "reload": "Reload assets from the project",
+    "selectedCount": "{0} assets selected"
+  },
+  "library": {
+    "title": "Library information",
+    "sourceSummary": "{0} library",
+    "itemCount": "Items",
+    "fileCount": "Files",
+    "unassignedFileCount": "Unassigned files",
+    "variantCount": "My assets",
+    "tagCount": "Tags",
+    "collectionCount": "Collections",
+    "organization": "Organization",
+    "summary": "Details",
+    "archivedItemCount": "Archived items",
+    "latestItemUpdate": "Latest item update"
   },
   "detail": {
     "information": "INFORMATION",
@@ -458,19 +501,35 @@
     "nameContains": "Name contains",
     "descriptionContains": "Description contains",
     "hasTag": "Has tag",
-    "hasFileExtension": "Has file extension"
+    "hasFileExtension": "Has file extension",
+    "nameContainsInverted": "Name does not contain",
+    "descriptionContainsInverted": "Description does not contain",
+    "hasTagInverted": "Does not have tag",
+    "hasFileExtensionInverted": "Does not have file extension"
   },
   "filterEditor": {
-    "matchMode": "Condition matching",
-    "matchAll": "Match all conditions",
-    "matchAny": "Match any condition",
+    "matchMode": "Combine conditions",
+    "matchAll": "Match all",
+    "matchAny": "Match any",
+    "matchAllInverted": "Not all match",
+    "matchAnyInverted": "None match",
     "conditions": "Conditions",
+    "group": "Group",
     "addCondition": "Add condition",
     "addGroup": "Add group",
     "removeCondition": "Remove condition",
+    "selectTag": "Select tag",
+    "empty": "No filter conditions",
+    "textValue": "Enter search text",
+    "extensionValue": "Enter an extension (e.g. zip)",
+    "add": {
+      "NameContains": "Name",
+      "DescriptionContains": "Description",
+      "HasTag": "Tag",
+      "HasFileExtension": "Extension"
+    },
     "removeGroup": "Remove group",
-    "inverted": "Invert",
-    "invertGroup": "Invert group",
+    "inverted": "Invert condition",
     "groupConditionRequired": "Add at least one condition or group to every group.",
     "valueRequired": "Enter a value for every condition."
   },
@@ -498,6 +557,7 @@
     "createDerivedAsset": "Create derived asset"
   },
   "confirm": {
+    "deleteArchiveEntries": "Delete the selected {0} archived entries? Items and their files will be deleted. All saved versions and gallery images of assets will be deleted, and their Project folders moved to Trash. Shared source assets are retained.",
     "deleteItem": {
       "title": "Delete item",
       "message": "Delete this item and its files?"

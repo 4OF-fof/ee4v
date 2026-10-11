@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -12,8 +13,12 @@ namespace Ee4v.AssetManager.Infrastructure
         public string ParentItemId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public IReadOnlyList<string> Tags { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
         public string SourceGuid { get; set; }
         public string AssetPath { get; set; }
+        public bool IsArchived { get; set; }
     }
 
     public static class DerivedAssetCatalog
@@ -27,21 +32,30 @@ namespace Ee4v.AssetManager.Infrastructure
             public string parentItemId;
             public string name;
             public string description;
+            public string[] tags;
+            public string createdAt;
+            public string updatedAt;
             public string sourceGuid;
+            public bool isArchived;
         }
 
         public static string Serialize(
             string parentItemId,
             string name,
             string description,
-            string sourceGuid)
+            string sourceGuid, bool isArchived = false,
+            IReadOnlyList<string> tags = null, DateTime? createdAt = null)
         {
             return MetadataPrefix + JsonUtility.ToJson(new Metadata
             {
                 parentItemId = parentItemId ?? string.Empty,
                 name = name ?? string.Empty,
                 description = description ?? string.Empty,
-                sourceGuid = sourceGuid ?? string.Empty
+                tags = (tags ?? Array.Empty<string>()).ToArray(),
+                createdAt = (createdAt ?? DateTime.UtcNow).ToString("O"),
+                updatedAt = DateTime.UtcNow.ToString("O"),
+                sourceGuid = sourceGuid ?? string.Empty,
+                isArchived = isArchived
             });
         }
 
@@ -124,8 +138,13 @@ namespace Ee4v.AssetManager.Infrastructure
                         ? Path.GetFileNameWithoutExtension(assetPath)
                         : metadata.name,
                     Description = metadata.description ?? string.Empty,
+                    Tags = metadata.tags ?? Array.Empty<string>(),
+                    CreatedAt = ParseTimestamp(metadata.createdAt, File.GetCreationTimeUtc(assetPath)),
+                    UpdatedAt = new[] { ParseTimestamp(metadata.updatedAt, default),
+                        File.GetLastWriteTimeUtc(assetPath) }.Max(),
                     SourceGuid = metadata.sourceGuid ?? string.Empty,
-                    AssetPath = assetPath
+                    AssetPath = assetPath,
+                    IsArchived = metadata.isArchived
                 };
             }
             catch (ArgumentException)
@@ -133,5 +152,9 @@ namespace Ee4v.AssetManager.Infrastructure
                 return null;
             }
         }
+
+        private static DateTime ParseTimestamp(string value, DateTime fallback) =>
+            DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind,
+                out var timestamp) ? timestamp.ToUniversalTime() : fallback;
     }
 }

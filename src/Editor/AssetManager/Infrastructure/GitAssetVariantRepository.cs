@@ -27,8 +27,11 @@ namespace Ee4v.AssetManager.Infrastructure
         {
             public string Name { get; set; }
             public string Description { get; set; }
+            public string[] Tags { get; set; }
+            public DateTime CreatedAt { get; set; }
             public string RootAssetPath { get; set; }
             public DateTime UpdatedAt { get; set; }
+            public bool IsArchived { get; set; }
         }
 
         internal GitAssetVariantRepository(string libraryPath)
@@ -72,12 +75,19 @@ namespace Ee4v.AssetManager.Infrastructure
                         }
                         latest.Variant.Name = metadata.Name;
                         latest.Variant.Description = metadata.Description ?? string.Empty;
+                        latest.Variant.Tags = metadata.Tags ?? Array.Empty<string>();
+                        latest.Variant.CreatedAt = metadata.CreatedAt;
                         if (!string.IsNullOrEmpty(metadata.RootAssetPath))
                         {
                             ValidateAssetPath(metadata.RootAssetPath);
                             latest.Variant.RootAssetPath = metadata.RootAssetPath;
                         }
                         latest.Variant.UpdatedAt = metadata.UpdatedAt;
+                        latest.Variant.IsArchived = metadata.IsArchived;
+                    }
+                    if (latest.Variant.CreatedAt == default)
+                    {
+                        latest.Variant.CreatedAt = group.Min(snapshot => snapshot.Revision.CreatedAt);
                     }
                     foreach (var snapshot in group)
                     {
@@ -114,7 +124,8 @@ namespace Ee4v.AssetManager.Infrastructure
         {
             ValidateId(snapshot.Variant.Id);
             ValidateId(snapshot.Variant.ParentItemId);
-            ValidateId(snapshot.Variant.SourcePrefabGuid);
+            if (!string.IsNullOrEmpty(snapshot.Variant.SourcePrefabGuid))
+                ValidateId(snapshot.Variant.SourcePrefabGuid);
             var previewCachePath = PreviewCachePath(snapshot.PreviewHash);
             Directory.CreateDirectory(_root);
             var repository = RepositoryPath(snapshot.Variant.ParentItemId);
@@ -243,13 +254,63 @@ namespace Ee4v.AssetManager.Infrastructure
             }
         }
 
+        public Action Delete(string variantId)
+        {
+            ValidateId(variantId);
+            var repository = FindRepository(variantId) ?? FindGalleryRepository(variantId);
+            if (repository == null) return null;
+            var assetId = Path.GetFileNameWithoutExtension(repository);
+            using (new FileStream(Path.Combine(_root, assetId + ".save.lock"),
+                       FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            {
+                var master = ReadRefs(repository, MasterRef)[MasterRef];
+                var refs = ReadRefs(repository, TagPrefix + variantId + "/");
+                var branch = BranchPrefix + variantId;
+                if (ReadRefs(repository, branch).TryGetValue(branch, out var head)) refs.Add(branch, head);
+                var paths = Git(repository, null, null, "ls-tree", "-r", "--name-only", master, "--",
+                    VariantFolder + variantId + "/", GalleryFolder + variantId + "/")
+                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var stage = NewStagingPath();
+                var index = stage + ".index";
+                string commit;
+                try
+                {
+                    Git(repository, stage, index, "read-tree", master);
+                    if (paths.Length > 0)
+                        Git(repository, stage, index, new[] { "update-index", "--force-remove", "--" }.Concat(paths).ToArray());
+                    var tree = Git(repository, stage, index, "write-tree").Trim();
+                    commit = Git(repository, null, null, "commit-tree", tree, "-p", master,
+                        "-m", "Delete Variant " + variantId).Trim();
+                    var transaction = "start\nupdate " + MasterRef + " " + commit + " " + master + "\n" +
+                        string.Concat(refs.Select(pair => "delete " + pair.Key + " " + pair.Value + "\n")) + "prepare\ncommit\n";
+                    Git(repository, null, null, new[] { "update-ref", "--stdin" }, transaction);
+                }
+                finally
+                {
+                    if (File.Exists(index)) File.Delete(index);
+                    DeleteStaging(stage);
+                }
+                return () =>
+                {
+                    using (new FileStream(Path.Combine(_root, assetId + ".save.lock"),
+                               FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+                    {
+                        var transaction = "start\nupdate " + MasterRef + " " + master + " " + commit + "\n" +
+                            string.Concat(refs.Select(pair => "create " + pair.Key + " " + pair.Value + "\n")) + "prepare\ncommit\n";
+                        Git(repository, null, null, new[] { "update-ref", "--stdin" }, transaction);
+                    }
+                };
+            }
+        }
+
         private static void WriteMetadata(string variantStage, AssetVariant variant) =>
             File.WriteAllText(Path.Combine(variantStage, "metadata.json"),
                 JsonConvert.SerializeObject(new VariantMetadata
                 {
                     Name = variant.Name, Description = variant.Description ?? string.Empty,
+                    Tags = (variant.Tags ?? Array.Empty<string>()).ToArray(), CreatedAt = variant.CreatedAt,
                     RootAssetPath = variant.RootAssetPath,
-                    UpdatedAt = variant.UpdatedAt
+                    UpdatedAt = variant.UpdatedAt, IsArchived = variant.IsArchived
                 }, Formatting.Indented), new UTF8Encoding(false));
 
         public string Extract(AssetVariantSnapshot snapshot)
@@ -649,7 +710,8 @@ namespace Ee4v.AssetManager.Infrastructure
             }
             ValidateId(snapshot.Variant.Id);
             ValidateId(snapshot.Variant.ParentItemId);
-            ValidateId(snapshot.Variant.SourcePrefabGuid);
+            if (!string.IsNullOrEmpty(snapshot.Variant.SourcePrefabGuid))
+                ValidateId(snapshot.Variant.SourcePrefabGuid);
             ValidateId(snapshot.Revision.Id);
             if (snapshot.Variant.Id != variantId || snapshot.Revision.VariantId != snapshot.Variant.Id)
             {

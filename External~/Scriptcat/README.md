@@ -2,7 +2,15 @@
 
 `External~/Scriptcat` には ee4v 連携用の userscript を配置する。
 
-## Booth to Ealge
+## Booth to ee4v
+
+- script path: `External~/Scriptcat/B2ee4v.user.js`
+- BOOTH library、gifts、商品ページでdownload単位の状態表示・単品取り込み・まとめ取り込みを提供する
+- 手動起動のee4vデータソースserver `http://127.0.0.1:48197` に接続する
+- Eagle版とはどちらか一つだけを有効にする
+- 起動・保存・DB同期の契約は[AssetManagerデータソース](../../docs~/datasources.md)を参照する
+
+## Booth to Eagle
 
 - script path: `External~/Scriptcat/B2E.user.js`
 - BOOTH library の商品カードと download 行に Eagle 連携状態 badge を追加する

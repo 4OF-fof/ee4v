@@ -24,6 +24,7 @@ namespace Ee4v.UI
             "Editor/UI/Components/Content/PreviewPane/preview-pane.uss",
             "Editor/UI/Components/Inputs/BodyPartSelector/body-part-selector.uss",
             "Editor/UI/Components/Inputs/PrefabSelector/prefab-selector.uss",
+            "Editor/UI/Components/Inputs/AssetPicker/asset-picker.uss",
             "Editor/UI/Components/Inputs/SelectionTab/selection-tab.uss",
             "Editor/UI/Components/Content/SelectionTabBar/selection-tab-bar.uss",
             "Editor/UI/Components/Content/PrefabThumbnail/prefab-thumbnail.uss",

@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.AvatarInfo
 {
-    public sealed class AvatarInfoView : VisualElement
+    public sealed partial class AvatarInfoView : VisualElement
     {
         private static readonly Color32[] DarkParameterItemColors =
         {
@@ -45,6 +45,7 @@ namespace Ee4v.AvatarInfo
         private bool _avatarListLoaded;
         private CancellationTokenSource _avatarListRequest;
         private string _selectedBlueprintId;
+        private Action _closePerformanceMeasurement;
 
         public AvatarInfoView(string avatarName, string blueprintId,
             IReadOnlyList<GameObject> warnings,
@@ -96,19 +97,27 @@ namespace Ee4v.AvatarInfo
             performanceHeader.AddToClassList("ee4v-avatar-info__overview-section-title");
             performanceHeader.Add(UiTextFactory.Create(I18N.Get("workflow.overview.performance"),
                 UiClassNames.SectionTitle));
+            var report = mobile ? record?.Mobile : record?.Desktop;
+            var metrics = report?.Metrics ?? Array.Empty<AvatarInfoAnalysis.PerformanceMetric>();
+            var actions = new VisualElement();
+            actions.AddToClassList("ee4v-avatar-info__performance-actions");
+            var details = new UiButton(I18N.Get("workflow.overview.details.open"),
+                () => OpenPerformanceDetails(metrics), variant: UiButtonVariant.Ghost);
+            details.name = "overviewPerformanceDetails";
+            details.SetEnabled(metrics.Count > 0);
+            actions.Add(details);
             if (bakePerformance != null)
             {
                 var bake = new UiButton(I18N.Get(AvatarPlayModePerformanceCache.IsBaking
                     ? "workflow.overview.bakingPerformance" : "workflow.overview.bakePerformance"),
-                    bakePerformance);
+                    () => MeasurePerformance(bakePerformance));
                 bake.name = "overviewBakePerformance";
                 bake.tooltip = I18N.Get("workflow.overview.bakeTooltip");
                 bake.SetEnabled(canBakePerformance);
-                performanceHeader.Add(bake);
+                actions.Add(bake);
             }
+            performanceHeader.Add(actions);
             content.Add(performanceHeader);
-            var report = mobile ? record?.Mobile : record?.Desktop;
-            var metrics = report?.Metrics ?? Array.Empty<AvatarInfoAnalysis.PerformanceMetric>();
             var help = report == null && record?.Error == null
                 ? I18N.Get("workflow.overview.bakeRequired") : null;
             content.Add(BuildPerformanceSummary(report?.Rating, metrics, record, help));
@@ -136,6 +145,66 @@ namespace Ee4v.AvatarInfo
                         GetPerformanceMetricGroup(metric.Category) == group));
             }
             AddCapturedAtFooter(content, record?.CapturedAt, buildSize?.CapturedAt);
+        }
+
+        private void MeasurePerformance(Action measure)
+        {
+            if (_closePerformanceMeasurement != null || panel == null || measure == null) { return; }
+            var host = (VisualElement)this;
+            while (host.parent != null && host.parent != panel.visualTree) { host = host.parent; }
+            var previousFocus = panel.focusController.focusedElement as VisualElement;
+            var background = host.Children().Select(element =>
+                (Element: element, Enabled: element.enabledSelf)).ToArray();
+            var overlay = new VisualElement { name = "overviewPerformanceLoadingOverlay", focusable = true };
+            UiComposition.Prepare(overlay, "Editor/Feature/Avatar/AvatarInfo/UI/avatar-info.uss");
+            overlay.AddToClassList("ee4v-avatar-info__measurement-overlay");
+            overlay.Add(new StatusOverlay(new StatusOverlayState(
+                true, I18N.Get("workflow.overview.bakingPerformance"))));
+            var closed = false;
+            var running = false;
+            IVisualElementScheduledItem pending = null;
+            void Close()
+            {
+                if (closed) { return; }
+                closed = true;
+                pending?.Pause();
+                overlay.generateVisualContent -= OnFirstPaint;
+                UnregisterCallback<DetachFromPanelEvent>(OnViewDetached);
+                foreach (var item in background) { item.Element.SetEnabled(item.Enabled); }
+                overlay.RemoveFromHierarchy();
+                _closePerformanceMeasurement = null;
+                if (previousFocus?.panel != null && previousFocus.enabledInHierarchy) { previousFocus.Focus(); }
+            }
+            void Run()
+            {
+                if (closed) { return; }
+                running = true;
+                try { measure(); }
+                finally { Close(); }
+            }
+            void OnFirstPaint(MeshGenerationContext context)
+            {
+                overlay.generateVisualContent -= OnFirstPaint;
+                if (!closed) { pending = overlay.schedule.Execute(Run); }
+            }
+            void OnViewDetached(DetachFromPanelEvent evt)
+            {
+                if (evt.target == this && !running) { Close(); }
+            }
+            _closePerformanceMeasurement = Close;
+            RegisterCallback<DetachFromPanelEvent>(OnViewDetached);
+            overlay.RegisterCallback<DetachFromPanelEvent>(evt => { if (evt.target == overlay) { Close(); } });
+            overlay.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
+            overlay.RegisterCallback<WheelEvent>(evt => evt.StopPropagation());
+            overlay.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                evt.PreventDefault();
+                evt.StopPropagation();
+            });
+            overlay.generateVisualContent += OnFirstPaint;
+            foreach (var item in background) { item.Element.SetEnabled(false); }
+            host.Add(overlay);
+            overlay.Focus();
         }
 
         private VisualElement BuildPerformancePlatformSwitch()
@@ -312,11 +381,10 @@ namespace Ee4v.AvatarInfo
 
         private static void ApplyPerformanceRatingStyle(VisualElement element, string rating)
         {
-            element.EnableInClassList("ee4v-avatar-info__performance--warning",
-                rating == "Medium" || rating == "Poor");
-            element.EnableInClassList("ee4v-avatar-info__performance--critical",
-                rating == "VeryPoor");
-            element.style.borderLeftColor = GetPerformanceRatingColor(rating);
+            var color = GetPerformanceRatingColor(rating);
+            element.style.borderLeftColor = color;
+            element.style.backgroundColor = string.IsNullOrEmpty(rating)
+                ? (Color)UiColorTokens.Panel : Color.Lerp(UiColorTokens.Panel, color, 0.08f);
         }
 
         private static string GetOverviewRatingLabel(string rating)

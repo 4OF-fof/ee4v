@@ -8,6 +8,12 @@
     background-color: var(--ee4v-color-surface-subtle);
 }
 
+.ee4v-modification-workflow__category-actions {
+    margin-top: auto;
+    padding-top: var(--ee4v-space-md);
+    flex-shrink: 0;
+}
+
 .ee4v-modification-workflow__category-button.ee4v-ui-button {
     width: 100%;
     min-height: 34px;

@@ -12,6 +12,9 @@ namespace Ee4v.AssetManager.UI
         private readonly CachedImage _image;
         private readonly VisualElement _placeholder;
         private readonly UiTextElement _name;
+        private readonly VisualElement _actionContent;
+        private readonly VisualElement _actionIcon;
+        private readonly UiTextElement _actionTitle;
         private string _itemId = string.Empty;
 
         public AssetItemGridCard(CachedImageCache imageCache)
@@ -42,6 +45,18 @@ namespace Ee4v.AssetManager.UI
 
             Add(_imageFrame);
             Add(_name);
+            _actionContent = new VisualElement { pickingMode = PickingMode.Ignore };
+            _actionContent.AddToClassList("ee4v-asset-grid-card__action-content");
+            _actionContent.style.display = DisplayStyle.None;
+            _actionIcon = new VisualElement { pickingMode = PickingMode.Ignore };
+            _actionIcon.AddToClassList("ee4v-asset-grid-card__action-icon");
+            _actionTitle = UiTextFactory.Create(string.Empty, "ee4v-asset-grid-card__action-title");
+            _actionTitle.SetFontSize(UiTypographyTokens.BodyFontSize);
+            _actionTitle.SetTextAlign(TextAnchor.MiddleCenter);
+            _actionTitle.SetWhiteSpace(WhiteSpace.NoWrap);
+            _actionContent.Add(_actionIcon);
+            _actionContent.Add(_actionTitle);
+            Add(_actionContent);
 
             RegisterCallback<PointerDownEvent>(OnPointerDown);
             RegisterCallback<ContextClickEvent>(OnContextClick);
@@ -56,10 +71,17 @@ namespace Ee4v.AssetManager.UI
         {
             _itemId = state.Id;
             _name.SetText(state.Name);
+            tooltip = state.Name;
+            var isAction = state.Activate != null;
+            EnableInClassList("ee4v-asset-grid-card--action", isAction);
+            _imageFrame.style.visibility = _name.style.visibility = isAction ? Visibility.Hidden : Visibility.Visible;
+            _actionContent.style.display = isAction ? DisplayStyle.Flex : DisplayStyle.None;
+            _actionTitle.SetText(state.Name);
             EnableInClassList(
                 "ee4v-asset-grid-card--selected",
                 selected);
-            _image.SetSource(state.Id);
+            if (isAction) { _image.ClearSource(); }
+            else { _image.SetSource(state.Id); }
             UpdateImageVisibility();
         }
 
@@ -79,12 +101,14 @@ namespace Ee4v.AssetManager.UI
         public void SetPlaceholderIcon(IconState state)
         {
             _placeholder.Clear();
+            _actionIcon.Clear();
             _placeholder.EnableInClassList(
                 "ee4v-asset-grid-card__placeholder--icon",
                 state != null);
             if (state != null)
             {
                 _placeholder.Add(new Icon(state));
+                _actionIcon.Add(new Icon(state));
             }
         }
 

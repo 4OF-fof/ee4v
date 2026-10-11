@@ -21,6 +21,7 @@ namespace Ee4v.AssetManager.UI
     {
         private void BuildWindow()
         {
+            var browsingAssets = IsBrowsingAssets;
             HideVariantChangesHover();
             InvalidateVariantSaveStatus();
             ApplyEditorMode();
@@ -29,6 +30,7 @@ namespace Ee4v.AssetManager.UI
             ClearAppearanceCaches();
             var root = this;
             root.Clear();
+            _editingWorkspace = null;
             AssetManagerWindowSession.PrepareWorkflowRoot(root);
             root.AddToClassList("ee4v-modification-workflow");
 
@@ -56,13 +58,16 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            _editingWorkspace = new VisualElement();
+            _editingWorkspace.AddToClassList("ee4v-modification-workflow__editing-workspace");
+            root.Add(_editingWorkspace);
             _workspaceHeader = BuildWorkspaceHeader();
-            root.Add(_workspaceHeader);
+            _editingWorkspace.Add(_workspaceHeader);
             var preview = EditorApplication.isPlaying
                 ? new VisualElement() : BuildPreviewPane();
             _editorLayout = new WorkflowEditorLayout(
                 BuildCategoryRail(), preview);
-            root.Add(_editorLayout);
+            _editingWorkspace.Add(_editorLayout);
             _customizerHost = _editorLayout.AppearanceHost;
             _appearanceHeader = _editorLayout.AppearanceHeader;
             _bodyPartSelector = null;
@@ -70,6 +75,7 @@ namespace Ee4v.AssetManager.UI
             _faceExpressionHost = _editorLayout.FaceExpressionHost;
             _executionHost = _editorLayout.ExecutionHost;
             ShowCategory(_currentCategory, false);
+            if (browsingAssets) { ShowTemporaryAssetManager(); }
         }
 
         private VisualElement BuildWorkspaceHeader()
@@ -131,7 +137,7 @@ namespace Ee4v.AssetManager.UI
             baseCard.SetSelected(_avatarContext.SelectedPrefabSiblingIndex == -1);
             baseCard.RegisterCallback<ClickEvent>(
                 _ => SelectPrefabCard(-1, _avatarContext.Root.name));
-            strip.Add(baseCard);
+            if (_workingAsset?.IsOriginal != true || HasMeshInPrefabScope(-1)) { strip.Add(baseCard); }
             if (_avatarContext.SelectedPrefabSiblingIndex == -1)
             {
                 selectedCard = baseCard;
@@ -176,24 +182,17 @@ namespace Ee4v.AssetManager.UI
                         I18N.Get("workflow.assets.readFailed"),
                         HelpBoxMessageType.Error));
                 }
-                var sources = GetVariantSources();
                 UiButton add = null;
                 add = new UiButton(
                     "+",
-                    () => OpenAssetPicker(add, sources),
+                    () => OpenAssetPicker(add),
                     I18N.Get("workflow.assets.add"),
                     variant: UiButtonVariant.Ghost);
                 add.SetLabelFontSize(20);
                 add.SetLabelTextAlign(TextAnchor.MiddleCenter);
                 add.AddToClassList(
                     "ee4v-modification-workflow__header-add");
-                add.SetEnabled(sources.Count > 0);
                 strip.Add(add);
-                if (sources.Count == 0)
-                {
-                    add.tooltip = I18N.Get(
-                        "workflow.assets.noSourceDescription");
-                }
             }
             if (selectedCard != null)
             {
@@ -511,11 +510,33 @@ namespace Ee4v.AssetManager.UI
             return new SelectionTab(name, variant);
         }
 
+        private bool IsExpressionAssignmentOpen => _currentCategory == WorkflowCategory.ExpressionAnimation &&
+            _faceExpressionEditor?.IsAssignmentView == true;
+
         private VisualElement BuildCategoryRail()
         {
-            _categoryRail = new WorkflowCategoryRail(category => ShowCategory(category), EditorApplication.isPlaying);
+            _categoryRail = new WorkflowCategoryRail(category => ShowCategory(category), EditorApplication.isPlaying,
+                DerivedAssetCreator.IsAvatarPrefab(_avatarContext.Root));
             _categoryRail.SetPrefabScope(_avatarContext.SelectedPrefabSiblingIndex.HasValue);
             _categoryRail.SetSelected(_currentCategory);
+            if (!EditorApplication.isPlaying)
+            {
+                var findAsset = AssetPicker.CreateButton(
+                    () => IsExpressionAssignmentOpen ? typeof(AnimationClip) : typeof(Material),
+                    () => _currentCategory == WorkflowCategory.Material
+                        ? _avatarContext.SelectedMaterial : null,
+                    () => _avatarContext.Root,
+                    () => IsExpressionAssignmentOpen ? AssetPickerAnimationFilter.Facial : AssetPickerAnimationFilter.All);
+                findAsset.AddToClassList("ee4v-modification-workflow__category-button");
+                _categoryRail.Actions.Add(findAsset);
+                var openManager = new UiButton(
+                    I18N.Get("workflow.selection.openManager"),
+                    ShowTemporaryAssetManager,
+                    icon: FluentUiIcons.CreateState("library.png", UiSizeTokens.Size12),
+                    variant: UiButtonVariant.Ghost);
+                openManager.AddToClassList("ee4v-modification-workflow__category-button");
+                _categoryRail.Actions.Add(openManager);
+            }
             return _categoryRail;
         }
 
@@ -554,6 +575,12 @@ namespace Ee4v.AssetManager.UI
         {
             if (EditorApplication.isPlaying && !category.IsPlayMode()) { category = WorkflowCategory.MenuAndGestures; }
             else if (!EditorApplication.isPlaying && category.IsPlayMode()) { category = _editingCategory; }
+            if (!DerivedAssetCreator.IsAvatarPrefab(_avatarContext.Root))
+            {
+                if (category == WorkflowCategory.MenuAndGestures) { category = WorkflowCategory.Lighting; }
+                else if (category == WorkflowCategory.ExpressionAnimation || category == WorkflowCategory.ExpressionMenu)
+                    category = WorkflowCategory.Overview;
+            }
             if (category != WorkflowCategory.ShapeParts ||
                 _parts.Section != ShapePartsSection.Parts)
             {
@@ -694,12 +721,6 @@ namespace Ee4v.AssetManager.UI
                 SetPreviewTitle("workflow.preview.appearanceTitle");
                 return;
             }
-            if (_avatarContext.SelectedBodyPart.HasValue &&
-                !HasAvailableBodyPart(_avatarContext.SelectedBodyPart.Value))
-            {
-                _avatarContext.SelectedBodyPart = null;
-                _avatarContext.Preview?.FocusBodyPart(null, preservePreviewCamera);
-            }
             foreach (var child in _appearanceHeader.Children().ToArray())
             {
                 if (child != _bodyPartSelector) { child.RemoveFromHierarchy(); }
@@ -774,6 +795,10 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement BuildOverviewControls()
         {
+            if (!DerivedAssetCreator.IsAvatarPrefab(_avatarContext.Root))
+            {
+                return BuildOriginalOverviewControls();
+            }
             return new AvatarInfoView(_avatarContext.Root.name,
                 AvatarInfoAnalysis.GetBlueprintId(_avatarContext.Root),
                 AvatarInfoAnalysis.FindAttachmentWarnings(_avatarContext.Root),

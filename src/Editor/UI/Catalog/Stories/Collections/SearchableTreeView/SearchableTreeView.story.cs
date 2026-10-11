@@ -33,7 +33,8 @@ namespace Ee4v.UI
                         "Editor/UI/Catalog/CatalogWindow.cs",
                         "Editor/AssetManager/UI/SearchableFileTree.cs",
                         "Editor/Feature/Avatar/PlayModeComponentSuppression/ComponentTypePickerWindow.cs",
-                        "Editor/Feature/Avatar/FaceExpression/UI/ExpressionTargetPickerWindow.cs"
+                        "Editor/Feature/Avatar/FaceExpression/UI/ExpressionTargetPickerWindow.cs",
+                        "Editor/Feature/Avatar/AvatarInfo/UI/AvatarInfoView.PerformanceDetails.cs"
                     }));
             }
         }

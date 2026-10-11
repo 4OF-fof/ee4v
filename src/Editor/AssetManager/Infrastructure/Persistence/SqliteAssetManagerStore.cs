@@ -16,6 +16,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         private const string ItemSelect =
             @"SELECT item.id AS Id, item.name AS Name,
                      item.description AS Description,
+                     EXISTS(SELECT 1 FROM original_item WHERE item_id = item.id) AS IsOriginal,
                      item.thumbnail_url AS ThumbnailUrl,
                      item.source_type AS SourceType, item.source_id AS SourceId,
                      item.is_archived AS IsArchived,
@@ -33,7 +34,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
         private readonly string _catalogSource;
         private string CatalogItemCondition => _catalogSource == "ee4v"
             ? "(item.source_type = ? OR item.source_type IS NULL)"
-            : "item.source_type = ?";
+            : "(item.source_type = ? OR EXISTS(SELECT 1 FROM original_item WHERE item_id = item.id))";
 
         internal SqliteAssetManagerStore(string databasePath,
             AssetSourceType? catalogSource = null)
@@ -171,12 +172,14 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             return Run(() =>
             {
                 using (var connection = OpenConnection())
+                using (var transaction = new DatabaseTransaction(connection))
+                using (var originals = new OriginalItemPersistence(this))
                 {
                     var id = NewId();
                     var now = Now();
                     Execute(
                         connection,
-                        null,
+                        transaction,
                         @"INSERT INTO item(
                             id, name, description, thumbnail_url,
                             source_type, source_id,
@@ -188,7 +191,16 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         request.Name.Trim(),
                         request.Description ?? string.Empty,
                         now);
-                    return ReadItem(connection, id);
+                    if (request.IsOriginal)
+                    {
+                        Execute(connection, transaction,
+                            "INSERT INTO original_item(item_id) VALUES(@p0)", id);
+                    }
+                    var item = ReadItem(connection, id);
+                    originals.Save(item);
+                    transaction.Commit();
+                    originals.Commit();
+                    return item;
                 }
             });
         }
@@ -200,10 +212,12 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             return Run(() =>
             {
                 using (var connection = OpenConnection())
+                using (var transaction = new DatabaseTransaction(connection))
+                using (var originals = new OriginalItemPersistence(this))
                 {
                     var changed = Execute(
                         connection,
-                        null,
+                        transaction,
                         @"UPDATE item
                           SET name = @p0,
                               description = @p1,
@@ -214,7 +228,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                         Now(),
                         itemId);
                     RequireChanged(changed, "Item was not found.");
-                    return ReadItem(connection, itemId);
+                    var item = ReadItem(connection, itemId);
+                    originals.Save(item);
+                    transaction.Commit();
+                    originals.Commit();
+                    return item;
                 }
             });
         }
@@ -227,6 +245,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             {
                 using (var connection = OpenConnection())
                 using (var transaction = new DatabaseTransaction(connection))
+                using (var originals = new OriginalItemPersistence(this))
                 {
                     for (var i = 0; i < itemIds.Count; i++)
                     {
@@ -247,10 +266,13 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                             itemIds[i]);
                     }
 
-                    transaction.Commit();
-                    return itemIds
+                    var items = itemIds
                         .Select(id => ReadItem(connection, id))
                         .ToArray();
+                    foreach (var item in items) { originals.Save(item); }
+                    transaction.Commit();
+                    originals.Commit();
+                    return items;
                 }
             });
         }
@@ -261,6 +283,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             {
                 using (var connection = OpenConnection())
                 using (var transaction = new DatabaseTransaction(connection))
+                using (var originals = new OriginalItemPersistence(this))
                 {
                     for (var i = 0; i < itemIds.Count; i++)
                     {
@@ -269,6 +292,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
 
                     for (var i = 0; i < itemIds.Count; i++)
                     {
+                        originals.Delete(ReadItem(connection, itemIds[i]));
                         Execute(
                             connection,
                             transaction,
@@ -283,6 +307,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
 
                     DeleteUnusedTags(connection, transaction);
                     transaction.Commit();
+                    originals.Commit();
                     return true;
                 }
             });
@@ -888,6 +913,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             {
                 using (var connection = OpenConnection())
                 using (var transaction = new DatabaseTransaction(connection))
+                using (var originals = new OriginalItemPersistence(this))
                 {
                     for (var i = 0; i < itemIds.Count; i++)
                     {
@@ -912,10 +938,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     }
 
                     DeleteUnusedTags(connection, transaction);
+                    var items = itemIds.Select(id => ReadItem(connection, id)).ToArray();
+                    foreach (var item in items) { originals.Save(item); }
                     transaction.Commit();
-                    return itemIds
-                        .Select(id => ReadItem(connection, id))
-                        .ToArray();
+                    originals.Commit();
+                    return items;
                 }
             });
         }
@@ -1363,6 +1390,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 using (var connection = OpenConnection())
                 {
                     ExecuteSchema(connection);
+                    RestoreOriginalItems(connection);
                 }
 
                 return true;
@@ -1391,6 +1419,9 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 @"CREATE UNIQUE INDEX IF NOT EXISTS ux_item_source
                     ON item(source_type, source_id)
                     WHERE source_type IS NOT NULL",
+                @"CREATE TABLE IF NOT EXISTS original_item(
+                    item_id TEXT PRIMARY KEY REFERENCES item(id) ON DELETE CASCADE
+                  )",
                 @"CREATE TABLE IF NOT EXISTS item_booth_metadata(
                     item_id TEXT PRIMARY KEY
                       REFERENCES item(id) ON DELETE CASCADE,
@@ -1802,6 +1833,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 Id = row.Id,
                 Name = row.Name,
                 Description = row.Description,
+                IsOriginal = row.IsOriginal != 0,
                 ThumbnailUrl = row.ThumbnailUrl,
                 SourceType = row.SourceType == null
                     ? (AssetSourceType?)null
@@ -2889,6 +2921,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             public string Id { get; set; }
             public string Name { get; set; }
             public string Description { get; set; }
+            public int IsOriginal { get; set; }
             public string ThumbnailUrl { get; set; }
             public string SourceType { get; set; }
             public string SourceId { get; set; }

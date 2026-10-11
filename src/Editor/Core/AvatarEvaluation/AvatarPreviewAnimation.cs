@@ -141,9 +141,10 @@ namespace Ee4v.Core.AvatarEvaluation
                 var target = _transforms[MergeTarget(binding.Target, bindings)];
                 copy.SetParent(target, false);
                 var relative = attachment.Relative;
-                copy.localPosition = relative.GetColumn(3);
-                copy.localRotation = relative.rotation;
-                copy.localScale = relative.lossyScale;
+                AvatarPreviewPose.Decompose(relative, out var relativePosition, out var relativeRotation, out var relativeScale);
+                copy.localPosition = relativePosition;
+                copy.localRotation = relativeRotation;
+                copy.localScale = relativeScale;
                 // Retained clothing bones must not collide with actual target children in clip paths.
                 copy.name += "$ee4v" + copy.GetInstanceID();
             }

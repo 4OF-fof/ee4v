@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
@@ -62,12 +63,41 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__sort");
             RefreshSortButton();
             toolbar.Actions.Add(_sortButton);
+            _filterButton = AssetManagerControls.CreateIconButton(
+                I18N.Get("searchFilter.open"), "filter.png", UiSizeTokens.Size16,
+                UiButtonVariant.Ghost, ShowSearchFilter, "ee4v-asset-manager__filter");
+            _filterButton.name = "assetManagerFilter";
+            toolbar.Actions.Add(_filterButton);
             toolbar.Actions.Add(_search);
             _reloadButton = AssetManagerControls.CreateReloadButton(
                 Reload,
                 "ee4v-asset-manager__reload");
             toolbar.Actions.Add(_reloadButton);
             return toolbar;
+        }
+
+        private AssetFilterNode GetScopedSearchFilter() => GetScopedSearchFilter(_viewState.SearchFilter);
+
+        private AssetFilterNode GetScopedSearchFilter(AssetFilterNode filter)
+        {
+            return AssetManagerSearch.CombineFilters(
+                _viewState.Page == AssetManagerPage.Collection
+                    ? _manager.GetCollection(_viewState.CollectionId)?.Root : null,
+                filter);
+        }
+
+        private void ShowSearchFilter()
+        {
+            AssetSearchFilterPopup.Show(_filterButton, GetAvailableTagOptions(),
+                _viewState.SearchFilter,
+                _viewState.SetSearchFilter,
+                filter =>
+                {
+                    // Saving creates a new collection; it never edits the selected one.
+                    var root = GetScopedSearchFilter(filter);
+                    AssetCollectionCreationPopup.Show(_filterButton, null, CreateCollection, root,
+                        GetAvailableTagOptions());
+                });
         }
 
         private void ShowSortMenu()
@@ -115,13 +145,10 @@ namespace Ee4v.AssetManager.UI
                 menu,
                 "toolbar.search.description",
                 AssetManagerSearchTarget.Description);
-            if (!ShowsVariants)
-            {
-                AddSearchTargetMenuItem(
-                    menu,
-                    "toolbar.search.tags",
-                    AssetManagerSearchTarget.Tags);
-            }
+            AddSearchTargetMenuItem(
+                menu,
+                "toolbar.search.tags",
+                AssetManagerSearchTarget.Tags);
             menu.DropDown(_search.SearchActionAnchor.worldBound);
         }
 

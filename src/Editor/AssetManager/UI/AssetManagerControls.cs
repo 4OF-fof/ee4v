@@ -16,6 +16,18 @@ namespace Ee4v.AssetManager.UI
             "ee4v-asset-manager__danger-action";
         private const string IconButtonClassName =
             "ee4v-asset-manager__icon-button";
+
+        public static EmptyState CreateEmptyState(string text, string iconFileName = "info.png")
+        {
+            var empty = new EmptyState(new EmptyStateState(
+                string.Empty,
+                text,
+                LoadFluentIconState(iconFileName, 48f,
+                    tintColor: UiColorTokens.TextMuted)));
+            empty.AddToClassList("ee4v-asset-manager__empty-state");
+            return empty;
+        }
+
         public static UiButton CreateButton(
             string text = "",
             Action onClick = null,
@@ -272,22 +284,33 @@ namespace Ee4v.AssetManager.UI
 
         public static string FormatFilterCondition(Enum value)
         {
+            return FormatFilterCondition(value, false);
+        }
+
+        public static string FormatFilterCondition(Enum value, bool inverted)
+        {
             if (!(value is AssetFilterConditionType condition))
             {
                 return value?.ToString() ?? string.Empty;
             }
 
+            string key;
             switch (condition)
             {
                 case AssetFilterConditionType.DescriptionContains:
-                    return I18N.Get("filterCondition.descriptionContains");
+                    key = "descriptionContains";
+                    break;
                 case AssetFilterConditionType.HasTag:
-                    return I18N.Get("filterCondition.hasTag");
+                    key = "hasTag";
+                    break;
                 case AssetFilterConditionType.HasFileExtension:
-                    return I18N.Get("filterCondition.hasFileExtension");
+                    key = "hasFileExtension";
+                    break;
                 default:
-                    return I18N.Get("filterCondition.nameContains");
+                    key = "nameContains";
+                    break;
             }
+            return I18N.Get("filterCondition." + key + (inverted ? "Inverted" : string.Empty));
         }
 
         public static AssetManagerNotice CreateNotice(

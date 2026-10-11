@@ -28,7 +28,7 @@ namespace Ee4v.UI
                 "arrow_left.png", "arrow_right.png", "arrow_sort.png",
                 "checkmark.png", "chevron_down.png", "chevron_right.png",
                 "cube.png", "dismiss.png", "document.png", "eye.png",
-                "eye_off.png", "folder.png", "folder_zip.png", "image.png",
+                "eye_off.png", "filter.png", "folder.png", "folder_zip.png", "image.png",
                 "info.png", "library.png", "mail_inbox.png", "pin.png", "search.png",
                 "star.png", "subtract.png", "tag.png", "weather_moon.png",
                 "weather_sunny.png"

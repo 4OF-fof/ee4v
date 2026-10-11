@@ -12,6 +12,12 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed partial class AssetModificationWorkflowView
     {
+        private void QueueWorkingSceneSave()
+        {
+            var session = _workingSceneSession;
+            if (session?.Root != null) EditorSceneApi.SaveAfterEdit(session.Root.scene);
+        }
+
         private BodyPartSelector BuildBodyPartSelector()
         {
             return new BodyPartSelector(_avatarContext.SelectedBodyPart, HasAvailableBodyPart, part =>

@@ -17,12 +17,28 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyList<string> itemIds,
             bool archived)
         {
+            if (_variantManager != null && itemIds.Any(id => FindStandaloneAsset(id) != null))
+            {
+                ChangeVariantLifecycle(Array.Empty<string>(), archived, itemIds);
+                return;
+            }
             Run(() =>
-                _manager.SetItemArchived(itemIds, archived));
+            {
+                _manager.SetItemArchived(itemIds, archived);
+                if (_viewState.Page == AssetManagerPage.Archived)
+                {
+                    _viewState.SelectArchiveEntries(Array.Empty<string>(), null);
+                }
+            });
         }
 
         private void DeleteItems(IReadOnlyList<string> itemIds)
         {
+            if (_variantManager != null && itemIds.Any(id => FindStandaloneAsset(id) != null))
+            {
+                ChangeVariantLifecycle(Array.Empty<string>(), null, itemIds);
+                return;
+            }
             var multiple = itemIds != null && itemIds.Count > 1;
             if (!Confirm(
                     I18N.Get(multiple
@@ -41,6 +57,10 @@ namespace Ee4v.AssetManager.UI
             {
                 _manager.DeleteItem(itemIds);
                 _viewState.SelectItem(null);
+                if (_viewState.Page == AssetManagerPage.Archived)
+                {
+                    _viewState.SelectArchiveEntries(Array.Empty<string>(), null);
+                }
             });
         }
 

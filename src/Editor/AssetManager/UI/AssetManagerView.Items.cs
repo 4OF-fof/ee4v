@@ -22,6 +22,13 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            var standalone = FindStandaloneAsset(item.Id);
+            if (standalone != null)
+            {
+                ShowVariantDetail(standalone.VariantId);
+                return;
+            }
+
             var thumbnailStack = CreateDetailThumbnailStack(
                 new[] { item.Id });
             _detail.Add(thumbnailStack);
@@ -117,6 +124,12 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            if (_viewState.Page == AssetManagerPage.Archived)
+            {
+                ShowArchiveSelectionDetail();
+                return;
+            }
+
             if (!string.IsNullOrEmpty(_viewState.SelectedFileId))
             {
                 ShowFileDetail(_manager.GetFile(
@@ -142,14 +155,170 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            ShowEmptyDetail(
-                _viewState.Page == AssetManagerPage.UnassignedFiles
-                    ? I18N.Get("notice.selectFile")
-                    : I18N.Get("notice.selectItem"));
+            ShowLibraryDetail();
+        }
+
+        private void ShowLibraryDetail()
+        {
+            _detail.Clear();
+            var items = _manager.SearchItems(new AssetItemQuery
+            {
+                IncludeArchived = true
+            }).Items;
+            var unassignedFiles = _manager.GetUnassignedFiles(includeArchived: true);
+            var fileCount = items.Sum(item => item.Files?.Count ?? 0) + unassignedFiles.Count;
+            var information = new AssetDetailSection(I18N.Get("library.title"));
+            information.AddToClassList("ee4v-asset-manager__library-information");
+            var datasource = AssetManagerSettings.SelectedDatasource;
+            var sourceName = datasource == AssetDatasourceKind.BoothLibraryManager
+                ? "BOOTH Library Manager"
+                : datasource == AssetDatasourceKind.Ee4v ? "ee4v" : "Eagle";
+            var source = new VisualElement();
+            source.AddToClassList("ee4v-asset-manager__library-source");
+            AddLibraryIcon(source, "library.png");
+            var sourceText = UiTextFactory.Create(
+                I18N.Get("library.sourceSummary", sourceName),
+                UiClassNames.FormLabel,
+                "ee4v-asset-manager__library-source-text");
+            sourceText.SetColor(UiColorTokens.TextMuted);
+            sourceText.SetWhiteSpace(WhiteSpace.Normal);
+            source.Add(sourceText);
+            information.Add(source);
+
+            var metrics = new VisualElement();
+            metrics.AddToClassList("ee4v-asset-manager__library-metrics");
+            metrics.Add(CreateLibraryMetric("library.itemCount", items.Count));
+            var filesMetric = CreateLibraryMetric("library.fileCount", fileCount);
+            filesMetric.AddToClassList("ee4v-asset-manager__library-metric--separated");
+            metrics.Add(filesMetric);
+            information.Add(metrics);
+
+            var myAssets = new VisualElement();
+            myAssets.AddToClassList("ee4v-asset-manager__library-my-assets");
+            AddLibraryIcon(myAssets, "cube.png");
+            myAssets.Add(UiTextFactory.Create(
+                I18N.Get("library.variantCount"),
+                "ee4v-asset-manager__library-my-assets-label"));
+            var variantCount = UiTextFactory.Create(
+                GetVariants().Count.ToString("N0"),
+                "ee4v-asset-manager__library-my-assets-value");
+            variantCount.SetFontSize(20);
+            myAssets.Add(variantCount);
+            information.Add(myAssets);
+
+            var organization = new VisualElement();
+            organization.AddToClassList("ee4v-asset-manager__library-organization");
+            organization.Add(new SectionHeader(I18N.Get("library.organization")));
+            AddLibraryValue(organization, "library.collectionCount", _manager.GetCollections().Count);
+            AddLibraryValue(organization, "library.tagCount", _manager.GetTags().Count);
+            AddLibraryValue(organization, "library.unassignedFileCount", unassignedFiles.Count);
+            information.Add(organization);
+            var summary = new VisualElement();
+            summary.AddToClassList("ee4v-asset-manager__library-summary");
+            summary.Add(new SectionHeader(I18N.Get("library.summary")));
+            AddLibraryValue(summary, "library.archivedItemCount", items.Count(item => item.IsArchived));
+            AddLibraryValue(summary, "library.latestItemUpdate",
+                FormatTimestamp(items.Select(item => item.UpdatedAt).DefaultIfEmpty().Max()));
+            information.Add(summary);
+            _detail.Add(information);
+        }
+
+        private static VisualElement CreateLibraryMetric(string labelKey, int count)
+        {
+            var metric = new VisualElement();
+            metric.AddToClassList("ee4v-asset-manager__library-metric");
+            var value = UiTextFactory.Create(
+                count.ToString("N0"),
+                "ee4v-asset-manager__library-metric-value");
+            value.SetFontSize(36);
+            metric.Add(value);
+            var label = UiTextFactory.Create(
+                I18N.Get(labelKey),
+                UiClassNames.FormLabel,
+                "ee4v-asset-manager__library-metric-label");
+            label.SetColor(UiColorTokens.TextMuted);
+            metric.Add(label);
+            return metric;
+        }
+
+        private static void AddLibraryValue(VisualElement information, string labelKey, int count)
+        {
+            AddLibraryValue(information, labelKey, count.ToString("N0"));
+        }
+
+        private static void AddLibraryValue(VisualElement information, string labelKey, string text)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("ee4v-asset-manager__library-row");
+            var label = UiTextFactory.Create(
+                I18N.Get(labelKey),
+                UiClassNames.FormLabel,
+                "ee4v-asset-manager__library-row-label");
+            label.SetColor(UiColorTokens.TextMuted);
+            label.SetWhiteSpace(WhiteSpace.Normal);
+            row.Add(label);
+            var value = UiTextFactory.Create(text,
+                "ee4v-asset-manager__library-row-value");
+            value.SetTextAlign(TextAnchor.MiddleRight);
+            value.SetWhiteSpace(WhiteSpace.Normal);
+            row.Add(value);
+            information.Add(row);
+        }
+
+        private static void AddLibraryIcon(VisualElement row, string iconFileName)
+        {
+            var icon = AssetManagerControls.CreateIcon(
+                iconFileName, UiSizeTokens.Size16, UiColorTokens.TextMuted);
+            if (icon != null)
+            {
+                icon.AddToClassList("ee4v-asset-manager__library-icon");
+                row.Add(icon);
+            }
+        }
+
+        private void ShowArchiveSelectionDetail()
+        {
+            var selected = _viewState.SelectedArchiveEntryIds;
+            if (selected.Count == 0)
+            {
+                ShowLibraryDetail();
+                return;
+            }
+            if (selected.Count == 1)
+            {
+                if (TryGetArchiveVariantId(selected[0], out var variantId)) { ShowVariantDetail(variantId); }
+                else { ShowItemDetail(_manager.GetItem(selected[0])); }
+                return;
+            }
+            if (!selected.Any(id => TryGetArchiveVariantId(id, out _)))
+            {
+                ShowItemSelectionDetail(selected.Select(_manager.GetItem).Where(item => item != null).ToArray(),
+                    _viewState.SelectedArchiveEntryId);
+                return;
+            }
+            _detail.Clear();
+            _detail.Add(UiTextFactory.Create(I18N.Get("detail.item.selectedCount", selected.Count),
+                UiClassNames.SelectionCount));
+            var variants = GetVariants().ToDictionary(variant => variant.VariantId, StringComparer.Ordinal);
+            foreach (var id in selected)
+            {
+                if (TryGetArchiveVariantId(id, out var variantId))
+                {
+                    if (variants.TryGetValue(variantId, out var variant))
+                    {
+                        _detail.Add(new InfoCard(new InfoCardState(variant.Name, variant.Description)));
+                    }
+                }
+                else
+                {
+                    var item = _manager.GetItem(id);
+                    if (item != null) { _detail.Add(new InfoCard(new InfoCardState(item.Name, item.Description))); }
+                }
+            }
         }
 
         private void ShowItemSelectionDetail(
-            IReadOnlyList<AssetItem> items)
+            IReadOnlyList<AssetItem> items, string primaryItemId = null)
         {
             _detail.Clear();
             if (items == null || items.Count == 0)
@@ -161,7 +330,7 @@ namespace Ee4v.AssetManager.UI
             var orderedItems = items
                 .OrderBy(item => string.Equals(
                     item.Id,
-                    _viewState.SelectedItemId,
+                    primaryItemId ?? _viewState.SelectedItemId,
                     StringComparison.Ordinal)
                     ? 1
                     : 0)
@@ -200,14 +369,21 @@ namespace Ee4v.AssetManager.UI
             var item = _manager.GetItem(_viewState.DetailItemId);
             if (item == null)
             {
-                _content.Add(AssetManagerControls.CreateNotice(
-                    I18N.Get("notice.itemMissing")));
+                _content.Add(AssetManagerControls.CreateEmptyState(
+                    I18N.Get("notice.itemMissing"), "library.png"));
                 return;
             }
 
             if (_viewState.IsDerivedAssetsPage)
             {
                 BuildDerivedAssetsPage();
+                return;
+            }
+
+            var standalone = FindStandaloneAsset(item.Id);
+            if (standalone != null)
+            {
+                BuildVariantDetailPage(standalone);
                 return;
             }
 
@@ -249,120 +425,68 @@ namespace Ee4v.AssetManager.UI
             RefreshItemDetailPane(item, files);
         }
 
+        private void StartOriginalAssetCreation()
+        {
+            if (_createOriginalAsset != null)
+            {
+                _createOriginalAsset();
+                return;
+            }
+            _originalAssetName = string.Empty;
+            _originalAssetDescription = string.Empty;
+            _originalAssetPrefab = null;
+            _creatingOriginalAsset = true;
+            RefreshMain();
+        }
+
+        private void BuildOriginalAssetCreationPage()
+        {
+            CancelGridThumbnails();
+            CancelItemOverviewThumbnail();
+            ClearItemOverviewThumbnail();
+            _content.Clear();
+            _search.style.display = DisplayStyle.None;
+            _sortButton.style.display = DisplayStyle.None;
+            _gridControls.style.display = DisplayStyle.None;
+            var sources = AssetPrefabPickerWindow.FindSources(_manager);
+            var prefabs = sources.SelectMany(source => source.Prefabs).Distinct().ToArray();
+            var form = new VariantCreationView(null, prefabs, _originalAssetName, _originalAssetDescription,
+                _originalAssetPrefab, I18N.Get("workflow.original.create"), () =>
+                {
+                    _creatingOriginalAsset = false;
+                    RefreshMain();
+                }, original: true, showPrefabPicker: (anchor, selected, select) =>
+                    AssetPrefabPickerWindow.Show(anchor, sources, _manager, select, null, selectPrefab: true));
+            _originalAssetPrefab = form.Prefab.Value;
+            form.Prefab.ValueChanged += value => _originalAssetPrefab = value;
+            form.Name.ValueChanged += value => _originalAssetName = value;
+            form.Description.ValueChanged += value => _originalAssetDescription = value;
+            form.Create.clicked += () => CreateDerivedAsset(form.Name.Value, form.Prefab.Value, form.Description.Value,
+                form.Feedback, form.Create, original: true);
+            _content.Add(form);
+        }
+
         private void BuildDerivedAssetsPage()
         {
             CancelItemOverviewThumbnail();
             ClearItemOverviewThumbnail();
             _itemDetailPane = null;
             _fileTreeSelections = Array.Empty<FileTreeSelection>();
-            var page = new VisualElement();
-            page.AddToClassList(
-                "ee4v-asset-manager__derived-assets-page");
-            page.Add(AssetManagerControls.CreateIconButton(
-                I18N.Get("toolbar.back"),
-                "arrow_left.png",
-                UiSizeTokens.Size18,
-                UiButtonVariant.Ghost,
-                _viewState.CloseDerivedAssetsPage,
-                "ee4v-asset-manager__derived-assets-back"));
-
-            var form = new VisualElement();
-            form.AddToClassList(
-                "ee4v-asset-manager__derived-assets-form");
-            form.Add(UiTextFactory.Create(
-                I18N.Get("detail.derivedAssetsCreate"),
-                UiClassNames.SectionTitle,
-                "ee4v-asset-manager__derived-assets-form-title"));
-
-            var formLayout = new VisualElement();
-            formLayout.AddToClassList(
-                "ee4v-asset-manager__derived-assets-form-layout");
-            var previewColumn = new VisualElement();
-            previewColumn.AddToClassList(
-                "ee4v-asset-manager__derived-assets-preview-column");
-            var prefabPreview = new PrefabScenePreview();
-            previewColumn.Add(prefabPreview);
-
-            var prefabContainer = new VisualElement();
-            prefabContainer.AddToClassList(
-                "ee4v-asset-manager-control-field");
-            prefabContainer.Add(UiTextFactory.Create(
-                I18N.Get("field.prefab"),
-                UiClassNames.FormLabel,
-                "ee4v-asset-manager-control-field__label"));
+            var item = _manager.GetItem(_viewState.DetailItemId);
             var prefabCandidates = DerivedAssetCreator
-                .FindPrefabCandidates(_manager.GetItemImportedAssetGuids(
-                    _viewState.DetailItemId))
-                .ToList();
-            var prefab = new PrefabSelector(
-                prefabCandidates);
-            prefab.AddToClassList(
-                "ee4v-asset-manager__derived-assets-prefab-field");
-            prefabContainer.Add(prefab);
-            if (prefabCandidates.Count == 0)
-            {
-                prefabContainer.Add(AssetManagerControls.CreateNotice(
-                    I18N.Get("notice.derivedAssetPrefabNotFound"),
-                    "ee4v-asset-manager__derived-assets-prefab-empty"));
-            }
-            previewColumn.Add(prefabContainer);
-            formLayout.Add(previewColumn);
-
-            var fields = new VisualElement();
-            fields.AddToClassList(
-                "ee4v-asset-manager__derived-assets-fields");
-            var name = AssetManagerControls.CreateTextField(
-                I18N.Get("field.name"));
-
-            var description = AssetManagerControls.CreateTextField(
-                I18N.Get("field.description"),
-                "ee4v-asset-manager__derived-assets-description-field");
-            description.SetMultiline(true, 144f);
-            var inputGroup = new InputGroup(
-                I18N.Get("detail.information"),
-                name,
-                description);
-            inputGroup.AddToClassList(
-                "ee4v-asset-manager__derived-assets-input-group");
-            fields.Add(inputGroup);
-
-            var message = UiTextFactory.Create(
+                .FindPrefabCandidates(_manager, item);
+            var form = new VariantCreationView(
+                item,
+                prefabCandidates,
+                (item?.Name ?? string.Empty) + " Variant",
                 string.Empty,
-                UiClassNames.SecondaryText);
-            message.SetColor(UiColorTokens.StatusFailedText);
-            message.SetWhiteSpace(WhiteSpace.Normal);
-            message.style.display = DisplayStyle.None;
-            fields.Add(message);
-            UiButton create = null;
-            create = AssetManagerControls.CreateButton(
+                null,
                 I18N.Get("action.createDerivedAsset"),
-                () => CreateDerivedAsset(
-                    name.value,
-                    prefab.Value,
-                    description.value,
-                    message,
-                    create),
-                "ee4v-asset-manager__primary-action",
-                "ee4v-asset-manager__derived-assets-create");
-            create.SetEnabled(false);
-            prefab.ValueChanged += selectedPrefab =>
-            {
-                prefabPreview.SetPrefab(selectedPrefab);
-                SetDerivedAssetFeedback(message, string.Empty);
-                create.SetEnabled(selectedPrefab != null);
-            };
-            prefab.SelectionRejected += () =>
-            {
-                create.SetEnabled(prefab.Value != null);
-                SetDerivedAssetFeedback(
-                    message,
-                    I18N.Get("notice.derivedAssetPrefabInvalid"));
-            };
-            fields.Add(create);
-            formLayout.Add(fields);
-            form.Add(formLayout);
-            page.Add(form);
-            _content.Add(page);
+                _viewState.CloseDerivedAssetsPage);
+            form.Create.clicked += () => CreateDerivedAsset(
+                form.Name.Value, form.Prefab.Value, form.Description.Value,
+                form.Feedback, form.Create);
+            _content.Add(form);
         }
 
         private void CreateDerivedAsset(
@@ -370,7 +494,8 @@ namespace Ee4v.AssetManager.UI
             GameObject prefab,
             string description,
             UiTextElement message,
-            UiButton createButton)
+            UiButton createButton,
+            bool original = false)
         {
             if (!DerivedAssetCreator.IsValidName(name))
             {
@@ -381,17 +506,18 @@ namespace Ee4v.AssetManager.UI
             }
 
             var prefabPath = AssetDatabase.GetAssetPath(prefab);
-            if (string.IsNullOrEmpty(prefabPath) ||
+            if (original && prefab != null && !AssetPrefabPickerWindow.FindSources(_manager)
+                .SelectMany(source => source.Prefabs).Contains(prefab))
+            {
+                SetDerivedAssetFeedback(message, I18N.Get("notice.derivedAssetPrefabInvalid"));
+                return;
+            }
+            if (!original && (string.IsNullOrEmpty(prefabPath) ||
                 !prefabPath.EndsWith(
                     ".prefab",
                     StringComparison.OrdinalIgnoreCase) ||
-                !IsAllowedPrefab(
-                    prefab,
-                    new HashSet<string>(
-                        _manager.GetItemImportedAssetGuids(
-                            _viewState.DetailItemId) ??
-                        Array.Empty<string>(),
-                        StringComparer.OrdinalIgnoreCase)))
+                !DerivedAssetCreator.FindPrefabCandidates(
+                    _manager, _manager.GetItem(_viewState.DetailItemId)).Contains(prefab)))
             {
                 SetDerivedAssetFeedback(
                     message,
@@ -408,31 +534,60 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            createButton.SetEnabled(false);
+            createButton.SetPrimaryActionEnabled(false);
+            var wasDeferringRefresh = _defersManagerRefresh;
+            _defersManagerRefresh = true;
+            AssetItem owner = null;
+            var created = false;
             try
             {
+                if (original)
+                {
+                    owner = _manager.CreateItem(new CreateAssetItemRequest
+                    {
+                        Name = name.Trim(), Description = description, IsOriginal = true
+                    });
+                }
                 var result = DerivedAssetCreator.Create(
                     new DerivedAssetCreationRequest
                     {
-                        ParentItemId = _viewState.DetailItemId,
+                        ParentItemId = owner?.Id ?? _viewState.DetailItemId,
                         Name = name,
                         Prefab = prefab,
-                        Description = description
+                        Description = description,
+                        CreateOriginal = original && prefab == null
                     });
+                created = true;
                 Selection.activeObject = result.Prefab;
                 EditorGUIUtility.PingObject(result.Prefab);
-                _viewState.CloseDerivedAssetsPage();
+                if (original)
+                {
+                    _creatingOriginalAsset = false;
+                    _viewState.OpenVariantDetail(result.VariantId);
+                }
+                else { _viewState.CloseDerivedAssetsPage(); }
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
+                if (!created && owner != null)
+                {
+                    try
+                    {
+                        _manager.SetItemArchived(new[] { owner.Id }, true);
+                        _manager.DeleteItem(new[] { owner.Id });
+                    }
+                    catch (Exception cleanupException) { Debug.LogException(cleanupException); }
+                }
                 SetDerivedAssetFeedback(
                     message,
                     I18N.Get("notice.derivedAssetCreateFailed"));
             }
             finally
             {
-                createButton.SetEnabled(true);
+                _defersManagerRefresh = wasDeferringRefresh;
+                if (!wasDeferringRefresh) { _managerRefreshPending = false; }
+                createButton.SetPrimaryActionEnabled(true);
             }
         }
 
@@ -677,7 +832,7 @@ namespace Ee4v.AssetManager.UI
                 "ee4v-asset-manager__derived-assets-grid");
             foreach (var derivedAsset in
                      GetVariants()
-                         .Where(variant => string.Equals(
+                         .Where(variant => !variant.IsArchived && string.Equals(
                              variant.ParentItemId, itemId, StringComparison.Ordinal))
                          .OrderBy(variant => variant.Name, StringComparer.OrdinalIgnoreCase)
                          .ThenBy(variant => variant.VariantId, StringComparer.Ordinal))
@@ -706,6 +861,7 @@ namespace Ee4v.AssetManager.UI
                 {
                     _viewState.OpenVariantDetail(derivedAsset.VariantId);
                 };
+                assetCard.ContextClicked += (_, __) => ShowVariantContextMenu(new[] { derivedAsset.VariantId });
                 assetCard.RegisterCallback<DetachFromPanelEvent>(_ =>
                     assetCard.Dispose());
                 grid.Add(assetCard);

@@ -40,7 +40,7 @@ namespace Ee4v.AssetManager.UI
         {
             var cancellation = new CancellationTokenSource();
             _gridThumbnailCancellation = cancellation;
-            var savedVariants = ShowsVariants && _variantManager != null
+            var savedVariants = _variantManager != null
                 ? _variantManager.GetVariants().ToDictionary(variant => variant.Id, StringComparer.Ordinal)
                 : null;
             try
@@ -57,15 +57,22 @@ namespace Ee4v.AssetManager.UI
                         try
                         {
                             AssetThumbnail thumbnail;
-                            if (ShowsVariants)
+                            var isArchiveVariant = TryGetArchiveVariantId(itemId, out var archiveVariantId);
+                            if (ShowsVariants || isArchiveVariant)
                             {
-                                thumbnail = savedVariants != null && savedVariants.TryGetValue(itemId, out var variant)
-                                    ? await _variantManager.GetRevisionThumbnail(itemId, variant.HeadRevisionId, cancellation.Token)
+                                var variantId = isArchiveVariant ? archiveVariantId : itemId;
+                                thumbnail = savedVariants != null && savedVariants.TryGetValue(variantId, out var variant)
+                                    ? await _variantManager.GetRevisionThumbnail(variantId, variant.HeadRevisionId, cancellation.Token)
                                     : null;
                             }
                             else
                             {
-                                thumbnail = await _manager.GetThumbnail(itemId, cancellation.Token);
+                                var standalone = savedVariants?.Values.FirstOrDefault(variant =>
+                                    string.IsNullOrEmpty(variant.SourcePrefabGuid) && variant.ParentItemId == itemId &&
+                                    FindVariantItem(itemId)?.IsOriginal == true);
+                                thumbnail = standalone != null
+                                    ? await _variantManager.GetRevisionThumbnail(standalone.Id, standalone.HeadRevisionId, cancellation.Token)
+                                    : await _manager.GetThumbnail(itemId, cancellation.Token);
                             }
                             if (!ReferenceEquals(
                                     _gridThumbnailCancellation,
@@ -108,24 +115,13 @@ namespace Ee4v.AssetManager.UI
 
         private IReadOnlyList<AssetItem> GetVisibleItems()
         {
-            IReadOnlyList<AssetItem> items;
-            if (_viewState.Page == AssetManagerPage.Collection)
+            var items = _manager.SearchItems(new AssetItemQuery
             {
-                items = _manager.SearchCollection(
-                    _viewState.CollectionId).Items;
-            }
-            else
-            {
-                var query = new AssetItemQuery
-                {
-                    IncludeArchived =
-                        _viewState.Page == AssetManagerPage.Archived,
-                    Filter = AssetManagerSearch.BuildBackendFilter(
-                        _search.Value,
-                        _viewState.SearchTargets)
-                };
-                items = _manager.SearchItems(query).Items;
-            }
+                IncludeArchived = _viewState.Page == AssetManagerPage.Archived,
+                Filter = AssetManagerSearch.CombineFilters(
+                    GetScopedSearchFilter(),
+                    AssetManagerSearch.BuildBackendFilter(_search.Value, _viewState.SearchTargets))
+            }).Items;
 
             var importedItemIds =
                 _viewState.Page == AssetManagerPage.Imported
@@ -138,9 +134,6 @@ namespace Ee4v.AssetManager.UI
                 .Where(item =>
                     _viewState.Page != AssetManagerPage.Imported ||
                     importedItemIds.Contains(item.Id))
-                .Where(item =>
-                    _viewState.Page != AssetManagerPage.Tags ||
-                    MatchesTag(item, _viewState.TagPath))
                 .Where(item => AssetManagerSearch.MatchesItem(
                     item,
                     _search.Value,
@@ -180,6 +173,10 @@ namespace Ee4v.AssetManager.UI
             }
 
             _importedItemIdsInProject = itemIds;
+            foreach (var asset in DerivedAssetCreator.FindAll().Where(asset => asset.IsOriginal))
+            {
+                if (FindVariantItem(asset.ParentItemId)?.IsOriginal == true) itemIds.Add(asset.ParentItemId);
+            }
             return _importedItemIdsInProject;
         }
 
@@ -189,25 +186,6 @@ namespace Ee4v.AssetManager.UI
             return !string.IsNullOrEmpty(assetPath) &&
                    !AssetDatabase.IsValidFolder(assetPath) &&
                    AssetDatabase.GetMainAssetTypeAtPath(assetPath) != null;
-        }
-
-        private static bool MatchesTag(AssetItem item, string tagPath)
-        {
-            if (item == null || string.IsNullOrWhiteSpace(tagPath))
-            {
-                return false;
-            }
-
-            return (item.Tags ?? Array.Empty<AssetTag>()).Any(tag =>
-                tag != null &&
-                !string.IsNullOrEmpty(tag.Path) &&
-                (string.Equals(
-                    tag.Path,
-                    tagPath,
-                    StringComparison.Ordinal) ||
-                 tag.Path.StartsWith(
-                    tagPath + "/",
-                    StringComparison.Ordinal)));
         }
 
         private IReadOnlyList<AssetFile> GetFiles(string itemId)
@@ -231,9 +209,7 @@ namespace Ee4v.AssetManager.UI
                 case AssetManagerPage.Archived:
                     return I18N.Get("navigation.archived");
                 case AssetManagerPage.Tags:
-                    return string.IsNullOrEmpty(_viewState.TagPath)
-                        ? I18N.Get("navigation.tags")
-                        : _viewState.TagPath;
+                    return I18N.Get("navigation.tags");
                 case AssetManagerPage.Collection:
                     return _manager.GetCollections()
                         .FirstOrDefault(collection =>

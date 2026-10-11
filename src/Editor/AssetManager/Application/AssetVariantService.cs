@@ -30,7 +30,50 @@ namespace Ee4v.AssetManager.Application
 
         public event Action Changed;
 
-        public IReadOnlyList<AssetVariant> GetVariants() => _index.GetVariants();
+        public IReadOnlyList<AssetVariant> GetVariants()
+        {
+            var variants = GetStoredVariants();
+            foreach (var variant in variants)
+            {
+                var owner = GetStandaloneOwner(variant);
+                if (owner == null) continue;
+                variant.Name = owner.Name;
+                variant.Description = owner.Description;
+                variant.Tags = owner.Tags.Select(tag => tag.Path).ToArray();
+                variant.IsArchived = owner.IsArchived;
+                if (owner.UpdatedAt > variant.UpdatedAt) variant.UpdatedAt = owner.UpdatedAt;
+            }
+            return variants;
+        }
+
+        private IReadOnlyList<AssetVariant> GetStoredVariants()
+        {
+            var variants = _index.GetVariants();
+            foreach (var variant in variants)
+                if (_snapshots.TryGetValue((variant.Id, variant.HeadRevisionId), out var snapshot))
+                {
+                    variant.IsArchived = snapshot.Variant.IsArchived;
+                    variant.Tags = snapshot.Variant.Tags ?? Array.Empty<string>();
+                    variant.CreatedAt = snapshot.Variant.CreatedAt;
+                    variant.FileSizeBytes = snapshot.Variant.FileSizeBytes;
+                }
+            return variants;
+        }
+
+        private AssetItem GetStandaloneOwner(AssetVariant variant)
+        {
+            if (!string.IsNullOrEmpty(variant.SourcePrefabGuid) || string.IsNullOrEmpty(variant.ParentItemId))
+                return null;
+            try
+            {
+                var owner = _manager.GetItem(variant.ParentItemId);
+                return owner?.IsOriginal == true ? owner : null;
+            }
+            catch (AssetManagerException exception) when (exception.Code == AssetManagerErrorCode.NotFound)
+            {
+                return null;
+            }
+        }
 
         public IReadOnlyList<AssetVariantRevision> GetRevisions(string variantId)
         {
@@ -238,52 +281,138 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.Require(request.Name, "variant name");
             var name = request.Name.Trim();
             var description = request.Description ?? string.Empty;
-            var variant = GetVariants().FirstOrDefault(candidate => candidate.Id == variantId);
+            var tags = request.Tags == null ? null : AssetManagerRequestValidator.NormalizeTags(request.Tags);
+            var variant = GetStoredVariants().FirstOrDefault(candidate => candidate.Id == variantId)
+                ?? _workspace.GetMetadata(variantId);
+            if (variant == null) throw new InvalidOperationException("The Variant was not found.");
+            var owner = GetStandaloneOwner(variant);
+            var updatedTags = tags ?? (owner == null ? variant.Tags : owner.Tags.Select(tag => tag.Path).ToArray());
             _busy = true;
             try
             {
-                if (variant == null)
+                if (variant.Name == name && (variant.Description ?? string.Empty) == description &&
+                    variant.Tags.SequenceEqual(updatedTags) && (owner == null ||
+                    (owner.Name == name && owner.Description == description &&
+                     owner.Tags.Select(tag => tag.Path).SequenceEqual(updatedTags))))
                 {
-                    if (_workspace.UpdateMetadata(variantId, name, description) == null)
-                    {
-                        throw new InvalidOperationException("The Variant was not found.");
-                    }
+                    return;
                 }
-                else
+                var undoLocalUpdate = _workspace.UpdateMetadata(variantId, name, description,
+                    updatedTags, variant.CreatedAt);
+                var ownerUpdated = false;
+                try
                 {
-                    if (variant.Name == name && (variant.Description ?? string.Empty) == description)
+                    if (owner != null)
                     {
-                        return;
+                        ownerUpdated = true;
+                        UpdateStandaloneOwner(owner, name, description, updatedTags);
                     }
-                    var undoLocalUpdate = _workspace.UpdateMetadata(variantId, name, description);
-                    try
+                    if (!string.IsNullOrEmpty(variant.HeadRevisionId))
                     {
                         var updated = new AssetVariant
                         {
                             Id = variant.Id, SourcePrefabGuid = variant.SourcePrefabGuid,
                             Name = name, Description = description, ParentItemId = variant.ParentItemId,
+                            Tags = updatedTags, CreatedAt = variant.CreatedAt,
                             RootAssetPath = _workspace.GetRootAssetPath(variantId, name),
-                            HeadRevisionId = variant.HeadRevisionId, UpdatedAt = DateTime.UtcNow
+                            HeadRevisionId = variant.HeadRevisionId, UpdatedAt = DateTime.UtcNow,
+                            IsArchived = variant.IsArchived
                         };
                         await Task.Run(() => _repository.UpdateMetadata(updated));
                     }
-                    catch (Exception exception)
-                    {
-                        if (undoLocalUpdate != null)
-                        {
-                            try { undoLocalUpdate(); }
-                            catch (Exception rollbackException)
-                            {
-                                throw new AggregateException("The Variant metadata update could not be rolled back.",
-                                    exception, rollbackException);
-                            }
-                        }
-                        throw;
-                    }
-                    ReplaceIndex();
-                    NotifyChanged();
-                    return;
                 }
+                catch (Exception exception)
+                {
+                    try
+                    {
+                        if (ownerUpdated) UpdateStandaloneOwner(_manager.GetItem(owner.Id), owner.Name,
+                            owner.Description, owner.Tags.Select(tag => tag.Path).ToArray());
+                        undoLocalUpdate?.Invoke();
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        throw new AggregateException("The Variant metadata update could not be rolled back.",
+                            exception, rollbackException);
+                    }
+                    throw;
+                }
+                if (!string.IsNullOrEmpty(variant.HeadRevisionId)) ReplaceIndex();
+                NotifyChanged();
+            }
+            finally { _busy = false; }
+        }
+
+        private void UpdateStandaloneOwner(AssetItem owner, string name, string description,
+            IReadOnlyList<string> tags)
+        {
+            if (owner.Name != name || owner.Description != description)
+            {
+                _manager.UpdateItem(owner.Id, new UpdateAssetItemRequest { Name = name, Description = description });
+            }
+            if (!owner.Tags.Select(tag => tag.Path).SequenceEqual(tags))
+            {
+                _manager.SetItemTags(new[] { owner.Id }, tags);
+            }
+        }
+
+        public async Task SetArchived(string variantId, bool archived)
+        {
+            AssetManagerRequestValidator.Require(variantId, "variant id");
+            if (_busy) throw new InvalidOperationException("A Variant operation is in progress.");
+            _busy = true;
+            try
+            {
+                var variant = GetVariants().FirstOrDefault(candidate => candidate.Id == variantId)
+                    ?? _workspace.GetMetadata(variantId);
+                var owner = variant == null ? null : GetStandaloneOwner(variant);
+                var undo = _workspace.SetArchived(variantId, archived);
+                if (variant == null && undo == null) throw new InvalidOperationException("The Variant was not found.");
+                try
+                {
+                    if (owner != null && owner.IsArchived != archived)
+                        _manager.SetItemArchived(new[] { owner.Id }, archived);
+                    if (variant != null && !string.IsNullOrEmpty(variant.HeadRevisionId))
+                    {
+                        await Task.Run(() => _repository.UpdateMetadata(new AssetVariant
+                        {
+                            Id = variant.Id, ParentItemId = variant.ParentItemId,
+                            Name = variant.Name, Description = variant.Description,
+                            Tags = variant.Tags, CreatedAt = variant.CreatedAt,
+                            RootAssetPath = variant.RootAssetPath, IsArchived = archived, UpdatedAt = DateTime.UtcNow
+                        }));
+                        ReplaceIndex();
+                    }
+                }
+                catch
+                {
+                    if (owner != null && owner.IsArchived != archived)
+                        _manager.SetItemArchived(new[] { owner.Id }, owner.IsArchived);
+                    undo?.Invoke();
+                    throw;
+                }
+                NotifyChanged();
+            }
+            finally { _busy = false; }
+        }
+
+        public async Task Delete(string variantId)
+        {
+            AssetManagerRequestValidator.Require(variantId, "variant id");
+            if (_busy) throw new InvalidOperationException("A Variant operation is in progress.");
+            _busy = true;
+            try
+            {
+                _workspace.ValidateDelete(variantId);
+                var undo = await Task.Run(() => _repository.Delete(variantId));
+                try { _workspace.Delete(variantId); }
+                catch (Exception exception)
+                {
+                    try { if (undo != null) await Task.Run(undo); }
+                    catch (Exception rollback) { throw new AggregateException("Variant deletion could not be rolled back.", exception, rollback); }
+                    throw;
+                }
+                _workspace.SetBaseRevision(variantId, null);
+                ReplaceIndex();
                 NotifyChanged();
             }
             finally { _busy = false; }
@@ -301,12 +430,27 @@ namespace Ee4v.AssetManager.Application
             AssetVariantCapture capture = null;
             try
             {
-                var current = GetVariants().FirstOrDefault(variant => variant.RootAssetPath == request.RootAssetPath);
+                var current = GetVariants().FirstOrDefault(variant => variant.RootAssetPath == request.RootAssetPath)
+                    ?? _workspace.GetMetadata(request.RootAssetPath);
                 if (current != null)
                 {
-                    _workspace.UpdateMetadata(current.Id, current.Name, current.Description);
+                    var owner = GetStandaloneOwner(current);
+                    if (owner != null)
+                    {
+                        current.Name = owner.Name;
+                        current.Description = owner.Description;
+                        current.Tags = owner.Tags.Select(tag => tag.Path).ToArray();
+                        current.IsArchived = owner.IsArchived;
+                    }
+                    _workspace.UpdateMetadata(current.Id, current.Name, current.Description,
+                        current.Tags, current.CreatedAt);
                 }
-                capture = _workspace.Capture(request);
+                capture = _workspace.Capture(new AssetVariantSaveRequest
+                {
+                    RootAssetPath = current == null ? request.RootAssetPath :
+                        _workspace.GetRootAssetPath(current.Id, current.Name), Memo = request.Memo
+                });
+                capture.Snapshot.Variant.IsArchived = current?.IsArchived ?? capture.Snapshot.Variant.IsArchived;
                 var saved = await Task.Run(() =>
                     _repository.Save(capture.Snapshot, capture.StagingPath));
                 _workspace.SetBaseRevision(saved.Variant.Id, saved.Revision.Id);
@@ -404,7 +548,9 @@ namespace Ee4v.AssetManager.Application
                 }
                 _workspace.ValidateRestore(snapshot, rootAssetPath);
                 _workspace.Restore(snapshot, staging, rootAssetPath);
-                _workspace.UpdateMetadata(variantId, current.Name, current.Description);
+                _workspace.UpdateMetadata(variantId, current.Name, current.Description,
+                    current.Tags, current.CreatedAt);
+                _workspace.SetArchived(variantId, current.IsArchived);
                 _workspace.SetBaseRevision(variantId, revisionId);
                 NotifyChanged();
                 return _workspace.GetRootAssetPath(variantId, current.Name);

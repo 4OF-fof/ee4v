@@ -12,6 +12,7 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string Name { get; set; }
         public string Description { get; set; }
+        public bool IsOriginal { get; set; }
     }
 
     public sealed class UpdateAssetItemRequest

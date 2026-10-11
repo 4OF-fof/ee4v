@@ -19,7 +19,8 @@
     flex-grow: 1;
 }
 
-.ee4v-modification-workflow__preview-pane {
+.ee4v-modification-workflow__preview-pane,
+.ee4v-variant-creation__source {
     min-width: 480px;
     min-height: 0;
     flex-grow: 1;
@@ -44,6 +45,7 @@
 }
 
 .ee4v-modification-workflow__controls-column,
+.ee4v-variant-creation__controls,
 .ee4v-modification-workflow__face-expression-host .ee4v-face-expression__editor-pane {
     width: 460px;
     min-width: 420px;

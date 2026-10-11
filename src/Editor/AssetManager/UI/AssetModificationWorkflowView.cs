@@ -132,6 +132,7 @@ namespace Ee4v.AssetManager.UI
         private WorkflowCategory _editingCategory = WorkflowCategory.Overview;
 
         private bool _creatingDerivedAsset;
+        private bool _creatingOriginalAsset;
 
         private string _creationItemId = string.Empty;
 
@@ -162,6 +163,7 @@ namespace Ee4v.AssetManager.UI
                         EditorSceneManager.MarkSceneDirty(
                             _workingSceneSession.Root.scene);
                     }
+                    if (value) { QueueWorkingSceneSave(); }
                 }
             }
         }
@@ -190,6 +192,12 @@ namespace Ee4v.AssetManager.UI
 
         private AssetManagerWorkspaceView _assetManagerView;
 
+        private VisualElement _editingWorkspace;
+        private VisualElement _temporaryAssetManagerPage;
+        private AssetManagerWorkspaceView _temporaryAssetManagerView;
+
+        internal bool IsBrowsingAssets => _temporaryAssetManagerPage != null;
+
         private AssetManagerViewState _assetManagerViewState = new AssetManagerViewState();
 
         internal event Action<DerivedAssetInfo> DerivedAssetChanged;
@@ -209,7 +217,8 @@ namespace Ee4v.AssetManager.UI
                         return !_parts.BodyScaleDirty && _parts.FlushPendingPartVisibility();
                     },
                     GetWorkingAssetPath, value => _workingSceneDirty = value,
-                    InvalidateVariantSaveStatus, ShowAssetError, CreateEditableMaterialVariant),
+                    () => { QueueWorkingSceneSave(); InvalidateVariantSaveStatus(); },
+                    ShowAssetError, CreateEditableMaterialVariant),
                 new AvatarEditingHost(() => ShowCategory(_currentCategory, false),
                     BuildWindow, ClearAppearanceCaches, RequestRepaint, SyncPreviewSelection)
                 {
@@ -253,7 +262,8 @@ namespace Ee4v.AssetManager.UI
                 if (!_currentCategory.IsPlayMode())
                 {
                     _editingCategory = _currentCategory;
-                    _currentCategory = WorkflowCategory.MenuAndGestures;
+                    _currentCategory = DerivedAssetCreator.IsAvatarPrefab(_avatarContext.Root)
+                        ? WorkflowCategory.MenuAndGestures : WorkflowCategory.Lighting;
                 }
             }
             else if (_currentCategory.IsPlayMode())
@@ -533,6 +543,12 @@ namespace Ee4v.AssetManager.UI
             ReleaseVariantStatusManager();
             _manager = null;
             _assetManagerViewState = new AssetManagerViewState();
+            if (IsBrowsingAssets)
+            {
+                CloseTemporaryAssetManager();
+                ShowTemporaryAssetManager();
+                return;
+            }
             Rebuild();
         }
 
@@ -548,6 +564,7 @@ namespace Ee4v.AssetManager.UI
 
         private void DisposeEditors()
         {
+            CloseTemporaryAssetManager();
             _executionView?.Dispose();
             _executionView = null;
             _inspectionView?.Dispose();

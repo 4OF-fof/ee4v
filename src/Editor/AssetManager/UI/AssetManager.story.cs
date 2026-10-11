@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.Images;
+using Ee4v.Core.I18n;
 using Ee4v.UI;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -15,6 +17,27 @@ namespace Ee4v.AssetManager.UI
         {
             return new[]
             {
+                new UiStory(
+                    "variant-creation",
+                    "Domain/AssetManager",
+                    "VariantCreationView",
+                    "AssetManagerと統合ee4vで共有するVariant作成画面です。",
+                    "表示幅、Prefabの有無、名前の検証、保存先の表示とエラーを確認できます。プレビュー用Prefabを指定すると実際の3Dプレビューを表示します。StoryではAssetを作成しません。",
+                    BuildVariantCreation,
+                    dependencies: new[]
+                    {
+                        "SectionHeader", "FormInput", "InputField", "PrefabSelector", "AssetPrefabPickerWindow", "PrefabScenePreview", "UiButton"
+                    },
+                    usageLocations: new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs"
+                    },
+                    styleSheetPaths: new[]
+                    {
+                        "Editor/AssetManager/UI/asset-detail.uss",
+                        "Editor/AssetManager/UI/asset-modification-workflow.uss"
+                    }),
                 new UiStory(
                     "asset-manager-workspace",
                     "Domain/AssetManager",
@@ -39,7 +62,7 @@ namespace Ee4v.AssetManager.UI
                     "Domain/AssetManager",
                     "AssetManagerView · Main",
                     "AssetManager Main Windowの一覧と詳細操作を確認する画面です。",
-                    "実画面と同じMain modeのAssetManagerViewをサンプルデータで表示します。Item一覧、File Tree、Target設定を操作できます。",
+                    "実画面と同じMain modeのAssetManagerViewをサンプルデータで表示します。Item一覧、File Tree、Target設定、絞り込みアイコンと文字検索以外の条件が有効な状態を確認できます。",
                     Build,
                     dependencies: new[]
                     {
@@ -147,7 +170,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.Collections.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Collections.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Navigation.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -168,7 +192,8 @@ namespace Ee4v.AssetManager.UI
                     },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -309,8 +334,8 @@ namespace Ee4v.AssetManager.UI
                     "asset-manager-filter-editor",
                     "Domain/AssetManager/Inputs",
                     "AssetFilterEditor",
-                    "Collection条件を入れ子で編集するパーツです。",
-                    "条件GroupをANDまたはORで組み合わせ、反転、追加、削除を編集できます。",
+                    "絞り込みとCollectionの条件を編集するパーツです。",
+                    "種類別の追加ボタン、種類と値を並べた条件行、一致方法の切り替えと入れ子Groupを表示します。",
                     BuildFilterEditor,
                     dependencies: new[]
                     {
@@ -481,12 +506,26 @@ namespace Ee4v.AssetManager.UI
                     "story-grid-card",
                     "Summer Costume"),
                 true);
-            card.RegisterCallback<DetachFromPanelEvent>(_ =>
+            var createCard = new AssetItemGridCard(cache);
+            createCard.SetWidth(180f);
+            createCard.SetPlaceholderIcon(AssetManagerControls.LoadFluentIconState(
+                "add.png", UiSizeTokens.Size24, I18N.Get("workflow.original.create"), UiColorTokens.TextMuted));
+            createCard.SetState(new AssetItemGridEntry("story-create-card", I18N.Get("workflow.original.createCard"))
+            {
+                Activate = () => { }
+            }, selected: false);
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            createCard.style.marginRight = UiSpacingTokens.Medium;
+            row.Add(createCard);
+            row.Add(card);
+            row.RegisterCallback<DetachFromPanelEvent>(_ =>
             {
                 card.Dispose();
+                createCard.Dispose();
                 cache.Dispose();
             });
-            parent.Add(card);
+            parent.Add(row);
         }
 
         private static void BuildFilterEditor(VisualElement parent)
@@ -495,9 +534,15 @@ namespace Ee4v.AssetManager.UI
                 AssetFilterNode.Condition(
                     AssetFilterConditionType.HasTag,
                     "Avatar"),
-                AssetFilterNode.Not(AssetFilterNode.Condition(
-                    AssetFilterConditionType.HasFileExtension,
-                    "zip"))));
+                AssetFilterNode.Or(
+                    AssetFilterNode.Condition(AssetFilterConditionType.NameContains, "Shinano"),
+                    AssetFilterNode.Not(AssetFilterNode.Condition(
+                        AssetFilterConditionType.HasFileExtension,
+                        "zip")))), tagOptions: new[]
+                {
+                    new AssetTagOption("Avatar", 12),
+                    new AssetTagOption("Cloth", 8)
+                });
             editor.style.width = 620f;
             parent.Add(editor);
         }
@@ -652,12 +697,53 @@ namespace Ee4v.AssetManager.UI
             parent.Add(surface);
         }
 
+        private static void BuildVariantCreation(VisualElement parent)
+        {
+            var width = UiTextFactory.CreateSlider("表示幅", 420f, 1040f);
+            width.value = 1040f;
+            width.showInputField = true;
+            parent.Add(width);
+            var prefab = UiTextFactory.CreateObjectField();
+            prefab.objectType = typeof(GameObject);
+            prefab.allowSceneObjects = false;
+            parent.Add(new FormInput("プレビュー用Prefab", prefab));
+            var original = UiTextFactory.CreateToggle("マイアセットの新規作成");
+            parent.Add(original);
+            var surface = new VisualElement();
+            surface.style.height = 620f;
+            surface.style.width = width.value;
+            surface.style.maxWidth = Length.Percent(100f);
+            parent.Add(surface);
+            width.RegisterValueChangedCallback(evt => surface.style.width = evt.newValue);
+            VariantCreationView form = null;
+            System.Action rebuild = () =>
+            {
+                var name = form?.Name.Value ?? "Sample Avatar Variant";
+                var description = form?.Description.Value ?? "衣装・マテリアルを編集するVariant";
+                surface.Clear();
+                var source = prefab.value as GameObject;
+                if (source != null && !AssetDatabase.GetAssetPath(source).EndsWith(
+                    ".prefab", System.StringComparison.OrdinalIgnoreCase)) { source = null; }
+                form = new VariantCreationView(
+                    new AssetItem { Id = "story-variant-source", Name = "Sample Avatar" },
+                    source == null ? System.Array.Empty<GameObject>() : new[] { source },
+                    name, description, source, I18N.Get("workflow.selection.createAndStart"),
+                    () => form.SetFeedback(string.Empty), original.value);
+                form.Create.clicked += () => form.SetFeedback(I18N.Get("notice.derivedAssetCreateFailed"));
+                surface.Add(form);
+            };
+            prefab.RegisterValueChangedCallback(_ => rebuild());
+            original.RegisterValueChangedCallback(_ => rebuild());
+            rebuild();
+        }
+
         private static void Build(VisualElement parent)
         {
             var surface = new VisualElement();
             surface.style.height = 620f;
             surface.style.minWidth = 920f;
             var view = new AssetManagerView(new AssetManagerStoryManager());
+            view.SetOriginalAssetCreationHandler(() => ShowOriginalCreationStory(surface, view));
             view.RegisterCallback<DetachFromPanelEvent>(_ => view.Dispose());
             surface.Add(view);
             parent.Add(surface);
@@ -670,7 +756,8 @@ namespace Ee4v.AssetManager.UI
             surface.style.minWidth = 1040f;
             var manager = new AssetManagerStoryManager();
             var state = new AssetManagerViewState();
-            var workspace = new AssetManagerWorkspaceView(
+            AssetManagerWorkspaceView workspace = null;
+            workspace = new AssetManagerWorkspaceView(
                 _ => { },
                 itemId =>
                 {
@@ -678,10 +765,25 @@ namespace Ee4v.AssetManager.UI
                     state.OpenDerivedAssetsPage(itemId);
                 },
                 (mode, createDerivedAsset) => new AssetManagerView(
-                    manager, state, mode, createDerivedAsset: createDerivedAsset));
+                    manager, state, mode, createDerivedAsset: createDerivedAsset),
+                createOriginalAsset: () => ShowOriginalCreationStory(surface, workspace));
             workspace.RegisterCallback<DetachFromPanelEvent>(_ => workspace.Dispose());
             surface.Add(workspace);
             parent.Add(surface);
+        }
+
+        private static void ShowOriginalCreationStory(VisualElement surface, VisualElement library)
+        {
+            library.style.display = DisplayStyle.None;
+            VariantCreationView form = null;
+            form = new VariantCreationView(null, null, "Sample Work", string.Empty, null,
+                I18N.Get("workflow.original.create"), () =>
+                {
+                    form.RemoveFromHierarchy();
+                    library.style.display = DisplayStyle.Flex;
+                }, original: true);
+            form.Create.clicked += () => form.SetFeedback(I18N.Get("notice.derivedAssetCreateFailed"));
+            surface.Add(form);
         }
 
         private static void BuildTagList(VisualElement parent)
@@ -809,6 +911,7 @@ namespace Ee4v.AssetManager.UI
                 state,
                 AssetManagerViewMode.Main);
             main.style.flexGrow = 1f;
+            main.SetOriginalAssetCreationHandler(() => ShowOriginalCreationStory(surface, main));
             var information = new AssetManagerView(
                 manager,
                 state,
@@ -844,7 +947,8 @@ namespace Ee4v.AssetManager.UI
                 AssetCollectionCreationPopup.Show(
                     createButton,
                     null,
-                    (_, __, ___) => true);
+                    (_, __, ___) => true,
+                    tagOptions: new[] { new AssetTagOption("Avatar", 12), new AssetTagOption("Cloth", 8) });
             surface.Add(createButton);
 
             var sample = new AssetCollection
@@ -880,7 +984,8 @@ namespace Ee4v.AssetManager.UI
                         sample.Icon = icon;
                         sample.Root = root;
                         return true;
-                    });
+                    },
+                    tagOptions: new[] { new AssetTagOption("Avatar", 12), new AssetTagOption("Cloth", 8) });
             surface.Add(editButton);
             parent.Add(surface);
         }

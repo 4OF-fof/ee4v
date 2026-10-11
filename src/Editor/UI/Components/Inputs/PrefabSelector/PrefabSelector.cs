@@ -11,13 +11,19 @@ namespace Ee4v.UI
     {
         private readonly IReadOnlyList<GameObject> _candidates;
         private readonly HashSet<string> _candidatePaths;
+        private readonly Action<VisualElement, GameObject, Action<GameObject>> _showPicker;
+        private readonly bool _allowEmpty;
         private GameObject _value;
 
         public PrefabSelector(
-            IReadOnlyList<GameObject> candidates)
+            IReadOnlyList<GameObject> candidates,
+            Action<VisualElement, GameObject, Action<GameObject>> showPicker = null,
+            bool allowEmpty = false)
             : base(onClick: null)
         {
             _candidates = candidates ?? Array.Empty<GameObject>();
+            _showPicker = showPicker;
+            _allowEmpty = allowEmpty;
             _candidatePaths = new HashSet<string>(
                 _candidates
                     .Where(candidate => candidate != null)
@@ -43,6 +49,11 @@ namespace Ee4v.UI
 
         public GameObject Value => _value;
 
+        public void ClearValue()
+        {
+            SetValue(null);
+        }
+
         public static void ShowPicker(VisualElement anchor,
             IReadOnlyList<GameObject> candidates, GameObject selected,
             Action<GameObject> select, bool showAsGrid = false)
@@ -63,6 +74,11 @@ namespace Ee4v.UI
 
         private void OpenPopup()
         {
+            if (_showPicker != null)
+            {
+                _showPicker(this, _value, SetValue);
+                return;
+            }
             PrefabPickerWindow.Show(
                 this,
                 _candidates,
@@ -101,14 +117,14 @@ namespace Ee4v.UI
 
         private bool Accepts(GameObject prefab)
         {
-            return prefab != null &&
-                   _candidatePaths.Contains(
-                       AssetDatabase.GetAssetPath(prefab));
+            return prefab == null ? _allowEmpty :
+                _candidatePaths.Contains(AssetDatabase.GetAssetPath(prefab));
         }
 
         private void OnDragUpdated(DragUpdatedEvent evt)
         {
-            DragAndDrop.visualMode = Accepts(GetDraggedPrefab())
+            var prefab = GetDraggedPrefab();
+            DragAndDrop.visualMode = prefab != null && Accepts(prefab)
                 ? DragAndDropVisualMode.Link
                 : DragAndDropVisualMode.Rejected;
             evt.StopPropagation();
@@ -117,7 +133,7 @@ namespace Ee4v.UI
         private void OnDragPerform(DragPerformEvent evt)
         {
             var prefab = GetDraggedPrefab();
-            if (Accepts(prefab))
+            if (prefab != null && Accepts(prefab))
             {
                 DragAndDrop.AcceptDrag();
                 SetValue(prefab);

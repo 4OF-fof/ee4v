@@ -33,9 +33,82 @@ namespace Ee4v.AssetManager.Infrastructure
             return Capture(request, true);
         }
 
+        public Action SetArchived(string variantId, bool archived)
+        {
+            var path = AssetDatabase.GUIDToAssetPath(variantId);
+            if (!AssetExists(path)) return null;
+            var record = DerivedAssetCatalog.Read(path);
+            if (record == null) throw new InvalidOperationException("An ee4v Variant is required.");
+            if (record.IsArchived == archived) return () => { };
+            var importer = AssetImporter.GetAtPath(path);
+            var previous = importer.userData;
+            importer.userData = DerivedAssetCatalog.Serialize(record.ParentItemId, record.Name,
+                record.Description, record.SourceGuid, archived, record.Tags, record.CreatedAt);
+            AssetDatabase.WriteImportSettingsIfDirty(path);
+            return () => { importer.userData = previous; AssetDatabase.WriteImportSettingsIfDirty(path); };
+        }
+
+        public void ValidateDelete(string variantId)
+        {
+            var path = AssetDatabase.GUIDToAssetPath(variantId);
+            if (!AssetExists(path)) return;
+            var folder = Path.GetDirectoryName(path).Replace('\\', '/');
+            var fullFolder = ProjectAssetPath(folder);
+            if (DerivedAssetCatalog.Read(path) == null ||
+                Path.GetDirectoryName(folder).Replace('\\', '/') != DerivedAssetCatalog.VariantRoot ||
+                DerivedAssetCatalog.FindAll().Any(record => record.AssetPath != path &&
+                    record.AssetPath.StartsWith(folder + "/", StringComparison.Ordinal)))
+                throw new InvalidOperationException("A dedicated ee4v Variant folder is required.");
+            var directories = new Stack<string>();
+            directories.Push(fullFolder);
+            while (directories.Count > 0)
+            {
+                foreach (var entry in Directory.EnumerateFileSystemEntries(directories.Pop()))
+                {
+                    var attributes = File.GetAttributes(entry);
+                    if ((attributes & FileAttributes.ReparsePoint) != 0)
+                        throw new IOException("Linked paths cannot be deleted as Variant assets.");
+                    if ((attributes & FileAttributes.Directory) != 0) directories.Push(entry);
+                }
+            }
+            for (var i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
+            {
+                var scene = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded || UnityEditor.SceneManagement.EditorSceneManager.IsPreviewScene(scene) ||
+                    !scene.path.StartsWith("Assets/", StringComparison.Ordinal)) continue;
+                if (scene.path.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Close the Variant working Scene before deleting it.");
+                if (scene.GetRootGameObjects().Any(root => root.GetComponentsInChildren<Transform>(true)
+                    .Any(transform => PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(transform.gameObject) == path)))
+                    throw new InvalidOperationException("Remove the Variant instance from open Scenes before deleting it.");
+            }
+        }
+
+        public void Delete(string variantId)
+        {
+            ValidateDelete(variantId);
+            var path = AssetDatabase.GUIDToAssetPath(variantId);
+            if (AssetExists(path) && !AssetDatabase.MoveAssetToTrash(Path.GetDirectoryName(path).Replace('\\', '/')))
+                throw new IOException("The Variant folder could not be moved to Trash.");
+        }
+
         public AssetVariantSnapshot Inspect(string rootAssetPath)
         {
             return Capture(new AssetVariantSaveRequest { RootAssetPath = rootAssetPath }, false).Snapshot;
+        }
+
+        public AssetVariant GetMetadata(string variantId)
+        {
+            var path = variantId.StartsWith("Assets/", StringComparison.Ordinal)
+                ? variantId : AssetDatabase.GUIDToAssetPath(variantId);
+            var record = DerivedAssetCatalog.Read(path);
+            return record == null ? null : new AssetVariant
+            {
+                Id = AssetDatabase.AssetPathToGUID(path), Name = record.Name, Description = record.Description,
+                Tags = record.Tags, CreatedAt = record.CreatedAt, UpdatedAt = record.UpdatedAt,
+                SourcePrefabGuid = record.SourceGuid, ParentItemId = record.ParentItemId,
+                RootAssetPath = path, IsArchived = record.IsArchived
+            };
         }
 
         public bool HasChangedRootAsset(string rootAssetPath, AssetVariantSnapshot saved)
@@ -55,7 +128,8 @@ namespace Ee4v.AssetManager.Infrastructure
             return File.Exists(path) && GetFileHash(path) != root.Hash;
         }
 
-        public Action UpdateMetadata(string variantId, string name, string description)
+        public Action UpdateMetadata(string variantId, string name, string description,
+            IReadOnlyList<string> tags = null, DateTime? createdAt = null)
         {
             ValidateName(name);
             var path = AssetDatabase.GUIDToAssetPath(variantId);
@@ -69,6 +143,13 @@ namespace Ee4v.AssetManager.Infrastructure
             if (Path.GetDirectoryName(folder).Replace('\\', '/') != DerivedAssetCatalog.VariantRoot)
             {
                 throw new InvalidOperationException("A dedicated ee4v Variant folder is required.");
+            }
+            var currentTags = tags ?? record.Tags;
+            var currentCreatedAt = createdAt ?? record.CreatedAt;
+            if (record.Name == name && record.Description == description &&
+                record.Tags.SequenceEqual(currentTags) && record.CreatedAt == currentCreatedAt)
+            {
+                return () => { };
             }
             var renamedFolder = DerivedAssetCatalog.VariantRoot + "/" + name;
             var scenePath = Path.ChangeExtension(path, ".unity").Replace('\\', '/');
@@ -107,7 +188,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 }
                 currentPath = AssetDatabase.GUIDToAssetPath(variantId);
                 var importer = AssetImporter.GetAtPath(currentPath);
-                var data = DerivedAssetCatalog.Serialize(record.ParentItemId, name, description, record.SourceGuid);
+                var data = DerivedAssetCatalog.Serialize(record.ParentItemId, name, description,
+                    record.SourceGuid, record.IsArchived, currentTags, currentCreatedAt);
                 if (importer.userData != data)
                 {
                     importer.userData = data;
@@ -276,7 +358,12 @@ namespace Ee4v.AssetManager.Infrastructure
                     {
                         Id = id, SourcePrefabGuid = record.SourceGuid,
                         Name = record.Name, Description = record.Description,
-                        ParentItemId = record.ParentItemId, RootAssetPath = request.RootAssetPath
+                        Tags = record.Tags, CreatedAt = record.CreatedAt,
+                        FileSizeBytes = assets.Where(asset => !asset.IsFolder &&
+                            asset.Path.StartsWith(rootFolder + "/", StringComparison.Ordinal))
+                            .Sum(asset => new FileInfo(ProjectAssetPath(asset.Path)).Length),
+                        ParentItemId = record.ParentItemId, RootAssetPath = request.RootAssetPath,
+                        IsArchived = record.IsArchived
                     },
                     Revision = new AssetVariantRevision
                     {
@@ -516,6 +603,11 @@ namespace Ee4v.AssetManager.Infrastructure
         public void SetBaseRevision(string variantId, string revisionId)
         {
             var path = BaseRevisionPath(variantId);
+            if (string.IsNullOrEmpty(revisionId))
+            {
+                if (File.Exists(path)) File.Delete(path);
+                return;
+            }
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             File.WriteAllText(path, revisionId, new UTF8Encoding(false));
         }

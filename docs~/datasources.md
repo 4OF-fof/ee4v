@@ -4,7 +4,7 @@ Sourceは設定 `assetManager.datasource` の `Ee4v`、`BoothLibraryManager`、`
 
 起動時の自動同期と再読込は同じUI同期処理を使用します。同期前に環境変数を展開した保存先フォルダーと、BOOTH Library Manager選択時のDBファイルの存在を確認します。空欄・不正なパス・存在しない保存先、同期結果のエラー、同期中の例外はConsoleへ理由を出力します。パスの不備ではsnapshotを適用せず、既存DBの取り込みデータを維持します。
 
-表示Catalogも選択したSourceだけに限定します。Item一覧・検索・Collectionの検索結果と一致判定はSQLiteの件数計算とページ分割の前にSourceで絞ります。拡張子条件も選択中SourceのFileだけを評価します。Tag一覧・編集候補は選択中SourceのItemに付いたSource由来Tagと手動編集Tagだけを返します。File一覧とItem検索結果内のFileも選択中Sourceに限定し、未所属Fileにも同じ条件を適用します。派生アセット一覧は選択中Sourceの親Itemを持つものだけを表示します。Sourceなしの手動Itemはee4vのCatalogに含めます。他SourceのデータはDBに保持し、元のSourceへ戻すと再表示します。
+表示Catalogは選択したSourceの素材と、Sourceに依存しない制作物Itemを扱います。Item一覧・検索・Collectionの検索結果と一致判定はSQLiteの件数計算とページ分割の前にこの条件で絞ります。拡張子条件は選択中SourceのFileだけを評価します。Tag一覧・編集候補は表示対象Itemに付いたSource由来Tagと手動編集Tagを返します。File一覧とItem検索結果内のFileは選択中Sourceに限定し、未所属Fileにも同じ条件を適用します。派生アセット一覧は表示対象Itemが所有するものを表示します。Sourceなしの通常の手動Itemはee4vのCatalogに含め、`IsOriginal`の制作物ItemはすべてのSourceで表示します。他SourceのデータはDBに保持し、元のSourceへ戻すと再表示します。制作物Itemの正本とDB再生成の契約は[AssetManager](./asset-manager.md)を参照します。
 
 Sourceを明示した`Open(databasePath, datasource)`と共有sessionはCatalogを絞ります。Sourceを指定しない非共有`Open(databasePath)`は全Catalogを扱う管理APIです。IDを指定した単体取得・依存関係・取り込み済みGUIDの関連付けはSource切替で遮断しません。DBに残る別Sourceの取り込み済みAssetの保護と保存済み参照を維持します。Collection定義自体はSource共通で保持します。
 
@@ -20,7 +20,7 @@ BOOTH Library Manager DBは `SQLiteOpenFlags.ReadOnly` で開き、一つのread
 
 Eagleライブラリ、ee4v共通データ、BOOTH Library Managerのfolderlibraryは共通`PathField`でフォルダーを選択します。BOOTH Library Manager DBは`.db`ファイルを選択します。手入力も可能です。Eagleの同期対象ルートはライブラリ内のフォルダー名を表すため通常の文字列入力です。
 
-Fileは指定folderlibrary直下の `<registered_items.id>/` 以下の実ファイルを再帰列挙します。この配置は過去connector (`142a6558` の `new/Editor/AssetManager/api/connecter/blm/BlmConnectorApi.cs`、`ReadRegisteredItemFiles`) の `Path.Combine(itemDirectoryPath, registeredItemId)` と一致します。directoryをFileにしない現構成の制約に合わせて実Fileだけを再帰列挙します。フォルダーが未配置でもメタデータItemは取り込めます。symlink/junctionと相対path traversalは拒否します。rootは明示指定し、BLM preferencesの自動読取は行いません。実ユーザーDBや実File配置は検証で参照しません。
+Fileは指定folderlibrary直下の `<registered_items.id>/` 以下の実ファイルを再帰列挙します。directoryはFileとして登録しません。フォルダーが未配置でもメタデータItemは取り込めます。symlink/junctionと相対path traversalは拒否します。rootは明示指定し、BLM preferencesの自動読取は行いません。実ユーザーDBや実File配置は検証で参照しません。
 
 ## ee4vライブラリと待受server
 
@@ -42,4 +42,4 @@ UnityでDatasourceをEe4v、共通データの保存先をserverの`--library`�
 
 ## 検証
 
-新規自動テストやケースは追加しません。JavaScript構文、隔離フォルダーでの一時loopback通信・コピー・重複取り込みを手動検証します。Unityは2022.3の隔離VerifyProjectから自worktreeのsrcだけを参照し、既存AssetManagerのEditModeテストを実行します。実ユーザーDB・ブラウザ設定への書込、Unity6検証は行いません。
+連携はJavaScript構文と、隔離フォルダーでの一時loopback通信・コピー・重複取り込みで確認します。Unity側の同期とCatalogの保証範囲は[test.md](./test.md)のAssetManagerテストを参照してください。実ユーザーDB・ブラウザ設定への書き込みは行いません。

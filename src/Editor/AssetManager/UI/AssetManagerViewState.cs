@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.AssetManager.Contracts;
 
 namespace Ee4v.AssetManager.UI
 {
@@ -30,7 +31,8 @@ namespace Ee4v.AssetManager.UI
         ItemDetailPage,
         ItemSort,
         SearchTargets,
-        VariantSelection
+        VariantSelection,
+        ArchiveSelection
     }
 
     internal sealed class AssetManagerViewState
@@ -48,7 +50,6 @@ namespace Ee4v.AssetManager.UI
 
         public AssetManagerPage Page { get; private set; }
         public string CollectionId { get; private set; }
-        public string TagPath { get; private set; }
         public string DetailItemId { get; private set; }
         public string DetailVariantId { get; private set; }
         public bool IsDerivedAssetsPage { get; private set; }
@@ -57,6 +58,8 @@ namespace Ee4v.AssetManager.UI
         public string SelectedFileId { get; private set; }
         public IReadOnlyList<string> SelectedVariantIds => _selectedVariantIds;
         public string SelectedVariantId { get; private set; }
+        public IReadOnlyList<string> SelectedArchiveEntryIds { get; private set; } = Array.Empty<string>();
+        public string SelectedArchiveEntryId { get; private set; }
         public bool CanGoBack => _backHistory.Count > 0;
         public bool CanGoForward => _forwardHistory.Count > 0;
         public AssetManagerItemSortField ItemSortField { get; private set; } =
@@ -66,6 +69,14 @@ namespace Ee4v.AssetManager.UI
             AssetManagerSearchTarget.All;
 
         public event Action<AssetManagerViewStateChange> Changed;
+
+        public AssetFilterNode SearchFilter { get; private set; }
+
+        public void SetSearchFilter(AssetFilterNode filter)
+        {
+            SearchFilter = filter;
+            Changed?.Invoke(AssetManagerViewStateChange.SearchTargets);
+        }
 
         public void SelectPage(AssetManagerPage page)
         {
@@ -88,11 +99,12 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            Navigate(new NavigationLocation(
-                AssetManagerPage.Tags,
-                null,
-                null,
-                tagPath));
+            var tag = tagPath.Trim();
+            SearchFilter = AssetManagerSearch.AddTagCondition(SearchFilter, tag);
+            var page = Page == AssetManagerPage.Tags || Page == AssetManagerPage.Variants ||
+                Page == AssetManagerPage.UnassignedFiles ? AssetManagerPage.Library : Page;
+            Navigate(new NavigationLocation(page,
+                page == AssetManagerPage.Collection ? CollectionId : null, null));
         }
 
         public void OpenItemDetail(string itemId)
@@ -105,8 +117,7 @@ namespace Ee4v.AssetManager.UI
             Navigate(new NavigationLocation(
                 Page == AssetManagerPage.Variants ? AssetManagerPage.Library : Page,
                 CollectionId,
-                itemId,
-                TagPath));
+                itemId));
         }
 
         public void OpenVariantDetail(string variantId)
@@ -120,7 +131,6 @@ namespace Ee4v.AssetManager.UI
                 Page,
                 CollectionId,
                 null,
-                TagPath,
                 variantId));
         }
 
@@ -157,8 +167,7 @@ namespace Ee4v.AssetManager.UI
             Navigate(new NavigationLocation(
                 Page,
                 CollectionId,
-                null,
-                TagPath));
+                null));
         }
 
         public void GoBack()
@@ -253,6 +262,19 @@ namespace Ee4v.AssetManager.UI
             Changed?.Invoke(AssetManagerViewStateChange.VariantSelection);
         }
 
+        public void SelectArchiveEntries(IEnumerable<string> ids, string primaryId)
+        {
+            var selected = (ids ?? Array.Empty<string>())
+                .Where(id => !string.IsNullOrEmpty(id))
+                .Distinct(StringComparer.Ordinal).ToArray();
+            var primary = selected.Contains(primaryId, StringComparer.Ordinal)
+                ? primaryId : selected.LastOrDefault();
+            if (SelectedArchiveEntryId == primary && SelectedArchiveEntryIds.SequenceEqual(selected)) { return; }
+            SelectedArchiveEntryIds = selected;
+            SelectedArchiveEntryId = primary;
+            Changed?.Invoke(AssetManagerViewStateChange.ArchiveSelection);
+        }
+
         public void SetItemSortField(AssetManagerItemSortField field)
         {
             if (ItemSortField == field)
@@ -310,7 +332,6 @@ namespace Ee4v.AssetManager.UI
             _location = location;
             Page = location.Page;
             CollectionId = location.CollectionId;
-            TagPath = location.TagPath;
             DetailItemId = location.ItemId;
             DetailVariantId = location.VariantId;
             IsDerivedAssetsPage = false;
@@ -325,6 +346,8 @@ namespace Ee4v.AssetManager.UI
             SelectedFileId = null;
             _selectedVariantIds = Array.Empty<string>();
             SelectedVariantId = null;
+            SelectedArchiveEntryIds = Array.Empty<string>();
+            SelectedArchiveEntryId = null;
         }
 
         private bool HasSameItemSelection(
@@ -359,20 +382,17 @@ namespace Ee4v.AssetManager.UI
                 AssetManagerPage page,
                 string collectionId,
                 string itemId,
-                string tagPath = null,
                 string variantId = null)
             {
                 Page = page;
                 CollectionId = collectionId;
                 ItemId = itemId;
-                TagPath = tagPath;
                 VariantId = variantId;
             }
 
             public AssetManagerPage Page { get; }
             public string CollectionId { get; }
             public string ItemId { get; }
-            public string TagPath { get; }
             public string VariantId { get; }
 
             public bool IsSame(NavigationLocation other)
@@ -386,10 +406,6 @@ namespace Ee4v.AssetManager.UI
                     string.Equals(
                         ItemId,
                         other.ItemId,
-                        StringComparison.Ordinal) &&
-                    string.Equals(
-                        TagPath,
-                        other.TagPath,
                         StringComparison.Ordinal) &&
                     string.Equals(
                         VariantId,

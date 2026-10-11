@@ -162,6 +162,11 @@ namespace Ee4v.AssetManager.UI
         private ISet<string> _readOnlyValues =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private Vector2? _pickerPanelPosition;
+        private AssetTagPickerWindow _pickerWindow;
+
+        internal bool IsPickerOpen { get; private set; }
+
+        internal void ClosePicker() => _pickerWindow?.Close();
 
         public AssetTagField(
             Action<string> selectTag = null,
@@ -262,13 +267,20 @@ namespace Ee4v.AssetManager.UI
         {
             var panelPosition = _pickerPanelPosition;
             _pickerPanelPosition = null;
-            AssetTagPickerWindow.Show(
+            // Set this before ShowPopup transfers focus to the child window.
+            IsPickerOpen = true;
+            _pickerWindow = AssetTagPickerWindow.Show(
                 _addButton,
                 panelPosition,
                 _available,
                 _values,
                 SetValuesWithoutNotify,
-                () => ValuesCommitted?.Invoke());
+                () =>
+                {
+                    IsPickerOpen = false;
+                    _pickerWindow = null;
+                    ValuesCommitted?.Invoke();
+                });
         }
 
         private void OnClick(ClickEvent evt)
@@ -291,6 +303,7 @@ namespace Ee4v.AssetManager.UI
         private SearchField _search;
         private VisualElement _tagContainer;
         private bool _didClose;
+        private bool _singleSelection;
 
         public static AssetTagPickerWindow Show(
             VisualElement anchor,
@@ -298,13 +311,15 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyList<AssetTagOption> options,
             IReadOnlyList<string> selected,
             Action<IReadOnlyList<string>> selectionChanged,
-            Action closed)
+            Action closed,
+            bool singleSelection = false)
         {
             CloseExistingWindows();
             var window = CreateInstance<AssetTagPickerWindow>();
             window._selection = new AssetTagSelection(options, selected);
             window._selectionChanged = selectionChanged;
             window._closed = closed;
+            window._singleSelection = singleSelection;
             var size = new Vector2(PopupWidth, PopupHeight);
             if (panelPosition.HasValue)
             {
@@ -450,6 +465,14 @@ namespace Ee4v.AssetManager.UI
 
         private void Add(string value)
         {
+            value = (value ?? string.Empty).Trim();
+            if (value.Length == 0) { return; }
+            if (_singleSelection)
+            {
+                _selectionChanged?.Invoke(new[] { value });
+                Close();
+                return;
+            }
             _selection.Add(value);
             _selectionChanged?.Invoke(_selection.Selected.ToArray());
             _search?.SetValueWithoutNotify(string.Empty);

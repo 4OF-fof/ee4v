@@ -126,9 +126,14 @@ namespace Ee4v.AvatarEditing
                     value =>
                     {
                         if (value && _instance != null) EditorSceneManager.MarkSceneDirty(_instance.scene);
+                        if (value && _instance != null) EditorSceneApi.SaveAfterEdit(_instance.scene);
                         MarkChanged();
                     },
-                    MarkChanged, ShowError, CreateMaterialVariant),
+                    () =>
+                    {
+                        if (_instance != null) EditorSceneApi.SaveAfterEdit(_instance.scene);
+                        MarkChanged();
+                    }, ShowError, CreateMaterialVariant),
                 new AvatarEditingHost(Render, Rebuild, ClearFeatureData, Repaint, SyncPreviewSelection))
             {
                 UiRoot = rootVisualElement, ControlsHost = controls, Preview = preview,

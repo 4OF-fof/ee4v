@@ -559,6 +559,132 @@ namespace Ee4v.AvatarParts
                     animator.isHuman);
         }
 
+        private Dictionary<Transform, Vector3> ResolveAddedPrefabBodyScales(
+            GameObject added)
+        {
+            var result = new Dictionary<Transform, Vector3>();
+            var avatar = _context.Root;
+            var animator = avatar.GetComponentsInChildren<Animator>(true)
+                .FirstOrDefault(candidate => candidate.avatar != null &&
+                    candidate.avatar.isHuman && candidate.isHuman &&
+                    !candidate.transform.IsChildOf(added.transform) &&
+                    PrefabHierarchyUtility.IsInScope(candidate.transform,
+                        avatar.transform, -1, _context.PrefabSiblingIndices));
+            if (animator == null)
+            {
+                return result;
+            }
+
+            var prefab = _context.PrefabAsset != null
+                ? _context.PrefabAsset
+                : PrefabUtility.GetCorrespondingObjectFromSource(avatar);
+            var basePrefab = prefab != null
+                ? PrefabUtility.GetCorrespondingObjectFromSource(prefab)
+                : null;
+            var basePath = AssetDatabase.GetAssetPath(basePrefab != null
+                ? basePrefab : prefab);
+            if (string.IsNullOrEmpty(basePath))
+            {
+                return result;
+            }
+
+            var ratios = new Dictionary<Transform, Vector3>();
+            for (var index = 0; index < (int)HumanBodyBones.LastBone; index++)
+            {
+                var bone = animator.GetBoneTransform((HumanBodyBones)index);
+                if (bone == null)
+                {
+                    continue;
+                }
+                var source = PrefabUtility.GetCorrespondingObjectFromSourceAtPath(
+                    bone, basePath);
+                if (source == null)
+                {
+                    continue;
+                }
+                var ratio = new Vector3(
+                    GetScaleRatio(bone.localScale.x, source.localScale.x),
+                    GetScaleRatio(bone.localScale.y, source.localScale.y),
+                    GetScaleRatio(bone.localScale.z, source.localScale.z));
+                if (ratio != Vector3.one)
+                {
+                    ratios[bone] = ratio;
+                }
+            }
+            if (ratios.Count == 0)
+            {
+                return result;
+            }
+
+            var mappings = new Dictionary<Transform, Transform>();
+            foreach (var merge in added.GetComponentsInChildren<ModularAvatarMergeArmature>(true))
+            {
+                var bones = merge.GetBonesMapping();
+                if (bones == null) { continue; }
+                foreach (var pair in bones)
+                {
+                    if (pair.Item1 != null && pair.Item2 != null)
+                    {
+                        mappings[pair.Item2] = pair.Item1;
+                    }
+                }
+            }
+            var namedBones = ratios.Keys.GroupBy(bone => bone.name, StringComparer.Ordinal)
+                .Where(group => group.Count() == 1)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+            var armature = FindPartArmature(added.transform);
+            var candidates = armature != null
+                ? armature.GetComponentsInChildren<Transform>(true)
+                : added.GetComponentsInChildren<SkinnedMeshRenderer>(true)
+                    .SelectMany(renderer => renderer.bones).ToArray();
+            var addedPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(added);
+            foreach (var bone in candidates.Concat(mappings.Keys).Distinct())
+            {
+                if (bone == null || bone == added.transform || !bone.IsChildOf(added.transform))
+                {
+                    continue;
+                }
+                if (!mappings.TryGetValue(bone, out var target))
+                {
+                    namedBones.TryGetValue(bone.name, out target);
+                }
+                if (target == null || !ratios.TryGetValue(target, out var ratio))
+                {
+                    continue;
+                }
+                var source = string.IsNullOrEmpty(addedPath) ? null
+                    : PrefabUtility.GetCorrespondingObjectFromSourceAtPath(bone, addedPath);
+                if (source == null)
+                {
+                    continue;
+                }
+                var scale = Vector3.Scale(source.localScale, ratio);
+                if (bone.localScale != scale)
+                {
+                    result[bone] = scale;
+                }
+            }
+            return result;
+        }
+
+        private IReadOnlyList<Transform> ResolvePrefabScaleTargets()
+        {
+            if (_context.Root == null)
+            {
+                return Array.Empty<Transform>();
+            }
+
+            var root = _context.Root.transform;
+            var index = _context.SelectedPrefabSiblingIndex;
+            if (!index.HasValue || index.Value == -1)
+            {
+                return new[] { root };
+            }
+            return index.Value >= 0 && index.Value < root.childCount
+                ? new[] { root.GetChild(index.Value) }
+                : Array.Empty<Transform>();
+        }
+
         private IReadOnlyList<Transform> ResolveBodyScaleTargets(
             BodyScaleDefinition definition,
             Animator animator)
@@ -677,6 +803,16 @@ namespace Ee4v.AvatarParts
 
         private static Vector3 GetBaseLocalScale(Transform target)
         {
+            if (PrefabUtility.IsAnyPrefabInstanceRoot(target.gameObject))
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(
+                        target.gameObject));
+                if (prefab != null)
+                {
+                    return prefab.transform.localScale;
+                }
+            }
             var source = PrefabUtility
                 .GetCorrespondingObjectFromSource(target) as Transform;
             return source != null ? source.localScale : Vector3.one;

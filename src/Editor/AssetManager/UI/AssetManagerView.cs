@@ -327,6 +327,11 @@ namespace Ee4v.AssetManager.UI
         private readonly AssetManagerViewState _viewState;
         private readonly AssetManagerViewMode _mode;
         private readonly Action<string> _createDerivedAsset;
+        private Action _createOriginalAsset;
+        private bool _creatingOriginalAsset;
+        private string _originalAssetName = string.Empty;
+        private string _originalAssetDescription = string.Empty;
+        private GameObject _originalAssetPrefab;
         private readonly CachedImageCache _imageCache;
         private readonly bool _ownsImageCache;
         private readonly VisualElement _navigation;
@@ -339,6 +344,7 @@ namespace Ee4v.AssetManager.UI
         private SearchField _search;
         private AssetTagListView _tagList;
         private UiButton _sortButton;
+        private UiButton _filterButton;
         private UiButton _reloadButton;
         private UiButton _backButton;
         private UiButton _forwardButton;
@@ -370,6 +376,11 @@ namespace Ee4v.AssetManager.UI
         {
             _modifyVariant = handler;
             Refresh();
+        }
+
+        internal void SetOriginalAssetCreationHandler(Action handler)
+        {
+            _createOriginalAsset = handler;
         }
 
         public AssetManagerView(
@@ -632,6 +643,12 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
+            if (_variantState.VariantMetadataSaveCount > 0)
+            {
+                if (ShowsNavigation) RebuildNavigation();
+                return;
+            }
+
             if (change.Kind ==
                 AssetManagerChangeKind.FileImportedAssetGuidsChanged)
             {
@@ -660,7 +677,7 @@ namespace Ee4v.AssetManager.UI
         {
             _importedItemIdsInProject = null;
             if (_variantState.VariantMetadataSaveCount > 0) { return; }
-            if (ShowsVariants || !string.IsNullOrEmpty(_viewState.DetailVariantId) ||
+            if (ShowsVariants || _viewState.Page == AssetManagerPage.Archived || !string.IsNullOrEmpty(_viewState.DetailVariantId) ||
                 !string.IsNullOrEmpty(_viewState.DetailItemId))
             {
                 Refresh();
@@ -687,6 +704,14 @@ namespace Ee4v.AssetManager.UI
         {
             switch (change)
             {
+                case AssetManagerViewStateChange.ArchiveSelection:
+                    if (ShowsMain)
+                    {
+                        _itemGrid.SetSelectedItemIds(
+                            _viewState.SelectedArchiveEntryIds, _viewState.SelectedArchiveEntryId);
+                    }
+                    if (ShowsInformation) { RefreshDetail(); }
+                    break;
                 case AssetManagerViewStateChange.VariantSelection:
                     if (ShowsMain)
                     {
@@ -699,6 +724,7 @@ namespace Ee4v.AssetManager.UI
                     }
                     break;
                 case AssetManagerViewStateChange.Navigation:
+                    _creatingOriginalAsset = false;
                     if (ShowsNavigation)
                     {
                         RebuildNavigation();

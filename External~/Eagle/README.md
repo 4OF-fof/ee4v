@@ -17,6 +17,8 @@ npm run check
 
 この確認は配布時の契約を対象とし、関数名や処理順などの内部実装は固定しない。
 
+`scripts/build.mjs`は静的ファイルとコンパイル済みJavaScriptを配布フォルダーへ配置し、静的ファイルのコピーではTypeScriptを除外する。`scripts/verify.mjs`は成果物と翻訳キーの整合性を確認する。
+
 ビルド後の plugin path:
 
 - `External~/Eagle/dist/BoothCompat`
@@ -30,6 +32,9 @@ npm run check
 - `BoothMeta`タグ付きJSON itemを1件または複数選択して右クリックメニューから実行すると、popupを開かずにBOOTH情報とカスタムサムネイルを順番に再取得し、結果を通知する。1件の失敗で後続を止めず、download履歴とEagle上のタグは維持する
 - `BoothMeta` タグ付き JSON item 選択時は inspector を右ペインへ表示する
 - Booth metadata は JSON item 本文が唯一の正本
+- JSON本文にBOOTH商品名・説明・商品URL・ショップ・タグ・サムネイルURLを保存し、Eagle itemの名前・URL・注釈も更新する。商品名のパス区切りやファイル名に使えない文字はEagle item名だけで空白へ置き換え、JSON内の元の表記は保持する
+- 再取得では`attachedAt`と`downloads`を引き継ぎ、Eagle上のタグを維持する。最新のサムネイルURLからカスタムサムネイルを設定し、BOOTH情報だけ更新できた場合はサムネイルの失敗を別に示す
+- 複数選択の結果は更新・失敗・対象外・未処理の件数と最初の問題を一つの通知へまとめる。BoothMetaが一件もない場合は通常のURL入力popupを開く。Inspectorには再取得操作を置かない
 - Window / Inspector は Eagle の locale、theme、library 変更へ追従する
 - 選択変更中の Inspector は loading state を表示し、古い選択結果で上書きしない
 

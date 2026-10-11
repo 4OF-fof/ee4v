@@ -48,6 +48,7 @@ namespace Ee4v.UI
         private readonly Func<TData, bool> _canInteractWithItem;
         private readonly Action<TData> _onItemDoubleClicked;
         private readonly bool _selectOnContextClick;
+        private readonly ScrollerVisibility _verticalScrollerVisibility;
         private readonly string _searchTooltip;
         private readonly string _clearTooltip;
         private readonly IconState _searchIconState;
@@ -71,7 +72,8 @@ namespace Ee4v.UI
             IconState searchIconState = null,
             IconState clearIconState = null,
             float fixedItemHeight = 20f,
-            bool selectOnContextClick = true)
+            bool selectOnContextClick = true,
+            ScrollerVisibility verticalScrollerVisibility = ScrollerVisibility.Hidden)
         {
             if (makeItem == null)
             {
@@ -84,6 +86,7 @@ namespace Ee4v.UI
             _canInteractWithItem = canInteractWithItem;
             _onItemDoubleClicked = onItemDoubleClicked;
             _selectOnContextClick = selectOnContextClick;
+            _verticalScrollerVisibility = verticalScrollerVisibility;
             _searchTooltip = searchTooltip ?? string.Empty;
             _clearTooltip = clearTooltip ?? string.Empty;
             _searchIconState = searchIconState;
@@ -447,7 +450,7 @@ namespace Ee4v.UI
             var hasItems = filteredItems.Count > 0;
             _treeView.style.display = hasItems ? DisplayStyle.Flex : DisplayStyle.None;
             _emptyLabel.style.display = hasItems ? DisplayStyle.None : DisplayStyle.Flex;
-            HideScrollbars();
+            ApplyScrollerVisibility();
         }
 
         private List<int> GetExpandedItemIds(
@@ -488,13 +491,13 @@ namespace Ee4v.UI
 
         private void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            HideScrollbars();
-            schedule.Execute(HideScrollbars);
+            ApplyScrollerVisibility();
+            schedule.Execute(ApplyScrollerVisibility);
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)
         {
-            HideScrollbars();
+            ApplyScrollerVisibility();
         }
 
         private void OnTreeWheel(WheelEvent evt)
@@ -502,12 +505,12 @@ namespace Ee4v.UI
             _treeView.Focus();
         }
 
-        private void HideScrollbars()
+        private void ApplyScrollerVisibility()
         {
             var scrollViews = _treeView.Query<ScrollView>().ToList();
             for (var i = 0; i < scrollViews.Count; i++)
             {
-                scrollViews[i].verticalScrollerVisibility = ScrollerVisibility.Hidden;
+                scrollViews[i].verticalScrollerVisibility = _verticalScrollerVisibility;
                 scrollViews[i].horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             }
         }

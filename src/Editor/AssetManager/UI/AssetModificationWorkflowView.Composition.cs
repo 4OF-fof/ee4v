@@ -235,7 +235,6 @@ namespace Ee4v.AssetManager.UI
             if (!_parts.FlushPendingPartVisibility()) { return; }
             _avatarContext.SelectedPrefabSiblingIndex = siblingIndex;
             _avatarContext.SelectedPrefabName = name ?? string.Empty;
-            _avatarContext.SelectedBodyPart = null;
             _avatarContext.SelectedPartKey = null;
             _avatarContext.SelectedMaterial = null;
             if (siblingIndex.HasValue &&
@@ -251,7 +250,7 @@ namespace Ee4v.AssetManager.UI
             _workspaceHeader = BuildWorkspaceHeader();
             Insert(0, _workspaceHeader);
             _categoryRail?.SetPrefabScope(siblingIndex.HasValue);
-            _avatarContext.Preview?.FocusBodyPart(null, true);
+            _avatarContext.Preview?.FocusBodyPart(_avatarContext.SelectedBodyPart, true);
             ShowCategory(_currentCategory, false, true);
             SyncPreviewSelection();
             RequestRepaint();
@@ -445,7 +444,7 @@ namespace Ee4v.AssetManager.UI
                     {
                         SiblingIndex = index,
                         Name = child.name,
-                        IsAdded = PrefabUtility.IsAddedGameObjectOverride(child),
+                        IsAdded = IsAddedAssetChild(root, child),
                         IsActiveSelf = child.activeSelf,
                         IsVisible = child.activeSelf &&
                             !string.Equals(child.tag, "EditorOnly",
@@ -457,11 +456,11 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private void OpenAssetPicker(
-            VisualElement anchor,
-            IReadOnlyList<VariantSourceOption> sources)
+        private void OpenAssetPicker(VisualElement anchor)
         {
             var target = _avatarContext.Root;
+            var variantPath = GetWorkingAssetPath();
+            var sources = GetVariantSources(prefab => CanAddPrefab(prefab, variantPath));
             AssetPrefabPickerWindow.Show(
                 anchor,
                 sources,
@@ -471,6 +470,13 @@ namespace Ee4v.AssetManager.UI
                     if (!_disposed && _avatarContext.Root == target)
                     {
                         AddPrefab(prefab);
+                    }
+                },
+                () =>
+                {
+                    if (!_disposed && _avatarContext.Root == target)
+                    {
+                        ShowTemporaryAssetManager();
                     }
                 });
         }
@@ -489,16 +495,7 @@ namespace Ee4v.AssetManager.UI
             var previousBodyPart = _avatarContext.SelectedBodyPart;
             try
             {
-                var prefabPath = AssetDatabase.GetAssetPath(prefab);
-                var variantPath = GetWorkingAssetPath();
-                if (string.IsNullOrEmpty(prefabPath) ||
-                    !prefabPath.EndsWith(".prefab",
-                        StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(prefabPath, variantPath,
-                        StringComparison.OrdinalIgnoreCase) ||
-                    AssetDatabase.GetDependencies(prefabPath, true).Any(path =>
-                        string.Equals(path, variantPath,
-                            StringComparison.OrdinalIgnoreCase)))
+                if (!CanAddPrefab(prefab, GetWorkingAssetPath()))
                 {
                     ShowAssetError("workflow.assets.invalidPrefab");
                     return;
@@ -517,6 +514,7 @@ namespace Ee4v.AssetManager.UI
                     added.transform.SetParent(root.transform, false);
                     Undo.RegisterCreatedObjectUndo(added,
                         "Add Variant Prefab");
+                    _parts.MatchAddedPrefabBodyScale(added);
                     _avatarContext.SelectedPrefabSiblingIndex = null;
                     _avatarContext.SelectedPrefabName = string.Empty;
                     _avatarContext.SelectedBodyPart = null;
@@ -536,6 +534,47 @@ namespace Ee4v.AssetManager.UI
                 Debug.LogException(exception);
                 ShowAssetError("workflow.assets.saveFailed");
             }
+        }
+
+        private static bool CanAddPrefab(GameObject prefab, string variantPath)
+        {
+            if (prefab == null) return false;
+            var prefabPath = AssetDatabase.GetAssetPath(prefab);
+            return !string.IsNullOrEmpty(prefabPath) &&
+                prefabPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(prefabPath, variantPath, StringComparison.OrdinalIgnoreCase) &&
+                !AssetDatabase.GetDependencies(prefabPath, true).Any(path =>
+                    string.Equals(path, variantPath, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsAddedAssetChild(GameObject root, GameObject child)
+        {
+            if (root == null || child == null ||
+                child.transform.parent != root.transform ||
+                !PrefabUtility.IsAnyPrefabInstanceRoot(child))
+            {
+                return false;
+            }
+            if (PrefabUtility.IsAddedGameObjectOverride(child))
+            {
+                return true;
+            }
+
+            var variant = PrefabUtility.GetCorrespondingObjectFromSource(root);
+            var basePrefab = variant != null
+                ? PrefabUtility.GetCorrespondingObjectFromSource(variant)
+                : null;
+            var basePath = basePrefab != null
+                ? AssetDatabase.GetAssetPath(basePrefab)
+                : string.Empty;
+            if (string.IsNullOrEmpty(basePath) && variant != null &&
+                PrefabUtility.GetPrefabAssetType(variant) == PrefabAssetType.Regular)
+            {
+                return true;
+            }
+            return !string.IsNullOrEmpty(basePath) &&
+                   PrefabUtility.GetCorrespondingObjectFromSourceAtPath(
+                       child, basePath) == null;
         }
 
         private void RemoveAssetChild(AssetChildEntry entry)
@@ -570,7 +609,7 @@ namespace Ee4v.AssetManager.UI
                         throw new InvalidOperationException(
                             "The child Prefab changed before editing.");
                     }
-                    if (!PrefabUtility.IsAddedGameObjectOverride(child))
+                    if (!IsAddedAssetChild(root, child))
                     {
                         throw new InvalidOperationException(
                             "Inherited Prefab children cannot be removed.");

@@ -28,6 +28,8 @@ namespace Ee4v.AssetManager.Contracts
         Task MoveGalleryImageToFront(string variantId, string imageId);
         Task<AssetVariantRevision> Save(AssetVariantSaveRequest request);
         Task UpdateMetadata(string variantId, UpdateAssetVariantRequest request);
+        Task SetArchived(string variantId, bool archived);
+        Task Delete(string variantId);
         Task<string> Restore(string variantId, string revisionId);
         void RebuildIndex();
     }
@@ -35,15 +37,19 @@ namespace Ee4v.AssetManager.Contracts
     public sealed class AssetVariant
     {
         public string Id { get; set; }
-        /// <summary>The original Prefab, retained as provenance independently of the owning asset.</summary>
+        /// <summary>The optional base Prefab, retained as provenance independently of the owning Item.</summary>
         public string SourcePrefabGuid { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        public IReadOnlyList<string> Tags { get; set; } = Array.Empty<string>();
         /// <summary>The AssetManager Item that owns this Variant and its Git repository.</summary>
         public string ParentItemId { get; set; }
         public string RootAssetPath { get; set; }
         public string HeadRevisionId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public long? FileSizeBytes { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public bool IsArchived { get; set; }
     }
 
     public sealed class AssetVariantRevision
@@ -67,6 +73,7 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string Name { get; set; }
         public string Description { get; set; }
+        public IReadOnlyList<string> Tags { get; set; }
     }
 
     public sealed class AssetVariantChangeStatus

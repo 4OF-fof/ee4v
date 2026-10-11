@@ -24,6 +24,7 @@ namespace Ee4v.AssetManager.UI
             new AssetManagerViewState();
         private static IAssetManager _manager;
         private static IAssetVariantManager _variantManager;
+        private static IDisposable _pickerOrigins;
 
         internal static event Action ManagerInvalidated;
 
@@ -81,12 +82,23 @@ namespace Ee4v.AssetManager.UI
                     AssetManagerSettings.Ee4vLibraryPath),
                 "asset-manager-v1.db"), AssetManagerSettings.SelectedDatasource);
             AssetProtectionModule.Configure(_manager);
+            var manager = _manager;
+            _pickerOrigins = AssetPickerCatalog.RegisterOrigins(() => AssetPickerOriginProvider.Snapshot(manager));
+            _manager.Changed += OnPickerMetadataChanged;
             return _manager;
+        }
+
+        private static void OnPickerMetadataChanged(AssetManagerChange change)
+        {
+            AssetPickerCatalog.InvalidateOrigins();
         }
 
         private static void InvalidateManager()
         {
             AssetProtectionModule.Configure(null);
+            _pickerOrigins?.Dispose();
+            _pickerOrigins = null;
+            if (_manager != null) _manager.Changed -= OnPickerMetadataChanged;
             _manager = null;
             _variantManager = null;
             _viewState = new AssetManagerViewState();
