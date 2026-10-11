@@ -13,7 +13,7 @@
 5. `Settings → Environments → github-pages`にブランチ制限がある場合は`master`を許可します。マージだけで公開する場合、Required reviewersは設定しません。
 6. `dev`から`master`へのPull Requestを作成してマージします。Pull Request作成画面では既定のbaseが`dev`になるため、リリース時はbaseを`master`へ変更します。
 
-最初のマージで`src/package.json`の`0.1.0`から`v0.1.0`リリースが作成され、ZIPと`package.json`が添付されます。同じworkflow内で公開済みリリースからVPM一覧を生成し、Pagesへデプロイします。結果はGitHubの`Actions → Publish VPM`で確認します。
+マージ時の`src/package.json`のversionから`v{version}`リリースが作成され、ZIPと`package.json`が添付されます。同じworkflow内で公開済みリリースからVPM一覧を生成し、Pagesへデプロイします。結果はGitHubの`Actions → Publish VPM`で確認します。
 
 通常のPages URLでは登録用URLは`https://4of-fof.github.io/ee4v/index.json`、案内ページは`https://4of-fof.github.io/ee4v/`です。URLは`actions/configure-pages`の出力から生成するため、カスタムドメインを設定した場合もPages側の公開URLを使います。
 
