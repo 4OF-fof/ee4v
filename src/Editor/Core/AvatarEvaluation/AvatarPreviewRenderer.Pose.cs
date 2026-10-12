@@ -62,11 +62,13 @@ namespace Ee4v.Core.AvatarEvaluation
         private void AlignBone(Transform bone, Transform child, Vector3 direction)
         {
             if (bone == null || child == null) return;
-            var matrix = GetPoseMatrix(bone);
-            var current = GetTransformPosition(child) - matrix.MultiplyPoint3x4(Vector3.zero);
+            var matrix = AvatarPreviewPose.GetWorldMatrix(bone, _poseBindings, _rotations, _scales);
+            var childMatrix = AvatarPreviewPose.GetWorldMatrix(child, _poseBindings, _rotations, _scales);
+            var current = childMatrix.MultiplyPoint3x4(Vector3.zero) - matrix.MultiplyPoint3x4(Vector3.zero);
             if (current.sqrMagnitude < 0.000001f) return;
             AvatarPreviewPose.Decompose(matrix, out _, out var rotation, out _);
-            AvatarPreviewPose.Decompose(GetPoseMatrix(bone.parent), out _, out var parentRotation, out _);
+            AvatarPreviewPose.Decompose(AvatarPreviewPose.GetWorldMatrix(bone.parent, _poseBindings, _rotations, _scales),
+                out _, out var parentRotation, out _);
             var worldRotation = Quaternion.FromToRotation(current, direction) * rotation;
             _rotations[bone] = Quaternion.Inverse(parentRotation) * worldRotation;
         }

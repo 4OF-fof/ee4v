@@ -58,7 +58,7 @@ MA Parametersのprivate・prefix・NotSynced宣言と組み込み名は候補か
 
 `AvatarPreviewPose.GetWorldMatrix(source, bindings, rotations, scales, cache)`はClipを使用しない表示用ポーズの計算です。回転・スケールのoverrideがある場合にMAの骨対応を適用し、ない場合は元Transformの階層から計算します。渡されたcacheは一回のポーズ計算内で共有し、次のフレームでは利用側が破棄します。元TransformやArmatureへ書き込みません。
 
-Prefab用コピーではMonoBehaviourを取り除く前に骨対応を取得し、Scene入力では`RefreshHierarchy`で更新します。Humanoidの仮ポーズ、表示用骨の生成と描画後の復元は`AvatarPreviewRenderer`が所有します。
+Prefab用コピーではMonoBehaviourを取り除く前に骨対応を取得し、Scene入力では`RefreshHierarchy`で更新します。Humanoidの仮ポーズ、表示用骨の生成と描画後の復元は`AvatarPreviewRenderer`が所有します。仮ポーズの上腕・前腕の補正はサンプリング済みの行列から独立して、基準骨格と更新済みの表示用回転から順に計算します。Generic合成はその基準姿勢へ動作の曲線・直接指定値を適用します。
 
 ## 制約
 
