@@ -14,33 +14,46 @@ namespace Ee4v.AvatarParts
 {
     public sealed partial class AvatarPartsEditor
     {
-        private readonly HashSet<string> _collapsedBodyShapeGroups = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _expandedBodyShapeGroups = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "favorites"
+        };
 
-        private VisualElement BuildBodyShapeGroup(string key, string title, out VisualElement content)
+        private VisualElement BuildBodyShapeGroup(string key, string title, Action<VisualElement> populate,
+            Action onExpanded = null)
         {
             var group = new VisualElement();
             group.AddToClassList("ee4v-body-shape-group");
             var children = new VisualElement();
             children.AddToClassList("ee4v-body-shape-group__content");
+            var populated = false;
             UiButton header = null;
             void Update()
             {
-                var collapsed = _collapsedBodyShapeGroups.Contains(key);
-                children.EnableInClassList("ee4v-body-shape-group__content--hidden", collapsed);
-                header.EnableInClassList("ee4v-body-shape-group__header--collapsed", collapsed);
-                header.SetIcon(FluentUiIcons.CreateState(collapsed
-                    ? "chevron_right.png" : "chevron_down.png", UiSizeTokens.Size12));
+                var expanded = _expandedBodyShapeGroups.Contains(key);
+                header.EnableInClassList("ee4v-body-shape-group__header--collapsed", !expanded);
+                header.SetIcon(FluentUiIcons.CreateState(expanded
+                    ? "chevron_down.png" : "chevron_right.png", UiSizeTokens.Size12));
+                if (expanded)
+                {
+                    if (!populated)
+                    {
+                        populate(children);
+                        populated = true;
+                    }
+                    if (children.parent == null) { group.Add(children); }
+                    onExpanded?.Invoke();
+                }
+                else { children.RemoveFromHierarchy(); }
             }
             header = new UiButton(title, () =>
             {
-                if (!_collapsedBodyShapeGroups.Add(key)) { _collapsedBodyShapeGroups.Remove(key); }
+                if (!_expandedBodyShapeGroups.Add(key)) { _expandedBodyShapeGroups.Remove(key); }
                 Update();
             }, title, variant: UiButtonVariant.Ghost, labelTypographyClassName: UiClassNames.SectionTitle);
             header.AddToClassList("ee4v-body-shape-group__header");
             header.SetContentAlignment(Justify.FlexStart);
             group.Add(header);
-            group.Add(children);
-            content = children;
             Update();
             return group;
         }
@@ -124,16 +137,16 @@ namespace Ee4v.AvatarParts
                 var favoriteGroups = bodyShapes.GroupBy(shape => shape.ShapeName, StringComparer.Ordinal)
                     .Select(group => group.ToArray()).ToArray();
                 var favoriteKeys = favoriteGroups.Select(group => group.Select(BodyFavoriteKey).ToArray()).ToArray();
-                var favoriteGroup = BuildBodyShapeGroup("favorites", I18N.Get("workflow.favorites.title"), out var favorites);
-                bodyShapeList.Add(favoriteGroup);
-                var favoriteSlots = favoriteGroups.Select(_ => new VisualElement()).ToArray();
-                foreach (var slot in favoriteSlots) { favorites.Add(slot); }
+                VisualElement favoriteGroup = null;
+                VisualElement[] favoriteSlots = null;
                 void RefreshFavorites()
                 {
                     var anyFavorites = false;
                     for (var index = 0; index < favoriteGroups.Length; index++)
                     {
                         var selected = favoriteKeys[index].Any(BlendShapeFavorites.Contains);
+                        anyFavorites |= selected;
+                        if (favoriteSlots == null || !_expandedBodyShapeGroups.Contains("favorites")) { continue; }
                         var slot = favoriteSlots[index];
                         if (selected && slot.childCount == 0)
                         {
@@ -145,10 +158,16 @@ namespace Ee4v.AvatarParts
                                 : BuildGroupedBodyBlendShapeControl(definitions, blendShapeRenders));
                         }
                         slot.style.display = selected ? DisplayStyle.Flex : DisplayStyle.None;
-                        anyFavorites |= selected;
                     }
-                    favoriteGroup.style.display = anyFavorites ? DisplayStyle.Flex : DisplayStyle.None;
+                    if (favoriteGroup != null)
+                        favoriteGroup.style.display = anyFavorites ? DisplayStyle.Flex : DisplayStyle.None;
                 }
+                favoriteGroup = BuildBodyShapeGroup("favorites", I18N.Get("workflow.favorites.title"), favorites =>
+                {
+                    favoriteSlots = favoriteGroups.Select(_ => new VisualElement()).ToArray();
+                    foreach (var slot in favoriteSlots) { favorites.Add(slot); }
+                }, RefreshFavorites);
+                bodyShapeList.Add(favoriteGroup);
                 content.RegisterCallback<AttachToPanelEvent>(_ =>
                 {
                     BlendShapeFavorites.Changed += RefreshFavorites;
@@ -172,70 +191,75 @@ namespace Ee4v.AvatarParts
                         continue;
                     }
 
-                    var categoryContent = new VisualElement();
-                    if (!_context.SelectedBodyPart.HasValue &&
-                        category != BodyPartCategory.Other)
+                    void PopulateCategory(VisualElement categoryContent)
+                    {
+                        var shapeGroups = categoryShapes
+                            .GroupBy(shape => shape.ShapeName,
+                                StringComparer.Ordinal)
+                            .ToArray();
+                        var roleGroups = shapeGroups
+                            .Select((shapes, index) => new
+                            {
+                                Shapes = shapes.ToArray(),
+                                Key = string.IsNullOrWhiteSpace(shapes.First().Group)
+                                    ? "\0" + index
+                                    : shapes.First().Group
+                            })
+                            .GroupBy(item => item.Key, StringComparer.Ordinal);
+                        foreach (var roleGroup in roleGroups)
+                        {
+                            var groupedShapes = roleGroup
+                                .SelectMany(item => item.Shapes)
+                                .ToArray();
+                            var hasRoleTitle = !string.IsNullOrWhiteSpace(
+                                                   groupedShapes[0].Group) &&
+                                               (groupedShapes.Length > 1 ||
+                                                !string.Equals(
+                                                    groupedShapes[0].Group,
+                                                    groupedShapes[0].DisplayName,
+                                                    StringComparison.OrdinalIgnoreCase));
+                            void PopulateRole(VisualElement roleContent)
+                            {
+                                foreach (var shapeGroup in roleGroup)
+                                {
+                                    var control = shapeGroup.Shapes.Length == 1
+                                        ? BuildBodyBlendShapeControl(
+                                            shapeGroup.Shapes[0],
+                                            weight => ApplyBodyBlendShape(
+                                                shapeGroup.Shapes[0].RendererPath,
+                                                shapeGroup.Shapes[0].ShapeName,
+                                                weight),
+                                            out _, rendersByChannel: blendShapeRenders)
+                                        : BuildGroupedBodyBlendShapeControl(
+                                            shapeGroup.Shapes, blendShapeRenders);
+                                    roleContent.Add(control);
+                                }
+                            }
+                            if (hasRoleTitle)
+                            {
+                                categoryContent.Add(BuildBodyShapeGroup("role:" + category + ":" + roleGroup.Key,
+                                    groupedShapes[0].Group, PopulateRole));
+                            }
+                            else { PopulateRole(categoryContent); }
+                        }
+                    }
+                    if (!_context.SelectedBodyPart.HasValue)
                     {
                         bodyShapeList.Add(BuildBodyShapeGroup("category:" + category,
-                            I18N.Get(GetBodyPartCategoryLocalizationKey(category)), out categoryContent));
+                            I18N.Get(GetBodyPartCategoryLocalizationKey(category)), PopulateCategory));
                     }
-                    else { bodyShapeList.Add(categoryContent); }
-                    var shapeGroups = categoryShapes
-                        .GroupBy(shape => shape.ShapeName,
-                            StringComparer.Ordinal)
-                        .ToArray();
-                    var roleGroups = shapeGroups
-                        .Select((shapes, index) => new
-                        {
-                            Shapes = shapes.ToArray(),
-                            Key = string.IsNullOrWhiteSpace(shapes.First().Group)
-                                ? "\0" + index
-                                : shapes.First().Group
-                        })
-                        .GroupBy(item => item.Key, StringComparer.Ordinal);
-                    foreach (var roleGroup in roleGroups)
+                    else
                     {
-                        var groupedShapes = roleGroup
-                            .SelectMany(item => item.Shapes)
-                            .ToArray();
-                        var hasRoleTitle = !string.IsNullOrWhiteSpace(
-                                               groupedShapes[0].Group) &&
-                                           (groupedShapes.Length > 1 ||
-                                            !string.Equals(
-                                                groupedShapes[0].Group,
-                                                groupedShapes[0].DisplayName,
-                                                StringComparison.OrdinalIgnoreCase));
-                        var roleContent = new VisualElement();
-                        if (hasRoleTitle)
-                        {
-                            categoryContent.Add(BuildBodyShapeGroup("role:" + category + ":" + roleGroup.Key,
-                                groupedShapes[0].Group, out roleContent));
-                        }
-                        else { categoryContent.Add(roleContent); }
-                        foreach (var shapeGroup in roleGroup)
-                        {
-                            var control = shapeGroup.Shapes.Length == 1
-                                ? BuildBodyBlendShapeControl(
-                                    shapeGroup.Shapes[0],
-                                    weight => ApplyBodyBlendShape(
-                                        shapeGroup.Shapes[0].RendererPath,
-                                        shapeGroup.Shapes[0].ShapeName,
-                                        weight),
-                                    out _, rendersByChannel: blendShapeRenders)
-                                : BuildGroupedBodyBlendShapeControl(
-                                    shapeGroup.Shapes, blendShapeRenders);
-                            roleContent.Add(control);
-                        }
+                        var categoryContent = new VisualElement();
+                        PopulateCategory(categoryContent);
+                        bodyShapeList.Add(categoryContent);
                     }
                 }
                 RefreshFavorites();
                 content.Add(bodyShapeList);
             }
 
-            var advancedList = new VisualElement();
-            advancedList.AddToClassList(
-                "ee4v-modification-workflow__size-list");
-            var hasBodyPartControls = false;
+            var bodyPartControls = new List<Action<VisualElement>>();
             for (var index = 1; index < BodyScaleDefinitions.Count; index++)
             {
                 var definition = BodyScaleDefinitions[index];
@@ -251,23 +275,29 @@ namespace Ee4v.AvatarParts
                     continue;
                 }
 
-                hasBodyPartControls = true;
-                advancedList.Add(BuildBodyScaleControl(
+                bodyPartControls.Add(parent => parent.Add(BuildBodyScaleControl(
                     definition,
                     GetTransformPaths(targets),
-                    GetBodyScaleMultipliers(targets)));
+                    GetBodyScaleMultipliers(targets))));
             }
 
-            if (hasBodyPartControls)
+            if (bodyPartControls.Count > 0)
             {
+                void PopulateAdvanced(VisualElement parent)
+                {
+                    foreach (var build in bodyPartControls) { build(parent); }
+                }
                 if (_context.SelectedBodyPart.HasValue)
                 {
+                    var advancedList = new VisualElement();
+                    advancedList.AddToClassList("ee4v-modification-workflow__size-list");
+                    PopulateAdvanced(advancedList);
                     content.Insert(0, advancedList);
                 }
                 else
                 {
                     content.Add(BuildAdvancedBodyScaleFoldout(
-                        advancedList));
+                        PopulateAdvanced));
                 }
             }
             return content;
@@ -293,20 +323,37 @@ namespace Ee4v.AvatarParts
         }
 
         private VisualElement BuildAdvancedBodyScaleFoldout(
-            VisualElement advancedList)
+            Action<VisualElement> populate)
         {
             var foldout = new VisualElement();
             foldout.AddToClassList(
                 "ee4v-modification-workflow__advanced-size");
+            var advancedList = new VisualElement();
+            advancedList.AddToClassList("ee4v-modification-workflow__size-list");
+            var populated = false;
 
             UiButton toggle = null;
+            void Update()
+            {
+                UpdateAdvancedBodyScaleFoldout(toggle, advancedList);
+                if (_advancedBodyScaleExpanded)
+                {
+                    if (!populated)
+                    {
+                        populate(advancedList);
+                        populated = true;
+                    }
+                    if (advancedList.parent == null) { foldout.Add(advancedList); }
+                }
+                else { advancedList.RemoveFromHierarchy(); }
+            }
             toggle = new UiButton(
                 I18N.Get("workflow.appearance.advancedSizeTitle"),
                 () =>
                 {
                     _advancedBodyScaleExpanded =
                         !_advancedBodyScaleExpanded;
-                    UpdateAdvancedBodyScaleFoldout(toggle, advancedList);
+                    Update();
                 },
                 icon: FluentUiIcons.CreateState(
                     _advancedBodyScaleExpanded
@@ -318,8 +365,7 @@ namespace Ee4v.AvatarParts
                 "ee4v-modification-workflow__advanced-size-toggle");
             foldout.Add(toggle);
 
-            foldout.Add(advancedList);
-            UpdateAdvancedBodyScaleFoldout(toggle, advancedList);
+            Update();
             return foldout;
         }
 
@@ -633,6 +679,8 @@ namespace Ee4v.AvatarParts
             var children = new VisualElement();
             children.AddToClassList(
                 "ee4v-modification-workflow__size-axis-rows");
+            Action populateChildren = null;
+            var childrenPopulated = false;
             UiButton toggle = null;
             void UpdateFoldout()
             {
@@ -645,6 +693,16 @@ namespace Ee4v.AvatarParts
                     : "workflow.appearance.bodyShapeExpand", first.DisplayName);
                 children.EnableInClassList(
                     "ee4v-modification-workflow__hidden", !expanded);
+                if (expanded)
+                {
+                    if (!childrenPopulated)
+                    {
+                        populateChildren();
+                        childrenPopulated = true;
+                    }
+                    if (children.parent == null) { group.Add(children); }
+                }
+                else { children.RemoveFromHierarchy(); }
             }
             void ToggleChildren()
             {
@@ -693,33 +751,35 @@ namespace Ee4v.AvatarParts
                 labelClicked: ToggleChildren,
                 rendersByChannel: rendersByChannel);
             group.Add(parent);
-            foreach (var definition in definitions
-                         .OrderBy(definition =>
-                             IsBodyBlendShapeGroupSource(
-                                 definition, source) ? 0 : 1))
+            populateChildren = () =>
             {
-                var child = BuildBodyBlendShapeControl(
-                    definition,
-                    weight =>
-                    {
-                        ApplyIndividualBodyBlendShape(
-                            definitions, definition, weight);
-                        if (IsBodyBlendShapeGroupSource(
-                                definition, source))
+                foreach (var definition in definitions
+                             .OrderBy(definition =>
+                                 IsBodyBlendShapeGroupSource(
+                                     definition, source) ? 0 : 1))
+                {
+                    var child = BuildBodyBlendShapeControl(
+                        definition,
+                        weight =>
                         {
-                            renderParent(weight);
-                        }
-                    },
-                    out var renderChild,
-                    isChild: true,
-                    showRenderer: true,
-                    rendersByChannel: rendersByChannel);
-                child.AddToClassList(
-                    "ee4v-modification-workflow__size-control--blendshape-child");
-                children.Add(child);
-                childRenderers.Add(renderChild);
-            }
-            group.Add(children);
+                            ApplyIndividualBodyBlendShape(
+                                definitions, definition, weight);
+                            if (IsBodyBlendShapeGroupSource(
+                                    definition, source))
+                            {
+                                renderParent(weight);
+                            }
+                        },
+                        out var renderChild,
+                        isChild: true,
+                        showRenderer: true,
+                        rendersByChannel: rendersByChannel);
+                    child.AddToClassList(
+                        "ee4v-modification-workflow__size-control--blendshape-child");
+                    children.Add(child);
+                    childRenderers.Add(renderChild);
+                }
+            };
             UpdateFoldout();
             return group;
         }
@@ -734,6 +794,9 @@ namespace Ee4v.AvatarParts
             bool showRenderer = false,
             Dictionary<string, List<Action<float>>> rendersByChannel = null)
         {
+            var renderer = GetBodyBlendShapeRenderer(definition);
+            if (renderer != null)
+                definition.Value = GetEffectiveBodyBlendShapeWeight(renderer, definition.ShapeName);
             var label = definition.DisplayName;
             var tooltip = showRenderer
                 ? $"{definition.RendererDisplayPath}\n{definition.ShapeName}"

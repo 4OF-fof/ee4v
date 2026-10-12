@@ -93,7 +93,8 @@ namespace Ee4v.AvatarParts
             _advancedBodyScaleExpanded = false;
             _expandedBodyScaleAxes.Clear();
             _expandedBodyBlendShapeGroups.Clear();
-            _collapsedBodyShapeGroups.Clear();
+            _expandedBodyShapeGroups.Clear();
+            _expandedBodyShapeGroups.Add("favorites");
             _baseAvatarViewPosition = null;
             _avatarDescriptor = null;
             _expandedObjectGroups.Clear();
