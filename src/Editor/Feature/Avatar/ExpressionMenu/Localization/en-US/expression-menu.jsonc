@@ -1,6 +1,12 @@
 {
   "expressionMenu": {
     "title": "Expression Menu",
+    "showHierarchy": "Show hierarchy",
+    "hideHierarchy": "Hide hierarchy",
+    "showLayout": "Review layout",
+    "hideLayout": "Hide layout",
+    "showPreview": "Preview action",
+    "hidePreview": "Close action preview",
     "effective": "Avatar menu (including Modular Avatar)",
     "view": "View / edit source",
     "add": "Add an Item or Submenu",

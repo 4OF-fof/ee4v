@@ -123,6 +123,8 @@ ee4v・BLM・Eagleの契約は [datasources.md](./datasources.md) を参照し�
 
 ## Editor機能
 
+Expression Menuは手動で、項目を選んでも一覧が残り右の編集欄だけが更新されること、8項目を超える階層でも全項目と末尾の追加が表示されることを確認します。パンくず、Submenu、階層表示、円形配置確認、必要時の動作プレビューとその閉鎖を確認します。保護項目の閲覧と編集の無効化、コピー作成、ハンドルの並び替え、移動・削除・Undo／Redo・保存は既存契約を維持します。統合画面の460px、単独Windowの380pxの右ペイン、880px未満の縦配置、Dark／Lightと長い名前のtooltipも確認します。新規テストケースは追加しません。
+
 componentの有効状態をOFFにして名前・アイコンがグレーアウトし、ONへ戻せること、初期OFF・Undo/Redo・外部Inspectorからの変更でもヘッダーが同期することを手動確認します。RendererとBehaviourのON/OFFを繰り返して記録された編集以外から保存通知を発生させず、変更を止めた後に作業Sceneの保存・再Importを繰り返さないこと、Scheduler.Tickの待機画面を連続表示しないこと、Preview・Prefab override・保存・変更破棄を維持することを確認します。Mesh・Material・boneの変更ではPreview用キャッシュを更新することも確認します。
 
 パーツの全体一覧でPrefab rootと別のPrefabグループ見出しを二重表示せず、通常のroot行へPrefabアイコンだけを追加することを手動確認します。nested Prefab rootのアイコン、rootからの開閉・詳細選択・表示切り替え、部位の絞り込みとPreviewからの選択も確認します。Material・体型のPrefabグループはそれぞれの表示を維持します。

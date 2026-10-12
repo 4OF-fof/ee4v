@@ -1,6 +1,12 @@
 {
   "expressionMenu": {
     "title": "Expression Menu",
+    "showHierarchy": "階層を表示",
+    "hideHierarchy": "階層を閉じる",
+    "showLayout": "配置を確認",
+    "hideLayout": "配置を閉じる",
+    "showPreview": "動作を確認",
+    "hidePreview": "動作確認を閉じる",
     "effective": "アバターのメニュー（Modular Avatarを含む）",
     "view": "表示・編集元",
     "add": "ItemまたはSubmenuを追加",
