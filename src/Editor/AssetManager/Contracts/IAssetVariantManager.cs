@@ -16,6 +16,8 @@ namespace Ee4v.AssetManager.Contracts
         bool HasChanges(string rootAssetPath);
         bool HasChangesFromCurrentRevision(string rootAssetPath);
         AssetVariantChangeStatus GetChangeStatus(string rootAssetPath);
+        Task<AssetVariantChangeStatus> GetChangeStatusAsync(string rootAssetPath,
+            CancellationToken cancellationToken = default);
         AssetVariantChangeDetails GetChangeDetails(string rootAssetPath);
         Task<AssetThumbnail> GetRevisionThumbnail(string variantId, string revisionId,
             CancellationToken cancellationToken = default);

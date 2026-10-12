@@ -128,6 +128,8 @@ Fluent UIのPNGは`FluentUiIconPostprocessor`でGUI用Textureとして取り込�
 
 小サイズ用の`*_12.png`と`*_16.png`は12px・16pxで生成し、512px画像を極小表示するときの間引きで細い線や穴が消えることを防ぎます。SVGを512pxで描画してから画素の被覆率を保持するBoxフィルターで縮小します。取り込み後のTextureも元の12px・16pxを維持します。
 
+`UiTextFactory.CreateInspector(Editor)`はUnity標準の`InspectorElement`を生成する入口です。component固有のUI Toolkit・IMGUI Inspector内の文字とプロパティ描画はUnityまたはcomponentのEditorが担当します。利用側はEditorの生成・破棄、bindingの解放、変更通知と編集可否を管理します。
+
 ## `CustomPopup`
 
 `CustomPopup`は共通トークンを使うpopup外枠です。外枠は1pxとし、HeaderとFooterは本文との面の濃度差と境界線で区切ります。タイトルは`UiTextFactory`と`UiClassNames.SectionTitle`を使用して、共通の太字見出しとして描画します。`FluentUiIcons`と`EditorPopupApi`を使用し、画面内への位置補正とUnity標準Pickerのfocus処理を行います。popup用Windowは`CustomPopupWindow`を継承し、`ShowAsPopup`で表示して`SetPopup(CustomPopup)`で外枠を設定します。

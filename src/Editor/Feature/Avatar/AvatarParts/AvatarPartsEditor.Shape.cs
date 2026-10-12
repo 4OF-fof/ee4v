@@ -977,7 +977,9 @@ namespace Ee4v.AvatarParts
             return value.ToString("0.00") + " m";
         }
 
-        public VisualElement BuildShapePartsTabs()
+        public VisualElement BuildShapePartsTabs(
+            Action<AvatarEditorPanel> selectPanel = null,
+            AvatarEditorPanel? selectedPanel = null)
         {
             var tabs = new VisualElement();
             UiComposition.Prepare(tabs,
@@ -987,26 +989,53 @@ namespace Ee4v.AvatarParts
                 "ee4v-modification-workflow__shape-parts-tabs");
             AddShapePartsButton(
                 tabs,
-                ShapePartsSection.Parts,
-                "workflow.shapeParts.parts");
+                AvatarEditorPanel.Parts,
+                "workflow.shapeParts.parts", selectPanel);
             AddShapePartsButton(
                 tabs,
-                ShapePartsSection.Shape,
-                "workflow.shapeParts.shape");
+                AvatarEditorPanel.Shape,
+                "workflow.shapeParts.shape", selectPanel);
+            if (selectPanel != null)
+            {
+                AddShapePartsButton(tabs, AvatarEditorPanel.Material,
+                    "workflow.shapeParts.material", selectPanel);
+            }
+            RefreshShapePartsTabs(tabs, selectedPanel);
             return tabs;
+        }
+
+        public void RefreshShapePartsTabs(VisualElement tabs, AvatarEditorPanel? selectedPanel = null)
+        {
+            var current = selectedPanel ?? (_shapePartsSection == ShapePartsSection.Shape
+                ? AvatarEditorPanel.Shape : AvatarEditorPanel.Parts);
+            tabs.userData = current;
+            foreach (var child in tabs.Children())
+            {
+                if (child.userData is AvatarEditorPanel panel)
+                {
+                    child.EnableInClassList("ee4v-modification-workflow__shape-parts-tab--active",
+                        panel == current);
+                }
+            }
         }
 
         private void AddShapePartsButton(
             VisualElement tabs,
-            ShapePartsSection section,
-            string labelKey)
+            AvatarEditorPanel panel,
+            string labelKey,
+            Action<AvatarEditorPanel> selectPanel)
         {
             var button = new UiButton(
                 I18N.Get(labelKey),
                 () =>
                 {
-                    if (_shapePartsSection == section)
+                    if (tabs.userData is AvatarEditorPanel current && current == panel)
                     {
+                        return;
+                    }
+                    if (selectPanel != null)
+                    {
+                        selectPanel(panel);
                         return;
                     }
                     if (_shapePartsSection == ShapePartsSection.Shape)
@@ -1015,16 +1044,15 @@ namespace Ee4v.AvatarParts
                         SaveBodyScalePrefab();
                         if (_bodyScaleDirty) { return; }
                     }
-                    _shapePartsSection = section;
+                    _shapePartsSection = panel == AvatarEditorPanel.Shape
+                        ? ShapePartsSection.Shape : ShapePartsSection.Parts;
                     _context.Host.ShowParts();
                     _context.ControlsHost.scrollOffset = Vector2.zero;
                 },
                 variant: UiButtonVariant.Ghost);
             button.AddToClassList(
                 "ee4v-modification-workflow__shape-parts-tab");
-            button.EnableInClassList(
-                "ee4v-modification-workflow__shape-parts-tab--active",
-                section == _shapePartsSection);
+            button.userData = panel;
             tabs.Add(button);
         }
     }

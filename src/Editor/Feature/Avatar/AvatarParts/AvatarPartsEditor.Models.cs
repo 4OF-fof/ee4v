@@ -77,6 +77,7 @@ namespace Ee4v.AvatarParts
             public string PrefabName { get; set; }
             public int[] SiblingPath { get; set; }
             public string Name { get; set; }
+            public bool IsPrefabRoot { get; set; }
             public bool IsVisible { get; set; }
             public bool IsActiveSelf { get; set; }
             public bool ParentActiveInHierarchy { get; set; }

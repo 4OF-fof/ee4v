@@ -23,8 +23,7 @@
       "lighting": "ライティング確認",
       "menuAndGestures": "操作確認",
       "overview": "総合",
-      "shapeParts": "体型・パーツ",
-      "material": "マテリアル",
+      "appearance": "外見",
       "expressionAnimation": "表情"
     },
     "execution": {

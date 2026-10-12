@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Ee4v.AssetManager.Contracts;
 
 namespace Ee4v.AssetManager.Application.Ports
@@ -33,6 +35,8 @@ namespace Ee4v.AssetManager.Application.Ports
     {
         AssetVariantCapture Capture(AssetVariantSaveRequest request);
         AssetVariantSnapshot Inspect(string rootAssetPath);
+        Task<AssetVariantSnapshot> InspectAsync(string rootAssetPath,
+            CancellationToken cancellationToken = default);
         AssetVariant GetMetadata(string variantId);
         bool HasChangedRootAsset(string rootAssetPath, AssetVariantSnapshot saved);
         string Restore(AssetVariantSnapshot snapshot, string stagingPath, string rootAssetPath);

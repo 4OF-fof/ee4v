@@ -67,6 +67,10 @@
       "saveFailed": "The derived Prefab could not be updated. Check the Console."
     },
     "objects": {
+      "backToParts": "Back to Parts",
+      "componentEnabled": "Enable or disable this component",
+      "missingScript": "A script is missing. Restore the corresponding script.",
+      "editorUnavailable": "The component inspector could not be displayed. Check the Console.",
       "empty": "There are no parts to show or hide.",
       "turnOn": "Show this part",
       "turnOff": "Hide this part",
@@ -75,6 +79,7 @@
       "parentHidden": "A parent part is hidden."
     },
     "shapeParts": {
+      "material": "Material",
       "shape": "Shape",
       "parts": "Parts"
     }

@@ -19,10 +19,22 @@ namespace Ee4v.AvatarParts
                     "Editor/Feature/Avatar/AvatarParts/AvatarShapePartsWindow.cs" },
                 styleSheetPaths: new[] {
                     "Editor/Feature/Shared/AvatarEditing/avatar-editing.uss",
-                    "Editor/Feature/Avatar/AvatarParts/avatar-parts.uss" }) };
+                    "Editor/Feature/Avatar/AvatarParts/avatar-parts.uss" }),
+                new UiStory("avatar-part-details", "Domain/AvatarParts/Containers", "Part details",
+                    "選択したパーツのcomponent編集画面です。サンプルは読み取り専用です。",
+                    "Transformとパーツ自身のcomponentを表示します。", parent => BuildSample(parent, true),
+                    usageLocations: new[] { "Editor/Feature/Avatar/AvatarParts/AvatarPartsEditor.Parts.cs" },
+                    styleSheetPaths: new[] {
+                        "Editor/Feature/Shared/AvatarEditing/avatar-editing.uss",
+                        "Editor/Feature/Avatar/AvatarParts/avatar-parts.uss" }) };
         }
 
         private static void Build(VisualElement parent)
+        {
+            BuildSample(parent, false);
+        }
+
+        private static void BuildSample(VisualElement parent, bool showDetails)
         {
             var avatar = new GameObject("Sample Avatar") { hideFlags = HideFlags.HideAndDontSave };
             foreach (var name in new[] { "Head", "Gloves", "Boots" })
@@ -41,7 +53,8 @@ namespace Ee4v.AvatarParts
                     () => string.Empty, _ => { }, () => { }, _ => { }, _ => { }),
                 new AvatarEditingHost(Render, Render, () => { }, parent.MarkDirtyRepaint, () => { }))
             {
-                Root = avatar, UiRoot = parent, ControlsHost = controls
+                Root = avatar, UiRoot = parent, ControlsHost = controls,
+                SelectedPartKey = showDetails ? PrefabScenePreview.GetPartKey(-1, new[] { 0 }) : null
             };
             editor = new AvatarPartsEditor(context);
             void Render()

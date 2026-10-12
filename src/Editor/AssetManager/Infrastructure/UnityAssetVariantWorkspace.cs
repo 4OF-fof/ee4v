@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
@@ -101,6 +103,27 @@ namespace Ee4v.AssetManager.Infrastructure
         public AssetVariantSnapshot Inspect(string rootAssetPath)
         {
             return Capture(new AssetVariantSaveRequest { RootAssetPath = rootAssetPath }, false).Snapshot;
+        }
+
+        public async Task<AssetVariantSnapshot> InspectAsync(string rootAssetPath,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var sources = new Dictionary<string, AssetFile>(StringComparer.Ordinal);
+            var snapshot = Capture(new AssetVariantSaveRequest { RootAssetPath = rootAssetPath }, false,
+                file => { sources[file.Id] = file; return null; }).Snapshot;
+            foreach (var dependency in snapshot.Dependencies)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var file = sources[dependency.FileId];
+                var sourceHash = await GetFileHashAsync(file.SourcePath, cancellationToken);
+                var metaPath = file.SourcePath + ".meta";
+                var metaHash = File.Exists(metaPath)
+                    ? await GetFileHashAsync(metaPath, cancellationToken) : string.Empty;
+                dependency.SourceHash = HashBytes(Encoding.UTF8.GetBytes(sourceHash + "\n" + metaHash));
+            }
+            snapshot.ContentHash = GitAssetVariantRepository.ComputeContentHash(snapshot);
+            return snapshot;
         }
 
         public AssetVariant GetMetadata(string variantId)
@@ -274,7 +297,8 @@ namespace Ee4v.AssetManager.Infrastructure
             if (!string.IsNullOrEmpty(error)) { throw new InvalidOperationException(error); }
         }
 
-        private AssetVariantCapture Capture(AssetVariantSaveRequest request, bool saveVersion)
+        private AssetVariantCapture Capture(AssetVariantSaveRequest request, bool saveVersion,
+            Func<AssetFile, string> sourceHash = null)
         {
             GitAssetVariantRepository.ValidateAssetPath(request.RootAssetPath);
             var record = DerivedAssetCatalog.Read(request.RootAssetPath);
@@ -342,7 +366,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 return new AssetVariantDependency
                 {
                     FileId = file.Id, SourceType = file.SourceType, SourceId = file.SourceId,
-                    SourceHash = ImportedAssetLibrary.SourceHash(file),
+                    SourceHash = sourceHash != null ? sourceHash(file) : saveVersion
+                        ? ImportedAssetLibrary.SourceHash(file) : GetSourceHash(file),
                     AssetGuids = dependencies[fileId].Distinct().OrderBy(guid => guid).ToArray(),
                     TargetPaths = ResolveTargetPaths(file)
                 };
@@ -383,7 +408,8 @@ namespace Ee4v.AssetManager.Infrastructure
                     PackagesManifest = ReadProjectFile("Packages/manifest.json"),
                     PackagesLock = ReadProjectFile("Packages/packages-lock.json")
                 };
-                snapshot.ContentHash = GitAssetVariantRepository.ComputeContentHash(snapshot);
+                if (sourceHash == null)
+                    snapshot.ContentHash = GitAssetVariantRepository.ComputeContentHash(snapshot);
                 return new AssetVariantCapture { Snapshot = snapshot, StagingPath = staging };
             }
             catch
@@ -458,6 +484,27 @@ namespace Ee4v.AssetManager.Infrastructure
             }
             var hash = HashFile(path);
             _fileHashes[path] = (file.Length, modifiedAt, hash);
+            return hash;
+        }
+
+        private string GetSourceHash(AssetFile file) => HashBytes(Encoding.UTF8.GetBytes(
+            GetFileHash(file.SourcePath) + "\n" +
+            (File.Exists(file.SourcePath + ".meta") ? GetFileHash(file.SourcePath + ".meta") : string.Empty)));
+
+        private async Task<string> GetFileHashAsync(string path, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var file = new FileInfo(path);
+            var length = file.Length;
+            var modifiedAt = file.LastWriteTimeUtc.Ticks;
+            if (_fileHashes.TryGetValue(path, out var cached) &&
+                cached.Length == length && cached.ModifiedAt == modifiedAt)
+            {
+                return cached.Hash;
+            }
+            // Only file I/O runs off-thread. Unity asset queries and the cache stay on the caller's context.
+            var hash = await Task.Run(() => HashFile(path), cancellationToken);
+            _fileHashes[path] = (length, modifiedAt, hash);
             return hash;
         }
 

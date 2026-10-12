@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -143,6 +144,13 @@ namespace Ee4v.UI
         public static GUIContent CreateGuiContent(string text = "")
         {
             return new GUIContent(text ?? string.Empty);
+        }
+
+        public static InspectorElement CreateInspector(Editor editor,
+            params string[] classNames)
+        {
+            if (editor == null) { throw new ArgumentNullException(nameof(editor)); }
+            return ConfigureNativeTextElement(new InspectorElement(editor), classNames);
         }
 
         public static void SetText(HelpBox helpBox, string text)

@@ -23,8 +23,7 @@
       "lighting": "Lighting check",
       "menuAndGestures": "Controls",
       "overview": "Overview",
-      "shapeParts": "Shape & parts",
-      "material": "Material",
+      "appearance": "Appearance",
       "expressionAnimation": "Expressions"
     },
     "execution": {

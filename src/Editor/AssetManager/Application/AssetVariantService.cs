@@ -143,12 +143,30 @@ namespace Ee4v.AssetManager.Application
 
         public AssetVariantChangeStatus GetChangeStatus(string rootAssetPath)
         {
+            var comparison = ReadChangeStatus(rootAssetPath);
+            return comparison.Status ?? CompareContentHash(comparison.Latest, comparison.Current,
+                _workspace.Inspect(rootAssetPath).ContentHash);
+        }
+
+        public async Task<AssetVariantChangeStatus> GetChangeStatusAsync(string rootAssetPath,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var comparison = ReadChangeStatus(rootAssetPath);
+            if (comparison.Status != null) { return comparison.Status; }
+            var snapshot = await _workspace.InspectAsync(rootAssetPath, cancellationToken);
+            return CompareContentHash(comparison.Latest, comparison.Current, snapshot.ContentHash);
+        }
+
+        private (AssetVariantSnapshot Latest, AssetVariantSnapshot Current, AssetVariantChangeStatus Status)
+            ReadChangeStatus(string rootAssetPath)
+        {
             AssetManagerRequestValidator.Require(rootAssetPath, "root asset path");
             var variant = _index.GetVariants().FirstOrDefault(candidate =>
                 candidate.RootAssetPath == rootAssetPath);
             if (variant == null)
             {
-                return new AssetVariantChangeStatus { HasChanges = true };
+                return (null, null, new AssetVariantChangeStatus { HasChanges = true });
             }
             var latest = string.IsNullOrEmpty(variant.HeadRevisionId)
                 ? null : ReadSnapshot(variant.Id, variant.HeadRevisionId);
@@ -162,13 +180,18 @@ namespace Ee4v.AssetManager.Application
             if ((latest == null || latestRootChanged) &&
                 (current == null || currentRootChanged))
             {
-                return new AssetVariantChangeStatus
+                return (latest, current, new AssetVariantChangeStatus
                 {
                     HasChanges = true,
                     HasChangesFromCurrentRevision = currentRootChanged
-                };
+                });
             }
-            var contentHash = _workspace.Inspect(rootAssetPath).ContentHash;
+            return (latest, current, null);
+        }
+
+        private static AssetVariantChangeStatus CompareContentHash(AssetVariantSnapshot latest,
+            AssetVariantSnapshot current, string contentHash)
+        {
             return new AssetVariantChangeStatus
             {
                 HasChanges = latest == null || contentHash != latest.ContentHash,

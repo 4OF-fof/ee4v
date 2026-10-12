@@ -16,6 +16,8 @@ Gridのページ切り替えは、同じ行の項目数が減る場合と増え�
 
 ## AssetManager
 
+改変画面の差分確認は、大きいZIPを参照する保存済みVariantで、初回のハッシュ確認中も詳細の表示・componentの有効切り替え・Windowの操作が続くことを実Editorで確認します。計測には`Scheduler.Tick`とEditor更新間隔を使用します。同じ元Fileの再確認ではハッシュを再利用し、同期と非同期の差分結果が一致すること、確認中の編集・対象切り替え・画面破棄で古い結果を反映しないことを確認します。元Fileとmetaの変更時は再計算し、版の保存・復元では元File全体を検証します。新規テストケースは追加しません。
+
 アーカイブ済みItem・マイアセットは、アーカイブ一覧のダブルクリックや使用素材のリンクから詳細へ入れないことを手動で確認します。未アーカイブの詳細を開いた後で対象をアーカイブし、戻る／進むの履歴を操作しても一覧へ戻ること、詳細表示中のアーカイブで一覧へ戻ること、一覧での選択・情報表示・解除・削除は引き続き利用できることを確認します。
 
 ベースなしの制作物のItem扱いは既存の`AssetManagerApiTests`、`DerivedAssetCreatorTests`と`AssetItemGridViewTests`で関連範囲の回帰を確認します。手動ではItem一覧とマイアセット一覧からの名前・説明・タグ編集、タグ一覧・検索・コレクション一致、インポート済み一覧、アーカイブの重複防止、Itemからの履歴表示と派生作成、保存・復元後のItem情報の維持を確認します。構成Prefabの追加Pickerでは制作物自身と自身を参照するPrefabを候補から除き、候補が空になるItemを表示せず、別の制作物には追加できることを確認します。ベースを持つマイアセットはタグを持たず、所有Itemや作成元素材のタグを継承しないことを確認します。新規テストケースは追加しません。
@@ -120,6 +122,18 @@ ee4v・BLM・Eagleの契約は [datasources.md](./datasources.md) を参照し�
 | `SqliteBootstrapTests.SqliteBootstrap_NonWindows_Initialize_DoesNotThrow` | 非Windowsでは安全に初期化を終える | platform境界の契約でありWindows試験とは同時に動かない |
 
 ## Editor機能
+
+componentの有効状態をOFFにして名前・アイコンがグレーアウトし、ONへ戻せること、初期OFF・Undo/Redo・外部Inspectorからの変更でもヘッダーが同期することを手動確認します。RendererとBehaviourのON/OFFを繰り返して記録された編集以外から保存通知を発生させず、変更を止めた後に作業Sceneの保存・再Importを繰り返さないこと、Scheduler.Tickの待機画面を連続表示しないこと、Preview・Prefab override・保存・変更破棄を維持することを確認します。Mesh・Material・boneの変更ではPreview用キャッシュを更新することも確認します。
+
+パーツの全体一覧でPrefab rootと別のPrefabグループ見出しを二重表示せず、通常のroot行へPrefabアイコンだけを追加することを手動確認します。nested Prefab rootのアイコン、rootからの開閉・詳細選択・表示切り替え、部位の絞り込みとPreviewからの選択も確認します。Material・体型のPrefabグループはそれぞれの表示を維持します。
+
+パーツ詳細のcomponentヘッダーは、左端の丸いスイッチ・アイコン・名前が縦中央へ揃い、Dark・LightテーマでON/OFFとfocusを識別できることを手動確認します。スイッチのクリックとSpace操作、Undo/Redoによるthumb位置と有効状態の同期、編集不可時の無効化、Transformなど有効状態を持たないcomponentの表示、長いcomponent名と狭いペインでの配置も確認します。Inspector本文のチェックボックスは標準の外観を維持します。
+
+外見の内部タブをパーツ→マテリアル→体型→パーツと繰り返し切り替え、タブボタンと文字要素を保持したまま選択だけを更新すること、3ボタンの幅と高さ、右ペインの幅とスクロール領域が安定することを手動確認します。3タブを部位選択欄の下へ配置し、Material詳細では部位選択欄だけを隠すことを確認します。
+
+統合ee4vのEdit Modeでは外側カテゴリが「総合」「外見」「表情」「Expression Menu」となり、「外見」内に「パーツ」「体型」「マテリアル」の3タブだけを表示することを手動確認します。Material詳細でも3タブの操作を維持し、部位選択欄だけを隠すこと、内部タブ切り替え前に保留変更を確定すること、Prefab・部位の切り替えで現在の内部タブを維持すること、Window再構築とPlay Modeからの復帰で内部タブを復元することを確認します。単独Shape and PartsとMaterials Windowの画面構成も確認します。
+
+パーツ詳細は統合ee4vと独立版Shape and Partsで手動確認します。名前・pathのクリックとPreviewの選択で詳細へ移動し、「一覧へ戻る」で一覧のスクロール位置と階層の開閉状態を復元することを確認します。Transform、Renderer、MAなどのcomponentのUI Toolkit・IMGUI Inspectorから値と有効状態を変更し、入力中のfocusを保持しながらPreviewに反映すること、Undo/RedoとホストのPrefab保存・変更破棄へ接続することを確認します。部位・Prefab範囲変更、対象切替、Window終了でInspectorを解放し、編集不可のPrefabでは変更できないこと、Missing Scriptが他のcomponentの表示を妨げないことも確認します。Catalogの`Domain/AvatarParts/Containers/Part details`は読み取り専用の詳細サンプルです。
 
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |

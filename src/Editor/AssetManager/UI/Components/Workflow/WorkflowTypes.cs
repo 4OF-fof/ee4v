@@ -4,9 +4,8 @@ namespace Ee4v.AssetManager.UI
     {
         Overview,
         MenuAndGestures,
-        ShapeParts,
-        Material,
-        ExpressionAnimation,
+        Appearance,
+        ExpressionAnimation = 4,
         Lighting,
         ExpressionMenu
     }

@@ -105,9 +105,6 @@ namespace Ee4v.AvatarParts
 
         private BodyBlendShapeDefinition _pendingIndividualBlendShape;
 
-        private readonly HashSet<int> _expandedPartPrefabGroups =
-            new HashSet<int>();
-
         private bool _advancedBodyScaleExpanded;
 
         private bool _bodyScaleDragging;
@@ -144,5 +141,7 @@ namespace Ee4v.AvatarParts
         private float _pendingBodyBlendShapeWeight;
 
         private IReadOnlyList<PrefabObjectEntry> _objectEntriesCache;
+
+        private Vector2 _partsListScrollOffset;
     }
 }

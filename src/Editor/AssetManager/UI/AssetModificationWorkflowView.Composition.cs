@@ -21,12 +21,12 @@ namespace Ee4v.AssetManager.UI
             {
                 return;
             }
-            if (_currentCategory == WorkflowCategory.Material)
+            if (_currentCategory == WorkflowCategory.Appearance && _appearancePanel == AppearancePanel.Material)
             {
                 _avatarContext.Preview.SetListSelection(null, _avatarContext.SelectedMaterial);
             }
-            else if (_currentCategory == WorkflowCategory.ShapeParts &&
-                     _parts.Section == ShapePartsSection.Parts)
+            else if (_currentCategory == WorkflowCategory.Appearance &&
+                     _appearancePanel == AppearancePanel.Parts)
             {
                 _avatarContext.Preview.SetListSelection(_avatarContext.SelectedPartKey, null);
             }
@@ -239,10 +239,9 @@ namespace Ee4v.AssetManager.UI
             _avatarContext.SelectedMaterial = null;
             if (siblingIndex.HasValue &&
                 _currentCategory != WorkflowCategory.Overview &&
-                !_currentCategory.IsPlayMode() &&
-                _currentCategory != WorkflowCategory.Material)
+                !_currentCategory.IsPlayMode())
             {
-                _currentCategory = WorkflowCategory.ShapeParts;
+                _currentCategory = WorkflowCategory.Appearance;
             }
             _avatarContext.AssetFeedback = string.Empty;
             ClearAppearanceCaches();
@@ -393,7 +392,7 @@ namespace Ee4v.AssetManager.UI
         private void OnPreviewObjectClicked(string partKey, Material material)
         {
             if (_currentCategory == WorkflowCategory.Overview || _avatarContext.ControlsHost == null) { return; }
-            if (_currentCategory == WorkflowCategory.Material)
+            if (_currentCategory == WorkflowCategory.Appearance && _appearancePanel == AppearancePanel.Material)
             {
                 _materials.SelectPreviewMaterial(material, GetPreviewPrefabSiblingIndex(partKey));
             }
@@ -403,11 +402,11 @@ namespace Ee4v.AssetManager.UI
         private void OnPreviewSelectionCleared()
         {
             if (_avatarContext.ControlsHost == null) { return; }
-            if (_currentCategory == WorkflowCategory.Material)
+            if (_currentCategory == WorkflowCategory.Appearance && _appearancePanel == AppearancePanel.Material)
             {
                 _avatarContext.SelectedMaterial = null;
                 InvalidateAppearanceControls(AppearancePanel.Material);
-                ShowCategory(WorkflowCategory.Material, false);
+                ShowAppearancePanel(AppearancePanel.Material);
             }
             else { _parts.ClearPreviewSelection(); }
         }
@@ -492,6 +491,7 @@ namespace Ee4v.AssetManager.UI
             var previousName = _avatarContext.SelectedPrefabName;
             var previousCategory = _currentCategory;
             var previousSection = _parts.Section;
+            var previousPanel = _appearancePanel;
             var previousBodyPart = _avatarContext.SelectedBodyPart;
             try
             {
@@ -520,6 +520,7 @@ namespace Ee4v.AssetManager.UI
                     _avatarContext.SelectedBodyPart = null;
                     _currentCategory = WorkflowCategory.Overview;
                     _parts.Section = ShapePartsSection.Parts;
+                    _appearancePanel = AppearancePanel.Parts;
                     _avatarContext.HiddenPrefabSiblingIndices.Clear();
                     _prefabPreviewVisibilityInitialized = false;
                 });
@@ -530,6 +531,7 @@ namespace Ee4v.AssetManager.UI
                 _avatarContext.SelectedPrefabName = previousName;
                 _currentCategory = previousCategory;
                 _parts.Section = previousSection;
+                _appearancePanel = previousPanel;
                 _avatarContext.SelectedBodyPart = previousBodyPart;
                 Debug.LogException(exception);
                 ShowAssetError("workflow.assets.saveFailed");
@@ -617,9 +619,8 @@ namespace Ee4v.AssetManager.UI
                     Undo.DestroyObjectImmediate(child);
                     _avatarContext.SelectedPrefabSiblingIndex = null;
                     _avatarContext.SelectedPrefabName = string.Empty;
-                    _currentCategory = previousCategory == WorkflowCategory.Overview ||
-                        previousCategory == WorkflowCategory.Material
-                            ? previousCategory : WorkflowCategory.ShapeParts;
+                    _currentCategory = previousCategory == WorkflowCategory.Overview
+                        ? previousCategory : WorkflowCategory.Appearance;
                     _avatarContext.HiddenPrefabSiblingIndices.Clear();
                     _prefabPreviewVisibilityInitialized = false;
                 });

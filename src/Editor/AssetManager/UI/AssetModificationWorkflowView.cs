@@ -26,6 +26,8 @@ namespace Ee4v.AssetManager.UI
         private readonly AvatarPartsEditor _parts;
         private readonly AvatarMaterialsEditor _materials;
 
+        private AppearancePanel _appearancePanel = AppearancePanel.Parts;
+
         private const double VariantSaveStatusDelaySeconds = 0.5d;
 
         private sealed class CachedAppearanceControls
@@ -87,6 +89,10 @@ namespace Ee4v.AssetManager.UI
 
         private bool _variantSaveStatusDirty = true;
 
+        private bool _variantSaveStatusRefreshing;
+
+        private long _variantSaveStatusVersion;
+
         private bool _variantHasChanges = true;
 
         private bool _variantHasDiscardableChanges;
@@ -123,6 +129,8 @@ namespace Ee4v.AssetManager.UI
         private VisualElement _appearanceHeader;
 
         private BodyPartSelector _bodyPartSelector;
+
+        private VisualElement _appearanceTabs;
 
         private PreviewPane _previewPane;
 
@@ -183,8 +191,14 @@ namespace Ee4v.AssetManager.UI
         internal WorkflowCategory EditingCategory => _currentCategory.IsPlayMode()
             ? _editingCategory : _currentCategory;
 
-        internal void RestoreEditingCategory(WorkflowCategory category)
+        internal AppearancePanel EditingAppearancePanel => _appearancePanel;
+
+        internal void RestoreEditingCategory(WorkflowCategory category, AppearancePanel appearancePanel)
         {
+            if (!Enum.IsDefined(typeof(WorkflowCategory), category)) { category = WorkflowCategory.Appearance; }
+            _appearancePanel = appearancePanel;
+            _parts.Section = appearancePanel == AppearancePanel.Shape
+                ? ShapePartsSection.Shape : ShapePartsSection.Parts;
             _editingCategory = category.IsPlayMode()
                 ? WorkflowCategory.Overview : category;
             if (!EditorApplication.isPlaying) { ShowCategory(_editingCategory, false); }
@@ -223,8 +237,9 @@ namespace Ee4v.AssetManager.UI
                     BuildWindow, ClearAppearanceCaches, RequestRepaint, SyncPreviewSelection)
                 {
                     GetExcludedPartPrefixes = () => AssetManagerSettings.ExcludedPartPrefixes,
-                    ShowParts = () => ShowCategory(WorkflowCategory.ShapeParts, false),
-                    ShowMaterials = () => ShowCategory(WorkflowCategory.Material, false),
+                    ShowParts = () => ShowAppearancePanel(_parts.Section == ShapePartsSection.Shape
+                        ? AppearancePanel.Shape : AppearancePanel.Parts),
+                    ShowMaterials = () => ShowAppearancePanel(AppearancePanel.Material),
                     InvalidateControls = InvalidateAppearanceControls,
                     InvalidateMaterialData = () =>
                     {
@@ -487,8 +502,8 @@ namespace Ee4v.AssetManager.UI
         {
             _parts.InvalidateParts();
             InvalidateAppearanceControls(AppearancePanel.Parts);
-            if (_currentCategory == WorkflowCategory.ShapeParts &&
-                _parts.Section == ShapePartsSection.Parts)
+            if (_currentCategory == WorkflowCategory.Appearance &&
+                _appearancePanel == AppearancePanel.Parts)
             {
                 Rebuild();
             }
@@ -512,19 +527,19 @@ namespace Ee4v.AssetManager.UI
             _parts.InvalidateBlendShapes();
             InvalidateAppearanceControls(AppearancePanel.Shape);
             if (_avatarContext.Root != null &&
-                _currentCategory == WorkflowCategory.ShapeParts &&
-                _parts.Section == ShapePartsSection.Shape &&
+                _currentCategory == WorkflowCategory.Appearance &&
+                _appearancePanel == AppearancePanel.Shape &&
                 _avatarContext.ControlsHost != null &&
                 this.panel != null)
             {
                 this.schedule.Execute(() =>
                 {
                     if (_avatarContext.ControlsHost != null &&
-                        _currentCategory == WorkflowCategory.ShapeParts &&
-                        _parts.Section == ShapePartsSection.Shape &&
+                        _currentCategory == WorkflowCategory.Appearance &&
+                        _appearancePanel == AppearancePanel.Shape &&
                         this.panel != null)
                     {
-                        ShowCategory(WorkflowCategory.ShapeParts, false);
+                        ShowCategory(WorkflowCategory.Appearance, false);
                     }
                 });
             }

@@ -1,4 +1,5 @@
 using System.Linq;
+using Ee4v.AvatarEditing;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
@@ -10,6 +11,7 @@ namespace Ee4v.AssetManager.UI
     {
         [SerializeField] private string _derivedAssetGuid;
         [SerializeField] private WorkflowCategory _editingCategory;
+        [SerializeField] private AvatarEditorPanel _editingAppearancePanel = AvatarEditorPanel.Parts;
         [SerializeField] private bool _browsingAssets;
         private AssetModificationWorkflowView _view;
 
@@ -39,6 +41,7 @@ namespace Ee4v.AssetManager.UI
             if (_view != null)
             {
                 _editingCategory = _view.EditingCategory;
+                _editingAppearancePanel = _view.EditingAppearancePanel;
                 _browsingAssets = _view.IsBrowsingAssets;
             }
             _view?.Dispose();
@@ -53,7 +56,7 @@ namespace Ee4v.AssetManager.UI
             if (asset != null)
             {
                 _view.SelectDerivedAsset(asset);
-                _view.RestoreEditingCategory(_editingCategory);
+                _view.RestoreEditingCategory(_editingCategory, _editingAppearancePanel);
                 if (_browsingAssets) { _view.ShowTemporaryAssetManager(); }
             }
         }
@@ -67,6 +70,7 @@ namespace Ee4v.AssetManager.UI
         private void OnDisable()
         {
             _editingCategory = _view?.EditingCategory ?? _editingCategory;
+            _editingAppearancePanel = _view?.EditingAppearancePanel ?? _editingAppearancePanel;
             _browsingAssets = _view?.IsBrowsingAssets ?? _browsingAssets;
             I18N.Reloaded -= ConfigureWindow;
             _view?.Dispose();

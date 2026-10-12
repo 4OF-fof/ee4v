@@ -32,13 +32,9 @@ namespace Ee4v.AssetManager.UI
                 "workflow.category.overview",
                 "info.png");
             AddCategoryButton(
-                WorkflowCategory.ShapeParts,
-                "workflow.category.shapeParts",
+                WorkflowCategory.Appearance,
+                "workflow.category.appearance",
                 "cube.png");
-            AddCategoryButton(
-                WorkflowCategory.Material,
-                "workflow.category.material",
-                "image.png");
             if (avatar)
             {
                 AddCategoryButton(
