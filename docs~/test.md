@@ -133,6 +133,8 @@ componentの有効状態をOFFにして名前・アイコンがグレーアウ�
 
 統合ee4vのEdit Modeでは外側カテゴリが「総合」「外見」「表情」「Expression Menu」となり、「外見」内に「パーツ」「体型」「マテリアル」の3タブだけを表示することを手動確認します。Material詳細でも3タブの操作を維持し、部位選択欄だけを隠すこと、内部タブ切り替え前に保留変更を確定すること、Prefab・部位の切り替えで現在の内部タブを維持すること、Window再構築とPlay Modeからの復帰で内部タブを復元することを確認します。単独Shape and PartsとMaterials Windowの画面構成も確認します。
 
+多数のBlendShapeを持つ体型画面を一度開いた後、パーツとMaterialの一覧を繰り返し切り替えます。非表示の内容がpanelから外れること、再表示時に一覧の要素を再生成しないこと、タブ入力から次の描画までの時間とWindowの再描画時間を実Editorで確認します。右ペインとPreviewの位置・幅、一覧の開閉状態、スクロールの先頭復帰、詳細Inspectorの解放、離れた体型UIのお気に入り通知解除も確認します。新規テストケースは追加しません。
+
 パーツ詳細は統合ee4vと独立版Shape and Partsで手動確認します。名前・pathのクリックとPreviewの選択で詳細へ移動し、「一覧へ戻る」で一覧のスクロール位置と階層の開閉状態を復元することを確認します。Transform、Renderer、MAなどのcomponentのUI Toolkit・IMGUI Inspectorから値と有効状態を変更し、入力中のfocusを保持しながらPreviewに反映すること、Undo/RedoとホストのPrefab保存・変更破棄へ接続することを確認します。部位・Prefab範囲変更、対象切替、Window終了でInspectorを解放し、編集不可のPrefabでは変更できないこと、Missing Scriptが他のcomponentの表示を妨げないことも確認します。Catalogの`Domain/AvatarParts/Containers/Part details`は読み取り専用の詳細サンプルです。
 
 | テスト | 保証する契約 | 残す理由 |

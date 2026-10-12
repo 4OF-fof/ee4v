@@ -603,6 +603,7 @@ namespace Ee4v.AssetManager.UI
             {
                 _avatarContext.ControlsHost.scrollOffset = Vector2.zero;
             }
+            RequestRepaint();
         }
 
         private void ReleaseAppearanceDetails()
@@ -680,6 +681,10 @@ namespace Ee4v.AssetManager.UI
             if (categoryChanged && _currentCategory == WorkflowCategory.Appearance)
             {
                 ReleaseAppearanceDetails();
+                foreach (var cachedControls in _appearanceControlsCache.Values)
+                {
+                    cachedControls.Content.RemoveFromHierarchy();
+                }
             }
             if (categoryChanged && clearFeedback)
             {
@@ -757,8 +762,7 @@ namespace Ee4v.AssetManager.UI
                 _appearanceHeader.style.display = DisplayStyle.None;
                 foreach (var cachedControls in _appearanceControlsCache.Values)
                 {
-                    cachedControls.Content.AddToClassList(
-                        "ee4v-modification-workflow__hidden");
+                    cachedControls.Content.RemoveFromHierarchy();
                 }
                 _avatarContext.Preview?.FocusBodyPart(null, preservePreviewCamera);
                 _avatarContext.Preview?.SetListSelection(null, null);
@@ -816,13 +820,17 @@ namespace Ee4v.AssetManager.UI
                     FeedbackType = _avatarContext.FeedbackType
                 };
                 _appearanceControlsCache[appearancePanel] = cached;
-                _avatarContext.ControlsHost.Add(cached.Content);
             }
             foreach (var pair in _appearanceControlsCache)
             {
-                pair.Value.Content.EnableInClassList(
-                    "ee4v-modification-workflow__hidden",
-                    pair.Key != appearancePanel);
+                if (pair.Key != appearancePanel)
+                {
+                    pair.Value.Content.RemoveFromHierarchy();
+                }
+            }
+            if (cached.Content.parent != _avatarContext.ControlsHost.contentContainer)
+            {
+                _avatarContext.ControlsHost.Add(cached.Content);
             }
             var materialDetails = appearancePanel == AppearancePanel.Material &&
                 _avatarContext.SelectedMaterial != null;
