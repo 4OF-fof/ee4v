@@ -132,6 +132,11 @@
     "timelineTooltip": "Preview or scrub the expression sequence. Scrubbing never creates a pose."
   },
   "assignments": {
+    "target": "Assign expression to",
+    "assign": "Assign to this combination",
+    "clear": "Clear assignment",
+    "assignMode": "Assign",
+    "confirmMode": "Review 8×8",
     "unsavedChanges": "You have unsaved changes.",
     "save": "Save",
     "saveFailed": "Saving failed. Your changes are still unsaved.",

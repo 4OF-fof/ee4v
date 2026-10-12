@@ -46,8 +46,8 @@ namespace Ee4v.FaceExpression
                     "gesture-assignment",
                     "Domain/FaceExpression",
                     "Gesture Assignments",
-                    "左右ジェスチャー64通りをサムネイル付きセルで設定する画面です。",
-                    "グリッドと設定画面が一つのセッションを共有し、Modular Avatar用データを生成します。",
+                    "左右ジェスチャー64通りをサムネイル付きセルで確認する画面です。",
+                    "割り当てセッションを読み取り、確認セルからClipの変更やDrag & Dropは行いません。",
                     BuildAssignments,
                     dependencies: new[] { "UiButton", "UiTextFactory" },
                     usageLocations: new[]
@@ -59,6 +59,16 @@ namespace Ee4v.FaceExpression
                         "Editor/UI/Components/Inputs/ui-button.uss",
                         "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss"
                     }),
+                new UiStory(
+                    "gesture-assignment-picker",
+                    "Domain/FaceExpression/Inputs",
+                    "GestureAssignmentPickerView",
+                    "表情を選び、左右の手の組を指定して割り当てる操作欄です。",
+                    "候補の選択と割り当て確定を分け、保存しないセッションで操作を確認します。",
+                    BuildAssignmentPicker,
+                    dependencies: new[] { "UiButton", "UiTextFactory", "SectionHeader" },
+                    usageLocations: new[] { "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionWindow.cs" },
+                    styleSheetPaths: new[] { "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss" }),
                 new UiStory(
                     "gesture-assignment-settings",
                     "Domain/FaceExpression",
@@ -404,7 +414,7 @@ namespace Ee4v.FaceExpression
                     AddMenuExpression = "Add menu-only expression",
                     Remove = "Remove",
                     GestureName = gesture => gesture.ToString()
-                });
+                }, readOnly: true);
             view.SetConfiguration(new FaceExpressionConfiguration(
                 new Dictionary<GestureCombination, FaceExpressionAssignment>(),
                 new[]
@@ -418,6 +428,30 @@ namespace Ee4v.FaceExpression
             surface.style.height = 640f;
             surface.Add(view);
             parent.Add(surface);
+        }
+
+        private static void BuildAssignmentPicker(VisualElement parent)
+        {
+            var session = new GestureAssignmentSession();
+            var avatar = new GameObject("Assignment preview") { hideFlags = HideFlags.HideAndDontSave };
+            var clip = new AnimationClip { name = "Smile", hideFlags = HideFlags.HideAndDontSave };
+            session.SetConfiguration(new FaceExpressionConfiguration(new Dictionary<GestureCombination, FaceExpressionAssignment>(), null));
+            var picker = new GestureAssignmentPickerView(GestureAssignmentWindow.CreateText(), session);
+            picker.SetAvatar(avatar);
+            picker.SetCandidate(clip);
+            picker.CandidateChanged += picker.SetCandidate;
+            picker.AssignRequested += candidate =>
+            {
+                if (session.IsMenuSelection) { session.SetClip(session.SelectedMenuEntry, candidate); }
+                else if (session.HasSelection) { session.SetClip(session.SelectedCombination, candidate); }
+            };
+            picker.RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                session.Dispose();
+                UnityEngine.Object.DestroyImmediate(clip);
+                UnityEngine.Object.DestroyImmediate(avatar);
+            });
+            parent.Add(picker);
         }
 
         private static void BuildAssignmentSettings(VisualElement parent)

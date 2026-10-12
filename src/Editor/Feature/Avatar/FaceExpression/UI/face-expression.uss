@@ -141,8 +141,81 @@
     border-top-color: var(--ee4v-color-border-default);
 }
 
-.ee4v-face-expression__assignment-settings > .ee4v-gesture-assignment-settings {
+.ee4v-face-expression__assignment-settings .ee4v-gesture-assignment-settings {
     padding: var(--ee4v-space-sm);
+}
+
+.ee4v-face-expression__assignment-navigation {
+    flex-shrink: 0;
+    margin-bottom: var(--ee4v-space-md);
+}
+
+.ee4v-face-expression__preview-pane--assigning > .ee4v-face-expression__preview-viewport {
+    flex-grow: 1;
+    min-height: 200px;
+}
+
+.ee4v-face-expression__assignment-library {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-height: 180px;
+    margin-top: var(--ee4v-space-md);
+}
+
+.ee4v-face-expression__assignment-library > .ee4v-ui-search-field {
+    flex-shrink: 0;
+    margin-top: var(--ee4v-space-sm);
+    margin-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-face-expression__library-item--selected,
+.ee4v-gesture-picker__hand--selected.ee4v-ui-button {
+    border-color: var(--ee4v-color-focus);
+    background-color: var(--ee4v-color-selection-soft);
+}
+
+.ee4v-gesture-picker {
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.ee4v-gesture-picker > .ee4v-ui-section-header {
+    margin-top: var(--ee4v-space-sm);
+    margin-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-gesture-picker__hands {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.ee4v-gesture-picker__hand.ee4v-ui-button {
+    width: 24%;
+    min-width: 0;
+    min-height: 44px;
+    margin-right: 1%;
+    margin-bottom: var(--ee4v-space-xs);
+}
+
+.ee4v-gesture-picker__selection {
+    white-space: normal;
+    padding: var(--ee4v-space-sm);
+    margin-top: var(--ee4v-space-sm);
+    margin-bottom: var(--ee4v-space-sm);
+    border-left-width: 2px;
+    border-left-color: var(--ee4v-color-focus);
+}
+
+.ee4v-gesture-picker__menu {
+    margin-top: var(--ee4v-space-md);
+}
+
+.ee4v-gesture-picker > .ee4v-ui-button {
+    margin-top: var(--ee4v-space-xs);
+}
+
+.ee4v-gesture-picker__menu > .ee4v-ui-button {
+    margin-top: var(--ee4v-space-xs);
 }
 
 .ee4v-face-expression__editor-content > .ee4v-ui-search-field {

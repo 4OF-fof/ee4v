@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ee4v.Core.Settings;
+using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -44,6 +45,7 @@ namespace Ee4v.FaceExpression
         private readonly GestureAssignmentViewText _text;
         private readonly GestureAssignmentSession _session;
         private readonly Action<AnimationClip, Rect> _drawPreview;
+        private readonly bool _readOnly;
         private bool _hasAvatar;
         private bool _rendering;
         private bool _subscribed;
@@ -52,11 +54,13 @@ namespace Ee4v.FaceExpression
             GestureAssignmentViewText text,
             Action<AnimationClip, Rect> drawPreview = null,
             bool showAvatarField = true,
-            GestureAssignmentSession session = null)
+            GestureAssignmentSession session = null,
+            bool readOnly = false)
         {
             _text = text ?? new GestureAssignmentViewText();
             _session = session ?? new GestureAssignmentSession();
             _drawPreview = drawPreview;
+            _readOnly = readOnly;
             AddToClassList("ee4v-gesture-assignment");
 
             var toolbar = new ActionBar();
@@ -109,6 +113,7 @@ namespace Ee4v.FaceExpression
                         clip => _session.SetClip(combination, clip),
                         rect => DrawPreview(combination, rect));
                     _cells.Add(combination, cell);
+                    cell.SetReadOnly(_readOnly);
                     row.Add(cell);
                 }
 
@@ -182,7 +187,7 @@ namespace Ee4v.FaceExpression
             {
                 pair.Value.SetAssignment(
                     _session.GetAssignment(pair.Key));
-                pair.Value.SetClipEnabled(_hasAvatar);
+                pair.Value.SetClipEnabled(_hasAvatar && !_readOnly);
                 pair.Value.EnableInClassList(
                     "ee4v-gesture-assignment__cell--selected",
                     _session.HasSelection && !_session.IsMenuSelection &&
@@ -261,7 +266,8 @@ namespace Ee4v.FaceExpression
                     ReferenceEquals(
                         entry,
                         _session.SelectedMenuEntry));
-                cell.SetClipEnabled(_hasAvatar);
+                cell.SetReadOnly(_readOnly);
+                cell.SetClipEnabled(_hasAvatar && !_readOnly);
                 items.Add(cell);
             }
 
@@ -274,7 +280,7 @@ namespace Ee4v.FaceExpression
             add.tooltip = _text.AddMenuExpression;
             add.SetLabelTextAlign(TextAnchor.MiddleCenter);
             add.SetLabelFontSize(28);
-            items.Add(add);
+            if (!_readOnly) { items.Add(add); }
 
             for (var offset = 0; offset < items.Count; offset += ColumnCount)
             {
@@ -318,6 +324,109 @@ namespace Ee4v.FaceExpression
             }
         }
 
+    }
+
+    internal sealed class GestureAssignmentPickerView : VisualElement
+    {
+        private readonly GestureAssignmentSession _session;
+        private readonly GestureAssignmentViewText _text;
+        private readonly Dictionary<FaceGesture, UiButton> _left = new Dictionary<FaceGesture, UiButton>();
+        private readonly Dictionary<FaceGesture, UiButton> _right = new Dictionary<FaceGesture, UiButton>();
+        private readonly UiTextElement _selection;
+        private readonly ObjectField _candidateField;
+        private readonly UiButton _assign;
+        private readonly UiButton _clear;
+        private readonly VisualElement _menuEntries;
+        private AnimationClip _candidate;
+        private bool _hasAvatar;
+
+        internal GestureAssignmentPickerView(GestureAssignmentViewText text, GestureAssignmentSession session)
+        {
+            _text = text;
+            _session = session;
+            AddToClassList("ee4v-gesture-picker");
+            Add(new SectionHeader(I18N.Get("assignments.target")));
+            _candidateField = UiTextFactory.CreateObjectField(_text.Clip);
+            _candidateField.objectType = typeof(AnimationClip);
+            _candidateField.allowSceneObjects = false;
+            _candidateField.RegisterValueChangedCallback(evt => CandidateChanged?.Invoke(evt.newValue as AnimationClip));
+            Add(_candidateField);
+            AddHand(_text.LeftHand, true, _left);
+            AddHand(_text.RightHand, false, _right);
+            _selection = UiTextFactory.Create(string.Empty, "ee4v-gesture-picker__selection");
+            _selection.SetWhiteSpace(WhiteSpace.Normal);
+            Add(_selection);
+            _assign = new UiButton(I18N.Get("assignments.assign"), () => AssignRequested?.Invoke(_candidate));
+            _assign.SetPrimaryActionEnabled(true);
+            Add(_assign);
+            _clear = new UiButton(I18N.Get("assignments.clear"), () => AssignRequested?.Invoke(null));
+            Add(_clear);
+            _menuEntries = new VisualElement();
+            _menuEntries.AddToClassList("ee4v-gesture-picker__menu");
+            Add(_menuEntries);
+            RegisterCallback<AttachToPanelEvent>(_ => { _session.Changed += Refresh; Refresh(); });
+            RegisterCallback<DetachFromPanelEvent>(_ => _session.Changed -= Refresh);
+            Refresh();
+        }
+
+        internal event Action<AnimationClip> CandidateChanged;
+        internal event Action<AnimationClip> AssignRequested;
+
+        internal void SetCandidate(AnimationClip clip)
+        {
+            _candidate = clip;
+            _candidateField.SetValueWithoutNotify(clip);
+            Refresh();
+        }
+
+        internal void SetAvatar(GameObject avatar)
+        {
+            _hasAvatar = avatar != null;
+            SetEnabled(_hasAvatar);
+            Refresh();
+        }
+
+        private void AddHand(string title, bool left, Dictionary<FaceGesture, UiButton> buttons)
+        {
+            Add(new SectionHeader(title));
+            var row = new VisualElement();
+            row.AddToClassList("ee4v-gesture-picker__hands");
+            foreach (FaceGesture gesture in Enum.GetValues(typeof(FaceGesture)))
+            {
+                var button = new UiButton(_text.GestureName?.Invoke(gesture) ?? gesture.ToString(), () =>
+                {
+                    var current = _session.SelectedCombination;
+                    _session.Select(new GestureCombination(left ? gesture : current.Left, left ? current.Right : gesture));
+                });
+                button.AddToClassList("ee4v-gesture-picker__hand");
+                buttons.Add(gesture, button);
+                row.Add(button);
+            }
+            Add(row);
+        }
+
+        private void Refresh()
+        {
+            foreach (var pair in _left)
+                pair.Value.EnableInClassList("ee4v-gesture-picker__hand--selected", _session.HasSelection && !_session.IsMenuSelection && pair.Key == _session.SelectedCombination.Left);
+            foreach (var pair in _right)
+                pair.Value.EnableInClassList("ee4v-gesture-picker__hand--selected", _session.HasSelection && !_session.IsMenuSelection && pair.Key == _session.SelectedCombination.Right);
+            var target = !_session.HasSelection ? _text.NoSelection : _session.IsMenuSelection ? _session.SelectedMenuName :
+                _text.LeftHand + " " + (_text.GestureName?.Invoke(_session.SelectedCombination.Left) ?? _session.SelectedCombination.Left.ToString()) + " + " +
+                _text.RightHand + " " + (_text.GestureName?.Invoke(_session.SelectedCombination.Right) ?? _session.SelectedCombination.Right.ToString());
+            _selection.SetText(target + "\n" + (_session.SelectedAssignment.Clip != null ? _session.SelectedAssignment.Clip.name : _text.Unassigned) + " → " + (_candidate != null ? _candidate.name : _text.NoSelection));
+            _assign.SetEnabled(_hasAvatar && _session.HasSelection && _candidate != null);
+            _clear.SetEnabled(_hasAvatar && _session.HasSelection && _session.SelectedAssignment.Clip != null);
+            _menuEntries.Clear();
+            _menuEntries.Add(new SectionHeader(_text.MenuOnly));
+            foreach (var entry in _session.MenuEntries)
+            {
+                var button = new UiButton(entry.Name, () => _session.Select(entry));
+                button.EnableInClassList("ee4v-gesture-picker__hand--selected", ReferenceEquals(entry, _session.SelectedMenuEntry));
+                _menuEntries.Add(button);
+            }
+            _menuEntries.Add(new UiButton(_text.AddMenuExpression, _session.AddMenuExpression));
+        }
     }
 
     internal sealed class GestureAssignmentSettingsView : ScrollView

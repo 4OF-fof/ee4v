@@ -107,6 +107,8 @@ namespace Ee4v.FaceExpression
         private FaceExpressionPreview _preview;
         private FaceExpressionView _view;
         private GestureAssignmentView _assignmentView;
+        private GestureAssignmentPickerView _assignmentPicker;
+        private AnimationClip _assignmentCandidateClip;
         private readonly GestureAssignmentSession _assignments = new GestureAssignmentSession(true);
         private bool _initiallyInstalled;
         private readonly VrchatFaceExpressionGateway _gateway = new VrchatFaceExpressionGateway();
@@ -275,7 +277,7 @@ namespace Ee4v.FaceExpression
             _view.SaveRequested += SavePendingChanges;
             _view.AssignmentSelectionCleared += _assignments.ClearSelection;
             _view.ClipChanged += ChooseClip;
-            _view.LibraryClipSelected += AssignClip;
+            _view.LibraryClipSelected += SelectAssignmentCandidate;
             _view.EditClipRequested += EditClip;
             _view.NewClipRequested += CreateClip;
             _view.CopyClipRequested += CopyClip;
@@ -307,10 +309,16 @@ namespace Ee4v.FaceExpression
             _view.TimeChanged += SetCurrentTime;
             _view.LoopChanged += SetLooping;
             _assignmentView = new GestureAssignmentView(
-                GestureAssignmentWindow.CreateText(), DrawLibraryThumbnail, false, _assignments);
+                GestureAssignmentWindow.CreateText(), DrawLibraryThumbnail, false, _assignments, readOnly: true);
             _assignmentView.SetAvatar(_avatar);
+            _assignmentPicker = new GestureAssignmentPickerView(GestureAssignmentWindow.CreateText(), _assignments);
+            _assignmentPicker.CandidateChanged += SelectAssignmentCandidate;
+            _assignmentPicker.AssignRequested += AssignClip;
+            _assignmentPicker.SetAvatar(_avatar);
+            _assignmentPicker.SetCandidate(_assignmentCandidateClip);
             _view.SetAssignmentContent(_assignmentView,
-                new GestureAssignmentSettingsView(GestureAssignmentWindow.CreateText(), _settings, _assignments));
+                new GestureAssignmentSettingsView(GestureAssignmentWindow.CreateText(), _settings, _assignments), _assignmentPicker);
+            _view.SetLibrarySelection(_assignmentCandidateClip);
             RenderLibrary();
             RefreshSaveNotification();
             root.Add(_view);
@@ -329,6 +337,9 @@ namespace Ee4v.FaceExpression
             _initiallyInstalled = avatar != null && avatar.transform.Find(
                 FaceExpressionGenerationPaths.Create(avatar).RootName) != null;
             _clip = null;
+            _assignmentCandidateClip = null;
+            _assignmentPicker?.SetCandidate(null);
+            _view?.SetLibrarySelection(null);
             _poseTimes = Array.Empty<float>();
             _poseSources = Array.Empty<AnimationClip>();
             _poseNames = Array.Empty<string>();
@@ -343,6 +354,7 @@ namespace Ee4v.FaceExpression
             FaceExpressionGroupSession.SetAvatar(avatar);
             _view?.SetAvatar(avatar);
             _assignmentView?.SetAvatar(avatar);
+            _assignmentPicker?.SetAvatar(avatar);
             _gateway.TryRead(avatar, out var configuration);
             _assignments.SetConfiguration(configuration);
             _savedConfiguration = _assignments.CreateConfiguration();
@@ -382,10 +394,19 @@ namespace Ee4v.FaceExpression
             }
         }
 
+        private void SelectAssignmentCandidate(AnimationClip clip)
+        {
+            if (_avatar == null) { return; }
+            _assignmentCandidateClip = clip;
+            _assignmentPicker?.SetCandidate(clip);
+            _view?.SetLibrarySelection(clip);
+            if (_clip == null) { RefreshClip(); }
+        }
+
         private void EditClip(AnimationClip clip)
         {
             if (_avatar == null || clip == null) { return; }
-            AssignClip(clip);
+            SelectAssignmentCandidate(clip);
             SetClip(clip);
         }
 
@@ -644,7 +665,7 @@ namespace Ee4v.FaceExpression
             var selectedPoseTime = SelectedPoseTime;
             _channels = FaceExpressionClipEditor.Read(
                 _avatar,
-                _clip,
+                _clip != null ? _clip : _assignmentCandidateClip,
                 FaceExpressionSettings.GetSeparators(_settings),
                 FaceExpressionGroupSession.RendererPaths,
                 selectedPoseTime);
@@ -1152,7 +1173,7 @@ namespace Ee4v.FaceExpression
             }
 
             Selection.activeObject = clip;
-            AssignClip(clip);
+            SelectAssignmentCandidate(clip);
             SetClip(clip);
         }
 
@@ -1175,7 +1196,7 @@ namespace Ee4v.FaceExpression
             }
 
             Selection.activeObject = clip;
-            AssignClip(clip);
+            SelectAssignmentCandidate(clip);
             SetClip(clip);
         }
 

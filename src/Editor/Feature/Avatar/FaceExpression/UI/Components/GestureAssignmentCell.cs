@@ -93,6 +93,12 @@ namespace Ee4v.FaceExpression
             _clipField.SetEnabled(enabled);
         }
 
+        internal void SetReadOnly(bool readOnly)
+        {
+            _clipField.style.display = readOnly ? DisplayStyle.None : DisplayStyle.Flex;
+            _clipField.SetEnabled(!readOnly);
+        }
+
         internal void SetAssignment(FaceExpressionAssignment assignment)
         {
             SetClip(assignment.Clip);

@@ -71,6 +71,13 @@ namespace Ee4v.FaceExpression
         private readonly VisualElement _assignmentPane;
         private readonly VisualElement _rightPane;
         private readonly VisualElement _assignmentSettings;
+        private readonly VisualElement _assignmentLibrary;
+        private readonly ActionBar _assignmentNavigation;
+        private readonly UiButton _assignmentMode;
+        private readonly UiButton _matrixMode;
+        private bool _showAssignmentMatrix;
+        private AnimationClip _selectedLibraryClip;
+        private readonly Dictionary<AnimationClip, VisualElement> _libraryClipItems = new Dictionary<AnimationClip, VisualElement>();
         private readonly ObjectField _clipField;
         private readonly MessagePanel _validation;
         private readonly MessagePanel _saveNotification;
@@ -202,6 +209,14 @@ namespace Ee4v.FaceExpression
             _saveNotification.Add(_saveNotification.Actions);
             Add(_saveNotification);
 
+            _assignmentNavigation = new ActionBar();
+            _assignmentMode = new UiButton(I18N.Get("assignments.assignMode"), () => SetAssignmentMatrixVisible(false));
+            _matrixMode = new UiButton(I18N.Get("assignments.confirmMode"), () => SetAssignmentMatrixVisible(true));
+            _assignmentNavigation.Leading.Add(_assignmentMode);
+            _assignmentNavigation.Leading.Add(_matrixMode);
+            _assignmentNavigation.AddToClassList("ee4v-face-expression__assignment-navigation");
+            Add(_assignmentNavigation);
+
             var content = new VisualElement();
             content.AddToClassList("ee4v-face-expression__content");
             _previewPane = new VisualElement();
@@ -219,6 +234,10 @@ namespace Ee4v.FaceExpression
             _previewViewport.RegisterCallback<DetachFromPanelEvent>(_ =>
                 _previewViewport.Dispose());
             _previewPane.Add(_previewViewport);
+            _assignmentLibrary = new VisualElement();
+            _assignmentLibrary.AddToClassList("ee4v-face-expression__assignment-library");
+            _assignmentLibrary.Add(new SectionHeader(_libraryTitle));
+            _previewPane.Add(_assignmentLibrary);
             content.Add(_previewPane);
 
             _assignmentPane = new VisualElement();
@@ -394,7 +413,7 @@ namespace Ee4v.FaceExpression
             _library.contentContainer.AddToClassList(
                 "ee4v-face-expression__library-content");
             editorPane.Add(_library);
-            _assignmentSettings = new VisualElement();
+            _assignmentSettings = new ScrollView(ScrollViewMode.Vertical);
             _assignmentSettings.AddToClassList("ee4v-face-expression__assignment-settings");
             _assignmentSettings.style.display = DisplayStyle.None;
             editorPane.Add(_assignmentSettings);
@@ -551,12 +570,26 @@ namespace Ee4v.FaceExpression
             _avatarField.SetEnabled(editable);
         }
 
-        public void SetAssignmentContent(VisualElement assignments, VisualElement settings)
+        public void SetAssignmentContent(VisualElement assignments, VisualElement settings, VisualElement picker = null)
         {
             _assignmentPane.Clear();
             _assignmentPane.Add(assignments);
             _assignmentSettings.Clear();
+            if (picker != null) { _assignmentSettings.Add(picker); }
             _assignmentSettings.Add(settings);
+            RefreshFilter();
+        }
+
+        public void SetLibrarySelection(AnimationClip clip)
+        {
+            _selectedLibraryClip = clip;
+            foreach (var pair in _libraryClipItems)
+                pair.Value.EnableInClassList("ee4v-face-expression__library-item--selected", pair.Key == clip);
+        }
+
+        private void SetAssignmentMatrixVisible(bool visible)
+        {
+            _showAssignmentMatrix = visible;
             RefreshFilter();
         }
 
@@ -993,6 +1026,7 @@ namespace Ee4v.FaceExpression
 
         private void RenderLibraryItems()
         {
+            _libraryClipItems.Clear();
             _library.Clear();
             var folders = _libraryFolders;
             var clips = _libraryClips;
@@ -1124,7 +1158,10 @@ namespace Ee4v.FaceExpression
                 () => EditClipRequested?.Invoke(clip),
                 preview,
                 () => { if (!dragging) { LibraryClipSelected?.Invoke(clip); } },
-                () => !dragging);
+                () => !dragging,
+                () => LibraryClipSelected?.Invoke(clip));
+            item.EnableInClassList("ee4v-face-expression__library-item--selected", clip == _selectedLibraryClip);
+            _libraryClipItems[clip] = item;
             item.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 0) { return; }
@@ -1183,7 +1220,8 @@ namespace Ee4v.FaceExpression
             Action activated,
             VisualElement preview,
             Action selected = null,
-            Func<bool> canActivate = null)
+            Func<bool> canActivate = null,
+            Action keyboardActivated = null)
         {
             var item = new UiButton(
                 string.Empty,
@@ -1202,7 +1240,7 @@ namespace Ee4v.FaceExpression
             {
                 if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter &&
                     evt.keyCode != KeyCode.Space) { return; }
-                activated?.Invoke();
+                (keyboardActivated ?? activated)?.Invoke();
                 evt.PreventDefault();
                 evt.StopImmediatePropagation();
             }, TrickleDown.TrickleDown);
@@ -1285,9 +1323,23 @@ namespace Ee4v.FaceExpression
         private void RefreshFilter()
         {
             var assigning = IsAssigning;
-            _previewPane.style.display = assigning ? DisplayStyle.None : DisplayStyle.Flex;
-            _assignmentPane.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
+            var confirming = assigning && _showAssignmentMatrix;
+            _previewPane.style.display = confirming ? DisplayStyle.None : DisplayStyle.Flex;
+            _assignmentPane.style.display = confirming ? DisplayStyle.Flex : DisplayStyle.None;
             _assignmentSettings.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
+            _rightPane.style.display = confirming ? DisplayStyle.None : DisplayStyle.Flex;
+            _assignmentNavigation.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
+            _assignmentMode.EnableInClassList("ee4v-gesture-picker__hand--selected", !confirming);
+            _matrixMode.EnableInClassList("ee4v-gesture-picker__hand--selected", confirming);
+            _assignmentLibrary.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
+            var libraryHost = assigning ? _assignmentLibrary : _editorContent;
+            if (_library.parent != libraryHost)
+            {
+                libraryHost.Add(_librarySearch);
+                libraryHost.Add(_library);
+            }
+            _sectionHeader.style.display = assigning ? DisplayStyle.None : DisplayStyle.Flex;
+            _previewPane.EnableInClassList("ee4v-face-expression__preview-pane--assigning", assigning);
             _rightPane.EnableInClassList("ee4v-face-expression__editor-pane--assigning", assigning);
             _sectionHeader.SetTitle(_hasClip ? _sectionTitle : _libraryTitle);
             _toolbar.style.display = _showAvatarField ? DisplayStyle.Flex : DisplayStyle.None;

@@ -132,6 +132,11 @@
     "timelineTooltip": "表情シーケンスの再生位置を確認または移動します。ここを動かしてもポーズは追加されません。"
   },
   "assignments": {
+    "target": "表情の割り当て先",
+    "assign": "この組に割り当てる",
+    "clear": "割り当てを解除",
+    "assignMode": "割り当て",
+    "confirmMode": "8×8で確認",
     "unsavedChanges": "未保存の変更があります。",
     "save": "保存",
     "saveFailed": "保存できませんでした。変更は未保存のままです。",
@@ -174,14 +179,14 @@
     "copyBlendShapes": "BlendShapeとしてコピー"
   },
   "gesture": {
-    "Neutral": "Neutral",
-    "Fist": "Fist",
-    "Open": "Open",
-    "Point": "Point",
-    "Victory": "Victory",
-    "RockNRoll": "RockNRoll",
-    "HandGun": "HandGun",
-    "ThumbsUp": "ThumbsUp"
+    "Neutral": "自然",
+    "Fist": "グー",
+    "Open": "パー",
+    "Point": "指差し",
+    "Victory": "ピース",
+    "RockNRoll": "ロック",
+    "HandGun": "ガン",
+    "ThumbsUp": "親指"
   },
   "dialog": {
     "createTitle": "表情クリップを作成",
