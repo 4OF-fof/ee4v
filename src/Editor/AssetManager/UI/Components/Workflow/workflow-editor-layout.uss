@@ -65,14 +65,21 @@
     min-height: 0;
 }
 
-.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__preview-pane,
-.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__assignment-pane {
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__left-pane {
     min-width: 480px;
     margin-right: 0;
     padding: var(--ee4v-space-xl);
     border-width: 0;
     border-radius: 0;
     background-color: var(--ee4v-color-panel);
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__preview-pane,
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__assignment-pane {
+    min-width: 0;
+    padding: 0;
+    border-width: 0;
+    border-radius: 0;
 }
 
 .ee4v-modification-workflow__face-expression-host .ee4v-face-expression__editor-pane {
@@ -85,7 +92,7 @@
     border-radius: 0;
 }
 
-.ee4v-modification-workflow__face-expression-host .ee4v-face-expression--editing .ee4v-face-expression__preview-pane,
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression--editing .ee4v-face-expression__left-pane,
 .ee4v-modification-workflow__face-expression-host .ee4v-face-expression--editing .ee4v-face-expression__editor-pane {
     width: 50%;
     min-width: 0;

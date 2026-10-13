@@ -37,13 +37,17 @@ namespace Ee4v.FaceExpression
     internal sealed class GestureAssignmentView : VisualElement
     {
         private const int ColumnCount = 8;
-        private const float OverviewHeaderHeight = 28f;
-        private const float OverviewHeaderWidth = 80f;
-        private const float OverviewDividerHeight = 4f;
+        private const float OverviewHeaderHeight = 40f;
+        private const float OverviewHeaderWidth = 112f;
+        private const int OverviewMenuColumns = 2;
+        private const float OverviewMenuGap = 8f;
 
         private readonly ObjectField _avatarField;
         private readonly VisualElement _matrix;
         private readonly VisualElement _overviewGrid;
+        private readonly VisualElement _menuColumn;
+        private readonly VisualElement _menuHeader;
+        private readonly ScrollView _menuScroll;
         private readonly VisualElement _extraRow;
         private readonly Dictionary<GestureCombination, GestureAssignmentCell> _cells =
             new Dictionary<GestureCombination, GestureAssignmentCell>();
@@ -51,6 +55,11 @@ namespace Ee4v.FaceExpression
         private readonly GestureAssignmentSession _session;
         private readonly Action<AnimationClip, Rect> _drawPreview;
         private readonly bool _readOnly;
+        private FaceExpressionConfiguration _menuSnapshot;
+        private FaceExpressionMenuEntry[] _menuSourceSnapshot = Array.Empty<FaceExpressionMenuEntry>();
+        private IReadOnlyList<GestureMatrixControllerWriter.EffectiveMenuEntry> _effectiveMenuSnapshot;
+        private readonly Dictionary<GestureAssignmentCell, Func<bool>> _menuSelectionChecks =
+            new Dictionary<GestureAssignmentCell, Func<bool>>();
         private bool _hasAvatar;
         private bool _rendering;
         private bool _subscribed;
@@ -106,7 +115,7 @@ namespace Ee4v.FaceExpression
             header.AddToClassList("ee4v-gesture-assignment__matrix-row");
             header.AddToClassList("ee4v-gesture-assignment__matrix-row--header");
             var corner = CreateHeader(
-                _text.LeftHand + " ↓ / " + _text.RightHand + " →",
+                _text.LeftHand + (_readOnly ? " ↓\n" : " ↓ / ") + _text.RightHand + " →",
                 false);
             corner.AddToClassList(
                 "ee4v-gesture-assignment__matrix-header--corner");
@@ -127,7 +136,7 @@ namespace Ee4v.FaceExpression
                     var cell = new GestureAssignmentCell(
                         _text.Clip,
                         _text.Unassigned,
-                        () => _session.Select(combination),
+                        () => SelectAssignment(combination),
                         clip => _session.SetClip(combination, clip),
                         rect => DrawPreview(combination, rect));
                     _cells.Add(combination, cell);
@@ -143,7 +152,26 @@ namespace Ee4v.FaceExpression
 
             _extraRow = new VisualElement();
             _extraRow.AddToClassList("ee4v-gesture-assignment__extra-row");
-            grid.Add(_extraRow);
+            if (_readOnly)
+            {
+                _menuColumn = new VisualElement();
+                _menuColumn.AddToClassList("ee4v-gesture-assignment__menu-column");
+                _menuHeader = CreateHeader(I18N.Get("assignments.menuBadge"), false);
+                _menuHeader.tooltip = I18N.Get("assignments.menuOverviewHint");
+                _menuColumn.Add(_menuHeader);
+                _menuScroll = new ScrollView(ScrollViewMode.Vertical)
+                {
+                    horizontalScrollerVisibility = ScrollerVisibility.Hidden,
+                    verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible
+                };
+                _menuScroll.AddToClassList("ee4v-gesture-assignment__menu-scroll");
+                _menuScroll.contentViewport.RegisterCallback<GeometryChangedEvent>(_ => RefreshMenuLayout());
+                _extraRow.AddToClassList("ee4v-gesture-assignment__menu-grid");
+                _menuScroll.Add(_extraRow);
+                _menuColumn.Add(_menuScroll);
+                _matrix.Add(_menuColumn);
+            }
+            else { grid.Add(_extraRow); }
             Add(_matrix);
 
             RegisterCallback<AttachToPanelEvent>(_ => Subscribe());
@@ -164,6 +192,16 @@ namespace Ee4v.FaceExpression
         }
 
         public event Action<GameObject> AvatarChanged;
+        internal event Action<AnimationClip> AssignedClipSelected;
+
+        private void SelectAssignment(GestureCombination combination, FaceExpressionMenuEntry menuEntry = null)
+        {
+            _session.Activate();
+            if (menuEntry != null) { _session.Select(menuEntry); }
+            else { _session.Select(combination); }
+            var clip = _session.SelectedAssignment.Clip;
+            if (_readOnly && clip != null) { AssignedClipSelected?.Invoke(clip); }
+        }
 
         public void SetAvatar(GameObject avatar)
         {
@@ -271,10 +309,34 @@ namespace Ee4v.FaceExpression
 
         private void RenderMenuEntries()
         {
+            if (_readOnly)
+            {
+                var configuration = _session.CreateConfiguration();
+                var menuEntries = GestureMatrixControllerWriter.GetEffectiveMenuEntries(
+                    configuration.Assignments, configuration.MenuEntries)
+                    .Where(entry => entry.IsExplicit).ToList();
+                if (!MenuContentsMatch(configuration, menuEntries))
+                {
+                    _extraRow.Clear();
+                    _menuSelectionChecks.Clear();
+                    var menuCells = new List<VisualElement>();
+                    RenderEffectiveMenuCells(menuCells, menuEntries);
+                    foreach (var cell in menuCells) { _extraRow.Add(cell); }
+                    _menuSnapshot = configuration;
+                    _menuSourceSnapshot = _session.MenuEntries.ToArray();
+                    _effectiveMenuSnapshot = menuEntries;
+                }
+                foreach (var pair in _menuSelectionChecks)
+                {
+                    pair.Key.EnableInClassList("ee4v-gesture-assignment__cell--selected", pair.Value());
+                }
+                _menuColumn.style.display = menuEntries.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                RefreshOverviewLayout();
+                return;
+            }
             _extraRow.Clear();
             var items = new List<VisualElement>();
-            if (_readOnly) { RenderEffectiveMenuCells(items); }
-            foreach (var entry in _readOnly ? Array.Empty<FaceExpressionMenuEntry>() : _session.MenuEntries)
+            foreach (var entry in _session.MenuEntries)
             {
                 var cell = new GestureAssignmentCell(
                     _text.Clip,
@@ -318,7 +380,7 @@ namespace Ee4v.FaceExpression
                 VisualElement header;
                 if (offset == 0)
                 {
-                    header = CreateHeader(_readOnly ? I18N.Get("assignments.menuBadge") : _text.MenuOnly, true);
+                    header = CreateHeader(_text.MenuOnly, true);
                 }
                 else
                 {
@@ -330,7 +392,7 @@ namespace Ee4v.FaceExpression
                     header.pickingMode = PickingMode.Ignore;
                 }
 
-                header.tooltip = _readOnly ? I18N.Get("assignments.menuOverviewHint") : _text.MenuOnlyHint;
+                header.tooltip = _text.MenuOnlyHint;
                 row.Add(header);
                 for (var column = 0; column < ColumnCount; column++)
                 {
@@ -356,52 +418,58 @@ namespace Ee4v.FaceExpression
             RefreshOverviewLayout();
         }
 
-        private void RenderEffectiveMenuCells(List<VisualElement> items)
+        private bool MenuContentsMatch(FaceExpressionConfiguration configuration,
+            IReadOnlyList<GestureMatrixControllerWriter.EffectiveMenuEntry> menuEntries)
         {
-            var configuration = _session.CreateConfiguration();
-            var menuEntries = GestureMatrixControllerWriter.GetEffectiveMenuEntries(
-                configuration.Assignments, configuration.MenuEntries);
+            if (_menuSnapshot == null || !_menuSourceSnapshot.SequenceEqual(_session.MenuEntries) ||
+                configuration.Assignments.Count != _menuSnapshot.Assignments.Count ||
+                configuration.MenuEntries.Count != _menuSnapshot.MenuEntries.Count ||
+                menuEntries.Count != _effectiveMenuSnapshot.Count) { return false; }
+            if (configuration.Assignments.Any(pair =>
+                !_menuSnapshot.Assignments.TryGetValue(pair.Key, out var previous) ||
+                !EqualityComparer<FaceExpressionAssignment>.Default.Equals(pair.Value, previous))) { return false; }
+            for (var index = 0; index < configuration.MenuEntries.Count; index++)
+            {
+                var current = configuration.MenuEntries[index];
+                var previous = _menuSnapshot.MenuEntries[index];
+                if (current.Name != previous.Name ||
+                    !EqualityComparer<FaceExpressionAssignment>.Default.Equals(current.Assignment, previous.Assignment))
+                { return false; }
+            }
+            for (var index = 0; index < menuEntries.Count; index++)
+            {
+                var current = menuEntries[index];
+                var previous = _effectiveMenuSnapshot[index];
+                if (current.Name != previous.Name || current.LeftGesture != previous.LeftGesture ||
+                    current.IsExplicit != previous.IsExplicit) { return false; }
+            }
+            return true;
+        }
+
+        private void RenderEffectiveMenuCells(List<VisualElement> items,
+            IReadOnlyList<GestureMatrixControllerWriter.EffectiveMenuEntry> menuEntries)
+        {
             var explicitEntries = _session.MenuEntries.Where(entry => entry.Assignment.Clip != null).ToArray();
             var explicitIndex = 0;
             foreach (var item in menuEntries)
             {
-                var explicitEntry = item.IsExplicit ? explicitEntries[explicitIndex++] : null;
-                var source = item.IsExplicit ? default : configuration.Assignments
-                    .Where(pair => pair.Key.Left == (item.LeftGesture ?? FaceGesture.Neutral) &&
-                        pair.Value.Clip == item.Assignment.Clip &&
-                        (string.IsNullOrWhiteSpace(pair.Value.MenuName)
-                            ? pair.Value.Clip.name : pair.Value.MenuName.Trim()) == item.Name)
-                    .OrderBy(pair => pair.Key.Right)
-                    .Select(pair => pair.Key).First();
+                var explicitEntry = explicitEntries[explicitIndex++];
                 var cell = new GestureAssignmentCell(_text.Clip, _text.Unassigned,
-                    () =>
-                    {
-                        if (explicitEntry != null) { _session.Select(explicitEntry); }
-                        else { _session.Select(source); }
-                    }, null, rect => _drawPreview?.Invoke(item.Assignment.Clip, rect));
+                    () => SelectAssignment(default, explicitEntry),
+                    null, rect => _drawPreview?.Invoke(item.Assignment.Clip, rect));
                 cell.SetAssignment(item.Assignment);
                 cell.SetReadOnly(true);
                 cell.SetCaption(item.Name);
-                var sourceName = explicitEntry != null ? I18N.Get("assignments.menuSelection") :
-                    GetGestureName(source.Left) + "+" + GetGestureName(source.Right);
+                var sourceName = I18N.Get("assignments.menuSelection");
                 cell.tooltip = item.Name + "\n" + sourceName + "\n" + item.Assignment.Clip.name;
-                cell.EnableInClassList("ee4v-gesture-assignment__cell--selected", explicitEntry != null
-                    ? ReferenceEquals(explicitEntry, _session.SelectedMenuEntry)
-                    : _session.IsCombinationSelected(source));
-                RegisterRemovalMenu(cell, explicitEntry != null ? _text.Remove :
-                    I18N.Get("assignments.clear") + " (" + sourceName + ")",
-                    () => _hasAvatar && (explicitEntry != null
-                        ? _session.MenuEntries.Contains(explicitEntry)
-                        : _session.GetAssignment(source).Clip == item.Assignment.Clip),
+                _menuSelectionChecks.Add(cell, () => ReferenceEquals(explicitEntry, _session.SelectedMenuEntry));
+                RegisterRemovalMenu(cell, _text.Remove,
+                    () => _hasAvatar && _session.MenuEntries.Contains(explicitEntry),
                     () =>
                     {
                         _session.Activate();
-                        if (explicitEntry != null)
-                        {
-                            _session.Select(explicitEntry);
-                            _session.RemoveSelectedMenuExpression();
-                        }
-                        else { _session.SetClip(source, null); }
+                        _session.Select(explicitEntry);
+                        _session.RemoveSelectedMenuExpression();
                     });
                 items.Add(cell);
             }
@@ -425,23 +493,40 @@ namespace Ee4v.FaceExpression
             if (!_readOnly || _matrix.contentRect.width <= 0f || _matrix.contentRect.height <= 0f) { return; }
             var width = _matrix.contentRect.width;
             var height = _matrix.contentRect.height;
-            var headerWidth = Mathf.Min(OverviewHeaderWidth, width / (ColumnCount + 1));
+            var menuColumns = _extraRow.childCount > 0 ? OverviewMenuColumns : 0;
+            var gap = menuColumns > 0 ? Mathf.Min(OverviewMenuGap, width * 0.02f) : 0f;
+            var availableWidth = Mathf.Max(0f, width - gap);
+            var headerWidth = Mathf.Min(OverviewHeaderWidth, availableWidth / 2f);
             var headerHeight = Mathf.Min(OverviewHeaderHeight, height);
-            var dividerHeight = _extraRow.childCount > 0 ? Mathf.Min(OverviewDividerHeight, height - headerHeight) : 0f;
-            var rowCount = ColumnCount + _extraRow.childCount;
-            var cellSize = Mathf.Max(0f, Mathf.Min((width - headerWidth) / ColumnCount,
-                (height - headerHeight - dividerHeight) / rowCount));
-            _overviewGrid.style.width = headerWidth + ColumnCount * cellSize;
-            _overviewGrid.style.height = headerHeight + rowCount * cellSize + dividerHeight;
+            var cellSize = Mathf.Max(0f, Mathf.Min((availableWidth - headerWidth) / (ColumnCount + menuColumns),
+                (height - headerHeight) / ColumnCount));
+            var gridWidth = headerWidth + ColumnCount * cellSize;
+            var menuWidth = menuColumns * cellSize;
+            _overviewGrid.style.width = gridWidth;
+            _overviewGrid.style.height = headerHeight + ColumnCount * cellSize;
             for (var index = 0; index <= ColumnCount; index++)
             {
                 SetOverviewRowLayout(_overviewGrid[index], index == 0 ? headerHeight : cellSize, headerWidth, cellSize);
             }
-            _extraRow.style.height = _extraRow.childCount * cellSize + dividerHeight;
-            _extraRow.style.borderTopWidth = dividerHeight;
-            foreach (var row in _extraRow.Children())
+            if (menuColumns == 0) { return; }
+            _menuColumn.style.width = menuWidth;
+            _menuColumn.style.height = height;
+            _menuColumn.style.marginLeft = Mathf.Max(gap, width - gridWidth - menuWidth);
+            _menuHeader.style.height = headerHeight;
+            _menuHeader.style.flexBasis = headerHeight;
+            RefreshMenuLayout();
+        }
+
+        private void RefreshMenuLayout()
+        {
+            if (!_readOnly || _menuScroll == null || _menuScroll.contentViewport.contentRect.width <= 0f) { return; }
+            var menuCellSize = Mathf.Floor(_menuScroll.contentViewport.contentRect.width / OverviewMenuColumns);
+            _extraRow.style.height = Mathf.CeilToInt((float)_extraRow.childCount / OverviewMenuColumns) * menuCellSize;
+            foreach (var cell in _extraRow.Children())
             {
-                SetOverviewRowLayout(row, cellSize, headerWidth, cellSize);
+                cell.style.width = menuCellSize;
+                cell.style.height = menuCellSize;
+                cell.style.flexBasis = menuCellSize;
             }
         }
 
@@ -463,29 +548,61 @@ namespace Ee4v.FaceExpression
     {
         private const int ExpressionTab = 0;
         private const int SettingsTab = 1;
+
+        private sealed class Condition
+        {
+            internal readonly VisualElement Root = new VisualElement();
+            internal readonly Dictionary<FaceGesture, UiButton> LeftButtons = new Dictionary<FaceGesture, UiButton>();
+            internal readonly Dictionary<FaceGesture, UiButton> RightButtons = new Dictionary<FaceGesture, UiButton>();
+            internal SectionHeader Heading;
+            internal UiButton AllLeft;
+            internal UiButton AllRight;
+            internal UiButton MenuButton;
+            internal FaceGesture? Left;
+            internal FaceGesture? Right;
+            internal bool HasLeft;
+            internal bool HasRight;
+            internal bool IsMenu;
+            internal FaceExpressionMenuEntry MenuEntry;
+            internal GestureCombination[] AssignedCombinations = Array.Empty<GestureCombination>();
+
+            internal IEnumerable<GestureCombination> GetCombinations()
+            {
+                if (IsMenu) { return Enumerable.Empty<GestureCombination>(); }
+                if (!HasLeft || !HasRight) { return AssignedCombinations; }
+                return Expand(Left, Right);
+            }
+
+            internal static IEnumerable<GestureCombination> Expand(FaceGesture? leftGesture, FaceGesture? rightGesture)
+            {
+                return from FaceGesture left in Enum.GetValues(typeof(FaceGesture))
+                       from FaceGesture right in Enum.GetValues(typeof(FaceGesture))
+                       where (!leftGesture.HasValue || leftGesture.Value == left) &&
+                             (!rightGesture.HasValue || rightGesture.Value == right)
+                       select new GestureCombination(left, right);
+            }
+
+            internal bool KeepsMenu => IsMenu || ((!HasLeft || !HasRight) && MenuEntry != null);
+        }
+
         private readonly GestureAssignmentSession _session;
         private readonly GestureAssignmentViewText _text;
-        private readonly Dictionary<FaceGesture, UiButton> _left = new Dictionary<FaceGesture, UiButton>();
-        private readonly Dictionary<FaceGesture, UiButton> _right = new Dictionary<FaceGesture, UiButton>();
-        private readonly UiButton _allLeft;
-        private readonly UiButton _allRight;
-        private readonly UiTextElement _currentClip;
-        private readonly UiTextElement _candidateName;
         private readonly ObjectField _candidateField;
         private readonly InputField _menuNameField;
-        private readonly UiButton _assign;
-        private readonly UiButton _addMenu;
-        private readonly VisualElement _handSelectors;
+        private readonly UiButton _addCondition;
+        private readonly VisualElement _conditionList;
         private readonly VisualElement _expressionPanel;
         private readonly VisualElement _settingsPanel;
-        private readonly VisualElement _menuEntries;
         private readonly GestureAssignmentSettingsView _settingsView;
         private readonly List<UiButton> _tabs = new List<UiButton>();
+        private readonly List<Condition> _conditions = new List<Condition>();
+        private HashSet<GestureCombination> _observedCombinations;
+        private FaceExpressionMenuEntry[] _observedMenuEntries = Array.Empty<FaceExpressionMenuEntry>();
         private AnimationClip _candidate;
         private bool _hasAvatar;
-        private bool _creatingMenu;
-        private bool _menuNameEdited;
+        private bool _updatingConditions;
         private bool _updatingCommonInputs;
+        private bool _refreshing;
         private string _draftMenuName = string.Empty;
         private int _selectedTab;
         private bool _observedHasSelection;
@@ -516,7 +633,11 @@ namespace Ee4v.FaceExpression
             {
                 if (_updatingCommonInputs) { return; }
                 _draftMenuName = value;
-                _menuNameEdited = true;
+                if (_hasAvatar && _candidate != null)
+                {
+                    _session.Activate();
+                    _session.SetClipMenuName(_candidate, value);
+                }
             };
             var menuName = new FormInput(_text.MenuName, _menuNameField);
             menuName.AddToClassList("ee4v-gesture-picker__name-input");
@@ -535,49 +656,20 @@ namespace Ee4v.FaceExpression
                 _tabs.Add(button);
                 tabs.Add(button);
             }
-            ReviewActions = new VisualElement();
-            ReviewActions.AddToClassList("ee4v-gesture-picker__review-actions");
-            tabs.Add(ReviewActions);
             Header.Add(tabs);
             _expressionPanel = CreatePanel();
             _settingsPanel = CreatePanel();
-
-            _handSelectors = new VisualElement();
-            _handSelectors.AddToClassList("ee4v-gesture-picker__hand-selectors");
-            _handSelectors.Add(CreateHand(_text.LeftHand, true, _left, out var allLeft));
-            _handSelectors.Add(CreateHand(_text.RightHand, false, _right, out var allRight));
-            _allLeft = allLeft;
-            _allRight = allRight;
-            _expressionPanel.Add(_handSelectors);
-            _addMenu = new UiButton(I18N.Get("assignments.menuSelection"), BeginMenuRegistration);
-            _addMenu.AddToClassList("ee4v-gesture-picker__menu-selection");
-            _expressionPanel.Add(_addMenu);
-
+            _conditionList = new VisualElement();
+            _conditionList.AddToClassList("ee4v-gesture-picker__conditions");
+            _expressionPanel.Add(_conditionList);
             _settingsView = new GestureAssignmentSettingsView(_text, settings, _session, embedded: true);
             _settingsPanel.Add(_settingsView);
 
-            _menuEntries = new VisualElement();
-            _menuEntries.AddToClassList("ee4v-gesture-picker__menu");
-            _expressionPanel.Add(_menuEntries);
-
             Footer = new VisualElement();
             Footer.AddToClassList("ee4v-gesture-picker__footer");
-            var change = new VisualElement();
-            change.AddToClassList("ee4v-gesture-picker__change");
-            _currentClip = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText,
-                "ee4v-gesture-picker__current-clip");
-            _candidateName = UiTextFactory.Create(string.Empty, "ee4v-gesture-picker__candidate-name");
-            change.Add(_currentClip);
-            change.Add(new Icon(FluentUiIcons.CreateState("arrow_right.png", UiSizeTokens.Size12)));
-            change.Add(_candidateName);
-            Footer.Add(change);
-            FooterActions = new VisualElement();
-            FooterActions.AddToClassList("ee4v-gesture-picker__actions");
-            _assign = new UiButton(I18N.Get("assignments.assign"), ApplyCandidate);
-            _assign.SetPrimaryActionEnabled(true);
-            _assign.AddToClassList("ee4v-gesture-picker__assign");
-            FooterActions.Add(_assign);
-            Footer.Add(FooterActions);
+            _addCondition = new UiButton(I18N.Get("assignments.addCondition"), () => AddCondition());
+            _addCondition.AddToClassList("ee4v-gesture-picker__add-condition");
+            Footer.Add(_addCondition);
             Add(Footer);
             RegisterCallback<AttachToPanelEvent>(_ => { _session.Changed += Refresh; Refresh(); });
             RegisterCallback<DetachFromPanelEvent>(_ => _session.Changed -= Refresh);
@@ -586,10 +678,7 @@ namespace Ee4v.FaceExpression
 
         internal VisualElement Header { get; }
         internal VisualElement Footer { get; }
-        internal VisualElement FooterActions { get; }
-        internal VisualElement ReviewActions { get; }
         internal event Action<AnimationClip> CandidateChanged;
-        internal event Action<AnimationClip, string> ExpressionApplyRequested;
 
         private VisualElement CreatePanel()
         {
@@ -605,61 +694,263 @@ namespace Ee4v.FaceExpression
             Refresh();
         }
 
-        private void RefreshTabLayout()
+        private Condition AddCondition(FaceGesture? left = null, FaceGesture? right = null,
+            bool hasHands = false, FaceExpressionMenuEntry menuEntry = null)
         {
-            for (var index = 0; index < _tabs.Count; index++)
+            var condition = new Condition
             {
-                _tabs[index].EnableInClassList("ee4v-gesture-picker__tab--selected", index == _selectedTab);
-                _tabs[index].SetLabelColor(index == _selectedTab ? UiColorTokens.TextPrimary : UiColorTokens.TextMuted);
-            }
-            _expressionPanel.style.display = _selectedTab == ExpressionTab ? DisplayStyle.Flex : DisplayStyle.None;
-            _settingsPanel.style.display = _selectedTab == SettingsTab ? DisplayStyle.Flex : DisplayStyle.None;
-            _settingsView.SetMenuDraft(_creatingMenu && _hasAvatar);
-            Footer.style.display = _selectedTab == SettingsTab ? DisplayStyle.None : DisplayStyle.Flex;
+                Left = left, Right = right, HasLeft = hasHands, HasRight = hasHands,
+                IsMenu = menuEntry != null, MenuEntry = menuEntry
+            };
+            condition.Root.AddToClassList("ee4v-gesture-picker__condition");
+            var heading = condition.Heading = new SectionHeader();
+            heading.AddToClassList("ee4v-gesture-picker__condition-heading");
+            var remove = new UiButton(string.Empty, () => RemoveCondition(condition),
+                I18N.Get("assignments.removeCondition"),
+                FluentUiIcons.CreateState("dismiss.png", UiSizeTokens.Size12), UiButtonVariant.Ghost);
+            remove.AddToClassList("ee4v-gesture-picker__condition-remove");
+            heading.Actions.Add(remove);
+            condition.Root.Add(heading);
+            var hands = new VisualElement();
+            hands.AddToClassList("ee4v-gesture-picker__hand-selectors");
+            hands.Add(CreateHand(condition, _text.LeftHand, true, condition.LeftButtons, out condition.AllLeft));
+            hands.Add(CreateHand(condition, _text.RightHand, false, condition.RightButtons, out condition.AllRight));
+            condition.Root.Add(hands);
+            condition.MenuButton = new UiButton(I18N.Get("assignments.menuSelection"), () => SelectMenu(condition));
+            condition.MenuButton.AddToClassList("ee4v-gesture-picker__menu-selection");
+            condition.Root.Add(condition.MenuButton);
+            condition.AssignedCombinations = condition.GetCombinations().ToArray();
+            _conditions.Add(condition);
+            _conditionList.Add(condition.Root);
+            GestureAssignmentView.RegisterRemovalMenu(condition.Root, I18N.Get("assignments.removeCondition"),
+                () => _hasAvatar && _candidate != null, () => RemoveCondition(condition));
+            RefreshConditionButtons();
+            return condition;
         }
 
-        private void BeginMenuRegistration()
+        private VisualElement CreateHand(Condition condition, string title, bool left,
+            Dictionary<FaceGesture, UiButton> buttons, out UiButton all)
         {
-            _selectedTab = ExpressionTab;
-            _creatingMenu = true;
-            _menuNameEdited = false;
-            _draftMenuName = string.Empty;
-            _session.ClearSelection();
-            Refresh();
+            var column = new VisualElement();
+            column.AddToClassList("ee4v-gesture-picker__hand-column");
+            column.EnableInClassList("ee4v-gesture-picker__hand-column--right", !left);
+            column.Add(new SectionHeader(title));
+            all = new UiButton(_text.AllGestures ?? I18N.Get("assignments.allGestures"),
+                () => SelectHand(condition, left, null));
+            all.AddToClassList("ee4v-gesture-picker__hand-all");
+            column.Add(all);
+            var row = new VisualElement();
+            row.AddToClassList("ee4v-gesture-picker__hands");
+            foreach (FaceGesture gesture in Enum.GetValues(typeof(FaceGesture)))
+            {
+                var button = new UiButton(_text.GestureName?.Invoke(gesture) ?? gesture.ToString(),
+                    () => SelectHand(condition, left, gesture));
+                button.AddToClassList("ee4v-gesture-picker__hand");
+                buttons.Add(gesture, button);
+                row.Add(button);
+            }
+            column.Add(row);
+            return column;
         }
 
-        private void ApplyCandidate()
+        private void SelectHand(Condition condition, bool left, FaceGesture? gesture)
+        {
+            if (!CanSelectHand(condition, left, gesture)) { return; }
+            condition.IsMenu = false;
+            if (left) { condition.Left = gesture; condition.HasLeft = true; }
+            else { condition.Right = gesture; condition.HasRight = true; }
+            if (condition.HasLeft && condition.HasRight)
+            {
+                condition.MenuEntry = null;
+                ApplyConditions(condition);
+            }
+            RefreshConditionButtons();
+        }
+
+        private void SelectMenu(Condition condition)
+        {
+            if (!CanSelectMenu(condition)) { return; }
+            condition.IsMenu = true;
+            condition.HasLeft = false;
+            condition.HasRight = false;
+            if (condition.MenuEntry == null)
+            {
+                var assignment = _session.GetClipAssignments(_candidate).FirstOrDefault();
+                var hasAssignment = assignment.Clip != null;
+                condition.MenuEntry = new FaceExpressionMenuEntry(_draftMenuName,
+                    new FaceExpressionAssignment(_candidate,
+                        hasAssignment ? assignment.EnableBlink : _settingsView.DraftEnableBlink,
+                        hasAssignment ? assignment.FixMouth : _settingsView.DraftFixMouth));
+            }
+            ApplyConditions(condition);
+            RefreshConditionButtons();
+        }
+
+        private void RemoveCondition(Condition condition)
+        {
+            _conditions.Remove(condition);
+            condition.Root.RemoveFromHierarchy();
+            ApplyConditions(null);
+            if (_conditions.Count == 0) { AddCondition(); }
+            RefreshConditionButtons();
+        }
+
+        private void ApplyConditions(Condition selected)
         {
             if (!_hasAvatar || _candidate == null) { return; }
-            _draftMenuName = _menuNameField.Value;
-            var appliedName = !_menuNameEdited && !_session.IsMenuSelection &&
-                _session.HasMixedSelection(value => value.MenuName) ? null : _draftMenuName;
-            _session.Activate();
-            _menuNameEdited = false;
-            if (_creatingMenu)
+            var assignment = _session.GetClipAssignments(_candidate).FirstOrDefault();
+            var hasAssignment = assignment.Clip != null;
+            _updatingConditions = true;
+            try
             {
-                _session.AddMenuExpression(_candidate, _draftMenuName,
-                    _settingsView.DraftEnableBlink, _settingsView.DraftFixMouth);
+                _session.Activate();
+                var applied = _session.SetClipConditions(_candidate,
+                    _conditions.SelectMany(condition => condition.GetCombinations()),
+                    _conditions.Where(condition => condition.KeepsMenu).Select(condition => condition.MenuEntry).ToArray(),
+                    _draftMenuName,
+                    hasAssignment ? assignment.EnableBlink : _settingsView.DraftEnableBlink,
+                    hasAssignment ? assignment.FixMouth : _settingsView.DraftFixMouth);
+                if (!applied) { _observedCombinations = null; }
+                else
+                {
+                    foreach (var condition in _conditions)
+                    {
+                        condition.AssignedCombinations = condition.GetCombinations().ToArray();
+                    }
+                    CaptureConditions();
+                    if (selected != null)
+                    {
+                        if (selected.IsMenu) { _session.Select(selected.MenuEntry); }
+                        else
+                        {
+                            _session.SelectHand(true, selected.Left);
+                            _session.SelectHand(false, selected.Right);
+                        }
+                    }
+                }
             }
-            else
-            {
-                ExpressionApplyRequested?.Invoke(_candidate, appliedName);
-            }
+            finally { _updatingConditions = false; }
             Refresh();
+        }
+
+        private HashSet<GestureCombination> GetClipCombinations()
+        {
+            return new HashSet<GestureCombination>(_session.CreateConfiguration().Assignments
+                .Where(pair => _candidate != null && pair.Value.Clip == _candidate).Select(pair => pair.Key));
+        }
+
+        private FaceExpressionMenuEntry[] GetClipMenuEntries()
+        {
+            return _session.MenuEntries.Where(entry => _candidate != null && entry.Assignment.Clip == _candidate).ToArray();
+        }
+
+        private void CaptureConditions()
+        {
+            _observedCombinations = GetClipCombinations();
+            _observedMenuEntries = GetClipMenuEntries();
+        }
+
+        private void RefreshConditions()
+        {
+            if (_updatingConditions) { return; }
+            var combinations = GetClipCombinations();
+            var menuEntries = GetClipMenuEntries();
+            if (_observedCombinations != null && _observedCombinations.SetEquals(combinations) &&
+                _observedMenuEntries.SequenceEqual(menuEntries)) { return; }
+            _conditions.Clear();
+            _conditionList.Clear();
+            var remaining = new HashSet<GestureCombination>(combinations);
+            var gestures = Enum.GetValues(typeof(FaceGesture)).Cast<FaceGesture>().ToArray();
+            if (remaining.Count == gestures.Length * gestures.Length)
+            {
+                AddCondition(null, null, hasHands: true);
+                remaining.Clear();
+            }
+            foreach (var left in gestures)
+            {
+                var row = gestures.Select(right => new GestureCombination(left, right)).ToArray();
+                if (!row.All(combinations.Contains) || !row.Any(remaining.Contains)) { continue; }
+                AddCondition(left, null, hasHands: true);
+                remaining.ExceptWith(row);
+            }
+            foreach (var right in gestures)
+            {
+                var column = gestures.Select(left => new GestureCombination(left, right)).ToArray();
+                if (!column.All(combinations.Contains) || !column.Any(remaining.Contains)) { continue; }
+                AddCondition(null, right, hasHands: true);
+                remaining.ExceptWith(column);
+            }
+            foreach (var combination in remaining.OrderBy(value => value.Left).ThenBy(value => value.Right))
+            {
+                AddCondition(combination.Left, combination.Right, hasHands: true);
+            }
+            foreach (var entry in menuEntries) { AddCondition(menuEntry: entry); }
+            if (_conditions.Count == 0) { AddCondition(); }
+            _observedCombinations = combinations;
+            _observedMenuEntries = menuEntries;
+        }
+
+        private void RefreshConditionButtons()
+        {
+            for (var index = 0; index < _conditions.Count; index++)
+            {
+                var condition = _conditions[index];
+                condition.Heading.SetTitle(I18N.Get("assignments.conditionTitle", index + 1));
+                condition.Heading.style.display = _conditions.Count > 1 ? DisplayStyle.Flex : DisplayStyle.None;
+                condition.Root.SetEnabled(_hasAvatar && _candidate != null);
+                foreach (var pair in condition.LeftButtons)
+                {
+                    pair.Value.EnableInClassList("ee4v-gesture-picker__hand--selected",
+                        !condition.IsMenu && condition.HasLeft && condition.Left == pair.Key);
+                    pair.Value.SetEnabled(CanSelectHand(condition, true, pair.Key));
+                }
+                foreach (var pair in condition.RightButtons)
+                {
+                    pair.Value.EnableInClassList("ee4v-gesture-picker__hand--selected",
+                        !condition.IsMenu && condition.HasRight && condition.Right == pair.Key);
+                    pair.Value.SetEnabled(CanSelectHand(condition, false, pair.Key));
+                }
+                condition.AllLeft.EnableInClassList("ee4v-gesture-picker__hand--selected",
+                    !condition.IsMenu && condition.HasLeft && !condition.Left.HasValue);
+                condition.AllRight.EnableInClassList("ee4v-gesture-picker__hand--selected",
+                    !condition.IsMenu && condition.HasRight && !condition.Right.HasValue);
+                condition.AllLeft.SetEnabled(CanSelectHand(condition, true, null));
+                condition.AllRight.SetEnabled(CanSelectHand(condition, false, null));
+                condition.MenuButton.EnableInClassList("ee4v-gesture-picker__hand--selected", condition.IsMenu);
+                condition.MenuButton.SetEnabled(CanSelectMenu(condition));
+            }
+        }
+
+        private bool CanSelectHand(Condition condition, bool left, FaceGesture? gesture)
+        {
+            if (!_hasAvatar || _candidate == null) { return false; }
+            if (left ? !condition.HasRight : !condition.HasLeft) { return true; }
+            var targets = Condition.Expand(left ? gesture : condition.Left, left ? condition.Right : gesture).ToArray();
+            var own = new HashSet<GestureCombination>(condition.AssignedCombinations);
+            var others = new HashSet<GestureCombination>(_conditions.Where(other => other != condition)
+                .SelectMany(other => other.GetCombinations()));
+            return targets.All(combination => !others.Contains(combination) &&
+                (_session.GetAssignment(combination).Clip == null ||
+                 (_session.GetAssignment(combination).Clip == _candidate && own.Contains(combination))));
+        }
+
+        private bool CanSelectMenu(Condition condition)
+        {
+            return _hasAvatar && _candidate != null &&
+                !_session.MenuEntries.Any(entry => entry.Assignment.Clip == _candidate) &&
+                !_conditions.Any(other => other != condition && other.KeepsMenu);
         }
 
         private void RefreshCommonInputs()
         {
-            if (!_menuNameEdited && _session.HasSelection && !_creatingMenu)
-            {
-                _draftMenuName = _session.HasMixedSelection(value => value.MenuName) && !_session.IsMenuSelection
-                    ? string.Empty : _session.SelectedMenuName;
-            }
+            var names = _session.CreateConfiguration().Assignments.Values
+                .Where(value => _candidate != null && value.Clip == _candidate).Select(value => value.MenuName)
+                .Concat(GetClipMenuEntries().Select(entry => entry.Name)).Distinct().ToArray();
+            var mixed = names.Length > 1;
+            if (names.Length > 0) { _draftMenuName = mixed ? string.Empty : names[0]; }
             _updatingCommonInputs = true;
             _menuNameField.SetValueWithoutNotify(_draftMenuName);
-            var mixedName = !_menuNameEdited && !_creatingMenu &&
-                !_session.IsMenuSelection && _session.HasMixedSelection(value => value.MenuName);
-            _menuNameField.SetPlaceholder(mixedName ? I18N.Get("assignments.mixedValues") :
+            _menuNameField.SetPlaceholder(mixed ? I18N.Get("assignments.mixedValues") :
                 _candidate != null ? _candidate.name : I18N.Get("assignments.clipNamePlaceholder"));
             _menuNameField.SetEnabled(_hasAvatar);
             _updatingCommonInputs = false;
@@ -667,6 +958,11 @@ namespace Ee4v.FaceExpression
 
         internal void SetCandidate(AnimationClip clip)
         {
+            if (_candidate != clip)
+            {
+                _draftMenuName = string.Empty;
+                _observedCombinations = null;
+            }
             _candidate = clip;
             _candidateField.SetValueWithoutNotify(clip);
             Refresh();
@@ -676,125 +972,51 @@ namespace Ee4v.FaceExpression
         {
             _hasAvatar = avatar != null;
             _candidateField.SetEnabled(_hasAvatar);
-            _menuNameField.SetEnabled(_hasAvatar);
-            _handSelectors.SetEnabled(_hasAvatar);
-            _menuEntries.SetEnabled(_hasAvatar);
-            _addMenu.SetEnabled(_hasAvatar);
+            _observedCombinations = null;
             Refresh();
-        }
-
-        private VisualElement CreateHand(string title, bool left, Dictionary<FaceGesture, UiButton> buttons,
-            out UiButton all)
-        {
-            var column = new VisualElement();
-            column.AddToClassList("ee4v-gesture-picker__hand-column");
-            column.EnableInClassList("ee4v-gesture-picker__hand-column--right", !left);
-            column.Add(new SectionHeader(title));
-            all = new UiButton(_text.AllGestures ?? I18N.Get("assignments.allGestures"),
-                () => _session.SelectHand(left, null));
-            all.AddToClassList("ee4v-gesture-picker__hand-all");
-            column.Add(all);
-            var row = new VisualElement();
-            row.AddToClassList("ee4v-gesture-picker__hands");
-            foreach (FaceGesture gesture in Enum.GetValues(typeof(FaceGesture)))
-            {
-                var button = new UiButton(_text.GestureName?.Invoke(gesture) ?? gesture.ToString(),
-                    () => _session.SelectHand(left, gesture));
-                button.AddToClassList("ee4v-gesture-picker__hand");
-                buttons.Add(gesture, button);
-                row.Add(button);
-            }
-            column.Add(row);
-            return column;
-        }
-
-        private void RefreshActions()
-        {
-            var activeTarget = _selectedTab == ExpressionTab && (_creatingMenu || _session.HasSelection);
-            _assign.SetLabel(I18N.Get(_creatingMenu ? "assignments.registerMenu" :
-                _session.IsMenuSelection ? "assignments.updateMenu" : "assignments.assign"));
-            _assign.SetEnabled(_hasAvatar && activeTarget && _candidate != null);
         }
 
         private void Refresh()
         {
-            var menuSelectionChanged = !ReferenceEquals(_observedMenuEntry, _session.SelectedMenuEntry);
-            var selectionChanged = _observedHasSelection != _session.HasSelection ||
-                !_observedCombination.Equals(_session.SelectedCombination) ||
-                _observedAllLeft != _session.IsAllLeftSelected || _observedAllRight != _session.IsAllRightSelected ||
-                !ReferenceEquals(_observedMenuEntry, _session.SelectedMenuEntry);
-            _observedHasSelection = _session.HasSelection;
-            _observedCombination = _session.SelectedCombination;
-            _observedAllLeft = _session.IsAllLeftSelected;
-            _observedAllRight = _session.IsAllRightSelected;
-            _observedMenuEntry = _session.SelectedMenuEntry;
-            if (selectionChanged)
+            if (_refreshing) { return; }
+            _refreshing = true;
+            try
             {
-                if (_session.HasSelection)
+                var menuSelectionChanged = !ReferenceEquals(_observedMenuEntry, _session.SelectedMenuEntry);
+                var selectionChanged = _observedHasSelection != _session.HasSelection ||
+                    !_observedCombination.Equals(_session.SelectedCombination) ||
+                    _observedAllLeft != _session.IsAllLeftSelected || _observedAllRight != _session.IsAllRightSelected ||
+                    menuSelectionChanged;
+                _observedHasSelection = _session.HasSelection;
+                _observedCombination = _session.SelectedCombination;
+                _observedAllLeft = _session.IsAllLeftSelected;
+                _observedAllRight = _session.IsAllRightSelected;
+                _observedMenuEntry = _session.SelectedMenuEntry;
+                if (selectionChanged && _session.HasSelection)
                 {
-                    _creatingMenu = false;
                     _selectedTab = ExpressionTab;
-                }
-                if (menuSelectionChanged && _session.IsMenuSelection)
-                {
-                    _menuNameEdited = false;
-                    CandidateChanged?.Invoke(_session.SelectedAssignment.Clip);
-                }
-            }
-            RefreshCommonInputs();
-            foreach (var pair in _left)
-                pair.Value.EnableInClassList("ee4v-gesture-picker__hand--selected", _session.HasSelection && !_session.IsMenuSelection && !_session.IsAllLeftSelected && pair.Key == _session.SelectedCombination.Left);
-            foreach (var pair in _right)
-                pair.Value.EnableInClassList("ee4v-gesture-picker__hand--selected", _session.HasSelection && !_session.IsMenuSelection && !_session.IsAllRightSelected && pair.Key == _session.SelectedCombination.Right);
-            _allLeft.EnableInClassList("ee4v-gesture-picker__hand--selected", _session.IsAllLeftSelected);
-            _allRight.EnableInClassList("ee4v-gesture-picker__hand--selected", _session.IsAllRightSelected);
-            _addMenu.EnableInClassList("ee4v-gesture-picker__hand--selected", _creatingMenu || _session.IsMenuSelection);
-            var allText = _text.AllGestures ?? I18N.Get("assignments.allGestures");
-            var target = _creatingMenu ? I18N.Get("assignments.newRegistration") :
-                _session.IsMenuSelection ? I18N.Get("assignments.menuExpressions") + " · " + _session.SelectedMenuName :
-                !_session.HasSelection ? _text.NoSelection :
-                _text.LeftHand + " " + (_session.IsAllLeftSelected ? allText : _text.GestureName?.Invoke(_session.SelectedCombination.Left) ?? _session.SelectedCombination.Left.ToString()) + " + " +
-                _text.RightHand + " " + (_session.IsAllRightSelected ? allText : _text.GestureName?.Invoke(_session.SelectedCombination.Right) ?? _session.SelectedCombination.Right.ToString());
-            if (_session.SelectedCombinationCount > 1) { target += " " + I18N.Get("assignments.selectionCount", _session.SelectedCombinationCount); }
-            var current = _creatingMenu ? I18N.Get("assignments.newRegistration") :
-                _session.HasMixedSelection(assignment => assignment.Clip)
-                ? I18N.Get("assignments.mixedClips")
-                : _session.SelectedAssignment.Clip != null ? _session.SelectedAssignment.Clip.name : _text.Unassigned;
-            _currentClip.SetText(current);
-            _currentClip.tooltip = current;
-            _candidateName.SetText(_candidate != null ? _candidate.name : _text.NoSelection);
-            _candidateName.tooltip = _candidate != null ? _candidate.name : _text.NoSelection;
-            Footer.tooltip = _session.IsMenuSelection ? _session.SelectedMenuName : target;
-            _menuEntries.Clear();
-            foreach (var entry in _session.MenuEntries)
-            {
-                var name = !string.IsNullOrEmpty(entry.Name) ? entry.Name :
-                    entry.Assignment.Clip != null ? entry.Assignment.Clip.name : I18N.Get("assignments.unnamedMenuEntry");
-                var row = new VisualElement();
-                row.AddToClassList("ee4v-gesture-picker__menu-row");
-                var button = new UiButton(name, () =>
-                {
-                    _menuNameEdited = false;
-                    _session.Select(entry);
-                }, name, variant: UiButtonVariant.Ghost);
-                button.SetContentAlignment(Justify.FlexStart);
-                button.SetLabelTextAlign(TextAnchor.MiddleLeft);
-                button.AddToClassList("ee4v-gesture-picker__menu-entry");
-                button.EnableInClassList("ee4v-gesture-picker__menu-entry--selected", ReferenceEquals(entry, _session.SelectedMenuEntry));
-                row.Add(button);
-                GestureAssignmentView.RegisterRemovalMenu(row, _text.Remove,
-                    () => _hasAvatar && _session.MenuEntries.Contains(entry),
-                    () =>
+                    if (!_updatingConditions && menuSelectionChanged && _session.IsMenuSelection)
                     {
-                        _session.Activate();
-                        _session.Select(entry);
-                        _session.RemoveSelectedMenuExpression();
-                    });
-                _menuEntries.Add(row);
+                        CandidateChanged?.Invoke(_session.SelectedAssignment.Clip);
+                    }
+                }
+                RefreshConditions();
+                RefreshCommonInputs();
+                RefreshConditionButtons();
+                for (var index = 0; index < _tabs.Count; index++)
+                {
+                    _tabs[index].EnableInClassList("ee4v-gesture-picker__tab--selected", index == _selectedTab);
+                    _tabs[index].SetLabelColor(index == _selectedTab ? UiColorTokens.TextPrimary : UiColorTokens.TextMuted);
+                }
+                _expressionPanel.style.display = _selectedTab == ExpressionTab ? DisplayStyle.Flex : DisplayStyle.None;
+                _settingsPanel.style.display = _selectedTab == SettingsTab ? DisplayStyle.Flex : DisplayStyle.None;
+                _settingsView.SetClipTarget(_hasAvatar ? _candidate : null);
+                _settingsView.SetExpressionDraft(_hasAvatar && _candidate != null &&
+                    !_session.GetClipAssignments(_candidate).Any());
+                _addCondition.SetEnabled(_hasAvatar && _candidate != null);
+                Footer.style.display = _selectedTab == SettingsTab ? DisplayStyle.None : DisplayStyle.Flex;
             }
-            _menuEntries.style.display = _session.MenuEntries.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
-            RefreshTabLayout();
-            RefreshActions();
+            finally { _refreshing = false; }
         }
     }
 
@@ -809,7 +1031,8 @@ namespace Ee4v.FaceExpression
         private readonly Toggle _mouthToggle;
         private readonly Toggle _menuIconsToggle;
         private readonly ISettingsService _settings;
-        private bool _menuDraft;
+        private AnimationClip _clipTarget;
+        private bool _expressionDraft;
         private bool _rendering;
         private bool _subscribed;
 
@@ -839,16 +1062,18 @@ namespace Ee4v.FaceExpression
             _blinkToggle.RegisterValueChangedCallback(evt =>
             {
                 if (_rendering) { return; }
-                if (_menuDraft) { DraftEnableBlink = evt.newValue; }
-                else { _session.SetSelectedBlink(evt.newValue); }
+                if (_expressionDraft) { DraftEnableBlink = evt.newValue; }
+                if (ClipTarget != null) { _session.SetClipBlink(ClipTarget, evt.newValue); }
+                else if (!_expressionDraft) { _session.SetSelectedBlink(evt.newValue); }
             });
             expressionControls.Add(CreateCheckboxRow(_text.EnableBlink, _blinkToggle));
             _mouthToggle = UiTextFactory.CreateToggle();
             _mouthToggle.RegisterValueChangedCallback(evt =>
             {
                 if (_rendering) { return; }
-                if (_menuDraft) { DraftFixMouth = evt.newValue; }
-                else { _session.SetSelectedMouth(evt.newValue); }
+                if (_expressionDraft) { DraftFixMouth = evt.newValue; }
+                if (ClipTarget != null) { _session.SetClipMouth(ClipTarget, evt.newValue); }
+                else if (!_expressionDraft) { _session.SetSelectedMouth(evt.newValue); }
             });
             expressionControls.Add(CreateCheckboxRow(_text.FixMouth, _mouthToggle));
             Add(expressionControls);
@@ -892,11 +1117,20 @@ namespace Ee4v.FaceExpression
         internal bool DraftEnableBlink { get; private set; } = true;
         internal bool DraftFixMouth { get; private set; }
 
-        internal void SetMenuDraft(bool menuDraft)
+        private AnimationClip ClipTarget => _clipTarget != null ? _clipTarget : _session.SelectedAssignment.Clip;
+
+        internal void SetClipTarget(AnimationClip clip)
         {
-            if (_menuDraft == menuDraft) { return; }
-            _menuDraft = menuDraft;
-            if (menuDraft)
+            if (_clipTarget != clip) { _expressionDraft = false; }
+            _clipTarget = clip;
+            RefreshState();
+        }
+
+        internal void SetExpressionDraft(bool expressionDraft)
+        {
+            if (_expressionDraft == expressionDraft) { return; }
+            _expressionDraft = expressionDraft;
+            if (expressionDraft)
             {
                 DraftEnableBlink = true;
                 DraftFixMouth = false;
@@ -943,9 +1177,15 @@ namespace Ee4v.FaceExpression
 
         private void RefreshState()
         {
-            var assignment = _menuDraft
+            var clipAssignments = _session.GetClipAssignments(ClipTarget).ToArray();
+            var assignment = clipAssignments.Length > 0 ? clipAssignments[0] : _expressionDraft
                 ? new FaceExpressionAssignment(null, DraftEnableBlink, DraftFixMouth)
                 : _session.SelectedAssignment;
+            if (_expressionDraft && clipAssignments.Length > 0)
+            {
+                DraftEnableBlink = assignment.EnableBlink;
+                DraftFixMouth = assignment.FixMouth;
+            }
             var isExtra = _session.IsMenuSelection;
             _rendering = true;
             _selectionLabel.SetText(!_session.HasSelection ? _text.Selection + ": " + _text.NoSelection : isExtra
@@ -961,11 +1201,16 @@ namespace Ee4v.FaceExpression
             _removeMenuButton.style.display = isExtra ? DisplayStyle.Flex : DisplayStyle.None;
             _blinkToggle.SetValueWithoutNotify(assignment.EnableBlink);
             _mouthToggle.SetValueWithoutNotify(assignment.FixMouth);
-            _blinkToggle.showMixedValue = !_menuDraft && _session.HasMixedSelection(value => value.EnableBlink);
-            _mouthToggle.showMixedValue = !_menuDraft && _session.HasMixedSelection(value => value.FixMouth);
+            _blinkToggle.showMixedValue = clipAssignments.Length > 0
+                ? clipAssignments.Any(value => value.EnableBlink != assignment.EnableBlink)
+                : !_expressionDraft && _session.HasMixedSelection(value => value.EnableBlink);
+            _mouthToggle.showMixedValue = clipAssignments.Length > 0
+                ? clipAssignments.Any(value => value.FixMouth != assignment.FixMouth)
+                : !_expressionDraft && _session.HasMixedSelection(value => value.FixMouth);
             _menuNameField.SetEnabled(_session.HasSelection);
-            _blinkToggle.SetEnabled(_menuDraft || _session.HasSelection);
-            _mouthToggle.SetEnabled(_menuDraft || _session.HasSelection);
+            var canEditExpression = _expressionDraft || clipAssignments.Length > 0 || (ClipTarget == null && _session.HasSelection);
+            _blinkToggle.SetEnabled(canEditExpression);
+            _mouthToggle.SetEnabled(canEditExpression);
             _menuIconsToggle.SetValueWithoutNotify(!FaceExpressionSettings.GetMenuIconsDisabled(_settings));
             _rendering = false;
         }

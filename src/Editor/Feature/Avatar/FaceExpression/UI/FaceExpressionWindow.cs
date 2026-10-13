@@ -313,9 +313,9 @@ namespace Ee4v.FaceExpression
             _assignmentView = new GestureAssignmentView(
                 GestureAssignmentWindow.CreateText(), DrawLibraryThumbnail, false, _assignments, readOnly: true);
             _assignmentView.SetAvatar(_avatar);
+            _assignmentView.AssignedClipSelected += SelectAssignmentCandidate;
             _assignmentPicker = new GestureAssignmentPickerView(GestureAssignmentWindow.CreateText(), _assignments, _settings);
             _assignmentPicker.CandidateChanged += SelectAssignmentCandidate;
-            _assignmentPicker.ExpressionApplyRequested += AssignExpression;
             _assignmentPicker.SetAvatar(_avatar);
             _assignmentPicker.SetCandidate(_assignmentCandidateClip);
             _view.SetAssignmentContent(_assignmentView, _assignmentPicker);
@@ -396,13 +396,6 @@ namespace Ee4v.FaceExpression
             if (_avatar == null || !_assignments.HasSelection) { return; }
             _assignments.Activate();
             _assignments.SetSelectedClip(clip);
-        }
-
-        private void AssignExpression(AnimationClip clip, string menuName)
-        {
-            if (_avatar == null || !_assignments.HasSelection) { return; }
-            _assignments.Activate();
-            _assignments.SetSelectedExpression(clip, menuName);
         }
 
         private void RefreshLibraryAssignmentSelection()

@@ -64,8 +64,8 @@ namespace Ee4v.FaceExpression
                     "gesture-assignment-picker",
                     "Domain/FaceExpression/Inputs",
                     "GestureAssignmentPickerView",
-                    "表情を選び、左右の手の組を指定して割り当てる操作欄です。",
-                    "候補の選択と割り当て確定を分け、保存しないセッションで操作を確認します。",
+                    "表情の条件を追加し、左右の手またはメニューの選択を即時に反映する操作欄です。",
+                    "条件ボタンの即時割り当てと複数条件を、保存しないセッションで確認します。",
                     BuildAssignmentPicker,
                     dependencies: new[] { "UiButton", "UiTextFactory", "SectionHeader" },
                     usageLocations: new[] { "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionWindow.cs" },
@@ -438,7 +438,6 @@ namespace Ee4v.FaceExpression
             picker.SetAvatar(avatar);
             picker.SetCandidate(clip);
             picker.CandidateChanged += picker.SetCandidate;
-            picker.ExpressionApplyRequested += session.SetSelectedExpression;
             picker.RegisterCallback<DetachFromPanelEvent>(_ =>
             {
                 session.Dispose();

@@ -26,7 +26,27 @@ namespace Ee4v.FaceExpression
         {
             _unassignedText = unassignedText;
             AddToClassList("ee4v-gesture-assignment__cell");
-            RegisterCallback<MouseDownEvent>(evt => { if (evt.button == 0) { selected?.Invoke(); } });
+            focusable = true;
+            RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0) { return; }
+                for (var target = evt.target as VisualElement; target != null && target != this; target = target.parent)
+                {
+                    if (target == _clipField) { return; }
+                }
+                Focus();
+                selected?.Invoke();
+                evt.StopPropagation();
+            }, TrickleDown.TrickleDown);
+            RegisterCallback<ClickEvent>(evt => { if (evt.button == 0) { evt.StopPropagation(); } });
+            RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.target != this || (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter &&
+                    evt.keyCode != KeyCode.Space)) { return; }
+                selected?.Invoke();
+                evt.PreventDefault();
+                evt.StopPropagation();
+            });
 
             _previewArea = new PreviewContainer();
             _previewArea.AddToClassList(

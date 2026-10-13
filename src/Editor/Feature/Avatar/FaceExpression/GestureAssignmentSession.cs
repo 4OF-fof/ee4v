@@ -387,6 +387,95 @@ namespace Ee4v.FaceExpression
                 current.Clip, current.EnableBlink, fixMouth, current.MenuName));
         }
 
+        internal IEnumerable<FaceExpressionAssignment> GetClipAssignments(AnimationClip clip)
+        {
+            return clip != null
+                ? Assignments.Values.Concat(Entries.Select(entry => entry.Assignment))
+                    .Where(assignment => assignment.Clip == clip)
+                : Enumerable.Empty<FaceExpressionAssignment>();
+        }
+
+        internal void SetClipBlink(AnimationClip clip, bool enableBlink)
+        {
+            UpdateClipAssignments(clip, current => new FaceExpressionAssignment(
+                current.Clip, enableBlink, current.FixMouth, current.MenuName));
+        }
+
+        internal void SetClipMouth(AnimationClip clip, bool fixMouth)
+        {
+            UpdateClipAssignments(clip, current => new FaceExpressionAssignment(
+                current.Clip, current.EnableBlink, fixMouth, current.MenuName));
+        }
+
+        private void UpdateClipAssignments(AnimationClip clip,
+            Func<FaceExpressionAssignment, FaceExpressionAssignment> update)
+        {
+            if (clip == null) { return; }
+            var gestures = Assignments.Where(pair => pair.Value.Clip == clip)
+                .Select(pair => new KeyValuePair<GestureCombination, FaceExpressionAssignment>(pair.Key, update(pair.Value)))
+                .Where(pair => !AssignmentEquals(pair.Value, Assignments[pair.Key])).ToArray();
+            var menu = Entries.Where(entry => entry.Assignment.Clip == clip)
+                .Select(entry => new KeyValuePair<FaceExpressionMenuEntry, FaceExpressionAssignment>(entry, update(entry.Assignment)))
+                .Where(pair => !AssignmentEquals(pair.Value, pair.Key.Assignment)).ToArray();
+            if (gestures.Length == 0 && menu.Length == 0) { return; }
+            RecordChange();
+            foreach (var change in gestures) { Assignments[change.Key] = change.Value; }
+            foreach (var change in menu) { change.Key.Assignment = change.Value; }
+            NotifyConfigurationChanged();
+        }
+
+        internal bool SetClipConditions(AnimationClip clip, IEnumerable<GestureCombination> combinations,
+            IReadOnlyList<FaceExpressionMenuEntry> menuEntries, string menuName, bool enableBlink, bool fixMouth)
+        {
+            if (clip == null) { return false; }
+            var targets = new HashSet<GestureCombination>(combinations);
+            if (targets.Any(combination => GetAssignment(combination).Clip != null &&
+                GetAssignment(combination).Clip != clip)) { return false; }
+            var gestures = Assignments.Keys.Concat(targets).Distinct().Select(combination =>
+            {
+                var current = GetAssignment(combination);
+                var next = targets.Contains(combination)
+                    ? current.Clip == clip ? current : new FaceExpressionAssignment(clip, enableBlink, fixMouth, menuName)
+                    : current.Clip == clip
+                        ? new FaceExpressionAssignment(null, current.EnableBlink, current.FixMouth, current.MenuName)
+                        : current;
+                return new KeyValuePair<GestureCombination, FaceExpressionAssignment>(combination, next);
+            }).Where(pair => !AssignmentEquals(pair.Value, GetAssignment(pair.Key))).ToArray();
+            var removed = Entries.Where(entry => entry.Assignment.Clip == clip && !menuEntries.Contains(entry)).ToArray();
+            var added = menuEntries.Where(entry => entry.Assignment.Clip == clip && !Entries.Contains(entry)).ToArray();
+            if (added.Length > 0 && Entries.Count(entry => entry.Assignment.Clip == clip && !removed.Contains(entry)) +
+                added.Length > 1) { return false; }
+            if (gestures.Length == 0 && removed.Length == 0 && added.Length == 0) { return true; }
+            RecordChange();
+            foreach (var change in gestures) { Assignments[change.Key] = change.Value; }
+            foreach (var entry in removed) { Entries.Remove(entry); }
+            Entries.AddRange(added);
+            if (_selectedMenuEntry != null && !Entries.Contains(_selectedMenuEntry))
+            {
+                _selectedMenuEntry = null;
+                _hasSelection = false;
+            }
+            NotifyConfigurationChanged();
+            return true;
+        }
+
+        internal void SetClipMenuName(AnimationClip clip, string name)
+        {
+            if (clip == null) { return; }
+            name = name ?? string.Empty;
+            var gestures = Assignments.Where(pair => pair.Value.Clip == clip && pair.Value.MenuName != name).ToArray();
+            var menu = Entries.Where(entry => entry.Assignment.Clip == clip && entry.Name != name).ToArray();
+            if (gestures.Length == 0 && menu.Length == 0) { return; }
+            RecordChange();
+            foreach (var pair in gestures)
+            {
+                var current = pair.Value;
+                Assignments[pair.Key] = new FaceExpressionAssignment(clip, current.EnableBlink, current.FixMouth, name);
+            }
+            foreach (var entry in menu) { entry.Name = name; }
+            NotifyConfigurationChanged();
+        }
+
         private void UpdateSelectedAssignments(Func<FaceExpressionAssignment, FaceExpressionAssignment> update)
         {
             if (!HasSelection) { return; }
