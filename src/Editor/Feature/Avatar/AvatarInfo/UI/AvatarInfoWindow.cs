@@ -19,11 +19,13 @@ namespace Ee4v.AvatarInfo
         {
             AvatarPlayModePerformanceCache.Changed += RefreshPerformance;
             AvatarBuildSizeCache.Changed += RefreshPerformance;
+            AvatarInfoSettings.PrefabExclusionsChanged += RefreshPerformance;
         }
         protected override void DisposeFeature()
         {
             AvatarPlayModePerformanceCache.Changed -= RefreshPerformance;
             AvatarBuildSizeCache.Changed -= RefreshPerformance;
+            AvatarInfoSettings.PrefabExclusionsChanged -= RefreshPerformance;
         }
         protected override void ClearFeatureData() { }
 

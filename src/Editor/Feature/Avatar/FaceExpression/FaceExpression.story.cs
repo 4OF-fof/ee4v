@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
@@ -46,8 +47,8 @@ namespace Ee4v.FaceExpression
                     "gesture-assignment",
                     "Domain/FaceExpression",
                     "Gesture Assignments",
-                    "左右ジェスチャー64通りをサムネイル付きセルで設定する画面です。",
-                    "グリッドと設定画面が一つのセッションを共有し、Modular Avatar用データを生成します。",
+                    "左右ジェスチャー64通りをサムネイル付きセルで確認する画面です。",
+                    "割り当てセッションを読み取り、確認セルからClipの変更やDrag & Dropは行いません。",
                     BuildAssignments,
                     dependencies: new[] { "UiButton", "UiTextFactory" },
                     usageLocations: new[]
@@ -59,6 +60,16 @@ namespace Ee4v.FaceExpression
                         "Editor/UI/Components/Inputs/ui-button.uss",
                         "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss"
                     }),
+                new UiStory(
+                    "gesture-assignment-picker",
+                    "Domain/FaceExpression/Inputs",
+                    "GestureAssignmentPickerView",
+                    "表情の条件を追加し、左右の手またはメニューの選択を即時に反映する操作欄です。",
+                    "条件ボタンの即時割り当てと複数条件を、保存しないセッションで確認します。",
+                    BuildAssignmentPicker,
+                    dependencies: new[] { "UiButton", "UiTextFactory", "SectionHeader" },
+                    usageLocations: new[] { "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionWindow.cs" },
+                    styleSheetPaths: new[] { "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss" }),
                 new UiStory(
                     "gesture-assignment-settings",
                     "Domain/FaceExpression",
@@ -389,9 +400,6 @@ namespace Ee4v.FaceExpression
                     RightHand = "Right hand",
                     Selection = "Selected",
                     ExpressionSettings = "Expression settings",
-                    Synchronization = "Synchronization",
-                    SynchronizeLeft = "Synchronize the same left hand",
-                    SynchronizeRight = "Synchronize the same right hand",
                     GlobalSettings = "Global settings",
                     Clip = "Expression clip",
                     EnableBlink = "Enable blinking",
@@ -400,11 +408,11 @@ namespace Ee4v.FaceExpression
                     MenuOnly = "Extra (menu only)",
                     MenuOnlyHint = "Select an Extra cell below the divider to edit it in the settings window.",
                     MenuName = "Menu name",
-                    DisableMenuIcons = "Disable preview menu icons",
+                    EnableMenuIcons = "Generate thumbnails",
                     AddMenuExpression = "Add menu-only expression",
                     Remove = "Remove",
-                    GestureName = gesture => gesture.ToString()
-                });
+                    GestureName = gesture => I18N.Get("gesture." + gesture)
+                }, readOnly: true);
             view.SetConfiguration(new FaceExpressionConfiguration(
                 new Dictionary<GestureCombination, FaceExpressionAssignment>(),
                 new[]
@@ -420,6 +428,25 @@ namespace Ee4v.FaceExpression
             parent.Add(surface);
         }
 
+        private static void BuildAssignmentPicker(VisualElement parent)
+        {
+            var session = new GestureAssignmentSession();
+            var avatar = new GameObject("Assignment preview") { hideFlags = HideFlags.HideAndDontSave };
+            var clip = new AnimationClip { name = "Smile", hideFlags = HideFlags.HideAndDontSave };
+            session.SetConfiguration(new FaceExpressionConfiguration(new Dictionary<GestureCombination, FaceExpressionAssignment>(), null));
+            var picker = new GestureAssignmentPickerView(GestureAssignmentWindow.CreateText(), session, new StorySettingsService());
+            picker.SetAvatar(avatar);
+            picker.SetCandidate(clip);
+            picker.CandidateChanged += picker.SetCandidate;
+            picker.RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                session.Dispose();
+                UnityEngine.Object.DestroyImmediate(clip);
+                UnityEngine.Object.DestroyImmediate(avatar);
+            });
+            parent.Add(picker);
+        }
+
         private static void BuildAssignmentSettings(VisualElement parent)
         {
             var settingsSurface = new VisualElement();
@@ -430,17 +457,14 @@ namespace Ee4v.FaceExpression
                 {
                     Selection = "Selected",
                     ExpressionSettings = "Expression settings",
-                    Synchronization = "Synchronization",
-                    SynchronizeLeft = "Synchronize the same left hand",
-                    SynchronizeRight = "Synchronize the same right hand",
                     GlobalSettings = "Global settings",
                     EnableBlink = "Enable blinking",
                     FixMouth = "Fix mouth movement",
                     MenuOnly = "Extra (menu only)",
                     MenuName = "Menu name",
-                    DisableMenuIcons = "Disable preview menu icons",
+                    EnableMenuIcons = "Generate thumbnails",
                     Remove = "Remove",
-                    GestureName = gesture => gesture.ToString()
+                    GestureName = gesture => I18N.Get("gesture." + gesture)
                 },
                 new StorySettingsService()));
             parent.Add(settingsSurface);

@@ -51,6 +51,8 @@ namespace Ee4v.AssetManager.UI
                 target.RegisterCallback<PointerUpEvent>(
                     OnPointerUp, TrickleDown.TrickleDown);
                 target.RegisterCallback<PointerCaptureOutEvent>(OnCaptureOut);
+                target.RegisterCallback<DragExitedEvent>(OnDragExited);
+                target.RegisterCallback<DetachFromPanelEvent>(OnDetach);
             }
 
             protected override void UnregisterCallbacksFromTarget()
@@ -62,6 +64,9 @@ namespace Ee4v.AssetManager.UI
                 target.UnregisterCallback<PointerUpEvent>(
                     OnPointerUp, TrickleDown.TrickleDown);
                 target.UnregisterCallback<PointerCaptureOutEvent>(OnCaptureOut);
+                target.UnregisterCallback<DragExitedEvent>(OnDragExited);
+                target.UnregisterCallback<DetachFromPanelEvent>(OnDetach);
+                target.RemoveFromClassList("ee4v-asset-manager__collection-dragging");
             }
 
             private void OnPointerDown(PointerDownEvent evt)
@@ -74,7 +79,7 @@ namespace Ee4v.AssetManager.UI
             private void OnPointerMove(PointerMoveEvent evt)
             {
                 if (!_ready || (evt.pressedButtons & 1) == 0 ||
-                    Vector2.Distance(_start, evt.position) < 4f)
+                    Vector2.Distance(_start, evt.position) < 6f)
                 {
                     return;
                 }
@@ -85,6 +90,7 @@ namespace Ee4v.AssetManager.UI
                 DragAndDrop.PrepareStartDrag();
                 DragAndDrop.SetGenericData(CollectionDragDataKey, payload);
                 DragAndDrop.StartDrag(payload.Name);
+                target.AddToClassList("ee4v-asset-manager__collection-dragging");
                 evt.StopImmediatePropagation();
             }
 
@@ -102,6 +108,12 @@ namespace Ee4v.AssetManager.UI
             {
                 _ready = false;
             }
+
+            private void OnDragExited(DragExitedEvent evt) =>
+                target.RemoveFromClassList("ee4v-asset-manager__collection-dragging");
+
+            private void OnDetach(DetachFromPanelEvent evt) =>
+                target.RemoveFromClassList("ee4v-asset-manager__collection-dragging");
         }
 
         private sealed class ItemTargetEntry

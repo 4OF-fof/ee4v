@@ -87,8 +87,7 @@ namespace Ee4v.AssetManager.UI
                 error.Clear();
                 if (_variantState.VariantMetadataSaveCount == 1)
                 {
-                    error.parent?.Q<AssetTagField>()?.SetValues(IsStandaloneAsset(variant)
-                        ? GetAvailableTagOptions() : GetAvailableVariantTagOptions(), variant.Tags);
+                    error.parent?.Q<AssetTagField>()?.SetValues(GetAvailableTagOptions(), variant.Tags);
                 }
                 if (!_disposed && ShowsInformation && InformationVariantId == variant.VariantId)
                 {
@@ -218,18 +217,6 @@ namespace Ee4v.AssetManager.UI
                     option => option.Path,
                     StringComparer.OrdinalIgnoreCase)
                 .ToArray();
-        }
-
-        private IReadOnlyList<AssetTagOption> GetAvailableVariantTagOptions()
-        {
-            return GetAvailableTagOptions()
-                .Concat(GetVariants().Where(variant => !IsStandaloneAsset(variant))
-                    .SelectMany(variant => variant.Tags.Distinct(StringComparer.OrdinalIgnoreCase))
-                    .Select(path => new AssetTagOption(path, 1)))
-                .GroupBy(option => option.Path, StringComparer.OrdinalIgnoreCase)
-                .Select(group => new AssetTagOption(group.Key, group.Sum(option => option.UsageCount)))
-                .OrderByDescending(option => option.UsageCount)
-                .ThenBy(option => option.Path, StringComparer.OrdinalIgnoreCase).ToArray();
         }
 
         private static IReadOnlyList<string> GetTagPaths(AssetItem item)

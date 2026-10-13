@@ -67,6 +67,10 @@
       "saveFailed": "派生Prefabを更新できませんでした。Consoleを確認してください。"
     },
     "objects": {
+      "backToParts": "一覧へ戻る",
+      "componentEnabled": "コンポーネントの有効・無効を切り替え",
+      "missingScript": "Missing Scriptがあります。対応するスクリプトを復元してください。",
+      "editorUnavailable": "コンポーネントの編集画面を表示できませんでした。Consoleを確認してください。",
       "empty": "表示を切り替えられるパーツがありません。",
       "turnOn": "このパーツを表示",
       "turnOff": "このパーツを非表示",
@@ -75,6 +79,7 @@
       "parentHidden": "親のパーツが非表示です。"
     },
     "shapeParts": {
+      "material": "マテリアル",
       "shape": "体型",
       "parts": "パーツ"
     }

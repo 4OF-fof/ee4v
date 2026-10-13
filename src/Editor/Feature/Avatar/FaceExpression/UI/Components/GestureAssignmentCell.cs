@@ -15,6 +15,10 @@ namespace Ee4v.FaceExpression
         private readonly PreviewContainer _previewArea;
         private readonly IMGUIContainer _preview;
         private readonly string _unassignedText;
+        private UiTextElement _caption;
+        private AnimationClip _displayedClip;
+        private bool _hasDisplayedClip;
+        private bool _displayedHasContent;
 
         internal GestureAssignmentCell(
             string clipLabel,
@@ -25,7 +29,27 @@ namespace Ee4v.FaceExpression
         {
             _unassignedText = unassignedText;
             AddToClassList("ee4v-gesture-assignment__cell");
-            RegisterCallback<MouseDownEvent>(_ => selected?.Invoke());
+            focusable = true;
+            RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0) { return; }
+                for (var target = evt.target as VisualElement; target != null && target != this; target = target.parent)
+                {
+                    if (target == _clipField) { return; }
+                }
+                Focus();
+                selected?.Invoke();
+                evt.StopPropagation();
+            }, TrickleDown.TrickleDown);
+            RegisterCallback<ClickEvent>(evt => { if (evt.button == 0) { evt.StopPropagation(); } });
+            RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.target != this || (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter &&
+                    evt.keyCode != KeyCode.Space)) { return; }
+                selected?.Invoke();
+                evt.PreventDefault();
+                evt.StopPropagation();
+            });
 
             _previewArea = new PreviewContainer();
             _previewArea.AddToClassList(
@@ -88,9 +112,28 @@ namespace Ee4v.FaceExpression
             });
         }
 
+        internal void SetCaption(string caption)
+        {
+            if (_caption == null)
+            {
+                _caption = UiTextFactory.Create(string.Empty, "ee4v-gesture-assignment__cell-caption");
+                _caption.SetFontSize(10);
+                _caption.SetTextAlign(TextAnchor.MiddleCenter);
+                _caption.pickingMode = PickingMode.Ignore;
+                Add(_caption);
+            }
+            _caption.SetText(caption);
+        }
+
         internal void SetClipEnabled(bool enabled)
         {
             _clipField.SetEnabled(enabled);
+        }
+
+        internal void SetReadOnly(bool readOnly)
+        {
+            _clipField.style.display = readOnly ? DisplayStyle.None : DisplayStyle.Flex;
+            _clipField.SetEnabled(!readOnly);
         }
 
         internal void SetAssignment(FaceExpressionAssignment assignment)
@@ -103,6 +146,11 @@ namespace Ee4v.FaceExpression
 
         private void SetClip(AnimationClip clip)
         {
+            var hasContent = clip != null;
+            if (_hasDisplayedClip && _displayedClip == clip && _displayedHasContent == hasContent) return;
+            _hasDisplayedClip = true;
+            _displayedClip = clip;
+            _displayedHasContent = hasContent;
             _clipField.SetValueWithoutNotify(clip);
             _empty.SetText(clip == null ? _unassignedText : string.Empty);
             _previewArea.SetHasContent(clip != null);

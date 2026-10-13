@@ -563,7 +563,7 @@ namespace Ee4v.AssetManager.UI
                 if (original)
                 {
                     _creatingOriginalAsset = false;
-                    _viewState.OpenVariantDetail(result.VariantId);
+                    OpenVariantDetail(result.VariantId);
                 }
                 else { _viewState.CloseDerivedAssetsPage(); }
             }
@@ -859,7 +859,7 @@ namespace Ee4v.AssetManager.UI
                 };
                 assetCard.DoubleClicked += _ =>
                 {
-                    _viewState.OpenVariantDetail(derivedAsset.VariantId);
+                    OpenVariantDetail(derivedAsset.VariantId);
                 };
                 assetCard.ContextClicked += (_, __) => ShowVariantContextMenu(new[] { derivedAsset.VariantId });
                 assetCard.RegisterCallback<DetachFromPanelEvent>(_ =>

@@ -13,6 +13,7 @@ namespace Ee4v.FaceExpression
         private const string MenuTypeName =
             "VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu";
         private const int PageSize = 8;
+        private static readonly Dictionary<string, Hash128> Signatures = new Dictionary<string, Hash128>();
 
         internal static bool IsAvailable => FindType(MenuTypeName) != null;
 
@@ -28,6 +29,12 @@ namespace Ee4v.FaceExpression
             }
 
             var existing = AssetDatabase.LoadMainAssetAtPath(assetPath);
+            var signature = Hash128.Compute(string.Join(";", (entries ?? Array.Empty<GestureMatrixControllerWriter.EffectiveMenuEntry>())
+                .Select((entry, index) => entry.Name.Length + ":" + entry.Name + ":" + entry.LeftGesture + ":" +
+                    (index < (icons?.Count ?? 0) && icons[index] != null ? icons[index].GetInstanceID() : 0))));
+            if (existing != null && existing.GetType() == menuType &&
+                Signatures.TryGetValue(assetPath, out var saved) && signature == saved)
+                return (ScriptableObject)existing;
             if (existing != null && existing.GetType() != menuType)
             {
                 AssetDatabase.DeleteAsset(assetPath);
@@ -76,6 +83,7 @@ namespace Ee4v.FaceExpression
             }
 
             EditorUtility.SetDirty(container);
+            Signatures[assetPath] = signature;
             return container;
         }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ee4v.Core.AvatarEvaluation;
 using Ee4v.UI;
 using UnityEditor;
@@ -17,6 +18,7 @@ namespace Ee4v.FaceExpression
         private readonly PreviewOrbitController _thumbnailOrbit;
         private AvatarPreviewRenderer _utility;
         private AvatarPreviewRenderer _thumbnailUtility;
+        private Hash128? _thumbnailSourceSignature;
         private GameObject _sourceAvatar;
         private GameObject _avatar;
         private readonly Dictionary<string, SkinnedMeshRenderer> _renderers =
@@ -173,6 +175,7 @@ namespace Ee4v.FaceExpression
 
             if (_thumbnailUtility == null)
             {
+                _thumbnailSourceSignature ??= GetThumbnailSourceSignature(_sourceAvatar);
                 _thumbnailUtility = new AvatarPreviewRenderer(_sourceAvatar, isolatedSnapshot: true);
                 foreach (var renderer in _thumbnailUtility.Root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 {
@@ -217,6 +220,25 @@ namespace Ee4v.FaceExpression
                     RenderTexture.ReleaseTemporary(readback);
                 }
             }
+        }
+
+        internal static Hash128 GetThumbnailSourceSignature(GameObject avatar) => Hash128.Compute(
+            avatar.GetInstanceID() + ":" + string.Join(";",
+                avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(renderer =>
+                    EditorJsonUtility.ToJson(renderer) + ":" +
+                    AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetPath(renderer.sharedMesh)) + ":" +
+                    string.Join(";", renderer.sharedMaterials.Where(material => material != null)
+                        .Select(material => EditorJsonUtility.ToJson(material))))));
+
+        internal void PrepareThumbnailSource(Hash128 signature)
+        {
+            if (_thumbnailUtility != null && _thumbnailSourceSignature != signature)
+            {
+                _thumbnailUtility.Dispose();
+                _thumbnailUtility = null;
+                _thumbnailRenderers.Clear();
+            }
+            _thumbnailSourceSignature = signature;
         }
 
         public void Dispose()
@@ -268,6 +290,7 @@ namespace Ee4v.FaceExpression
             _renderers.Clear();
             _thumbnailUtility?.Dispose();
             _thumbnailUtility = null;
+            _thumbnailSourceSignature = null;
             _thumbnailRenderers.Clear();
             _sourceAvatar = null;
             if (_utility != null)

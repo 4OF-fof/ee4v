@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Ee4v.Core;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.UI;
@@ -106,7 +107,12 @@ namespace Ee4v.FaceExpression
 
         private FaceExpressionPreview _preview;
         private FaceExpressionView _view;
+        private FaceExpressionView _libraryAssignmentsView;
+        private GameObject _libraryAssignmentsAvatar;
+        private int _libraryAssignmentsRevision = -1;
         private GestureAssignmentView _assignmentView;
+        private GestureAssignmentPickerView _assignmentPicker;
+        private AnimationClip _assignmentCandidateClip;
         private readonly GestureAssignmentSession _assignments = new GestureAssignmentSession(true);
         private bool _initiallyInstalled;
         private readonly VrchatFaceExpressionGateway _gateway = new VrchatFaceExpressionGateway();
@@ -145,6 +151,8 @@ namespace Ee4v.FaceExpression
         private bool _savedInstallationPresent;
         private int _savedAssignmentRevision;
         private bool _assignmentAssetsDirty;
+        private double _assignmentApplyAt = -1d;
+        private double _menuIconsRefreshAt = -1d;
         private bool _saveFailed;
         private bool _saveAttemptNeedsRollback;
         private readonly VisualElement _root;
@@ -157,7 +165,7 @@ namespace Ee4v.FaceExpression
         internal bool IsAssignmentView => !_disposed && _view?.IsAssigning == true;
         private bool IsClipMissing => HasClipReference && _clip == null;
         private bool HasUnsavedChanges => _assignmentAssetsDirty ||
-            _assignments.Revision != _savedAssignmentRevision || _editedClips.Count > 0 || _saveAttemptNeedsRollback;
+            _assignments.Revision != _savedAssignmentRevision || _editedClips.Count > 0 || _saveAttemptNeedsRollback || _saveFailed;
 
         internal FaceExpressionEditor(
             VisualElement root,
@@ -174,7 +182,8 @@ namespace Ee4v.FaceExpression
             _presetStore.Changed += RefreshClip;
             FaceExpressionGroupSession.Changed += ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged += RefreshClip;
-            _assignments.ConfigurationChanged += RefreshSaveNotification;
+            _assignments.ConfigurationChanged += OnAssignmentConfigurationChanged;
+            _assignments.Changed += RefreshLibraryAssignmentSelection;
             _preview = new FaceExpressionPreview(RequestRepaint);
             Undo.undoRedoPerformed += OnUndoRedo;
             EditorApplication.projectChanged += RefreshLibrary;
@@ -215,7 +224,8 @@ namespace Ee4v.FaceExpression
             I18N.Reloaded -= Rebuild;
             FaceExpressionGroupSession.Changed -= ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged -= RefreshClip;
-            _assignments.ConfigurationChanged -= RefreshSaveNotification;
+            _assignments.ConfigurationChanged -= OnAssignmentConfigurationChanged;
+            _assignments.Changed -= RefreshLibraryAssignmentSelection;
             _assignments.Dispose();
             ClearThumbnails();
             _preview?.Dispose();
@@ -275,10 +285,11 @@ namespace Ee4v.FaceExpression
             _view.SaveRequested += SavePendingChanges;
             _view.AssignmentSelectionCleared += _assignments.ClearSelection;
             _view.ClipChanged += ChooseClip;
-            _view.LibraryClipSelected += AssignClip;
+            _view.LibraryClipSelected += SelectAssignmentCandidate;
             _view.EditClipRequested += EditClip;
             _view.NewClipRequested += CreateClip;
             _view.CopyClipRequested += CopyClip;
+            _view.ClearClipAssignmentsRequested += ClearClipAssignments;
             _view.ConversionRequested += () =>
             {
                 StopPlayback();
@@ -307,10 +318,16 @@ namespace Ee4v.FaceExpression
             _view.TimeChanged += SetCurrentTime;
             _view.LoopChanged += SetLooping;
             _assignmentView = new GestureAssignmentView(
-                GestureAssignmentWindow.CreateText(), DrawLibraryThumbnail, false, _assignments);
+                GestureAssignmentWindow.CreateText(), DrawLibraryThumbnail, false, _assignments, readOnly: true);
             _assignmentView.SetAvatar(_avatar);
-            _view.SetAssignmentContent(_assignmentView,
-                new GestureAssignmentSettingsView(GestureAssignmentWindow.CreateText(), _settings, _assignments));
+            _assignmentView.AssignedClipSelected += SelectAssignmentCandidate;
+            _assignmentPicker = new GestureAssignmentPickerView(GestureAssignmentWindow.CreateText(), _assignments, _settings);
+            _assignmentPicker.CandidateChanged += SelectAssignmentCandidate;
+            _assignmentPicker.SetAvatar(_avatar);
+            _assignmentPicker.SetCandidate(_assignmentCandidateClip);
+            _view.SetAssignmentContent(_assignmentView, _assignmentPicker);
+            _view.SetLibrarySelection(_assignmentCandidateClip);
+            RefreshLibraryAssignmentSelection();
             RenderLibrary();
             RefreshSaveNotification();
             root.Add(_view);
@@ -329,6 +346,9 @@ namespace Ee4v.FaceExpression
             _initiallyInstalled = avatar != null && avatar.transform.Find(
                 FaceExpressionGenerationPaths.Create(avatar).RootName) != null;
             _clip = null;
+            _assignmentCandidateClip = null;
+            _assignmentPicker?.SetCandidate(null);
+            _view?.SetLibrarySelection(null);
             _poseTimes = Array.Empty<float>();
             _poseSources = Array.Empty<AnimationClip>();
             _poseNames = Array.Empty<string>();
@@ -343,6 +363,7 @@ namespace Ee4v.FaceExpression
             FaceExpressionGroupSession.SetAvatar(avatar);
             _view?.SetAvatar(avatar);
             _assignmentView?.SetAvatar(avatar);
+            _assignmentPicker?.SetAvatar(avatar);
             _gateway.TryRead(avatar, out var configuration);
             _assignments.SetConfiguration(configuration);
             _savedConfiguration = _assignments.CreateConfiguration();
@@ -350,6 +371,8 @@ namespace Ee4v.FaceExpression
             _saveAttemptNeedsRollback = false;
             _savedAssignmentRevision = _assignments.Revision;
             _assignmentAssetsDirty = false;
+            _assignmentApplyAt = -1d;
+            _menuIconsRefreshAt = -1d;
             _editedClips.Clear();
             _saveFailed = false;
             RefreshSaveNotification();
@@ -368,30 +391,114 @@ namespace Ee4v.FaceExpression
             else { AssignClip(clip); }
         }
 
+        private void SelectAssignmentCandidate(AnimationClip clip)
+        {
+            if (_avatar == null) { return; }
+            _assignmentCandidateClip = clip;
+            _assignmentPicker?.SetCandidate(clip);
+            _view?.SetLibrarySelection(clip);
+            if (_clip == null) { RefreshClip(); }
+        }
+
         private void AssignClip(AnimationClip clip)
         {
             if (_avatar == null || !_assignments.HasSelection) { return; }
             _assignments.Activate();
-            if (_assignments.IsMenuSelection)
+            _assignments.SetSelectedClip(clip);
+        }
+
+        private void ClearClipAssignments(AnimationClip clip)
+        {
+            if (_disposed || _avatar == null || clip == null) return;
+            _assignments.Activate();
+            _assignments.SetClipConditions(clip, Array.Empty<GestureCombination>(),
+                Array.Empty<FaceExpressionMenuEntry>(), string.Empty, true, false);
+        }
+
+        private void RefreshLibraryAssignmentSelection()
+        {
+            _view?.SetAssignedLibraryClips(_assignments.SelectedClips);
+            if (_view == null) { return; }
+            if (_libraryAssignmentsView == _view && _libraryAssignmentsAvatar == _avatar &&
+                _libraryAssignmentsRevision == _assignments.Revision) return;
+            _libraryAssignmentsView = _view;
+            _libraryAssignmentsAvatar = _avatar;
+            _libraryAssignmentsRevision = _assignments.Revision;
+            var labels = new Dictionary<AnimationClip, List<string>>();
+            void AddLabel(AnimationClip clip, string label)
             {
-                _assignments.SetClip(_assignments.SelectedMenuEntry, clip);
+                if (clip == null) { return; }
+                if (!labels.TryGetValue(clip, out var values))
+                {
+                    values = new List<string>();
+                    labels.Add(clip, values);
+                }
+                if (!values.Contains(label)) { values.Add(label); }
             }
-            else
+            foreach (FaceGesture left in Enum.GetValues(typeof(FaceGesture)))
             {
-                _assignments.SetClip(_assignments.SelectedCombination, clip);
+                foreach (FaceGesture right in Enum.GetValues(typeof(FaceGesture)))
+                {
+                    AddLabel(_assignments.GetAssignment(new GestureCombination(left, right)).Clip,
+                        I18N.Get("gesture." + left) + "+" + I18N.Get("gesture." + right));
+                }
             }
+            foreach (var entry in _assignments.MenuEntries)
+            {
+                AddLabel(entry.Assignment.Clip, I18N.Get("assignments.menuBadge"));
+            }
+            _view.SetLibraryAssignments(labels);
         }
 
         private void EditClip(AnimationClip clip)
         {
             if (_avatar == null || clip == null) { return; }
-            AssignClip(clip);
+            SelectAssignmentCandidate(clip);
             SetClip(clip);
         }
 
         private void RefreshSaveNotification()
         {
             _view?.SetUnsavedChanges(HasUnsavedChanges, _saveFailed);
+        }
+
+        private void OnAssignmentConfigurationChanged()
+        {
+            if (_disposed || _avatar == null) return;
+            _assignmentApplyAt = EditorApplication.timeSinceStartup;
+            _menuIconsRefreshAt = -1d;
+            _saveFailed = false;
+            RefreshSaveNotification();
+        }
+
+        private bool TryApplyAssignments()
+        {
+            if (_assignmentApplyAt < 0d) return true;
+            _assignmentApplyAt = -1d;
+            using (new FaceExpressionGenerationUndo())
+            {
+                if (_assignments.IsInitialConfiguration && !_initiallyInstalled)
+                    VrchatFaceExpressionGateway.RemoveGeneratedInstallation(_avatar);
+                else if (!_gateway.TryApply(_avatar, _assignments.CreateConfiguration(), out _, out var error,
+                             deferSave: true, generateIcons: false))
+                {
+                    _saveFailed = true;
+                    _saveAttemptNeedsRollback = true;
+                    _view?.SetValidation(new MessagePanelState(I18N.Get("status." + (error ?? "applyFailed")),
+                        severity: MessageSeverity.Error));
+                    RefreshSaveNotification();
+                    return false;
+                }
+            }
+            _savedAssignmentRevision = _assignments.Revision;
+            _savedConfiguration = _assignments.CreateConfiguration();
+            _savedInstallationPresent = _avatar != null && _avatar.transform.Find(
+                FaceExpressionGenerationPaths.Create(_avatar).RootName) != null;
+            _assignmentAssetsDirty = false;
+            _saveFailed = false;
+            _menuIconsRefreshAt = _savedInstallationPresent ? EditorApplication.timeSinceStartup + 0.3d : -1d;
+            RefreshSaveNotification();
+            return true;
         }
 
         private void SavePendingChanges()
@@ -401,6 +508,7 @@ namespace Ee4v.FaceExpression
 
         internal bool TryConfirmNavigation(VisualElement host, Action continueNavigation)
         {
+            if (!TryApplyAssignments()) return false;
             if (!HasUnsavedChanges || _view == null) { return true; }
             StopPlayback();
             _view.ShowUnsavedChangesOverlay(host, TrySavePendingChanges, () =>
@@ -414,9 +522,15 @@ namespace Ee4v.FaceExpression
 
         private bool TrySavePendingChanges()
         {
-            if (_disposed || !HasUnsavedChanges) { return true; }
+            if (_disposed) return true;
             try
             {
+                if (_assignmentAssetsDirty || _assignments.Revision != _savedAssignmentRevision)
+                    _assignmentApplyAt = EditorApplication.timeSinceStartup;
+                if (!TryApplyAssignments()) return false;
+                RefreshPendingMenuIcons(complete: true);
+                DeferredAssetSave.Flush();
+                if (!HasUnsavedChanges) return true;
                 _saveAttemptNeedsRollback = true;
                 foreach (var clip in _editedClips)
                 {
@@ -424,25 +538,6 @@ namespace Ee4v.FaceExpression
                     foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(clip)))
                     {
                         AssetDatabase.SaveAssetIfDirty(asset);
-                    }
-                }
-                if (_assignmentAssetsDirty || _assignments.Revision != _savedAssignmentRevision)
-                {
-                    using (new FaceExpressionGenerationUndo())
-                    {
-                        if (_assignments.IsInitialConfiguration && !_initiallyInstalled)
-                        {
-                            VrchatFaceExpressionGateway.RemoveGeneratedInstallation(_avatar);
-                        }
-                        else if (!_gateway.TryApply(_avatar, _assignments.CreateConfiguration(),
-                            out _, out var error))
-                        {
-                            _saveFailed = true;
-                            RefreshSaveNotification();
-                            _view?.SetValidation(new MessagePanelState(
-                                I18N.Get("status." + (error ?? "applyFailed")), severity: MessageSeverity.Error));
-                            return false;
-                        }
                     }
                 }
                 _savedAssignmentRevision = _assignments.Revision;
@@ -483,7 +578,7 @@ namespace Ee4v.FaceExpression
                     }
                     snapshot.Restore(_saveAttemptNeedsRollback);
                 }
-                if (_saveAttemptNeedsRollback)
+                if (_saveAttemptNeedsRollback || _editedClips.Count > 0)
                 {
                     using (new FaceExpressionGenerationUndo())
                     {
@@ -491,11 +586,16 @@ namespace Ee4v.FaceExpression
                         else if (!_gateway.TryApply(_avatar, _savedConfiguration, out _, out _)) { return false; }
                     }
                 }
-                _assignments.ResetSynchronization();
-                _assignments.SetConfiguration(_savedConfiguration);
-                _savedAssignmentRevision = _assignments.Revision;
-                _initiallyInstalled = _savedInstallationPresent;
+                if (_assignments.Revision != _savedAssignmentRevision)
+                {
+                    _assignments.ResetSynchronization();
+                    _assignments.SetConfiguration(_savedConfiguration);
+                    _savedAssignmentRevision = _assignments.Revision;
+                    _initiallyInstalled = _savedInstallationPresent;
+                }
                 _assignmentAssetsDirty = false;
+                _assignmentApplyAt = -1d;
+                _menuIconsRefreshAt = -1d;
                 _editedClips.Clear();
                 _saveFailed = false;
                 ReleaseClipSnapshots();
@@ -602,6 +702,8 @@ namespace Ee4v.FaceExpression
         {
             if (_disposed || _avatar == null) { return; }
             _assignmentAssetsDirty = true;
+            _assignmentApplyAt = EditorApplication.timeSinceStartup + 0.15d;
+            _menuIconsRefreshAt = -1d;
             _saveFailed = false;
             RefreshSaveNotification();
         }
@@ -644,7 +746,7 @@ namespace Ee4v.FaceExpression
             var selectedPoseTime = SelectedPoseTime;
             _channels = FaceExpressionClipEditor.Read(
                 _avatar,
-                _clip,
+                _clip != null ? _clip : _assignmentCandidateClip,
                 FaceExpressionSettings.GetSeparators(_settings),
                 FaceExpressionGroupSession.RendererPaths,
                 selectedPoseTime);
@@ -954,6 +1056,23 @@ namespace Ee4v.FaceExpression
         private void UpdatePlayback()
         {
             var now = EditorApplication.timeSinceStartup;
+            if (!EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling &&
+                !EditorApplication.isUpdating)
+            {
+                if (_assignmentApplyAt >= 0d && now >= _assignmentApplyAt) TryApplyAssignments();
+                if (_menuIconsRefreshAt >= 0d && now >= _menuIconsRefreshAt)
+                {
+                    try { RefreshPendingMenuIcons(); }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
+                        _menuIconsRefreshAt = double.PositiveInfinity;
+                        _saveFailed = true;
+                        _saveAttemptNeedsRollback = true;
+                        RefreshSaveNotification();
+                    }
+                }
+            }
             if (_poseThumbnailRefreshAt >= 0d && now >= _poseThumbnailRefreshAt)
             {
                 _poseThumbnailRefreshAt = -1d;
@@ -990,6 +1109,23 @@ namespace Ee4v.FaceExpression
 
             _currentTime = nextTime;
             SampleCurrentTime();
+        }
+
+        private void RefreshPendingMenuIcons(bool complete = false)
+        {
+            if (_menuIconsRefreshAt < 0d || _avatar == null) return;
+            _menuIconsRefreshAt = -1d;
+            try
+            {
+                using (new FaceExpressionGenerationUndo())
+                    if (_gateway.RefreshMenuIcons(_avatar, _assignments.CreateConfiguration(), complete, _preview))
+                        _menuIconsRefreshAt = EditorApplication.timeSinceStartup;
+            }
+            catch
+            {
+                _menuIconsRefreshAt = double.PositiveInfinity;
+                throw;
+            }
         }
 
         private void SampleCurrentTime()
@@ -1031,7 +1167,7 @@ namespace Ee4v.FaceExpression
         {
             if (_assignments.RestoreUndo())
             {
-                RefreshSaveNotification();
+                OnAssignmentConfigurationChanged();
             }
             else if (_clip != null)
             {
@@ -1152,7 +1288,7 @@ namespace Ee4v.FaceExpression
             }
 
             Selection.activeObject = clip;
-            AssignClip(clip);
+            SelectAssignmentCandidate(clip);
             SetClip(clip);
         }
 
@@ -1175,7 +1311,7 @@ namespace Ee4v.FaceExpression
             }
 
             Selection.activeObject = clip;
-            AssignClip(clip);
+            SelectAssignmentCandidate(clip);
             SetClip(clip);
         }
 

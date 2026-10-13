@@ -42,6 +42,7 @@ namespace Ee4v.Core.AvatarEvaluation
             if (avatar == null) throw new ArgumentNullException(nameof(avatar));
             var descriptor = avatar.GetComponent<VRCAvatarDescriptor>();
             if (descriptor == null) throw new InvalidOperationException("VRCAvatarDescriptor is required.");
+            var exclusions = AvatarMenuExclusionUtility.Entries(avatar);
             var assets = new Dictionary<VRCExpressionsMenu, AvatarMenuPage>();
             AvatarMenuPage ReadAsset(VRCExpressionsMenu asset)
             {
@@ -93,11 +94,28 @@ namespace Ee4v.Core.AvatarEvaluation
             var resolver = AppDomain.CurrentDomain.GetAssemblies()
                 .Select(assembly => assembly.GetType("nadena.dev.modular_avatar.core.editor.menu.VirtualMenu", false))
                 .FirstOrDefault(type => type != null);
-            var forAvatar = resolver?.GetMethod("ForAvatar", BindingFlags.Static | BindingFlags.NonPublic);
-            if (forAvatar == null) throw new InvalidOperationException("The installed Modular Avatar menu resolver is unavailable.");
-            var args = new object[forAvatar.GetParameters().Length];
-            args[0] = descriptor;
-            var resolved = forAvatar.Invoke(null, args);
+            var constructor = resolver?.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
+                .FirstOrDefault(value => value.GetParameters().FirstOrDefault()?.ParameterType == typeof(VRCExpressionsMenu));
+            var registerInstaller = resolver?.GetMethod("RegisterMenuInstaller", BindingFlags.Instance | BindingFlags.NonPublic);
+            var registerTarget = resolver?.GetMethod("RegisterMenuInstallTarget", BindingFlags.Instance | BindingFlags.NonPublic);
+            var freeze = resolver?.GetMethod("FreezeMenu", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (constructor == null || registerInstaller == null || registerTarget == null || freeze == null)
+                throw new InvalidOperationException("The installed Modular Avatar menu resolver is unavailable.");
+            var args = new object[constructor.GetParameters().Length];
+            args[0] = descriptor.expressionsMenu;
+            var resolved = constructor.Invoke(args);
+            var excludedInstallers = new HashSet<Object>(exclusions.Select(record => record.Source).OfType<ModularAvatarMenuInstaller>());
+            foreach (var installer in avatar.GetComponentsInChildren<ModularAvatarMenuInstaller>(true))
+                if (!excludedInstallers.Contains(installer)) registerInstaller.Invoke(resolved, new object[] { installer });
+            foreach (var target in avatar.GetComponentsInChildren<Component>(true))
+            {
+                if (target == null || target.GetType().Name != "ModularAvatarMenuInstallTarget") continue;
+                var installer = target.GetType().GetField("installer", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    ?.GetValue(target) as Object;
+                if (installer != null && !excludedInstallers.Contains(installer))
+                    registerTarget.Invoke(resolved, new object[] { target });
+            }
+            freeze.Invoke(resolved, null);
             var root = resolver.GetProperty("RootMenuNode")?.GetValue(resolved) as VirtualMenuNode;
             if (root == null) throw new InvalidOperationException("Modular Avatar did not resolve a root menu.");
             var pages = new Dictionary<VirtualMenuNode, AvatarMenuPage>();
@@ -124,6 +142,7 @@ namespace Ee4v.Core.AvatarEvaluation
                                  item.menuSource_otherObjectChildren : item.gameObject) :
                              candidate.Control.subMenu == submenu?.Asset))).Take(2).ToArray();
                     var source = matches.Length == 1 ? matches[0] : null;
+                    if (source != null && AvatarMenuExclusionUtility.IsExcluded(source, exclusions)) continue;
                     page.Entries.Add(new AvatarMenuEntry
                     {
                         Control = control, Submenu = submenu,
@@ -141,11 +160,13 @@ namespace Ee4v.Core.AvatarEvaluation
                 var childRoot = item.menuSource_otherObjectChildren != null ? item.menuSource_otherObjectChildren : item.gameObject;
                 entry.Submenu = pages.Values.FirstOrDefault(page => page.ChildRoot == childRoot);
             }
+            foreach (var source in sources)
+                source.Entries.RemoveAll(entry => AvatarMenuExclusionUtility.IsExcluded(entry, exclusions));
             return effective;
         }
 
         private static bool SameControl(VRCExpressionsMenu.Control a, VRCExpressionsMenu.Control b) =>
-            a.name == b.name && a.type == b.type && a.icon == b.icon && a.value == b.value &&
+            a.name == b.name && a.type == b.type && a.style == b.style && a.icon == b.icon && a.value == b.value &&
             (a.parameter?.name ?? "") == (b.parameter?.name ?? "") &&
             (a.subParameters ?? Array.Empty<VRCExpressionsMenu.Control.Parameter>()).Select(p => p?.name)
                 .SequenceEqual((b.subParameters ?? Array.Empty<VRCExpressionsMenu.Control.Parameter>()).Select(p => p?.name)) &&

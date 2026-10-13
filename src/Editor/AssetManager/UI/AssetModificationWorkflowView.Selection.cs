@@ -396,6 +396,7 @@ namespace Ee4v.AssetManager.UI
             _currentCategory = WorkflowCategory.Overview;
             ApplyEditorMode();
             _parts.Section = ShapePartsSection.Parts;
+            _appearancePanel = Ee4v.AvatarEditing.AvatarEditorPanel.Parts;
             _avatarContext.SelectedBodyPart = null;
             _avatarContext.SelectedPartKey = null;
             _avatarContext.SelectedMaterial = null;

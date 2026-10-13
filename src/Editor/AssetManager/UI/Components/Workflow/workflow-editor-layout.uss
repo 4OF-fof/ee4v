@@ -65,14 +65,21 @@
     min-height: 0;
 }
 
-.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__preview-pane,
-.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__assignment-pane {
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__left-pane {
     min-width: 480px;
     margin-right: 0;
     padding: var(--ee4v-space-xl);
     border-width: 0;
     border-radius: 0;
     background-color: var(--ee4v-color-panel);
+}
+
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__preview-pane,
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression__assignment-pane {
+    min-width: 0;
+    padding: 0;
+    border-width: 0;
+    border-radius: 0;
 }
 
 .ee4v-modification-workflow__face-expression-host .ee4v-face-expression__editor-pane {
@@ -85,30 +92,14 @@
     border-radius: 0;
 }
 
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression--editing .ee4v-face-expression__left-pane,
+.ee4v-modification-workflow__face-expression-host .ee4v-face-expression--editing .ee4v-face-expression__editor-pane {
+    width: 50%;
+    min-width: 0;
+}
+
 .ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix {
     margin-top: 0;
-}
-
-.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix-row,
-.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__extra-row {
-    min-width: 624px;
-}
-
-.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix-header,
-.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__cell {
-    width: 64px;
-    min-width: 64px;
-}
-
-.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix-header--row,
-.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix-header--corner {
-    width: 112px;
-    min-width: 112px;
-}
-
-.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__matrix-header--row,
-.ee4v-modification-workflow__face-expression-host .ee4v-gesture-assignment__cell {
-    min-height: 80px;
 }
 
 .ee4v-modification-workflow__appearance-header {
@@ -117,9 +108,7 @@
     flex-direction: column;
     padding: var(--ee4v-space-2xl);
     padding-bottom: var(--ee4v-space-md);
-    border-bottom-width: var(--ee4v-border-hairline);
-    border-bottom-color: var(--ee4v-color-border-default);
-    background-color: var(--ee4v-color-surface-subtle);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-modification-workflow__appearance-header .ee4v-modification-workflow__shape-parts-tabs {
@@ -130,4 +119,5 @@
     min-width: 0;
     min-height: 0;
     flex-grow: 1;
+    flex-basis: 0;
 }

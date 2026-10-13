@@ -781,7 +781,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
         }
 
         [Test]
-        public void ImportItemTargets_ImportsDependencyTargetsBeforeDependent()
+        public void ImportItemTargets_RejectsDifferentContentAtDependencyPath()
         {
             var library = Path.Combine(_root, "ee4v-library");
             var dependencySource = Path.Combine(_root, "dependency.zip");
@@ -830,10 +830,8 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                         Array.Empty<AssetFileTarget>())
                     .GetAwaiter().GetResult();
 
-                Assert.That(result.Succeeded, Is.True);
-                Assert.That(
-                    result.FileIds,
-                    Is.EqualTo(new[] { dependency.Id, dependent.Id }));
+                Assert.That(result.Succeeded, Is.False);
+                Assert.That(result.ErrorMessage, Does.Contain("Another or modified asset occupies the import path"));
 
                 var destination = Path.Combine(
                     UnityEngine.Application.dataPath,
@@ -843,7 +841,7 @@ namespace Ee4v.AssetManager.Infrastructure.Tests
                     File.ReadAllText(Path.Combine(
                         destination,
                         "shared.txt")),
-                    Is.EqualTo("dependent"));
+                    Is.EqualTo("dependency"));
                 Assert.That(
                     File.Exists(Path.Combine(destination, "ignored.txt")),
                     Is.False);

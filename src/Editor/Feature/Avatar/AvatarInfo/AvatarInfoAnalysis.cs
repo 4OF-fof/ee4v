@@ -168,13 +168,13 @@ namespace Ee4v.AvatarInfo
             {
                 var child = transform.gameObject;
                 if (!PrefabUtility.IsAnyPrefabInstanceRoot(child) ||
-                    AvatarGeneratedPrefabs.IsExpressionMenu(child) ||
                     !string.IsNullOrEmpty(basePath) &&
                     PrefabUtility.GetCorrespondingObjectFromSourceAtPath(
                         child, basePath) != null)
                 {
                     continue;
                 }
+                if (AvatarInfoSettings.IsPrefabExcluded(child)) continue;
                 if (child.GetComponentInChildren<ModularAvatarMergeArmature>(true) == null &&
                     child.GetComponentInChildren<ModularAvatarBoneProxy>(true) == null)
                 {

@@ -575,6 +575,48 @@ namespace Ee4v.AssetManager.Infrastructure
             }
         }
 
+        // Extract only the original payload and metadata for collision preflight. Unity still
+        // imports the original package; this does not synthesize importer settings or GUIDs.
+        internal static void ExtractContents(string path, string destination)
+        {
+            var records = ReadEntries(path).ToDictionary(entry => entry.AssetGuid, StringComparer.Ordinal);
+            using (var input = File.OpenRead(path))
+            using (var gzip = new GZipStream(input, CompressionMode.Decompress))
+            {
+                var header = new byte[TarBlockSize];
+                var buffer = new byte[64 * 1024];
+                while (ReadBlock(gzip, header) && !IsEmptyBlock(header))
+                {
+                    var name = ReadString(header, 0, TarNameLength);
+                    var size = ReadOctal(header, TarSizeOffset, TarSizeLength);
+                    var parts = name.Split('/');
+                    if (parts.Length == 2 && records.TryGetValue(parts[0], out var entry) &&
+                        (parts[1] == "asset.meta" || (parts[1] == "asset" && entry.Kind == AssetFileContentEntryKind.File)))
+                    {
+                        GitAssetVariantRepository.ValidateAssetPath(entry.Path);
+                        var target = Path.Combine(destination, entry.Path);
+                        Directory.CreateDirectory(Path.GetDirectoryName(target));
+                        if (entry.Kind == AssetFileContentEntryKind.Directory) Directory.CreateDirectory(target);
+                        if (parts[1] == "asset.meta") target += ".meta";
+                        using (var output = File.Create(target))
+                        {
+                            var remaining = size;
+                            while (remaining > 0)
+                            {
+                                var count = (int)Math.Min(remaining, buffer.Length);
+                                var read = gzip.Read(buffer, 0, count);
+                                if (read == 0) throw new InvalidDataException("The UnityPackage ended unexpectedly.");
+                                output.Write(buffer, 0, read);
+                                remaining -= read;
+                            }
+                        }
+                        Skip(gzip, RoundUp(size) - size, buffer, CancellationToken.None);
+                    }
+                    else Skip(gzip, RoundUp(size), buffer, CancellationToken.None);
+                }
+            }
+        }
+
         private static IReadOnlyList<AssetFileContentEntry> ReadEntries(
             Stream packageStream,
             CancellationToken cancellationToken)

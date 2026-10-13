@@ -73,11 +73,15 @@ inventoryの数量は`scope: currentHierarchy`で、最終ビルドの性能で�
 | `ee4v_edit_expression_menu_item` | `patch`で名前・アイコン・初期値、`setType`で生成Itemの操作タイプを変更する |
 | `ee4v_replace_expression_menu_actions` | 生成Itemの全動作を置換し、UIと同じ検証・Undo・Controller生成・保存を実行する。`dryRun`は保存せず入力を検証する |
 | `ee4v_move_expression_menu_item` | 同じ出所内で並び替える、または別pageの末尾へ移動する |
-| `ee4v_remove_expression_menu_item` | Item／Submenuを削除する。中身のあるSubmenuは`includeChildren: true`を必須とする |
+| `ee4v_remove_expression_menu_item` | 既存Item／Submenuは元のComponent・Controlを保持して除外し、ee4v生成項目はギミック本体を削除する。中身のあるSubmenuは`includeChildren: true`を必須とする |
+| `ee4v_restore_expression_menu_item` | 調査結果の`excluded`にある`exclusionId`で項目または登録全体の除外を解除する |
+| `ee4v_exclude_expression_menu_registration` | 調査結果の`registrations`の`sourceObjectId`を指定し、既存MA Menu Installerの登録全体を除外する |
 | `ee4v_copy_expression_menu` | SDK Menuと必要な子・親Menuをコピーし、対象Avatar内の参照だけを差し替える |
 | `ee4v_render_expression_menu_preview` | AvatarEvaluationで指定Itemの操作値を評価し、PNGと計算したparameter出力を返す |
 
 rootの`pagePath`は空文字、`entryPath`は調査で返す`0/1`形式のindex pathです。書き込みには最新の`expectedRevision`を必須とし、変更後に返る`menu.revision`を次の操作に使用します。共有・循環Submenuは祖先を再展開せず、最大32階層・2048項目を超える調査はエラーにします。編集にはScene上の書き込み可能なAvatar Prefab instanceを使用します。Prefab assetを直接書き換えません。Sceneをdirtyにし、機能側の生成物だけ保存します。Avatar Prefabと作業Sceneの確定保存はホストの保存操作です。
+
+調査結果の`excluded`は除外ID・表示名・元オブジェクトID・参照消失・元Control変更の状態を返します。`registrations`は既存InstallerのオブジェクトIDと登録の除外状態、各項目の`canExclude`は元assetを書き換えず除外できるかを返します。除外・復元はアバター上のEditorOnly Componentに保持し、Scene・Prefabの保存はホストが行います。SDK Controlの設定が変わった除外は誤った項目へ適用せず、復元・再除外するまでビルドを停止します。
 
 `patch`は指定項目だけ更新します。`iconPath: ""`はアイコン解除、初期値はToggleの0／1またはRadialの0〜100です。タイプはToggle、RadialPuppet、Button、TwoAxisPuppet、FourAxisPuppet。設定を失う変更は`discardSettings: true`を明示し、名前・アイコン・登録先・共通parameter IDを保持します。並び替えの`relativeEntry`はその項目の現在のindexへ移動する指定です。別pageへの移動は`destinationPage`を使用し、保護境界・異なる出所・満杯・自己／子孫への移動を既存処理で拒否します。
 

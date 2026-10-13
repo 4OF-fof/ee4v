@@ -26,9 +26,7 @@ namespace Ee4v.AvatarMaterials
         protected override void RenderFeature()
         {
             Context.ControlsHost.Add(_editor.BuildControls());
-            FeatureHeader.style.display = Context.SelectedMaterial != null
-                ? DisplayStyle.None
-                : DisplayStyle.Flex;
+            FeatureHeader.style.display = DisplayStyle.Flex;
         }
         protected override void ClearFeatureData() => _editor?.ClearData();
         protected override void DisposeFeature() { _editor?.Dispose(); _editor = null; }

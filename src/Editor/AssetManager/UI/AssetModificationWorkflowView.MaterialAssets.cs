@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Ee4v.AssetProtection;
-using static Ee4v.AvatarParts.AvatarPartsEditor;
+using AppearancePanel = Ee4v.AvatarEditing.AvatarEditorPanel;
 
 namespace Ee4v.AssetManager.UI
 {
@@ -13,7 +13,7 @@ namespace Ee4v.AssetManager.UI
     {
         private VisualElement BuildAppearanceControls()
         {
-            return _currentCategory == WorkflowCategory.Material
+            return _appearancePanel == AppearancePanel.Material
                 ? _materials.BuildControls() : _parts.BuildControls();
         }
 
@@ -52,7 +52,7 @@ namespace Ee4v.AssetManager.UI
                 _avatarContext.Feedback = I18N.Get(
                     "workflow.appearance.materialVariantFailed");
                 _avatarContext.FeedbackType = HelpBoxMessageType.Error;
-                ShowCategory(WorkflowCategory.Material, false);
+                ShowAppearancePanel(AppearancePanel.Material);
             }
         }
 
@@ -94,8 +94,8 @@ namespace Ee4v.AssetManager.UI
                 BuildWindow();
                 return;
             }
-            if (_currentCategory != WorkflowCategory.ShapeParts ||
-                _parts.Section != ShapePartsSection.Shape)
+            if (_currentCategory != WorkflowCategory.Appearance ||
+                _appearancePanel != AppearancePanel.Shape)
             {
                 _materials.RefreshMaterialPreview();
                 ShowCategory(_currentCategory, false);

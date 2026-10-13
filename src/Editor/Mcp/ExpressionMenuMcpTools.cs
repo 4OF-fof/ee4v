@@ -55,9 +55,19 @@ namespace Ee4v.Mcp
                 }, false));
             var remove = WriteProperties(); remove["entryPath"] = McpSchemas.String(); remove["includeChildren"] = McpSchemas.Boolean();
             McpToolRegistry.Register(new McpToolDefinition("ee4v_remove_expression_menu_item",
-                "Removes one item via the UI deletion contract; nonempty submenus require includeChildren=true. Shared submenu assets and saved source assets are retained.",
+                "Excludes an existing menu item while preserving its component and source assets, or deletes an ee4v-generated gimmick body. Nonempty submenus require includeChildren=true. Excluded entries can be restored by ID.",
                 McpSchemas.Object(remove, "avatarRef", "expectedRevision", "entryPath"), args => Result(ExpressionMenuApi.Remove(Avatar(args),
                     McpJson.RequireString(args, "entryPath"), (bool?)args["includeChildren"] ?? false, Revision(args))), false, destructive: true, idempotent: false));
+            var restore = WriteProperties(); restore["exclusionId"] = McpSchemas.String("ID from the inspected excluded entries.");
+            McpToolRegistry.Register(new McpToolDefinition("ee4v_restore_expression_menu_item",
+                "Clears a stored exclusion and restores the original menu item or registration without reconstructing its settings.",
+                McpSchemas.Object(restore, "avatarRef", "expectedRevision", "exclusionId"), args =>
+                    Result(ExpressionMenuApi.Restore(Avatar(args), McpJson.RequireString(args, "exclusionId"), Revision(args))), false));
+            var registration = WriteProperties(); registration["sourceObjectId"] = McpSchemas.String("SourceObjectId from inspected registrations.");
+            McpToolRegistry.Register(new McpToolDefinition("ee4v_exclude_expression_menu_registration",
+                "Excludes all registration by an existing MA Menu Installer while preserving the original component and menu assets.",
+                McpSchemas.Object(registration, "avatarRef", "expectedRevision", "sourceObjectId"), args =>
+                    Result(ExpressionMenuApi.ExcludeRegistration(Avatar(args), McpJson.RequireString(args, "sourceObjectId"), Revision(args))), false));
             var copy = WriteProperties(); copy["pagePath"] = McpSchemas.String();
             McpToolRegistry.Register(new McpToolDefinition("ee4v_copy_expression_menu",
                 "Creates editable copies of the selected SDK menu, descendants and necessary parent menus. Replaces only references on this avatar as instance overrides, preserves shared/cyclic references and rolls back on failure; uses the UI copy contract.",

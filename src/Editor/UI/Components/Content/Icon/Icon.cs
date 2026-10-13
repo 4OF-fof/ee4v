@@ -91,7 +91,8 @@ namespace Ee4v.UI
         Scene,
         GameObject,
         ModelFile,
-        VisibilityHidden
+        VisibilityHidden,
+        Prefab
     }
 
     public static class UiBuiltinIconResolver
@@ -154,6 +155,8 @@ namespace Ee4v.UI
                     };
                 case UiBuiltinIcon.ModelFile:
                     return new[] { "Prefab Icon", "d_Prefab Icon", "Mesh Icon", "d_Mesh Icon", "DefaultAsset Icon" };
+                case UiBuiltinIcon.Prefab:
+                    return new[] { "Prefab Icon", "d_Prefab Icon" };
                 case UiBuiltinIcon.VisibilityHidden:
                     return new[]
                     {

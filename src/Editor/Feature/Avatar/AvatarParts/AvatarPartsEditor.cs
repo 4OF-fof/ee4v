@@ -50,10 +50,6 @@ namespace Ee4v.AvatarParts
             }
             var selectedKey = PrefabScenePreview.GetPartKey(
                 entry.PrefabSiblingIndex, entry.SiblingPath);
-            if (entry.PrefabSiblingIndex >= 0)
-            {
-                _expandedPartPrefabGroups.Add(entry.PrefabSiblingIndex);
-            }
             var separatorIndex = selectedKey.IndexOf('/');
             while (separatorIndex >= 0)
             {
@@ -61,18 +57,12 @@ namespace Ee4v.AvatarParts
                     selectedKey.Substring(0, separatorIndex));
                 separatorIndex = selectedKey.IndexOf('/', separatorIndex + 1);
             }
-            _context.SelectedPartKey = selectedKey;
-            _context.Host.InvalidateControls(AvatarEditorPanel.Parts);
-            _context.Host.ShowParts();
-            ScrollToSelectedPart();
+            NavigateToPart(selectedKey);
         }
 
         public void ClearPreviewSelection()
         {
-            _context.SelectedPartKey = null;
-            foreach (var row in _objectRows.Values)
-            { row.Row.EnableInClassList("ee4v-modification-workflow__object-row--selected", false); }
-            _context.Host.SyncPreviewSelection();
+            NavigateToPart(null);
         }
 
         public VisualElement BuildControls()
@@ -103,12 +93,13 @@ namespace Ee4v.AvatarParts
             _advancedBodyScaleExpanded = false;
             _expandedBodyScaleAxes.Clear();
             _expandedBodyBlendShapeGroups.Clear();
-            _collapsedBodyShapeGroups.Clear();
+            _expandedBodyShapeGroups.Clear();
+            _expandedBodyShapeGroups.Add("favorites");
             _baseAvatarViewPosition = null;
             _avatarDescriptor = null;
-            _expandedPartPrefabGroups.Clear();
             _expandedObjectGroups.Clear();
             _expandedAttachments.Clear();
+            _partsListScrollOffset = UnityEngine.Vector2.zero;
             ClearData();
         }
 
@@ -131,7 +122,7 @@ namespace Ee4v.AvatarParts
             _avatarDescriptor = null;
         }
 
-        public void ClearExpandedGroups() { _expandedPartPrefabGroups.Clear(); _expandedObjectGroups.Clear(); }
+        public void ClearExpandedGroups() { _expandedObjectGroups.Clear(); }
 
         public void CancelBodySizeChange() { _bodyScaleDragging = false; ClearPendingBodySizeChange(); }
 

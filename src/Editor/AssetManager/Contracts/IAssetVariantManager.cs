@@ -16,6 +16,8 @@ namespace Ee4v.AssetManager.Contracts
         bool HasChanges(string rootAssetPath);
         bool HasChangesFromCurrentRevision(string rootAssetPath);
         AssetVariantChangeStatus GetChangeStatus(string rootAssetPath);
+        Task<AssetVariantChangeStatus> GetChangeStatusAsync(string rootAssetPath,
+            CancellationToken cancellationToken = default);
         AssetVariantChangeDetails GetChangeDetails(string rootAssetPath);
         Task<AssetThumbnail> GetRevisionThumbnail(string variantId, string revisionId,
             CancellationToken cancellationToken = default);
@@ -41,6 +43,7 @@ namespace Ee4v.AssetManager.Contracts
         public string SourcePrefabGuid { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        /// <summary>Tags for a standalone creation. Empty when a base Prefab is present.</summary>
         public IReadOnlyList<string> Tags { get; set; } = Array.Empty<string>();
         /// <summary>The AssetManager Item that owns this Variant and its Git repository.</summary>
         public string ParentItemId { get; set; }
@@ -73,6 +76,7 @@ namespace Ee4v.AssetManager.Contracts
     {
         public string Name { get; set; }
         public string Description { get; set; }
+        /// <summary>Tags for a standalone creation. Ignored when a base Prefab is present.</summary>
         public IReadOnlyList<string> Tags { get; set; }
     }
 

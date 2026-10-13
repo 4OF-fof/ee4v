@@ -3,6 +3,8 @@
   "rootNamespace": "Ee4v.AvatarInfo",
   "references": [
     "Ee4v.AvatarEditing.Editor",
+    "Ee4v.Core.Contracts.Editor",
+    "Ee4v.Core.Unity.Editor",
     "Ee4v.Core.Presentation.Editor",
     "Ee4v.UI.Editor",
     "nadena.dev.modular-avatar.core"

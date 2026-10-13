@@ -50,6 +50,7 @@ namespace Ee4v.AssetManager.Application
         {
             var variants = _index.GetVariants();
             foreach (var variant in variants)
+            {
                 if (_snapshots.TryGetValue((variant.Id, variant.HeadRevisionId), out var snapshot))
                 {
                     variant.IsArchived = snapshot.Variant.IsArchived;
@@ -57,6 +58,9 @@ namespace Ee4v.AssetManager.Application
                     variant.CreatedAt = snapshot.Variant.CreatedAt;
                     variant.FileSizeBytes = snapshot.Variant.FileSizeBytes;
                 }
+                if (!string.IsNullOrEmpty(variant.SourcePrefabGuid))
+                    variant.Tags = Array.Empty<string>();
+            }
             return variants;
         }
 
@@ -139,12 +143,30 @@ namespace Ee4v.AssetManager.Application
 
         public AssetVariantChangeStatus GetChangeStatus(string rootAssetPath)
         {
+            var comparison = ReadChangeStatus(rootAssetPath);
+            return comparison.Status ?? CompareContentHash(comparison.Latest, comparison.Current,
+                _workspace.Inspect(rootAssetPath).ContentHash);
+        }
+
+        public async Task<AssetVariantChangeStatus> GetChangeStatusAsync(string rootAssetPath,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var comparison = ReadChangeStatus(rootAssetPath);
+            if (comparison.Status != null) { return comparison.Status; }
+            var snapshot = await _workspace.InspectAsync(rootAssetPath, cancellationToken);
+            return CompareContentHash(comparison.Latest, comparison.Current, snapshot.ContentHash);
+        }
+
+        private (AssetVariantSnapshot Latest, AssetVariantSnapshot Current, AssetVariantChangeStatus Status)
+            ReadChangeStatus(string rootAssetPath)
+        {
             AssetManagerRequestValidator.Require(rootAssetPath, "root asset path");
             var variant = _index.GetVariants().FirstOrDefault(candidate =>
                 candidate.RootAssetPath == rootAssetPath);
             if (variant == null)
             {
-                return new AssetVariantChangeStatus { HasChanges = true };
+                return (null, null, new AssetVariantChangeStatus { HasChanges = true });
             }
             var latest = string.IsNullOrEmpty(variant.HeadRevisionId)
                 ? null : ReadSnapshot(variant.Id, variant.HeadRevisionId);
@@ -158,13 +180,18 @@ namespace Ee4v.AssetManager.Application
             if ((latest == null || latestRootChanged) &&
                 (current == null || currentRootChanged))
             {
-                return new AssetVariantChangeStatus
+                return (latest, current, new AssetVariantChangeStatus
                 {
                     HasChanges = true,
                     HasChangesFromCurrentRevision = currentRootChanged
-                };
+                });
             }
-            var contentHash = _workspace.Inspect(rootAssetPath).ContentHash;
+            return (latest, current, null);
+        }
+
+        private static AssetVariantChangeStatus CompareContentHash(AssetVariantSnapshot latest,
+            AssetVariantSnapshot current, string contentHash)
+        {
             return new AssetVariantChangeStatus
             {
                 HasChanges = latest == null || contentHash != latest.ContentHash,
@@ -281,12 +308,13 @@ namespace Ee4v.AssetManager.Application
             AssetManagerRequestValidator.Require(request.Name, "variant name");
             var name = request.Name.Trim();
             var description = request.Description ?? string.Empty;
-            var tags = request.Tags == null ? null : AssetManagerRequestValidator.NormalizeTags(request.Tags);
             var variant = GetStoredVariants().FirstOrDefault(candidate => candidate.Id == variantId)
                 ?? _workspace.GetMetadata(variantId);
             if (variant == null) throw new InvalidOperationException("The Variant was not found.");
             var owner = GetStandaloneOwner(variant);
-            var updatedTags = tags ?? (owner == null ? variant.Tags : owner.Tags.Select(tag => tag.Path).ToArray());
+            var updatedTags = !string.IsNullOrEmpty(variant.SourcePrefabGuid) ? Array.Empty<string>() :
+                request.Tags != null ? AssetManagerRequestValidator.NormalizeTags(request.Tags) :
+                owner == null ? variant.Tags : owner.Tags.Select(tag => tag.Path).ToArray();
             _busy = true;
             try
             {
@@ -376,6 +404,7 @@ namespace Ee4v.AssetManager.Application
                         await Task.Run(() => _repository.UpdateMetadata(new AssetVariant
                         {
                             Id = variant.Id, ParentItemId = variant.ParentItemId,
+                            SourcePrefabGuid = variant.SourcePrefabGuid,
                             Name = variant.Name, Description = variant.Description,
                             Tags = variant.Tags, CreatedAt = variant.CreatedAt,
                             RootAssetPath = variant.RootAssetPath, IsArchived = archived, UpdatedAt = DateTime.UtcNow

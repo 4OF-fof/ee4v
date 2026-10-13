@@ -27,15 +27,18 @@ Core は機能横断の契約、共通実装、Unity Editor との接続部を�
 |---|---|---|
 | `Ee4v.Core.Contracts.Editor` | 各機能の契約と状態型 | なし |
 | `Ee4v.Core.Services.Editor` | 契約の標準実装 | なし |
-| `Ee4v.Core.Unity.Editor` | Settings の保存と JSON 変換 | あり |
+| `Ee4v.Core.Unity.Editor` | Settings の保存と JSON 変換、派生アセットの保存集約 | あり |
 | `Ee4v.Core.Editor` | Unity Editor 操作と内部 API の隔離 | あり |
 | `Ee4v.Core.AvatarEvaluation.Editor` | NDMF Preview描画・MA骨対応を反映したClip再生、MAを考慮した編集用情報 | あり |
+| `Ee4v.Core.Runtime` | アバターメニューの除外設定を保持するEditorOnly Component | なし |
 | `Ee4v.Core.Presentation.Editor` | Settings 画面、表示注入、状態表示 | あり |
 | `Ee4v.UI.Editor` | 機能横断のUI Toolkitコンポーネント | あり |
 
 `Ee4v.Core.Contracts.Editor` と `Ee4v.Core.Services.Editor` は `noEngineReferences: true` です。Unity への接続は外側の assembly にあります。
 
 ## 利用上の境界
+
+`DeferredAssetSave.Queue(asset)`は読み込み済みObjectへの変更を維持したまま、asset path単位でディスク保存を集約します。最後の登録から300ms後、Editor更新ごとに1ファイルを保存します。同じファイルのsubassetも一緒に保存し、未変更ファイルは書き直しません。ExpressionMenuのController・recipeとFaceExpressionの生成Controller・Clip・メニューが使用します。Scene保存、Play Mode開始、assembly reload、Editor終了前と明示的な`Flush()`では残りを同期保存します。保存失敗時は待機を維持して例外を記録し、通常更新の自動再試行を止めます。次の登録または`Flush()`で再試行できます。素材Clipの保存・破棄やPrefabのUndo transactionは各機能が担当します。
 
 - 機能の中心処理は `ISettingsService` などの契約を受け取ります。
 - static API は Editor lifecycle や UI を組み立てる場所で使います。

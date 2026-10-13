@@ -115,16 +115,21 @@ namespace Ee4v.AssetManager.UI
             var standalone = IsStandaloneAsset(variant);
             name.isReadOnly = description.IsReadOnly = _variantManager == null || _variantState.VariantBusy ||
                 (standalone && variant.IsArchived);
-            var tagsContainer = new VisualElement();
-            tagsContainer.AddToClassList("ee4v-asset-manager-control-field");
-            tagsContainer.AddToClassList("ee4v-asset-manager__item-metadata-field");
-            tagsContainer.Add(UiTextFactory.Create(I18N.Get("field.tags"),
-                UiClassNames.FormLabel, "ee4v-asset-manager-control-field__label"));
-            var tags = new AssetTagField(standalone ? _viewState.SelectTag : (Action<string>)null,
-                isReadOnly: variant.IsArchived ||
-                _variantManager == null || _variantState.VariantBusy);
-            tags.SetValues(standalone ? GetAvailableTagOptions() : GetAvailableVariantTagOptions(), variant.Tags);
-            tagsContainer.Add(tags);
+            VisualElement tagsContainer = null;
+            AssetTagField tags = null;
+            if (standalone)
+            {
+                tagsContainer = new VisualElement();
+                tagsContainer.AddToClassList("ee4v-asset-manager-control-field");
+                tagsContainer.AddToClassList("ee4v-asset-manager__item-metadata-field");
+                tagsContainer.Add(UiTextFactory.Create(I18N.Get("field.tags"),
+                    UiClassNames.FormLabel, "ee4v-asset-manager-control-field__label"));
+                tags = new AssetTagField(_viewState.SelectTag,
+                    isReadOnly: variant.IsArchived ||
+                    _variantManager == null || _variantState.VariantBusy);
+                tags.SetValues(GetAvailableTagOptions(), variant.Tags);
+                tagsContainer.Add(tags);
+            }
             var metadataError = new VisualElement();
             Action saveMetadata = () =>
             {
@@ -135,14 +140,15 @@ namespace Ee4v.AssetManager.UI
                     return;
                 }
                 ((InputField)name.Input).SetValueWithoutNotify(normalizedName);
-                SaveVariantMetadataAutomatically(variant, normalizedName, description.Value, tags.Values, metadataError);
+                SaveVariantMetadataAutomatically(variant, normalizedName, description.Value,
+                    tags?.Values ?? Array.Empty<string>(), metadataError);
             };
             name.RegisterCallback<FocusOutEvent>(_ => saveMetadata());
             description.RegisterCallback<FocusOutEvent>(_ => saveMetadata());
-            tags.ValuesCommitted += () => saveMetadata();
+            if (tags != null) { tags.ValuesCommitted += () => saveMetadata(); }
             detail.Add(name);
             detail.Add(descriptionContainer);
-            detail.Add(tagsContainer);
+            if (tagsContainer != null) { detail.Add(tagsContainer); }
             detail.Add(metadataError);
         }
 
@@ -943,10 +949,10 @@ namespace Ee4v.AssetManager.UI
                         (Func<Task<AssetThumbnail>>)(() => _manager.GetThumbnail(item.Id)));
                     preview.AddToClassList("ee4v-asset-manager__variant-card-preview");
                     card.Insert(0, preview);
-                    if (item != null)
+                    if (item != null && !item.IsArchived)
                     {
                         card.Body.Add(AssetManagerControls.CreateButton(I18N.Get("variant.openSource"),
-                            () => _viewState.OpenItemDetail(item.Id)));
+                            () => OpenAssetItemDetail(item.Id)));
                     }
                     var content = new VisualElement();
                     content.AddToClassList("ee4v-asset-manager__variant-dependency-content");
@@ -1059,12 +1065,12 @@ namespace Ee4v.AssetManager.UI
             if (_variantManager == null || _variantState.VariantBusy)
             {
                 menu.AddDisabledItem(archive);
-                menu.AddDisabledItem(delete);
+                if (archived) menu.AddDisabledItem(delete);
             }
             else
             {
                 menu.AddItem(archive, false, () => ChangeVariantLifecycle(ids, !archived));
-                menu.AddItem(delete, false, () => ChangeVariantLifecycle(ids, null));
+                if (archived) menu.AddItem(delete, false, () => ChangeVariantLifecycle(ids, null));
             }
             menu.ShowAsContext();
         }
@@ -1087,9 +1093,10 @@ namespace Ee4v.AssetManager.UI
                     (!archived.HasValue || variant.IsOriginal)).Select(variant => variant.VariantId))
                 .Distinct(StringComparer.Ordinal).ToArray();
             itemIds = ownerIds;
+            var deleteMessageKey = itemIds.Count == 0 ? "variant.deleteConfirm" :
+                ids.Count == 0 ? "confirm.deleteItems.message" : "confirm.deleteArchiveEntries";
             if (!archived.HasValue && !Confirm(I18N.Get("action.delete"),
-                I18N.Get(itemIds != null && itemIds.Count > 0 ? "confirm.deleteArchiveEntries" : "variant.deleteConfirm",
-                    selectedCount))) return;
+                I18N.Get(deleteMessageKey, selectedCount))) return;
             _variantState.VariantBusy = true;
             Refresh();
             try

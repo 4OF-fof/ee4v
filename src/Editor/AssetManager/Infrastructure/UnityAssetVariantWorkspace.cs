@@ -4,8 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
+using Ee4v.Core.EditorIntegration;
+using Ee4v.Core.I18n;
 using UnityEditor;
 using UnityEngine;
 
@@ -58,7 +62,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 Path.GetDirectoryName(folder).Replace('\\', '/') != DerivedAssetCatalog.VariantRoot ||
                 DerivedAssetCatalog.FindAll().Any(record => record.AssetPath != path &&
                     record.AssetPath.StartsWith(folder + "/", StringComparison.Ordinal)))
-                throw new InvalidOperationException("A dedicated ee4v Variant folder is required.");
+                throw new InvalidOperationException(CoreLocalization.Current.ForScope("AssetManager")
+                    .Get("variant.deleteError.dedicatedFolderRequired"));
             var directories = new Stack<string>();
             directories.Push(fullFolder);
             while (directories.Count > 0)
@@ -67,7 +72,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 {
                     var attributes = File.GetAttributes(entry);
                     if ((attributes & FileAttributes.ReparsePoint) != 0)
-                        throw new IOException("Linked paths cannot be deleted as Variant assets.");
+                        throw new IOException(CoreLocalization.Current.ForScope("AssetManager")
+                            .Get("variant.deleteError.linkedPath"));
                     if ((attributes & FileAttributes.Directory) != 0) directories.Push(entry);
                 }
             }
@@ -77,10 +83,12 @@ namespace Ee4v.AssetManager.Infrastructure
                 if (!scene.isLoaded || UnityEditor.SceneManagement.EditorSceneManager.IsPreviewScene(scene) ||
                     !scene.path.StartsWith("Assets/", StringComparison.Ordinal)) continue;
                 if (scene.path.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("Close the Variant working Scene before deleting it.");
+                    throw new InvalidOperationException(CoreLocalization.Current.ForScope("AssetManager")
+                        .Get("variant.deleteError.workingSceneOpen"));
                 if (scene.GetRootGameObjects().Any(root => root.GetComponentsInChildren<Transform>(true)
                     .Any(transform => PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(transform.gameObject) == path)))
-                    throw new InvalidOperationException("Remove the Variant instance from open Scenes before deleting it.");
+                    throw new InvalidOperationException(CoreLocalization.Current.ForScope("AssetManager")
+                        .Get("variant.deleteError.instanceInOpenScene"));
             }
         }
 
@@ -89,12 +97,34 @@ namespace Ee4v.AssetManager.Infrastructure
             ValidateDelete(variantId);
             var path = AssetDatabase.GUIDToAssetPath(variantId);
             if (AssetExists(path) && !AssetDatabase.MoveAssetToTrash(Path.GetDirectoryName(path).Replace('\\', '/')))
-                throw new IOException("The Variant folder could not be moved to Trash.");
+                throw new IOException(CoreLocalization.Current.ForScope("AssetManager")
+                    .Get("variant.deleteError.trashFailed"));
         }
 
         public AssetVariantSnapshot Inspect(string rootAssetPath)
         {
             return Capture(new AssetVariantSaveRequest { RootAssetPath = rootAssetPath }, false).Snapshot;
+        }
+
+        public async Task<AssetVariantSnapshot> InspectAsync(string rootAssetPath,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var sources = new Dictionary<string, AssetFile>(StringComparer.Ordinal);
+            var snapshot = Capture(new AssetVariantSaveRequest { RootAssetPath = rootAssetPath }, false,
+                file => { sources[file.Id] = file; return null; }).Snapshot;
+            foreach (var dependency in snapshot.Dependencies)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var file = sources[dependency.FileId];
+                var sourceHash = await GetFileHashAsync(file.SourcePath, cancellationToken);
+                var metaPath = file.SourcePath + ".meta";
+                var metaHash = File.Exists(metaPath)
+                    ? await GetFileHashAsync(metaPath, cancellationToken) : string.Empty;
+                dependency.SourceHash = HashBytes(Encoding.UTF8.GetBytes(sourceHash + "\n" + metaHash));
+            }
+            snapshot.ContentHash = GitAssetVariantRepository.ComputeContentHash(snapshot);
+            return snapshot;
         }
 
         public AssetVariant GetMetadata(string variantId)
@@ -268,7 +298,8 @@ namespace Ee4v.AssetManager.Infrastructure
             if (!string.IsNullOrEmpty(error)) { throw new InvalidOperationException(error); }
         }
 
-        private AssetVariantCapture Capture(AssetVariantSaveRequest request, bool saveVersion)
+        private AssetVariantCapture Capture(AssetVariantSaveRequest request, bool saveVersion,
+            Func<AssetFile, string> sourceHash = null)
         {
             GitAssetVariantRepository.ValidateAssetPath(request.RootAssetPath);
             var record = DerivedAssetCatalog.Read(request.RootAssetPath);
@@ -292,6 +323,8 @@ namespace Ee4v.AssetManager.Infrastructure
             var dependenciesOfRoot = saveVersion
                 ? AssetDatabase.GetDependencies(request.RootAssetPath, true)
                 : GetCachedDependencies(request.RootAssetPath);
+            var packageRoot = PackageAssetApi.GetPackageRootAssetPath();
+            var packagePrefix = string.IsNullOrEmpty(packageRoot) ? null : packageRoot + "/";
             var paths = dependenciesOfRoot
                 .Append(sourcePath)
                 .Concat(AssetDatabase.FindAssets(string.Empty, new[] { rootFolder })
@@ -299,6 +332,9 @@ namespace Ee4v.AssetManager.Infrastructure
                 .Append(rootFolder)
                 .Where(path => !string.IsNullOrEmpty(path) &&
                     path.StartsWith("Assets/", StringComparison.Ordinal))
+                // Assets-based installations are prerequisites, just like UPM packages.
+                .Where(path => packagePrefix == null ||
+                    (path != packageRoot && !path.StartsWith(packagePrefix, StringComparison.Ordinal)))
                 .Distinct(StringComparer.Ordinal).OrderBy(path => path, StringComparer.Ordinal).ToArray();
             var associations = _manager.GetImportedAssetAssociations()
                 .GroupBy(association => association.AssetGuid)
@@ -336,6 +372,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 return new AssetVariantDependency
                 {
                     FileId = file.Id, SourceType = file.SourceType, SourceId = file.SourceId,
+                    SourceHash = sourceHash != null ? sourceHash(file) : saveVersion
+                        ? ImportedAssetLibrary.SourceHash(file) : GetSourceHash(file),
                     AssetGuids = dependencies[fileId].Distinct().OrderBy(guid => guid).ToArray(),
                     TargetPaths = ResolveTargetPaths(file)
                 };
@@ -376,7 +414,8 @@ namespace Ee4v.AssetManager.Infrastructure
                     PackagesManifest = ReadProjectFile("Packages/manifest.json"),
                     PackagesLock = ReadProjectFile("Packages/packages-lock.json")
                 };
-                snapshot.ContentHash = GitAssetVariantRepository.ComputeContentHash(snapshot);
+                if (sourceHash == null)
+                    snapshot.ContentHash = GitAssetVariantRepository.ComputeContentHash(snapshot);
                 return new AssetVariantCapture { Snapshot = snapshot, StagingPath = staging };
             }
             catch
@@ -454,8 +493,41 @@ namespace Ee4v.AssetManager.Infrastructure
             return hash;
         }
 
-        public bool HasAssets(AssetVariantDependency dependency) =>
-            dependency.AssetGuids.All(guid => AssetExists(AssetDatabase.GUIDToAssetPath(guid)));
+        private string GetSourceHash(AssetFile file) => HashBytes(Encoding.UTF8.GetBytes(
+            GetFileHash(file.SourcePath) + "\n" +
+            (File.Exists(file.SourcePath + ".meta") ? GetFileHash(file.SourcePath + ".meta") : string.Empty)));
+
+        private async Task<string> GetFileHashAsync(string path, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var file = new FileInfo(path);
+            var length = file.Length;
+            var modifiedAt = file.LastWriteTimeUtc.Ticks;
+            if (_fileHashes.TryGetValue(path, out var cached) &&
+                cached.Length == length && cached.ModifiedAt == modifiedAt)
+            {
+                return cached.Hash;
+            }
+            // Only file I/O runs off-thread. Unity asset queries and the cache stay on the caller's context.
+            var hash = await Task.Run(() => HashFile(path), cancellationToken);
+            _fileHashes[path] = (length, modifiedAt, hash);
+            return hash;
+        }
+
+        public bool HasAssets(AssetVariantDependency dependency)
+        {
+            if (dependency.AssetGuids.All(guid => AssetExists(AssetDatabase.GUIDToAssetPath(guid)))) return true;
+            var file = FindDependencyFile(dependency);
+            if (!string.IsNullOrEmpty(dependency.SourceHash) && file != null &&
+                ImportedAssetLibrary.SourceHash(file) != dependency.SourceHash)
+                throw new InvalidOperationException("The dependency source has changed. Restore its saved source revision before importing: " + file.FileName);
+            return false;
+        }
+
+        private AssetFile FindDependencyFile(AssetVariantDependency dependency) =>
+            _manager.SearchItems(new AssetItemQuery { IncludeArchived = true }).Items
+                .SelectMany(item => _manager.GetFiles(item.Id, true))
+                .FirstOrDefault(candidate => candidate.SourceType == dependency.SourceType && candidate.SourceId == dependency.SourceId);
 
         private bool AssetExists(string path) => !string.IsNullOrEmpty(path) &&
             (File.Exists(Path.Combine(_projectRoot, path)) || Directory.Exists(Path.Combine(_projectRoot, path)));
@@ -503,6 +575,7 @@ namespace Ee4v.AssetManager.Infrastructure
 
         public string Restore(AssetVariantSnapshot snapshot, string stagingPath, string rootAssetPath)
         {
+            ValidateRestore(snapshot, rootAssetPath);
             foreach (var asset in snapshot.Assets)
             {
                 var source = Path.Combine(stagingPath, asset.Path);

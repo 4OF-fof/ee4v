@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using Ee4v.Core;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace Ee4v.FaceExpression
@@ -15,7 +17,11 @@ namespace Ee4v.FaceExpression
             if (!EditorUtility.IsPersistent(avatar))
             {
                 var root = avatar.transform.Find(rootName);
-                if (root != null) { UnityEngine.Object.DestroyImmediate(root.gameObject); }
+                if (root != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(root.gameObject);
+                    if (avatar.scene.IsValid()) EditorSceneManager.MarkSceneDirty(avatar.scene);
+                }
                 return;
             }
             var path = AssetDatabase.GetAssetPath(avatar);
@@ -62,7 +68,9 @@ namespace Ee4v.FaceExpression
             GameObject avatar,
             FaceExpressionConfiguration configuration,
             out AnimatorController controller,
-            out string error)
+            out string error,
+            bool deferSave = false,
+            bool generateIcons = true)
         {
             controller = null;
             error = null;
@@ -102,12 +110,13 @@ namespace Ee4v.FaceExpression
                     configuration?.Assignments,
                     configuration?.MenuEntries,
                     avatarBindings,
-                    paths.AssetsFolder);
+                    paths.AssetsFolder,
+                    saveAssets: !deferSave);
 
                 var entries = GestureMatrixControllerWriter.GetEffectiveMenuEntries(
                     configuration?.Assignments,
                     configuration?.MenuEntries);
-                var icons = FaceExpressionMenuIconWriter.Write(avatar, entries, paths);
+                var icons = FaceExpressionMenuIconWriter.Write(avatar, entries, paths, generateIcons);
                 var menu = VrchatExpressionMenuWriter.Write(
                     paths.MenuPath,
                     entries,
@@ -118,7 +127,9 @@ namespace Ee4v.FaceExpression
                     controller,
                     menu,
                     avatarBindings.Blink.Count > 0);
-                AssetDatabase.SaveAssets();
+                SaveMenu(menu, deferSave);
+                if (!EditorUtility.IsPersistent(avatar) && avatar.scene.IsValid())
+                    EditorSceneManager.MarkSceneDirty(avatar.scene);
                 return true;
             }
             catch (Exception exception)
@@ -127,6 +138,25 @@ namespace Ee4v.FaceExpression
                 error = "applyFailed";
                 return false;
             }
+        }
+
+        internal bool RefreshMenuIcons(GameObject avatar, FaceExpressionConfiguration configuration, bool complete = false,
+            FaceExpressionPreview sharedPreview = null)
+        {
+            var paths = FaceExpressionGenerationPaths.Create(avatar);
+            var entries = GestureMatrixControllerWriter.GetEffectiveMenuEntries(configuration.Assignments, configuration.MenuEntries);
+            var icons = FaceExpressionMenuIconWriter.Write(avatar, entries, paths, true,
+                complete ? int.MaxValue : 1, out var pending, sharedPreview);
+            SaveMenu(VrchatExpressionMenuWriter.Write(paths.MenuPath, entries, icons), true);
+            return pending;
+        }
+
+        private static void SaveMenu(ScriptableObject menu, bool deferSave)
+        {
+            if (deferSave) DeferredAssetSave.Queue(menu);
+            else
+                foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(menu)))
+                    AssetDatabase.SaveAssetIfDirty(asset);
         }
 
         private static AnimatorController GetOrCreateController(string assetPath)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Ee4v.AvatarEditing;
+using Ee4v.Core;
 using Ee4v.Core.AvatarEvaluation;
 using nadena.dev.modular_avatar.core;
 using UnityEditor;
@@ -243,7 +244,7 @@ namespace Ee4v.ExpressionMenu
                 recipe.ImportEffects(context, item);
                 recipe.Build(context, item);
                 EditorUtility.SetDirty(recipe);
-                AssetDatabase.SaveAssetIfDirty(recipe);
+                DeferredAssetSave.Queue(recipe);
                 ExpressionMenuInstaller.SaveGeneratedPrefab(item.gameObject);
                 Undo.CollapseUndoOperations(group);
                 context.Edits.WorkingSceneDirty = true;
@@ -322,7 +323,7 @@ namespace Ee4v.ExpressionMenu
                 EditorUtility.SetDirty(machine);
             }
             EditorUtility.SetDirty(controller);
-            AssetDatabase.SaveAssetIfDirty(controller);
+            DeferredAssetSave.Queue(controller);
         }
 
         private AnimatorControllerParameter ControllerParameter(ModularAvatarMenuItem item) => new AnimatorControllerParameter
@@ -642,7 +643,7 @@ namespace Ee4v.ExpressionMenu
                     PrefabUtility.RecordPrefabInstancePropertyModifications(merge);
                 }
                 EditorUtility.SetDirty(_controller);
-                AssetDatabase.SaveAssetIfDirty(_controller);
+                DeferredAssetSave.Queue(_controller);
             }
             finally
             {

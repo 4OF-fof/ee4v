@@ -21,6 +21,18 @@ namespace Ee4v.ExpressionMenu
             public string Revision;
             public List<Page> Pages = new List<Page>();
             public List<Entry> Entries = new List<Entry>();
+            public List<ExcludedEntry> Excluded = new List<ExcludedEntry>();
+            public List<Registration> Registrations = new List<Registration>();
+        }
+        [Serializable] public sealed class ExcludedEntry
+        {
+            public string Id, Name, SourceObjectId;
+            public bool MissingSource, SourceChanged;
+        }
+        [Serializable] public sealed class Registration
+        {
+            public string Name, SourceObjectId;
+            public bool Excluded;
         }
         [Serializable] public sealed class Page
         {
@@ -33,6 +45,7 @@ namespace Ee4v.ExpressionMenu
             public string[] SubParameters;
             public float Value, InitialValue;
             public bool Editable, HasSubmenu, Cyclic, Owned, Synced, Saved, CanEditActions;
+            public bool CanExclude;
             public List<ActionData> Actions = new List<ActionData>();
         }
 
@@ -41,6 +54,16 @@ namespace Ee4v.ExpressionMenu
             var context = Context(avatar);
             var root = ExpressionMenuModel.Read(avatar, out _);
             var result = new Snapshot();
+            var exclusions = AvatarMenuExclusionUtility.Entries(avatar);
+            foreach (var exclusion in exclusions)
+                result.Excluded.Add(new ExcludedEntry { Id = exclusion.Id, Name = exclusion.DisplayName,
+                    SourceObjectId = exclusion.Source != null ? GlobalObjectId.GetGlobalObjectIdSlow(exclusion.Source).ToString() : null,
+                    MissingSource = exclusion.Source == null, SourceChanged = exclusion.Source != null && !AvatarMenuExclusionUtility.IsCurrent(exclusion) });
+            foreach (var installer in avatar.GetComponentsInChildren<ModularAvatarMenuInstaller>(true))
+                if (!ExpressionMenuInstaller.IsGeneratedPrefab(installer.gameObject))
+                    result.Registrations.Add(new Registration { Name = installer.gameObject.name,
+                        SourceObjectId = GlobalObjectId.GetGlobalObjectIdSlow(installer).ToString(),
+                        Excluded = exclusions.Any(record => record.Source == installer) });
             var ancestors = new HashSet<AvatarMenuPage>();
             var canCopy = ExpressionMenuModel.CreateEditableCopyCheck(context);
             void Visit(AvatarMenuPage page, string path, int depth)
@@ -72,6 +95,7 @@ namespace Ee4v.ExpressionMenu
                         Editable = context.Edits.CanEditPrefab() && ExpressionMenuModel.CanEdit(entry) &&
                             (item == null || ExpressionMenuTemplateModel.CanEdit(context, item)),
                         Owned = item != null && ExpressionMenuTemplateModel.IsOwned(item.gameObject),
+                        CanExclude = !ExpressionMenuModel.IsGenerated(entry) && ExpressionMenuModel.CanExclude(context, entry),
                         Synced = item != null && item.isSynced, Saved = item != null && item.isSaved,
                         InitialValue = item != null && ExpressionMenuAnimationRecipe.EffectiveMode(item) == MenuBehaviorMode.Radial ? recipe?.InitialValue ?? 0 :
                             item != null && item.isDefault ? 1 : 0,
@@ -187,10 +211,30 @@ namespace Ee4v.ExpressionMenu
         public static Snapshot Remove(GameObject avatar, string path, bool includeChildren, string expectedRevision)
         {
             CheckRevision(avatar, expectedRevision);
-            EditableContext(avatar);
+            var context = EditableContext(avatar);
             var entry = EntryAt(ExpressionMenuModel.Read(avatar, out _), path);
             if (entry.Submenu?.Controls.Count > 0 && !includeChildren) throw new InvalidOperationException("Submenu is not empty. Set includeChildren explicitly.");
-            ExpressionMenuModel.Remove(entry);
+            if (ExpressionMenuModel.IsGenerated(entry)) ExpressionMenuModel.RemoveGenerated(entry);
+            else ExpressionMenuModel.Exclude(context, entry);
+            Notify(avatar);
+            return Inspect(avatar);
+        }
+
+        public static Snapshot Restore(GameObject avatar, string exclusionId, string expectedRevision)
+        {
+            CheckRevision(avatar, expectedRevision);
+            ExpressionMenuModel.Restore(EditableContext(avatar), exclusionId);
+            Notify(avatar);
+            return Inspect(avatar);
+        }
+
+        public static Snapshot ExcludeRegistration(GameObject avatar, string sourceObjectId, string expectedRevision)
+        {
+            CheckRevision(avatar, expectedRevision);
+            if (!GlobalObjectId.TryParse(sourceObjectId, out var id) ||
+                !(GlobalObjectId.GlobalObjectIdentifierToObjectSlow(id) is ModularAvatarMenuInstaller installer))
+                throw new ArgumentException("Select a Menu Installer from the inspected registrations.");
+            ExpressionMenuModel.ExcludeInstaller(EditableContext(avatar), installer);
             Notify(avatar);
             return Inspect(avatar);
         }

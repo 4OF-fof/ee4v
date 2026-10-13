@@ -43,7 +43,7 @@ AssetManagerの編集Previewは作成時に現在の部位選択（未選択な�
 
 `accessibility.png`はMicrosoftの[Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons/blob/main/assets/Accessibility/SVG/ic_fluent_accessibility_24_regular.svg)（MIT、Copyright Microsoft Corporation）の24px Regular SVGから白色・透過の512px PNGへ変換したものです。
 
-Coreの`SetHumanoidPose`は有効なHumanoid Avatarの基準骨格回転を使用し、上腕と前腕を左右の水平（Tポーズ）またはAポーズの方向へ合わせます。Scene本体、Prefab、AnimationClipへ書き込まず、NDMF描画用骨へ回転を適用します。隔離Previewでは描画中だけ回転を変更して復元します。骨格スケールとBlendShapeのoverrideは併用できます。`GetTransformPosition`は描画用回転・スケールを含む位置を返し、腕・手などのフォーカスも現在のポーズへ追従します。
+Coreの`SetHumanoidPose`は有効なHumanoid Avatarの基準骨格回転を使用し、上腕と前腕を左右の水平（Tポーズ）またはAポーズの方向へ合わせます。腕の補正行列は`AvatarPreviewPose.GetWorldMatrix`へ現在の表示用回転・スケールを渡して計算し、上腕の補正を反映した親の姿勢から前腕を補正します。動作確認のサンプリング済み行列は仮ポーズの生成に使用せず、Generic合成でも基準姿勢を一定に保ちます。Scene本体、Prefab、AnimationClipへ書き込まず、NDMF描画用骨へ回転を適用します。隔離Previewでは描画中だけ回転を変更して復元します。骨格スケールとBlendShapeのoverrideは併用できます。`GetTransformPosition`は描画用回転・スケールを含む位置を返し、腕・手などのフォーカスも現在のポーズへ追従します。
 
 衣装などの別Armatureには、`AvatarPreviewPose.GetBindings`がMA Merge Armatureの公開`GetBonesMapping`とmerge先から取得した骨対応を使って本体のポーズ差分を伝播します。prefix・suffix、入れ子のmerge、衣装独自の末端boneも元の相対姿勢を保って追従します。MA Bone Proxyはtarget・attachment mode・matchScaleに従って描画用の位置・回転・スケールを求めます。Bone対応は`RefreshHierarchy`で更新し、Prefab用コピーではスクリプトを取り除く前に保持します。Scene入力では描画用骨だけを変更し、隔離Previewでは描画後・例外時に位置・回転・スケールを復元します。これらはすべてAvatarEvaluation内に置き、MAのビルド処理や元のArmatureの変更は実行しません。
 

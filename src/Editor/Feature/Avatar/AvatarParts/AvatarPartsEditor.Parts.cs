@@ -49,6 +49,15 @@ namespace Ee4v.AvatarParts
                 displayed = FilterPrefabObjectsByBodyPart(
                     entries, _context.SelectedBodyPart.Value);
             }
+            var selected = displayed.FirstOrDefault(entry =>
+                PrefabScenePreview.GetPartKey(entry.PrefabSiblingIndex,
+                    entry.SiblingPath) == _context.SelectedPartKey);
+            if (selected != null)
+            {
+                panel.Add(BuildPartDetails(selected));
+                return panel;
+            }
+            _context.SelectedPartKey = null;
             if (_context.SelectedPrefabSiblingIndex is int attachmentIndex && attachmentIndex >= 0 &&
                 _context.Root != null && attachmentIndex < _context.Root.transform.childCount)
             {
@@ -77,18 +86,6 @@ namespace Ee4v.AvatarParts
                     entry.PrefabSiblingIndex == prefabSiblingIndex).ToArray();
                 if (group.Length == 0)
                 {
-                    continue;
-                }
-                if (!_context.SelectedPrefabSiblingIndex.HasValue &&
-                    prefabSiblingIndex >= 0)
-                {
-                    var content = new VisualElement();
-                    AddObjectHierarchy(content, group);
-                    list.Add(_context.Host.BuildPrefabGroup(
-                        prefabSiblingIndex,
-                        content,
-                        _expandedPartPrefabGroups,
-                        true));
                     continue;
                 }
                 AddObjectHierarchy(list, group);
@@ -342,13 +339,26 @@ namespace Ee4v.AvatarParts
                 entry.Name,
                 "ee4v-modification-workflow__object-name");
             name.tooltip = entry.Path;
-            text.Add(name);
+            if (entry.IsPrefabRoot)
+            {
+                var nameLine = new VisualElement();
+                nameLine.AddToClassList("ee4v-modification-workflow__object-name-line");
+                var prefabIcon = new Icon(IconState.FromBuiltinIcon(UiBuiltinIcon.Prefab, UiSizeTokens.Size16));
+                prefabIcon.AddToClassList("ee4v-modification-workflow__object-prefab-icon");
+                nameLine.Add(prefabIcon);
+                nameLine.Add(name);
+                text.Add(nameLine);
+            }
+            else { text.Add(name); }
             var path = UiTextFactory.Create(
                 entry.Path,
                 UiClassNames.SecondaryText,
                 "ee4v-modification-workflow__object-path");
             path.tooltip = entry.Path;
-            text.Add(path);
+            if (!entry.IsPrefabRoot || !string.Equals(entry.Name, entry.Path, StringComparison.Ordinal))
+            {
+                text.Add(path);
+            }
             row.Add(text);
             var actions = new VisualElement();
             actions.AddToClassList(
@@ -387,34 +397,7 @@ namespace Ee4v.AvatarParts
 
         private void SelectPartRow(string key)
         {
-            _context.SelectedPartKey = key;
-            foreach (var pair in _objectRows)
-            {
-                pair.Value.Row.EnableInClassList(
-                    "ee4v-modification-workflow__object-row--selected",
-                    PrefabScenePreview.GetPartKey(
-                        pair.Key.PrefabSiblingIndex,
-                        pair.Key.SiblingPath) == key);
-            }
-            _context.Host.SyncPreviewSelection();
-        }
-
-        private void ScrollToSelectedPart()
-        {
-            var row = _objectRows.FirstOrDefault(pair =>
-                PrefabScenePreview.GetPartKey(
-                    pair.Key.PrefabSiblingIndex,
-                    pair.Key.SiblingPath) == _context.SelectedPartKey).Value?.Row;
-            if (row != null)
-            {
-                _context.ControlsHost.schedule.Execute(() =>
-                {
-                    if (row.panel != null)
-                    {
-                        _context.ControlsHost.ScrollTo(row);
-                    }
-                });
-            }
+            NavigateToPart(key);
         }
 
         private void ShowActiveSelfContextMenu(
@@ -551,6 +534,7 @@ namespace Ee4v.AvatarParts
                             PrefabName = selected.name,
                             SiblingPath = indices,
                             Name = target.name,
+                            IsPrefabRoot = PrefabUtility.IsAnyPrefabInstanceRoot(gameObject),
                             Path = objectPath,
                             IsVisible = !string.Equals(
                                 gameObject.tag, "EditorOnly",

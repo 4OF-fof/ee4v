@@ -129,7 +129,7 @@ Inspector全体の選択と個別Editorのtargetが異なる場合は`EditorTarg
 |---|---|---|
 | `AssetsDirectory` | `Application.dataPath` を返す | なし |
 | `ImportPackage(packagePath, interactive, onFinished)` | import 要求を受け付ける | queue、AssetDatabase event、project asset を変更する |
-| `Refresh()` | `AssetDatabase.Refresh()` を実行する | asset の再走査と import を発生させる可能性がある |
+| `Refresh()` / `Refresh(bool synchronous)` | `AssetDatabase.Refresh()` を実行する。`true`では`ForceSynchronousImport`で完了を待つ | asset の再走査と import を発生させる可能性がある |
 
 `ImportPackage` は要求を process 内の queue に追加し、一件ずつ `AssetDatabase.ImportPackage` へ渡します。処理中は completed、cancelled、failed の各 event を購読し、終了時に解除します。
 

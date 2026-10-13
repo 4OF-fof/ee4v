@@ -19,7 +19,7 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 
 ### Inputs
 
-型付きの標準Sliderは`UiTextFactory.CreateSlider`を使用します。生成したSliderの`value`・`SetValueWithoutNotify`・`showInputField`で操作値と数値入力を設定し、ラベルを標準UIの`text`へ直接書き込みません。
+型付きの標準Sliderは`UiTextFactory.CreateSlider`、整数のSliderIntは`UiTextFactory.CreateSliderInt`を使用します。生成した入力の`value`・`SetValueWithoutNotify`・`showInputField`で操作値と数値入力を設定し、ラベルを標準UIの`text`へ直接書き込みません。
 
 `InputField`は左クリックで内部のTextFieldへフォーカスします。文字の上だけでなく入力欄の余白もクリック対象です。無効な入力欄はフォーカスしません。
 
@@ -127,6 +127,8 @@ AnimationClipの右ペインは画像領域を表示せず、表情・その他�
 Fluent UIのPNGは`FluentUiIconPostprocessor`でGUI用Textureとして取り込み、非圧縮、ミップマップなし、透過エッジ補正あり、Bilinear、Clamp、最大512pxに固定します。小さな操作アイコンの輪郭を圧縮やミップマップでぼかさないための設定です。`FluentUiIcons.CreateState`とサイズ付き`LoadTexture`は18px以下に16px用SVGから生成した画像を選びます。12px以下のAdd、Subtract、Arrow Clockwise、Arrow Left、Arrow Right、Checkmark、Chevron Down、Chevron Right、Dismiss、Pinには12px用を選びます。Mail Inboxも16px用の画像を使用します。サイズを付けない`LoadTexture`とサイズ接尾辞を明示したファイル名は、そのファイルを読み込みます。アイコンの表示寸法、tooltip、tintは呼び出し側の指定を維持します。File TreeとTarget一覧、Toggleのチェックマーク、Scene Switcherのお気に入りなど、Textureを直接表示する箇所にもサイズ付き読み込みを使用します。
 
 小サイズ用の`*_12.png`と`*_16.png`は12px・16pxで生成し、512px画像を極小表示するときの間引きで細い線や穴が消えることを防ぎます。SVGを512pxで描画してから画素の被覆率を保持するBoxフィルターで縮小します。取り込み後のTextureも元の12px・16pxを維持します。
+
+`UiTextFactory.CreateInspector(Editor)`はUnity標準の`InspectorElement`を生成する入口です。component固有のUI Toolkit・IMGUI Inspector内の文字とプロパティ描画はUnityまたはcomponentのEditorが担当します。利用側はEditorの生成・破棄、bindingの解放、変更通知と編集可否を管理します。
 
 ## `CustomPopup`
 

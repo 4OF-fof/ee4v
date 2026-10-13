@@ -1,0 +1,8 @@
+{
+  "name": "Ee4v.Core.Runtime",
+  "rootNamespace": "Ee4v.Core.AvatarEvaluation",
+  "references": [],
+  "overrideReferences": true,
+  "precompiledReferences": ["VRCSDKBase.dll", "VRCSDK3A.dll"],
+  "autoReferenced": true
+}

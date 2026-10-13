@@ -464,6 +464,8 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                     sourcePath,
                     Path.Combine(temporaryPath, fileName),
                     false);
+                if (File.Exists(sourcePath + ".meta"))
+                    File.Copy(sourcePath + ".meta", Path.Combine(temporaryPath, fileName + ".meta"));
                 File.WriteAllText(
                     Path.Combine(temporaryPath, MetadataFileName),
                     JsonUtility.ToJson(metadata, true));

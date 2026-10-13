@@ -71,6 +71,7 @@ namespace Ee4v.AssetManager.UI
             _customizerHost = _editorLayout.AppearanceHost;
             _appearanceHeader = _editorLayout.AppearanceHeader;
             _bodyPartSelector = null;
+            _appearanceTabs = null;
             _avatarContext.ControlsHost = _editorLayout.Controls;
             _faceExpressionHost = _editorLayout.FaceExpressionHost;
             _executionHost = _editorLayout.ExecutionHost;
@@ -285,6 +286,7 @@ namespace Ee4v.AssetManager.UI
             var variantId = _workingAsset.VariantId;
             var category = _currentCategory;
             var shapePartsSection = _parts.Section;
+            var appearancePanel = _appearancePanel;
             var rebuild = false;
             try
             {
@@ -349,6 +351,7 @@ namespace Ee4v.AssetManager.UI
                 SelectDerivedAsset(restored);
                 _currentCategory = category;
                 _parts.Section = shapePartsSection;
+                _appearancePanel = appearancePanel;
             }
             catch (Exception exception)
             {
@@ -403,41 +406,57 @@ namespace Ee4v.AssetManager.UI
                 _parts.HasPendingPartVisibility || _parts.HasPendingBodySizeChange;
             // Keep the Git comparison until a change notification invalidates it.
             // A standalone Prefab save still requires a new Variant revision.
-            if (_variantSaveStatusDirty && EditorApplication.timeSinceStartup >= _variantSaveStatusDueAt)
+            if (_variantSaveStatusDirty && !_variantSaveStatusRefreshing &&
+                EditorApplication.timeSinceStartup >= _variantSaveStatusDueAt)
             {
-                try
-                {
-                    _manager = _manager ?? AssetManagerWindowSession.GetManager();
-                    var variants = AssetManagerWindowSession.TryGetVariantManager(_manager);
-                    if (!ReferenceEquals(_variantStatusManager, variants))
-                    {
-                        ReleaseVariantStatusManager();
-                        _variantStatusManager = variants;
-                        if (_variantStatusManager != null)
-                        {
-                            _variantStatusManager.Changed += InvalidateVariantSaveStatus;
-                            _manager.Changed += OnVariantStatusAssetManagerChanged;
-                        }
-                    }
-                    var status = variants?.GetChangeStatus(
-                        GetWorkingAssetPath());
-                    _variantHasChanges = status?.HasChanges ?? false;
-                    _variantHasDiscardableChanges =
-                        status?.HasChangesFromCurrentRevision ?? false;
-                    _variantSaveStatusError = null;
-                }
-                catch (Exception exception)
-                {
-                    _variantHasChanges = false;
-                    _variantHasDiscardableChanges = false;
-                    _variantSaveStatusError = exception.Message;
-                }
-                _variantSaveStatusDirty = false;
+                RefreshVariantSaveStatus();
             }
             var hasChanges = pending || _variantHasChanges;
             save.tooltip = _variantSaveStatusError ??
                 (hasChanges ? string.Empty : I18N.Get("variant.noChanges"));
             SetVariantSaveButtonEnabled(save, hasChanges && _variantSaveStatusError == null);
+        }
+
+        private async void RefreshVariantSaveStatus()
+        {
+            var version = _variantSaveStatusVersion;
+            var root = _avatarContext.Root;
+            var path = GetWorkingAssetPath();
+            _variantSaveStatusRefreshing = true;
+            try
+            {
+                _manager = _manager ?? AssetManagerWindowSession.GetManager();
+                var variants = AssetManagerWindowSession.TryGetVariantManager(_manager);
+                if (!ReferenceEquals(_variantStatusManager, variants))
+                {
+                    ReleaseVariantStatusManager();
+                    _variantStatusManager = variants;
+                    if (_variantStatusManager != null)
+                    {
+                        _variantStatusManager.Changed += InvalidateVariantSaveStatus;
+                        _manager.Changed += OnVariantStatusAssetManagerChanged;
+                    }
+                }
+                var status = variants == null ? null : await variants.GetChangeStatusAsync(path);
+                if (!IsCurrentRequest()) { return; }
+                _variantHasChanges = status?.HasChanges ?? false;
+                _variantHasDiscardableChanges = status?.HasChangesFromCurrentRevision ?? false;
+                _variantSaveStatusError = null;
+                _variantSaveStatusDirty = false;
+            }
+            catch (Exception exception)
+            {
+                if (!IsCurrentRequest()) { return; }
+                _variantHasChanges = false;
+                _variantHasDiscardableChanges = false;
+                _variantSaveStatusError = exception.Message;
+                _variantSaveStatusDirty = false;
+            }
+            finally { _variantSaveStatusRefreshing = false; }
+
+            bool IsCurrentRequest() => !_disposed && !_savingVariant &&
+                version == _variantSaveStatusVersion && root == _avatarContext.Root &&
+                path == GetWorkingAssetPath();
         }
 
         private void RefreshVariantDiscardButton(UiButton discard)
@@ -482,6 +501,7 @@ namespace Ee4v.AssetManager.UI
 
         private void InvalidateVariantSaveStatus()
         {
+            _variantSaveStatusVersion++;
             _variantSaveStatusDirty = true;
             _variantSaveStatusDueAt = EditorApplication.timeSinceStartup +
                 VariantSaveStatusDelaySeconds;
@@ -523,7 +543,7 @@ namespace Ee4v.AssetManager.UI
             {
                 var findAsset = AssetPicker.CreateButton(
                     () => IsExpressionAssignmentOpen ? typeof(AnimationClip) : typeof(Material),
-                    () => _currentCategory == WorkflowCategory.Material
+                    () => _currentCategory == WorkflowCategory.Appearance && _appearancePanel == AppearancePanel.Material
                         ? _avatarContext.SelectedMaterial : null,
                     () => _avatarContext.Root,
                     () => IsExpressionAssignmentOpen ? AssetPickerAnimationFilter.Facial : AssetPickerAnimationFilter.All);
@@ -567,6 +587,38 @@ namespace Ee4v.AssetManager.UI
             return _previewPane;
         }
 
+        private void ShowAppearancePanel(AppearancePanel panel)
+        {
+            var changed = _appearancePanel != panel;
+            if (changed && !_avatarContext.Edits.FlushChanges()) { return; }
+            if (changed) { ReleaseAppearanceDetails(); }
+            _appearancePanel = panel;
+            if (panel != AppearancePanel.Material)
+            {
+                _parts.Section = panel == AppearancePanel.Shape
+                    ? ShapePartsSection.Shape : ShapePartsSection.Parts;
+            }
+            ShowCategory(WorkflowCategory.Appearance, false);
+            if (changed && _avatarContext.ControlsHost != null)
+            {
+                _avatarContext.ControlsHost.scrollOffset = Vector2.zero;
+            }
+            RequestRepaint();
+        }
+
+        private void ReleaseAppearanceDetails()
+        {
+            if (_appearancePanel == AppearancePanel.Parts && _avatarContext.SelectedPartKey != null)
+            {
+                InvalidateAppearanceControls(AppearancePanel.Parts);
+            }
+            else if (_appearancePanel == AppearancePanel.Material && _avatarContext.SelectedMaterial != null)
+            {
+                InvalidateAppearanceControls(AppearancePanel.Material);
+                _materials.DisposeMaterialEditor();
+            }
+        }
+
         private void ShowCategory(
             WorkflowCategory category,
             bool clearFeedback = true,
@@ -581,8 +633,8 @@ namespace Ee4v.AssetManager.UI
                 else if (category == WorkflowCategory.ExpressionAnimation || category == WorkflowCategory.ExpressionMenu)
                     category = WorkflowCategory.Overview;
             }
-            if (category != WorkflowCategory.ShapeParts ||
-                _parts.Section != ShapePartsSection.Parts)
+            if (category != WorkflowCategory.Appearance ||
+                _appearancePanel != AppearancePanel.Parts)
             {
                 if (!_parts.FlushPendingPartVisibility())
                 {
@@ -593,10 +645,9 @@ namespace Ee4v.AssetManager.UI
             if (_avatarContext.SelectedPrefabSiblingIndex.HasValue &&
                 category != WorkflowCategory.Overview &&
                 !category.IsPlayMode() &&
-                category != WorkflowCategory.ShapeParts &&
-                category != WorkflowCategory.Material)
+                category != WorkflowCategory.Appearance)
             {
-                category = WorkflowCategory.ShapeParts;
+                category = WorkflowCategory.Appearance;
             }
             if (confirmExpressionChanges && _currentCategory == WorkflowCategory.ExpressionAnimation &&
                 category != _currentCategory && _faceExpressionEditor != null &&
@@ -606,9 +657,9 @@ namespace Ee4v.AssetManager.UI
                 _categoryRail?.SetSelected(_currentCategory);
                 return;
             }
-            if (_currentCategory == WorkflowCategory.ShapeParts &&
-                _parts.Section == ShapePartsSection.Shape &&
-                category != WorkflowCategory.ShapeParts)
+            if (_currentCategory == WorkflowCategory.Appearance &&
+                _appearancePanel == AppearancePanel.Shape &&
+                category != WorkflowCategory.Appearance)
             {
                 _parts.EndBodyScaleDrag();
                 _parts.SaveBodyScalePrefab();
@@ -627,6 +678,14 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             var categoryChanged = _currentCategory != category;
+            if (categoryChanged && _currentCategory == WorkflowCategory.Appearance)
+            {
+                ReleaseAppearanceDetails();
+                foreach (var cachedControls in _appearanceControlsCache.Values)
+                {
+                    cachedControls.Content.RemoveFromHierarchy();
+                }
+            }
             if (categoryChanged && clearFeedback)
             {
                 _avatarContext.Feedback = string.Empty;
@@ -642,7 +701,7 @@ namespace Ee4v.AssetManager.UI
                 ClearAppearanceCaches();
             }
             _avatarContext.Preview?.SetHiddenMaterials(
-                category == WorkflowCategory.Material
+                category == WorkflowCategory.Appearance && _appearancePanel == AppearancePanel.Material
                     ? _materials.PreviewHiddenMaterials
                     : null);
             _categoryRail?.SetSelected(category);
@@ -703,8 +762,7 @@ namespace Ee4v.AssetManager.UI
                 _appearanceHeader.style.display = DisplayStyle.None;
                 foreach (var cachedControls in _appearanceControlsCache.Values)
                 {
-                    cachedControls.Content.AddToClassList(
-                        "ee4v-modification-workflow__hidden");
+                    cachedControls.Content.RemoveFromHierarchy();
                 }
                 _avatarContext.Preview?.FocusBodyPart(null, preservePreviewCamera);
                 _avatarContext.Preview?.SetListSelection(null, null);
@@ -721,28 +779,20 @@ namespace Ee4v.AssetManager.UI
                 SetPreviewTitle("workflow.preview.appearanceTitle");
                 return;
             }
-            foreach (var child in _appearanceHeader.Children().ToArray())
-            {
-                if (child != _bodyPartSelector) { child.RemoveFromHierarchy(); }
-            }
             if (_bodyPartSelector == null)
             {
                 _bodyPartSelector = BuildBodyPartSelector();
                 _appearanceHeader.Add(_bodyPartSelector);
             }
             _bodyPartSelector.Refresh(_avatarContext.SelectedBodyPart, HasAvailableBodyPart);
-            _bodyPartSelector.EnableInClassList(
-                "ee4v-ui-body-part-selector--standalone",
-                category != WorkflowCategory.ShapeParts);
-            if (category == WorkflowCategory.ShapeParts)
+            _bodyPartSelector.RemoveFromClassList("ee4v-ui-body-part-selector--standalone");
+            if (_appearanceTabs == null)
             {
-                _appearanceHeader.Add(_parts.BuildShapePartsTabs());
+                _appearanceTabs = _parts.BuildShapePartsTabs(ShowAppearancePanel, _appearancePanel);
+                _appearanceHeader.Add(_appearanceTabs);
             }
-            var appearancePanel = category == WorkflowCategory.Material
-                ? AppearancePanel.Material
-                : _parts.Section == ShapePartsSection.Shape
-                    ? AppearancePanel.Shape
-                    : AppearancePanel.Parts;
+            _parts.RefreshShapePartsTabs(_appearanceTabs, _appearancePanel);
+            var appearancePanel = _appearancePanel;
             if (!_appearanceControlsCache.TryGetValue(appearancePanel,
                     out var cached) ||
                 cached.BodyPart != _avatarContext.SelectedBodyPart ||
@@ -770,24 +820,26 @@ namespace Ee4v.AssetManager.UI
                     FeedbackType = _avatarContext.FeedbackType
                 };
                 _appearanceControlsCache[appearancePanel] = cached;
-                _avatarContext.ControlsHost.Add(cached.Content);
             }
             foreach (var pair in _appearanceControlsCache)
             {
-                pair.Value.Content.EnableInClassList(
-                    "ee4v-modification-workflow__hidden",
-                    pair.Key != appearancePanel);
+                if (pair.Key != appearancePanel)
+                {
+                    pair.Value.Content.RemoveFromHierarchy();
+                }
             }
-            _appearanceHeader.style.display = category == WorkflowCategory.Material &&
-                _avatarContext.SelectedMaterial != null
-                    ? DisplayStyle.None
-                    : DisplayStyle.Flex;
+            if (cached.Content.parent != _avatarContext.ControlsHost.contentContainer)
+            {
+                _avatarContext.ControlsHost.Add(cached.Content);
+            }
+            _bodyPartSelector.style.display = DisplayStyle.Flex;
+            _appearanceHeader.style.display = DisplayStyle.Flex;
             if (categoryChanged)
             {
                 _avatarContext.ControlsHost.scrollOffset = Vector2.zero;
             }
             SetPreviewTitle(
-                category == WorkflowCategory.Material
+                appearancePanel == AppearancePanel.Material
                     ? "workflow.preview.appearanceTitle"
                     : "workflow.preview.sizeTitle");
             SyncPreviewSelection();
@@ -814,7 +866,7 @@ namespace Ee4v.AssetManager.UI
                     if (prefab == null) { return; }
                     SelectPrefabCard(prefab.transform.GetSiblingIndex(), prefab.name);
                     _parts.Section = ShapePartsSection.Parts;
-                    ShowCategory(WorkflowCategory.ShapeParts, false);
+                    ShowAppearancePanel(AppearancePanel.Parts);
                 }, AvatarInfoEditing.CreateOptions(_avatarContext),
                 AvatarInfoSdk.Provider?.ReadParameterMemory(_avatarContext.Root),
                 AvatarBuildSizeCache.Get(_avatarContext.Root, _overviewMobile),

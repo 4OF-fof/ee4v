@@ -36,6 +36,7 @@ namespace Ee4v.UI
                         "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionGroupView.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
                         "Editor/UI/Components/Content/InfoCard/InfoCard.cs"
                     }));
             }
