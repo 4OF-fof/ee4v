@@ -101,9 +101,7 @@
     flex-direction: column;
     padding: var(--ee4v-space-2xl);
     padding-bottom: var(--ee4v-space-md);
-    border-bottom-width: var(--ee4v-border-hairline);
-    border-bottom-color: var(--ee4v-color-border-default);
-    background-color: var(--ee4v-color-surface-subtle);
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-modification-workflow__appearance-header .ee4v-modification-workflow__shape-parts-tabs {

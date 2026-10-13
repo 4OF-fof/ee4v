@@ -8,6 +8,8 @@
 
 `AvatarPartsEditor(AvatarEditingContext)`へ編集対象、選択範囲、Preview、編集可否とホストの通知を渡します。`BuildControls`と`BuildShapePartsTabs`が実画面のUIを生成し、`SelectPreviewPart`と`ClearPreviewSelection`がPreviewからの選択を受け取ります。
 
+`BuildShapePartsTabs`のパーツ・体型・マテリアルの切り替えは、表情画面の「表情／設定」と同じ下線付きのタブで表示します。各ボタンは均等幅・最小高さ32pxで、背景は透明、下端の共通区切り線は1px、選択中の下線は青い2pxとします。選択中の文字は共通の主文字色、未選択は補助文字色を使用し、ホバーには共通の背景色を使用します。単独Shape and Partsのパーツ・体型にも同じスタイルを適用します。部位選択や保留変更の確定、内部タブの保持は既存の処理を使用します。
+
 パーツ階層、部位分類、activeSelfとEditorOnlyの操作、一時的なPreview表示、体型のScale・ViewPosition・BlendShape、Modular Avatarの同期処理、ドラッグ中の保留状態とキャッシュはこの機能に閉じます。パーツ処理は`Parts`、階層分類は`Classification`のpartialで管理します。体型は`Shape`がUI、`ShapeTargets`が対象解析と計算、`ShapeEditing`がUndo・Prefab変更記録と同期設定の適用、`ShapeSession`がドラッグ中の保留と変更確定を所有します。単体とグループのBlendShape変更は同じ更新ヘルパーを使用します。
 
 編集対象の変更では`ResetEditingState`、データの変更では`ClearData`を呼びます。Prefab構成の変更では`InvalidateShapeTargets`と`ClearExpandedGroups`を使用します。保存前に`EndBodyScaleDrag`、`SaveBodyScalePrefab`、`FlushPendingPartVisibility`を呼び、保留中の変更を作業対象へ反映します。これらはVariantの版保存を行いません。

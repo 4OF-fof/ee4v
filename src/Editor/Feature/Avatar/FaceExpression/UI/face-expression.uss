@@ -154,7 +154,7 @@
 .ee4v-face-expression__assignment-settings {
     flex-grow: 1;
     flex-basis: 0;
-    min-height: 120px;
+    min-height: 0;
 }
 
 .ee4v-face-expression__review-navbar {
@@ -296,12 +296,20 @@
 }
 
 .ee4v-gesture-picker__review-actions {
-    margin-top: var(--ee4v-space-md);
-    margin-bottom: var(--ee4v-space-sm);
+    flex-shrink: 0;
+    justify-content: center;
+    margin-left: var(--ee4v-space-sm);
 }
 
 .ee4v-gesture-picker__review-actions > .ee4v-ui-button {
-    width: 100%;
+    min-height: 32px;
+    padding: var(--ee4v-space-sm) var(--ee4v-space-md);
+}
+
+.ee4v-face-expression__assignment-header,
+.ee4v-gesture-picker__header {
+    flex-shrink: 0;
+    min-width: 0;
 }
 
 .ee4v-gesture-picker {
@@ -309,7 +317,7 @@
     min-width: 0;
 }
 
-.ee4v-gesture-picker > .ee4v-ui-section-header {
+.ee4v-gesture-picker__header > .ee4v-ui-section-header {
     margin-top: var(--ee4v-space-sm);
     margin-bottom: var(--ee4v-space-sm);
 }
@@ -369,7 +377,7 @@
     border-bottom-color: var(--ee4v-color-border-default);
 }
 
-.ee4v-gesture-picker .ee4v-gesture-picker__tab.ee4v-ui-button {
+.ee4v-gesture-picker__tab.ee4v-ui-button {
     flex-grow: 1;
     flex-basis: 0;
     min-width: 0;
@@ -383,12 +391,12 @@
     color: var(--ee4v-color-text-secondary);
 }
 
-.ee4v-gesture-picker .ee4v-gesture-picker__tab--selected.ee4v-ui-button {
+.ee4v-gesture-picker__tab--selected.ee4v-ui-button {
     border-bottom-color: var(--ee4v-color-focus);
     color: var(--ee4v-color-text-primary);
 }
 
-.ee4v-gesture-picker .ee4v-gesture-picker__tab.ee4v-ui-button:hover {
+.ee4v-gesture-picker__tab.ee4v-ui-button:hover {
     background-color: var(--ee4v-color-surface-hover);
 }
 

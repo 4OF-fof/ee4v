@@ -832,9 +832,7 @@ namespace Ee4v.AssetManager.UI
             {
                 _avatarContext.ControlsHost.Add(cached.Content);
             }
-            var materialDetails = appearancePanel == AppearancePanel.Material &&
-                _avatarContext.SelectedMaterial != null;
-            _bodyPartSelector.style.display = materialDetails ? DisplayStyle.None : DisplayStyle.Flex;
+            _bodyPartSelector.style.display = DisplayStyle.Flex;
             _appearanceHeader.style.display = DisplayStyle.Flex;
             if (categoryChanged)
             {

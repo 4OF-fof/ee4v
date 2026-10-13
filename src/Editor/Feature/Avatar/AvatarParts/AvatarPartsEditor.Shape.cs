@@ -1078,6 +1078,10 @@ namespace Ee4v.AvatarParts
                 {
                     child.EnableInClassList("ee4v-modification-workflow__shape-parts-tab--active",
                         panel == current);
+                    if (child is UiButton button)
+                    {
+                        button.SetLabelColor(panel == current ? UiColorTokens.TextPrimary : UiColorTokens.TextMuted);
+                    }
                 }
             }
         }

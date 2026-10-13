@@ -500,7 +500,10 @@ namespace Ee4v.FaceExpression
             _text = text;
             _session = session;
             AddToClassList("ee4v-gesture-picker");
-            Add(new SectionHeader(I18N.Get("assignments.expressionInputs")));
+            Header = new VisualElement();
+            Header.AddToClassList("ee4v-gesture-picker__header");
+            Header.Add(new SectionHeader(I18N.Get("assignments.expressionInputs")));
+            Add(Header);
             var inputs = new VisualElement();
             inputs.AddToClassList("ee4v-gesture-picker__inputs");
             _candidateField = UiTextFactory.CreateObjectField(_text.Clip);
@@ -518,7 +521,7 @@ namespace Ee4v.FaceExpression
             var menuName = new FormInput(_text.MenuName, _menuNameField);
             menuName.AddToClassList("ee4v-gesture-picker__name-input");
             inputs.Add(menuName);
-            Add(inputs);
+            Header.Add(inputs);
 
             var tabs = new VisualElement();
             tabs.AddToClassList("ee4v-gesture-picker__tabs");
@@ -532,7 +535,10 @@ namespace Ee4v.FaceExpression
                 _tabs.Add(button);
                 tabs.Add(button);
             }
-            Add(tabs);
+            ReviewActions = new VisualElement();
+            ReviewActions.AddToClassList("ee4v-gesture-picker__review-actions");
+            tabs.Add(ReviewActions);
+            Header.Add(tabs);
             _expressionPanel = CreatePanel();
             _settingsPanel = CreatePanel();
 
@@ -553,9 +559,6 @@ namespace Ee4v.FaceExpression
             _menuEntries = new VisualElement();
             _menuEntries.AddToClassList("ee4v-gesture-picker__menu");
             _expressionPanel.Add(_menuEntries);
-            ReviewActions = new VisualElement();
-            ReviewActions.AddToClassList("ee4v-gesture-picker__review-actions");
-            _expressionPanel.Add(ReviewActions);
 
             Footer = new VisualElement();
             Footer.AddToClassList("ee4v-gesture-picker__footer");
@@ -581,6 +584,7 @@ namespace Ee4v.FaceExpression
             Refresh();
         }
 
+        internal VisualElement Header { get; }
         internal VisualElement Footer { get; }
         internal VisualElement FooterActions { get; }
         internal VisualElement ReviewActions { get; }

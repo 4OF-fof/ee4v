@@ -75,6 +75,7 @@ namespace Ee4v.FaceExpression
         private readonly VisualElement _assignmentMatrix;
         private readonly VisualElement _rightPane;
         private readonly VisualElement _assignmentSettings;
+        private readonly VisualElement _assignmentHeader;
         private readonly VisualElement _assignmentActions;
         private readonly VisualElement _assignmentLibrary;
         private readonly SectionHeader _libraryHeader;
@@ -285,7 +286,7 @@ namespace Ee4v.FaceExpression
             rightPane.Add(editorPane);
             _confirmAssignments = new UiButton(
                 I18N.Get("assignments.reviewList"),
-                () => SetAssignmentMatrixVisible(true));
+                () => SetAssignmentMatrixVisible(true), variant: UiButtonVariant.Ghost);
             _confirmAssignments.AddToClassList("ee4v-face-expression__confirm-assignments");
             _assignmentActions = new VisualElement();
             _assignmentActions.AddToClassList("ee4v-face-expression__assignment-actions");
@@ -452,6 +453,10 @@ namespace Ee4v.FaceExpression
             _library.contentContainer.AddToClassList(
                 "ee4v-face-expression__library-content");
             editorPane.Add(_library);
+            _assignmentHeader = new VisualElement();
+            _assignmentHeader.AddToClassList("ee4v-face-expression__assignment-header");
+            _assignmentHeader.style.display = DisplayStyle.None;
+            editorPane.Add(_assignmentHeader);
             _assignmentSettings = new ScrollView(ScrollViewMode.Vertical);
             _assignmentSettings.AddToClassList("ee4v-face-expression__assignment-settings");
             _assignmentSettings.style.display = DisplayStyle.None;
@@ -615,6 +620,8 @@ namespace Ee4v.FaceExpression
             _assignmentMatrix.Add(assignments);
             _assignmentSettings.Clear();
             _assignmentSettings.Add(picker);
+            _assignmentHeader.Clear();
+            _assignmentHeader.Add(picker.Header);
             _assignmentActions.Clear();
             _assignmentActions.Add(picker.Footer);
             picker.ReviewActions.Add(_confirmAssignments);
@@ -1467,8 +1474,10 @@ namespace Ee4v.FaceExpression
             _previewViewport.style.display = assigning ? DisplayStyle.None : DisplayStyle.Flex;
             _assignmentPane.style.display = confirming ? DisplayStyle.Flex : DisplayStyle.None;
             _assignmentSettings.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
-            _rightPane.style.display = confirming ? DisplayStyle.None : DisplayStyle.Flex;
-            _assignmentActions.style.display = assigning && !confirming ? DisplayStyle.Flex : DisplayStyle.None;
+            _assignmentHeader.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
+            _rightPane.style.display = DisplayStyle.Flex;
+            _assignmentActions.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
+            _confirmAssignments.SetEnabled(!confirming);
             _assignmentLibrary.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
             _libraryGridControls.style.display = _hasClip ? DisplayStyle.None : DisplayStyle.Flex;
             var libraryActions = assigning ? _libraryHeader.Actions : _sectionHeader.Actions;
