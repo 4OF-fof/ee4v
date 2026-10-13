@@ -66,14 +66,11 @@ namespace Ee4v.AssetManager.UI
             var indicator = new VisualElement { pickingMode = PickingMode.Ignore };
             indicator.AddToClassList("ee4v-asset-manager__collection-insertion-line");
             section.Add(indicator);
-            NavigationItem activeRow = null;
-
             void ClearTarget()
             {
-                activeRow?.RemoveFromClassList(
-                    "ee4v-asset-manager__collection-drop-target");
-                activeRow = null;
                 indicator.style.display = DisplayStyle.None;
+                foreach (var row in rows)
+                    row.RemoveFromClassList("ee4v-asset-manager__collection-dragging");
             }
 
             bool TryGetInsertion(
@@ -103,23 +100,15 @@ namespace Ee4v.AssetManager.UI
 
             section.RegisterCallback<DragUpdatedEvent>(evt =>
             {
-                if (!TryGetInsertion(evt.mousePosition, out _, out var index))
+                if (!TryGetInsertion(evt.mousePosition, out var payload, out var index))
                 {
                     ClearTarget();
                     return;
                 }
 
-                var hoveredRow = rows.FirstOrDefault(row =>
-                    row.worldBound.Contains(evt.mousePosition));
-                if (!ReferenceEquals(activeRow, hoveredRow))
-                {
-                    activeRow?.RemoveFromClassList(
-                        "ee4v-asset-manager__collection-drop-target");
-                    activeRow = hoveredRow;
-                    activeRow?.AddToClassList(
-                        "ee4v-asset-manager__collection-drop-target");
-                }
-
+                for (var rowIndex = 0; rowIndex < rows.Length; rowIndex++)
+                    rows[rowIndex].EnableInClassList("ee4v-asset-manager__collection-dragging",
+                        string.Equals(collections[rowIndex].Id, payload.CollectionId, StringComparison.Ordinal));
                 var boundary = index == 0 ? rows[0].worldBound.yMin :
                     index == rows.Length ? rows[rows.Length - 1].worldBound.yMax :
                     (rows[index - 1].worldBound.yMax + rows[index].worldBound.yMin) * 0.5f;
@@ -128,7 +117,7 @@ namespace Ee4v.AssetManager.UI
                 indicator.style.display = DisplayStyle.Flex;
                 DragAndDrop.visualMode = DragAndDropVisualMode.Move;
                 evt.StopPropagation();
-            });
+            }, TrickleDown.TrickleDown);
             section.RegisterCallback<DragLeaveEvent>(evt =>
             {
                 if (ReferenceEquals(evt.target, section))
@@ -151,7 +140,7 @@ namespace Ee4v.AssetManager.UI
                 MoveCollection(payload.CollectionId,
                     collections[insertAfter ? index - 1 : index].Id, insertAfter);
                 evt.StopPropagation();
-            });
+            }, TrickleDown.TrickleDown);
         }
 
         private void AddCollectionMoveMenuItem(

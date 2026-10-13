@@ -1,8 +1,6 @@
 {
   "expressionMenu": {
     "title": "Expression Menu",
-    "treeView": "Tree",
-    "exMenuView": "ExMenu",
     "initialStateOn": "Initial state: ON",
     "showPreview": "Preview action",
     "effective": "Avatar menu (including Modular Avatar)",
@@ -51,7 +49,6 @@
     "expandSubmenus": "Expand contents",
     "collapseSubmenus": "Collapse contents",
     "rootFixed": "The root menu name and icon are fixed.",
-    "dragToReorder": "Drag to reorder",
     "cannotReorder": "Protected controls and controls from different sources cannot be reordered together.",
     "next": "Next",
     "ambiguous": "Select the serialized source to edit this control",

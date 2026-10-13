@@ -1,8 +1,6 @@
 {
   "expressionMenu": {
     "title": "Expression Menu",
-    "treeView": "ツリー",
-    "exMenuView": "ExMenu",
     "initialStateOn": "初期状態: ON",
     "showPreview": "動作を確認",
     "effective": "アバターのメニュー（Modular Avatarを含む）",
@@ -51,7 +49,6 @@
     "expandSubmenus": "中の項目を展開",
     "collapseSubmenus": "中の項目を折りたたむ",
     "rootFixed": "Rootの名前とアイコンは固定です。",
-    "dragToReorder": "ドラッグして並び替え",
     "cannotReorder": "保護された項目や異なる編集元の項目間では並び替えできません。",
     "next": "次へ",
     "ambiguous": "同一項目の編集には編集元を選択してください",

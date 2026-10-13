@@ -29,7 +29,6 @@ namespace Ee4v.ExpressionMenu
         private readonly List<VisualElement> _treeAddRows = new List<VisualElement>();
         private ScrollView _treeScroll;
         private Action _renderTree;
-        private bool _rebuildingTree;
         private MenuTreeDragPayload _treeDrag;
         private MenuTreeDragPreview _treeDragPreview;
         private IVisualElementScheduledItem _treeDragAutoScroll;
@@ -48,7 +47,6 @@ namespace Ee4v.ExpressionMenu
         private int _source;
         private int _offset;
         private int _selected = -1;
-        private bool _showsRadial;
         private bool _showsActionPreview;
         private ScrollView _listScroll;
         private ScrollView _inspectorScroll;
@@ -288,38 +286,20 @@ namespace Ee4v.ExpressionMenu
             else
             {
                 var toolbar = new ActionBar();
-                toolbar.AddToClassList("ee4v-expression-menu__view-toggle");
-                var viewTabs = new VisualElement();
-                viewTabs.AddToClassList("ee4v-expression-menu__view-tabs");
-                void AddViewTab(string labelKey, bool radial)
-                {
-                    var tab = new UiButton(T(labelKey), () =>
-                    {
-                        if (_showsRadial == radial) return;
-                        _showsRadial = radial;
-                        RefreshNavigation();
-                    }, variant: UiButtonVariant.Ghost);
-                    tab.AddToClassList("ee4v-expression-menu__view-tab");
-                    tab.EnableInClassList("ee4v-expression-menu__view-tab--active", _showsRadial == radial);
-                    viewTabs.Add(tab);
-                }
-                AddViewTab("treeView", false);
-                AddViewTab("exMenuView", true);
-                toolbar.Center.Add(viewTabs);
+                toolbar.AddToClassList("ee4v-expression-menu__browser-toolbar");
                 if (selectedEntry != null)
                     toolbar.Actions.Add(new UiButton(T("showPreview"), () =>
                     { _showsActionPreview = true; RefreshNavigation(); }));
                 browser.Add(toolbar);
+                BuildRadial(browser);
                 var listScroll = new ScrollView(ScrollViewMode.Vertical) { name = "expressionMenuScroll" };
-                var listKey = sourceKey + ":" + _showsRadial;
-                var listOffset = listKey == _listScrollKey ? _listScrollOffset : Vector2.zero;
-                _listScrollKey = listKey;
+                var listOffset = sourceKey == _listScrollKey ? _listScrollOffset : Vector2.zero;
+                _listScrollKey = sourceKey;
                 _listScroll = listScroll;
                 RestoreScroll(listScroll, listOffset);
                 listScroll.AddToClassList("ee4v-expression-menu__browser-scroll");
                 browser.Add(listScroll);
-                if (_showsRadial) { BuildRadial(listScroll); }
-                else { BuildSubmenuTree(listScroll); }
+                BuildSubmenuTree(listScroll);
             }
 
             var inspector = new VisualElement();
@@ -377,9 +357,7 @@ namespace Ee4v.ExpressionMenu
             void Render(bool revealSelection)
             {
                 var offset = scroll.scrollOffset;
-                _rebuildingTree = true;
-                try { tree.Clear(); }
-                finally { _rebuildingTree = false; }
+                tree.Clear();
                 _treeNodes.Clear();
                 _treeAddRows.Clear();
                 VisualElement selectedRow = null;
@@ -400,21 +378,6 @@ namespace Ee4v.ExpressionMenu
                     var canEdit = entry != null ? CanInteract(entry) : CanEditMenuRoot(page);
                     _treeNodes.Add(node);
                     if (current) selectedRow = row;
-                    if (entry != null)
-                    {
-                        var handle = new VisualElement { focusable = true, tooltip = T("dragToReorder") };
-                        handle.AddToClassList("ee4v-expression-menu__drag-handle");
-                        handle.Add(new Icon(FluentUiIcons.CreateState("re_order_dots_vertical.png")));
-                        handle.SetEnabled(canEdit);
-                        handle.AddManipulator(new MenuTreeDragManipulator(this, node));
-                        row.Add(handle);
-                    }
-                    else
-                    {
-                        var spacer = new VisualElement();
-                        spacer.AddToClassList("ee4v-expression-menu__drag-handle-spacer");
-                        row.Add(spacer);
-                    }
                     if (canExpand)
                     {
                         var toggle = new UiButton("", () =>
@@ -457,7 +420,6 @@ namespace Ee4v.ExpressionMenu
                     image.AddToClassList("ee4v-expression-menu__tree-icon");
                     image.EnableInClassList("ee4v-expression-menu__tree-icon--root", path.Length == 0);
                     button.Content.Insert(0, image);
-                    if (entry != null) button.AddManipulator(new MenuTreeDragManipulator(this, node));
                     row.Add(button);
                     if (entry != null)
                         button.Content.Add(UiTextFactory.Create(ControlTypeName(entry), UiClassNames.SecondaryText));
@@ -471,12 +433,13 @@ namespace Ee4v.ExpressionMenu
                     {
                         var actions = new VisualElement();
                         actions.AddToClassList("ee4v-expression-menu__quick-actions");
-                        var remove = new UiButton(string.Empty, () => ConfirmRemove(entry), tooltip: T("remove"),
+                        var remove = new UiButton(string.Empty, () => ConfirmRemove(entry, path.Take(path.Length - 1).ToArray()), tooltip: T("remove"),
                             icon: FluentUiIcons.CreateState("dismiss.png", 16), variant: UiButtonVariant.Ghost);
                         remove.AddToClassList("ee4v-expression-menu__tree-remove");
                         remove.SetEnabled(canEdit);
                         actions.Add(remove);
                         row.Add(actions);
+                        row.AddManipulator(new MenuTreeDragManipulator(this, node));
                     }
                     if (!expanded) return;
                     var children = new VisualElement();
@@ -493,9 +456,6 @@ namespace Ee4v.ExpressionMenu
                     var addRow = new VisualElement();
                     addRow.AddToClassList("ee4v-expression-menu__tree-row");
                     addRow.AddToClassList("ee4v-expression-menu__tree-add-row");
-                    var handleSpacer = new VisualElement();
-                    handleSpacer.AddToClassList("ee4v-expression-menu__drag-handle-spacer");
-                    addRow.Add(handleSpacer);
                     var addSpacer = new VisualElement();
                     addSpacer.AddToClassList("ee4v-expression-menu__tree-spacer");
                     addRow.Add(addSpacer);
@@ -507,6 +467,7 @@ namespace Ee4v.ExpressionMenu
                     add.SetEnabled(CanAddToPage(page));
                     addRow.Add(add);
                     children.Add(addRow);
+                    node.AddRow = addRow;
                     _treeAddRows.Add(addRow);
                     ancestors.Remove(page);
                 }
@@ -660,14 +621,18 @@ namespace Ee4v.ExpressionMenu
             return overlay;
         }
 
-        private void ConfirmRemove(MenuEntry entry)
+        private void ConfirmRemove(MenuEntry entry, int[] parentPath)
         {
             if (!CanInteract(entry)) return;
             void Remove()
             {
                 if (!CanInteract(entry)) throw new InvalidOperationException(T("readOnly"));
                 ExpressionMenuModel.Remove(entry);
+                _path.Clear();
+                _path.AddRange(parentPath);
+                _expandedMenuPaths.Add(string.Join("/", parentPath));
                 _selected = -1;
+                _offset = 0;
                 NotifyChanged();
             }
             var hasContents = entry.Submenu != null && entry.Submenu.Controls.Count > 0;
@@ -735,6 +700,7 @@ namespace Ee4v.ExpressionMenu
         {
             internal VisualElement Row;
             internal VisualElement Children;
+            internal VisualElement AddRow;
             internal bool CanExpand;
             internal MenuPage Page;
             internal MenuPage ParentPage;
@@ -748,6 +714,7 @@ namespace Ee4v.ExpressionMenu
             internal MenuTreeNode Node;
             internal int Index = -1;
             internal bool After;
+            internal bool AtEnd;
         }
 
         private static bool SamePage(MenuPage first, MenuPage second) => first != null && second != null &&
@@ -772,7 +739,7 @@ namespace Ee4v.ExpressionMenu
                     throw new InvalidOperationException(T("cannotReorder"));
                 ExpressionMenuModel.Move(entry, source.Controls[drop.Index]);
                 _pendingTreeDestination = new MenuTreeNode { Page = source,
-                    Path = drop.Node.Path.Take(drop.Node.Path.Length - 1).ToArray() };
+                    Path = drop.AtEnd ? drop.Node.Path : drop.Node.Path.Take(drop.Node.Path.Length - 1).ToArray() };
             }
             NotifyChanged();
         });
@@ -828,12 +795,22 @@ namespace Ee4v.ExpressionMenu
                 if (!TryGetPayload(out var payload)) { ClearTreeDragTarget(); return; }
                 UpdateTarget(payload, evt.mousePosition);
                 evt.StopPropagation();
-            });
+            }, TrickleDown.TrickleDown);
             scroll.RegisterCallback<DragLeaveEvent>(evt =>
             {
                 if (ReferenceEquals(evt.target, scroll)) ClearTreeDragTarget();
             });
-            scroll.RegisterCallback<DragExitedEvent>(_ => CancelTreeDrag());
+            scroll.RegisterCallback<DragExitedEvent>(_ =>
+            {
+                var payload = _treeDrag;
+                ClearTreeDragTarget();
+                if (payload == null) return;
+                scroll.schedule.Execute(() =>
+                {
+                    if (ReferenceEquals(_treeDrag, payload) && DragAndDrop.visualMode == DragAndDropVisualMode.None)
+                        CancelTreeDrag();
+                }).StartingIn(1);
+            });
             scroll.RegisterCallback<DetachFromPanelEvent>(evt =>
             {
                 if (ReferenceEquals(evt.target, scroll)) CancelTreeDrag();
@@ -843,14 +820,15 @@ namespace Ee4v.ExpressionMenu
                 if (!TryGetPayload(out var payload)) { ClearTreeDragTarget(); return; }
                 UpdateTarget(payload, evt.mousePosition);
                 var drop = _treeDragPreview.Drop;
-                CancelTreeDrag();
                 if (drop != null)
                 {
                     DragAndDrop.AcceptDrag();
+                    CancelTreeDrag();
                     ApplyTreeDrop(payload.Node.Entry, payload.Node.ParentPage, drop);
                 }
+                else CancelTreeDrag();
                 evt.StopPropagation();
-            });
+            }, TrickleDown.TrickleDown);
         }
 
         private sealed class MenuTreeDragPreview
@@ -886,8 +864,35 @@ namespace Ee4v.ExpressionMenu
                 var outer = scroll?.GetFirstAncestorOfType<ScrollView>();
                 var within = scroll != null && scroll.contentViewport.worldBound.Contains(position) &&
                     (outer == null || outer.contentViewport.worldBound.Contains(position));
+                var tail = within ? _view._treeNodes.FirstOrDefault(node =>
+                    node.AddRow != null && position.x >= node.AddRow.worldBound.xMin &&
+                    position.x <= node.AddRow.worldBound.xMax && position.y >= TailTop(node) &&
+                    position.y <= node.AddRow.worldBound.center.y) : null;
                 MenuTreeNode hit = null;
-                if (within && _view._treeNodes.Count > 0 &&
+                if (tail != null)
+                {
+                    if (SamePage(_source, tail.Page))
+                    {
+                        var index = _source.Controls.Count - 1;
+                        if (!_moveChecks.TryGetValue(index, out var canMove))
+                        {
+                            canMove = _view.CanMoveControl(_source, _source.Controls.IndexOf(_entry), index);
+                            _moveChecks.Add(index, canMove);
+                        }
+                        if (canMove) Drop = new MenuTreeDrop { Node = tail, Index = index, AtEnd = true };
+                    }
+                    else
+                    {
+                        if (!_dropChecks.TryGetValue(tail, out var canDrop))
+                        {
+                            canDrop = _view.CanDropInto(_entry, _source, tail);
+                            _dropChecks.Add(tail, canDrop);
+                        }
+                        if (canDrop) Drop = new MenuTreeDrop { Node = tail, AtEnd = true };
+                    }
+                    if (Drop != null) ShowTailInsertion(tail);
+                }
+                else if (within && _view._treeNodes.Count > 0 &&
                     !_view._treeAddRows.Any(row => row.worldBound.Contains(position)))
                 {
                     var root = _view._treeNodes[0];
@@ -905,9 +910,7 @@ namespace Ee4v.ExpressionMenu
                     var bounds = hit.Row.worldBound;
                     var fraction = (position.y - bounds.yMin) / bounds.height;
                     var sameParent = SamePage(_source, hit.ParentPage);
-                    var edge = Mathf.Min(8f, bounds.height * 0.2f);
-                    var inside = hit.Page != null && bounds.Contains(position) &&
-                        (hit.Entry == null || !sameParent || position.y >= bounds.yMin + edge && position.y <= bounds.yMax - edge);
+                    var inside = hit.Page != null && bounds.Contains(position);
                     if (inside)
                     {
                         if (!_dropChecks.TryGetValue(hit, out var canDrop))
@@ -944,7 +947,7 @@ namespace Ee4v.ExpressionMenu
                     _highlightClass = highlightClass;
                     if (hit != null && highlightClass != null) hit.Row.AddToClassList(highlightClass);
                 }
-                UpdateHoverExpansion(Drop != null && Drop.Index < 0 ? hit : null);
+                UpdateHoverExpansion(Drop != null && Drop.Index < 0 && !Drop.AtEnd ? hit : null);
                 DragAndDrop.visualMode = Drop != null ? DragAndDropVisualMode.Move : DragAndDropVisualMode.Rejected;
                 return within;
             }
@@ -972,7 +975,13 @@ namespace Ee4v.ExpressionMenu
 
             private void ShowInsertion(MenuTreeNode hit, int boundary)
             {
-                var parentPath = hit.Path.Take(hit.Path.Length - 1);
+                var parentPath = hit.Path.Take(hit.Path.Length - 1).ToArray();
+                if (boundary == _source.Controls.Count)
+                {
+                    var parent = _view._treeNodes.FirstOrDefault(node => node.AddRow != null &&
+                        SamePage(node.Page, _source) && node.Path.SequenceEqual(parentPath));
+                    if (parent != null) { ShowTailInsertion(parent); return; }
+                }
                 var siblings = _view._treeNodes.Where(node => node.Entry != null &&
                     SamePage(node.ParentPage, _source) && node.Path.Take(node.Path.Length - 1).SequenceEqual(parentPath)).ToArray();
                 var previous = siblings.FirstOrDefault(node => node.Path[node.Path.Length - 1] == boundary - 1);
@@ -980,10 +989,21 @@ namespace Ee4v.ExpressionMenu
                 var previousBottom = previous?.Children != null ? previous.Children.worldBound.yMax : previous?.Row.worldBound.yMax;
                 var y = previous == null ? next.Row.worldBound.yMin : next == null ? previousBottom.Value :
                     (previousBottom.Value + next.Row.worldBound.yMin) * 0.5f;
-                var point = _view._treeScroll.contentViewport.WorldToLocal(new Vector2(hit.Row.worldBound.xMin, y));
+                ShowInsertionLine(hit.Row.worldBound, y);
+            }
+
+            private static float TailTop(MenuTreeNode node) => node.Children.childCount > 1
+                ? node.Children.ElementAt(node.Children.childCount - 2).worldBound.yMax : node.Row.worldBound.yMax;
+
+            private void ShowTailInsertion(MenuTreeNode node) =>
+                ShowInsertionLine(node.AddRow.worldBound, (TailTop(node) + node.AddRow.worldBound.yMin) * 0.5f);
+
+            private void ShowInsertionLine(Rect bounds, float y)
+            {
+                var point = _view._treeScroll.contentViewport.WorldToLocal(new Vector2(bounds.xMin, y));
                 _indicator.style.left = point.x;
                 _indicator.style.top = Mathf.Round(point.y);
-                _indicator.style.width = hit.Row.worldBound.width;
+                _indicator.style.width = bounds.width;
                 _indicator.style.display = DisplayStyle.Flex;
             }
 
@@ -1024,6 +1044,7 @@ namespace Ee4v.ExpressionMenu
             private readonly MenuTreeNode _node;
             private Vector2 _start;
             private int _pointerId = -1;
+            private VisualElement _pressedElement;
             private bool _ready;
             private bool _dragging;
 
@@ -1053,15 +1074,19 @@ namespace Ee4v.ExpressionMenu
 
             private void OnDown(PointerDownEvent evt)
             {
+                if (evt.button == 0 && _view._treeDrag != null) _view.CancelTreeDrag();
                 _ready = evt.button == 0 && target.enabledInHierarchy && _view.CanInteract(_node.Entry);
                 _dragging = false;
                 _start = evt.position;
-                if (_ready && target.ClassListContains("ee4v-expression-menu__drag-handle"))
+                _pressedElement = evt.target as VisualElement;
+                while (_pressedElement != null && _pressedElement != target && !(_pressedElement is UiButton))
+                    _pressedElement = _pressedElement.parent;
+                if (_pressedElement == null || _pressedElement.ClassListContains("ee4v-expression-menu__tree-toggle") ||
+                    _pressedElement.ClassListContains("ee4v-expression-menu__tree-remove")) _ready = false;
+                if (_ready && ReferenceEquals(_pressedElement, target))
                 {
                     _pointerId = evt.pointerId;
-                    target.Focus();
                     target.CapturePointer(evt.pointerId);
-                    evt.StopPropagation();
                 }
             }
 
@@ -1071,6 +1096,8 @@ namespace Ee4v.ExpressionMenu
                 _ready = false;
                 _dragging = true;
                 _view.CancelTreeDrag();
+                if (_pressedElement != null && _pressedElement.HasPointerCapture(evt.pointerId))
+                    _pressedElement.ReleasePointer(evt.pointerId);
                 if (target.HasPointerCapture(evt.pointerId)) target.ReleasePointer(evt.pointerId);
                 var payload = new MenuTreeDragPayload { View = _view, Node = _node };
                 _view._treeDrag = payload;
@@ -1085,6 +1112,7 @@ namespace Ee4v.ExpressionMenu
                 _ready = false;
                 if (_pointerId == evt.pointerId && target.HasPointerCapture(evt.pointerId)) target.ReleasePointer(evt.pointerId);
                 _pointerId = -1;
+                _pressedElement = null;
                 if (!_dragging) return;
                 _dragging = false;
                 evt.StopImmediatePropagation();
@@ -1098,21 +1126,13 @@ namespace Ee4v.ExpressionMenu
                 _dragging = false;
                 if (_pointerId >= 0 && target.HasPointerCapture(_pointerId)) target.ReleasePointer(_pointerId);
                 _pointerId = -1;
-                if (!_view._rebuildingTree && ReferenceEquals(_view._treeDrag?.Node, _node)) _view.CancelTreeDrag();
+                _pressedElement = null;
             }
 
             private void OnKey(KeyDownEvent evt)
             {
                 if (evt.keyCode == KeyCode.Escape && (_ready || _view._treeDrag != null))
                 { Cancel(); _view.CancelTreeDrag(); evt.StopPropagation(); return; }
-                if (_ready || _view._treeDrag != null || _node.ParentPage == null || !target.enabledInHierarchy ||
-                    !target.ClassListContains("ee4v-expression-menu__drag-handle")) return;
-                var direction = evt.keyCode == KeyCode.UpArrow ? -1 : evt.keyCode == KeyCode.DownArrow ? 1 : 0;
-                var sourceIndex = _node.ParentPage.Controls.IndexOf(_node.Entry);
-                var index = sourceIndex + direction;
-                if (direction == 0 || !_view.CanMoveControl(_node.ParentPage, sourceIndex, index)) return;
-                evt.StopPropagation();
-                _view.ApplyTreeDrop(_node.Entry, _node.ParentPage, new MenuTreeDrop { Node = _node, Index = index });
             }
         }
 

@@ -73,6 +73,15 @@ namespace Ee4v.ExpressionMenu
             var group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("Delete Expression Menu Control");
             var parent = (entry.Owner as ModularAvatarMenuItem)?.transform.parent?.gameObject;
+            if (entry.Owner is ModularAvatarMenuItem owned && ExpressionMenuTemplateModel.IsOwned(owned.gameObject))
+                for (var ancestor = parent?.transform; ancestor != null; ancestor = ancestor.parent)
+                    if (PrefabUtility.IsAnyPrefabInstanceRoot(ancestor.gameObject) &&
+                        ExpressionMenuInstaller.IsGeneratedPrefab(ancestor.gameObject) &&
+                        !ExpressionMenuTemplateModel.IsOwned(ancestor.gameObject))
+                    {
+                        parent = ancestor.gameObject;
+                        break;
+                    }
             var parentAsset = ExpressionMenuInstaller.IsGeneratedPrefab(parent) ?
                 AssetDatabase.LoadAssetAtPath<GameObject>(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(parent)) : null;
             try
