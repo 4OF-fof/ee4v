@@ -24,14 +24,17 @@ namespace Ee4v.ExpressionMenu
         private readonly VisualElement _fields;
         private readonly HelpBox _feedback;
         private readonly Action _typeChanged;
+        private readonly Action _initialStateChanged;
         private ConfirmationOverlay _modeOverlay;
         private static string T(string key) => TemplateText.Get(key);
 
-        internal ExpressionMenuTemplateEditor(AvatarEditingContext context, ModularAvatarMenuItem item, Action typeChanged)
+        internal ExpressionMenuTemplateEditor(AvatarEditingContext context, ModularAvatarMenuItem item, Action typeChanged,
+            Action initialStateChanged = null)
         {
             _context = context;
             _item = item;
             _typeChanged = typeChanged;
+            _initialStateChanged = initialStateChanged;
             RegisterCallback<DetachFromPanelEvent>(evt => { if (evt.target == this) _modeOverlay?.Close(); });
             AddToClassList("ee4v-menu-template");
             _feedback = UiTextFactory.CreateHelpBox("", HelpBoxMessageType.Error);
@@ -107,7 +110,15 @@ namespace Ee4v.ExpressionMenu
                     var initial = UiTextFactory.CreateToggle(T("initialEnabled"));
                     initial.SetValueWithoutNotify(_item.isDefault);
                     initial.SetEnabled(canEdit);
-                    initial.RegisterValueChangedCallback(evt => Edit(_item, () => _item.isDefault = evt.newValue));
+                    initial.RegisterValueChangedCallback(evt => Run(() =>
+                    {
+                        try
+                        {
+                            ExpressionMenuTemplateModel.Edit(_context, _item, () => _item.isDefault = evt.newValue);
+                            _initialStateChanged?.Invoke();
+                        }
+                        catch { initial.SetValueWithoutNotify(evt.previousValue); throw; }
+                    }));
                     settings.Add(initial);
                 }
             }

@@ -66,40 +66,35 @@ namespace Ee4v.ExpressionMenu
             if (entry.Owner is VRCExpressionsMenu) AssetDatabase.SaveAssetIfDirty(entry.Owner);
         }
 
-        internal static void Remove(MenuEntry entry)
+        internal static void RemoveGenerated(MenuEntry entry)
         {
             ValidateEntry(entry);
+            if (!IsGenerated(entry)) throw new InvalidOperationException("Only ee4v-generated gimmicks can be deleted. Exclude existing menu items instead.");
             Undo.IncrementCurrentGroup();
             var group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("Delete Expression Menu Control");
             var parent = (entry.Owner as ModularAvatarMenuItem)?.transform.parent?.gameObject;
+            if (entry.Owner is ModularAvatarMenuItem owned && ExpressionMenuTemplateModel.IsOwned(owned.gameObject))
+                for (var ancestor = parent?.transform; ancestor != null; ancestor = ancestor.parent)
+                    if (PrefabUtility.IsAnyPrefabInstanceRoot(ancestor.gameObject) &&
+                        ExpressionMenuInstaller.IsGeneratedPrefab(ancestor.gameObject) &&
+                        !ExpressionMenuTemplateModel.IsOwned(ancestor.gameObject))
+                    {
+                        parent = ancestor.gameObject;
+                        break;
+                    }
             var parentAsset = ExpressionMenuInstaller.IsGeneratedPrefab(parent) ?
                 AssetDatabase.LoadAssetAtPath<GameObject>(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(parent)) : null;
             try
             {
-                if (entry.Owner is VRCExpressionsMenu asset)
-                {
-                    Undo.RecordObject(asset, "Remove Expression Menu Control");
-                    asset.controls.RemoveAt(entry.Index);
-                    EditorUtility.SetDirty(asset);
-                    AssetDatabase.SaveAssetIfDirty(asset);
-                }
-                else if (entry.Owner is ModularAvatarMenuItem item)
-                {
-                    if (ExpressionMenuTemplateModel.IsOwned(item.gameObject))
-                    {
-                        Undo.DestroyObjectImmediate(item.gameObject);
-                        ExpressionMenuInstaller.SaveGeneratedPrefab(parent);
-                    }
-                    else Undo.DestroyObjectImmediate(item);
-                }
+                Undo.DestroyObjectImmediate(((ModularAvatarMenuItem)entry.Owner).gameObject);
+                ExpressionMenuInstaller.SaveGeneratedPrefab(parent);
                 Undo.FlushUndoRecordObjects();
                 Undo.CollapseUndoOperations(group);
             }
             catch
             {
                 Undo.RevertAllDownToGroup(group);
-                if (entry.Owner is VRCExpressionsMenu asset) AssetDatabase.SaveAssetIfDirty(asset);
                 if (parentAsset != null) PrefabUtility.SavePrefabAsset(parentAsset);
                 throw;
             }
@@ -116,10 +111,24 @@ namespace Ee4v.ExpressionMenu
                 CanWrite(parent) && CanWrite(first.transform) && CanWrite(second.transform);
         }
 
-        internal static bool CanRelocate(AvatarEditingContext context, MenuEntry entry, MenuPage destination)
+        internal static bool CanRelocate(AvatarEditingContext context, MenuEntry entry, MenuPage destination, int index = -1)
         {
             if (destination == null || !CanEdit(entry) || !context.Edits.CanEditPrefab() ||
-                destination.Controls.Count >= 8) return false;
+                destination.Controls.Count >= 8 || index < -1 || index > destination.Controls.Count) return false;
+            var anchor = index >= 0 && index < destination.Controls.Count ? destination.Controls[index] : null;
+            if (anchor != null)
+            {
+                if (!CanEdit(anchor)) return false;
+                if (entry.Owner is VRCExpressionsMenu && destination.ChildRoot == null && destination.Asset != null)
+                {
+                    if (anchor.Owner != destination.Asset) return false;
+                }
+                else if (!(anchor.Owner is ModularAvatarMenuItem sibling) ||
+                    !ExpressionMenuTemplateModel.CanEdit(context, sibling) || !CanWrite(sibling.transform) ||
+                    (destination.ChildRoot != null ? sibling.transform.parent != destination.ChildRoot.transform :
+                        sibling.transform.parent == null || !ExpressionMenuInstaller.IsGroupingRoot(sibling.transform.parent.gameObject)))
+                    return false;
+            }
             var visited = new HashSet<MenuPage>();
             bool Contains(MenuPage page)
             {
@@ -145,10 +154,11 @@ namespace Ee4v.ExpressionMenu
                 PrefabUtility.IsAddedGameObjectOverride(item.gameObject);
         }
 
-        internal static void Relocate(AvatarEditingContext context, MenuEntry entry, MenuPage destination)
+        internal static void Relocate(AvatarEditingContext context, MenuEntry entry, MenuPage destination, int index = -1)
         {
             ValidateEntry(entry);
-            if (!CanRelocate(context, entry, destination)) throw new InvalidOperationException("This menu destination is unavailable.");
+            if (!CanRelocate(context, entry, destination, index)) throw new InvalidOperationException("This menu destination is unavailable.");
+            var anchor = index >= 0 && index < destination.Controls.Count ? destination.Controls[index] : null;
             Undo.IncrementCurrentGroup();
             var group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("Move Expression Menu Control");
@@ -170,7 +180,7 @@ namespace Ee4v.ExpressionMenu
                     Undo.RecordObjects(new Object[] { asset, destination.Asset }, "Move Expression Menu Control");
                     var control = asset.controls[entry.Index];
                     asset.controls.RemoveAt(entry.Index);
-                    destination.Asset.controls.Add(control);
+                    destination.Asset.controls.Insert(anchor != null ? anchor.Index : destination.Asset.controls.Count, control);
                     EditorUtility.SetDirty(asset);
                     EditorUtility.SetDirty(destination.Asset);
                     AssetDatabase.SaveAssetIfDirty(asset);
@@ -178,7 +188,8 @@ namespace Ee4v.ExpressionMenu
                 }
                 else
                 {
-                    var parent = destination.ChildRoot ?? context.Root.transform.Cast<Transform>().Select(child => child.gameObject)
+                    var parent = destination.ChildRoot ?? (anchor?.Owner as ModularAvatarMenuItem)?.transform.parent.gameObject ??
+                        context.Root.transform.Cast<Transform>().Select(child => child.gameObject)
                         .FirstOrDefault(ExpressionMenuInstaller.IsGroupingRoot);
                     if (parent == null)
                     {
@@ -246,6 +257,17 @@ namespace Ee4v.ExpressionMenu
                         installer.installTargetMenu = destination.Asset;
                         EditorUtility.SetDirty(installer);
                         PrefabUtility.RecordPrefabInstancePropertyModifications(installer);
+                    }
+                    if (anchor?.Owner is ModularAvatarMenuItem sibling)
+                    {
+                        if (sibling.transform.parent != moved.transform.parent)
+                            throw new InvalidOperationException("The menu destination changed. Select the control again.");
+                        Undo.RecordObject(moved.transform, "Move Expression Menu Control");
+                        var siblingIndex = sibling.transform.GetSiblingIndex();
+                        if (moved.transform.GetSiblingIndex() < siblingIndex) siblingIndex--;
+                        moved.transform.SetSiblingIndex(siblingIndex);
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(moved.transform);
+                        EditorUtility.SetDirty(moved.transform);
                     }
                     // Keep hierarchy changes as avatar overrides. Applying a removed inherited nested prefab
                     // and recording its recreated scene instance in the same Undo group duplicates it on Redo.
