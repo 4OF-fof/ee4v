@@ -695,7 +695,7 @@ namespace Ee4v.FaceExpression
         }
 
         private Condition AddCondition(FaceGesture? left = null, FaceGesture? right = null,
-            bool hasHands = false, FaceExpressionMenuEntry menuEntry = null)
+            bool hasHands = false, FaceExpressionMenuEntry menuEntry = null, bool refreshButtons = true)
         {
             var condition = new Condition
             {
@@ -724,7 +724,7 @@ namespace Ee4v.FaceExpression
             _conditionList.Add(condition.Root);
             GestureAssignmentView.RegisterRemovalMenu(condition.Root, I18N.Get("assignments.removeCondition"),
                 () => _hasAvatar && _candidate != null, () => RemoveCondition(condition));
-            RefreshConditionButtons();
+            if (refreshButtons) RefreshConditionButtons();
             return condition;
         }
 
@@ -763,6 +763,7 @@ namespace Ee4v.FaceExpression
             {
                 condition.MenuEntry = null;
                 ApplyConditions(condition);
+                return;
             }
             RefreshConditionButtons();
         }
@@ -783,7 +784,6 @@ namespace Ee4v.FaceExpression
                         hasAssignment ? assignment.FixMouth : _settingsView.DraftFixMouth));
             }
             ApplyConditions(condition);
-            RefreshConditionButtons();
         }
 
         private void RemoveCondition(Condition condition)
@@ -823,8 +823,7 @@ namespace Ee4v.FaceExpression
                         if (selected.IsMenu) { _session.Select(selected.MenuEntry); }
                         else
                         {
-                            _session.SelectHand(true, selected.Left);
-                            _session.SelectHand(false, selected.Right);
+                            _session.SelectHands(selected.Left, selected.Right);
                         }
                     }
                 }
@@ -863,29 +862,29 @@ namespace Ee4v.FaceExpression
             var gestures = Enum.GetValues(typeof(FaceGesture)).Cast<FaceGesture>().ToArray();
             if (remaining.Count == gestures.Length * gestures.Length)
             {
-                AddCondition(null, null, hasHands: true);
+                AddCondition(null, null, hasHands: true, refreshButtons: false);
                 remaining.Clear();
             }
             foreach (var left in gestures)
             {
                 var row = gestures.Select(right => new GestureCombination(left, right)).ToArray();
                 if (!row.All(combinations.Contains) || !row.Any(remaining.Contains)) { continue; }
-                AddCondition(left, null, hasHands: true);
+                AddCondition(left, null, hasHands: true, refreshButtons: false);
                 remaining.ExceptWith(row);
             }
             foreach (var right in gestures)
             {
                 var column = gestures.Select(left => new GestureCombination(left, right)).ToArray();
                 if (!column.All(combinations.Contains) || !column.Any(remaining.Contains)) { continue; }
-                AddCondition(null, right, hasHands: true);
+                AddCondition(null, right, hasHands: true, refreshButtons: false);
                 remaining.ExceptWith(column);
             }
             foreach (var combination in remaining.OrderBy(value => value.Left).ThenBy(value => value.Right))
             {
-                AddCondition(combination.Left, combination.Right, hasHands: true);
+                AddCondition(combination.Left, combination.Right, hasHands: true, refreshButtons: false);
             }
-            foreach (var entry in menuEntries) { AddCondition(menuEntry: entry); }
-            if (_conditions.Count == 0) { AddCondition(); }
+            foreach (var entry in menuEntries) { AddCondition(menuEntry: entry, refreshButtons: false); }
+            if (_conditions.Count == 0) { AddCondition(refreshButtons: false); }
             _observedCombinations = combinations;
             _observedMenuEntries = menuEntries;
         }
@@ -895,6 +894,9 @@ namespace Ee4v.FaceExpression
             for (var index = 0; index < _conditions.Count; index++)
             {
                 var condition = _conditions[index];
+                var own = new HashSet<GestureCombination>(condition.AssignedCombinations);
+                var others = new HashSet<GestureCombination>(_conditions.Where(other => other != condition)
+                    .SelectMany(other => other.GetCombinations()));
                 condition.Heading.SetTitle(I18N.Get("assignments.conditionTitle", index + 1));
                 condition.Heading.style.display = _conditions.Count > 1 ? DisplayStyle.Flex : DisplayStyle.None;
                 condition.Root.SetEnabled(_hasAvatar && _candidate != null);
@@ -902,32 +904,33 @@ namespace Ee4v.FaceExpression
                 {
                     pair.Value.EnableInClassList("ee4v-gesture-picker__hand--selected",
                         !condition.IsMenu && condition.HasLeft && condition.Left == pair.Key);
-                    pair.Value.SetEnabled(CanSelectHand(condition, true, pair.Key));
+                    pair.Value.SetEnabled(CanSelectHand(condition, true, pair.Key, own, others));
                 }
                 foreach (var pair in condition.RightButtons)
                 {
                     pair.Value.EnableInClassList("ee4v-gesture-picker__hand--selected",
                         !condition.IsMenu && condition.HasRight && condition.Right == pair.Key);
-                    pair.Value.SetEnabled(CanSelectHand(condition, false, pair.Key));
+                    pair.Value.SetEnabled(CanSelectHand(condition, false, pair.Key, own, others));
                 }
                 condition.AllLeft.EnableInClassList("ee4v-gesture-picker__hand--selected",
                     !condition.IsMenu && condition.HasLeft && !condition.Left.HasValue);
                 condition.AllRight.EnableInClassList("ee4v-gesture-picker__hand--selected",
                     !condition.IsMenu && condition.HasRight && !condition.Right.HasValue);
-                condition.AllLeft.SetEnabled(CanSelectHand(condition, true, null));
-                condition.AllRight.SetEnabled(CanSelectHand(condition, false, null));
+                condition.AllLeft.SetEnabled(CanSelectHand(condition, true, null, own, others));
+                condition.AllRight.SetEnabled(CanSelectHand(condition, false, null, own, others));
                 condition.MenuButton.EnableInClassList("ee4v-gesture-picker__hand--selected", condition.IsMenu);
                 condition.MenuButton.SetEnabled(CanSelectMenu(condition));
             }
         }
 
-        private bool CanSelectHand(Condition condition, bool left, FaceGesture? gesture)
+        private bool CanSelectHand(Condition condition, bool left, FaceGesture? gesture,
+            ISet<GestureCombination> own = null, ISet<GestureCombination> others = null)
         {
             if (!_hasAvatar || _candidate == null) { return false; }
             if (left ? !condition.HasRight : !condition.HasLeft) { return true; }
-            var targets = Condition.Expand(left ? gesture : condition.Left, left ? condition.Right : gesture).ToArray();
-            var own = new HashSet<GestureCombination>(condition.AssignedCombinations);
-            var others = new HashSet<GestureCombination>(_conditions.Where(other => other != condition)
+            var targets = Condition.Expand(left ? gesture : condition.Left, left ? condition.Right : gesture);
+            own ??= new HashSet<GestureCombination>(condition.AssignedCombinations);
+            others ??= new HashSet<GestureCombination>(_conditions.Where(other => other != condition)
                 .SelectMany(other => other.GetCombinations()));
             return targets.All(combination => !others.Contains(combination) &&
                 (_session.GetAssignment(combination).Clip == null ||
@@ -978,7 +981,7 @@ namespace Ee4v.FaceExpression
 
         private void Refresh()
         {
-            if (_refreshing) { return; }
+            if (_refreshing || _updatingConditions) { return; }
             _refreshing = true;
             try
             {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Ee4v.Core;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -123,6 +124,7 @@ namespace Ee4v.FaceExpression
 
     internal static class GestureMatrixControllerWriter
     {
+        private static readonly Dictionary<string, Hash128> MotionSignatures = new Dictionary<string, Hash128>();
         internal const string LayerName = "ee4v Face Expressions";
         internal const string MenuParameter = "ee4v/FaceExpression";
         private const string VoiceParameter = "Voice";
@@ -142,6 +144,9 @@ namespace Ee4v.FaceExpression
             "VRC.SDKBase.VRC_AnimatorTrackingControl",
             "VRC.SDK3.Avatars.Components.VRCAnimatorTrackingControl"
         };
+        private static readonly Type TrackingControlType = AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(assembly => TrackingControlTypeNames.Select(name => assembly.GetType(name, false)))
+            .FirstOrDefault(candidate => candidate != null);
         public static bool OwnsLayer(AnimatorController controller)
         {
             return controller != null && controller.layers.Any(layer => layer.name == LayerName);
@@ -208,7 +213,8 @@ namespace Ee4v.FaceExpression
             IReadOnlyDictionary<GestureCombination, FaceExpressionAssignment> assignments,
             IReadOnlyList<FaceExpressionMenuEntry> menuEntries,
             FaceExpressionAvatarBindings avatarBindings,
-            string outputFolder)
+            string outputFolder,
+            bool saveAssets = true)
         {
             if (controller == null)
             {
@@ -235,9 +241,6 @@ namespace Ee4v.FaceExpression
                     VoiceParameter,
                     AnimatorControllerParameterType.Float);
             }
-            RemoveOwnedLayer(controller);
-            RemoveOwnedMouthBlendTrees(controller);
-
             var configured = new Dictionary<GestureCombination, FaceExpressionAssignment>();
             foreach (FaceGesture left in Enum.GetValues(typeof(FaceGesture)))
             {
@@ -258,6 +261,17 @@ namespace Ee4v.FaceExpression
                     ? neutralAssignment
                     : pair.Value);
             var effectiveMenuEntries = BuildEffectiveMenuEntries(assignments, menuEntries);
+            var previousMachine = controller.layers.FirstOrDefault(layer => layer.name == LayerName)?.stateMachine;
+            var previousStates = previousMachine == null ? new Dictionary<string, AnimatorState>() :
+                previousMachine.states.Where(child => child.state != null).Select(child => child.state)
+                    .GroupBy(state => state.name).ToDictionary(group => group.Key, group => group.First());
+            var gestureStateNames = new HashSet<string>(configured.Keys.Select(GestureStateName));
+            var reuseGraph = !FaceExpressionGenerationUndo.Enabled && previousMachine != null &&
+                previousMachine.states.Length == previousStates.Count &&
+                previousMachine.anyStateTransitions.Length == previousStates.Count &&
+                gestureStateNames.All(previousStates.ContainsKey) &&
+                previousStates.Values.All(state => gestureStateNames.Contains(state.name) || MenuStateValue(state) > 0);
+            if (!reuseGraph) RemoveOwnedLayer(controller);
             var allAssignments = effectiveAssignments.Values
                 .Concat(effectiveMenuEntries.Select(item => item.Entry.Assignment));
             var bindings = CollectBindings(
@@ -293,22 +307,23 @@ namespace Ee4v.FaceExpression
                     usedGeneratedClipPaths);
             }
 
-            var stateMachine = new AnimatorStateMachine { name = LayerName };
-            AssetDatabase.AddObjectToAsset(stateMachine, controller);
-            FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(stateMachine, "Create Face Expression Layer");
-            FaceExpressionGenerationUndo.AddLayer(controller, new AnimatorControllerLayer
+            var stateMachine = reuseGraph ? previousMachine : new AnimatorStateMachine { name = LayerName };
+            if (!reuseGraph)
             {
-                name = LayerName,
-                defaultWeight = 1f,
-                stateMachine = stateMachine
-            });
+                AssetDatabase.AddObjectToAsset(stateMachine, controller);
+                FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(stateMachine, "Create Face Expression Layer");
+                FaceExpressionGenerationUndo.AddLayer(controller, new AnimatorControllerLayer
+                {
+                    name = LayerName, defaultWeight = 1f, stateMachine = stateMachine
+                });
+            }
 
             var neutral = AddState(
                 stateMachine,
                 neutralKey,
                 motions[neutralKey],
                 configured[neutralKey],
-                effectiveAssignments[neutralKey]);
+                effectiveAssignments[neutralKey], reuseGraph ? previousStates[GestureStateName(neutralKey)] : null);
             stateMachine.defaultState = neutral;
 
             foreach (var pair in Order(configured).Where(pair => !pair.Key.Equals(neutralKey)))
@@ -318,11 +333,12 @@ namespace Ee4v.FaceExpression
                     pair.Key,
                     motions[pair.Key],
                     pair.Value,
-                    effectiveAssignments[pair.Key]);
-                AddAnyStateTransition(stateMachine, state, pair.Key);
+                    effectiveAssignments[pair.Key], reuseGraph ? previousStates[GestureStateName(pair.Key)] : null);
+                if (!reuseGraph) AddAnyStateTransition(stateMachine, state, pair.Key);
             }
 
-            AddAnyStateTransition(stateMachine, neutral, neutralKey);
+            if (!reuseGraph) AddAnyStateTransition(stateMachine, neutral, neutralKey);
+            if (reuseGraph) RemoveUnusedMenuStates(stateMachine, effectiveMenuEntries.Count);
 
             if (effectiveMenuEntries.Count > 0)
             {
@@ -337,7 +353,14 @@ namespace Ee4v.FaceExpression
                     outputFolder,
                     normalizedMotions,
                     mouthMotions,
-                    usedGeneratedClipPaths);
+                    usedGeneratedClipPaths, reuseGraph);
+            }
+
+            var usedTrees = new HashSet<Motion>(mouthMotions.Values);
+            foreach (var tree in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(controller))
+                         .OfType<BlendTree>().Where(tree => tree.name.StartsWith("ee4v Mouth Morph ", StringComparison.Ordinal)))
+            {
+                if (!usedTrees.Contains(tree)) FaceExpressionGenerationUndo.DestroyObjectImmediate(tree);
             }
 
             DeleteUnusedGeneratedClips(
@@ -346,7 +369,14 @@ namespace Ee4v.FaceExpression
                 usedGeneratedClipPaths);
             EditorUtility.SetDirty(stateMachine);
             EditorUtility.SetDirty(controller);
-            AssetDatabase.SaveAssets();
+            foreach (var path in usedGeneratedClipPaths)
+            {
+                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+                if (saveAssets) AssetDatabase.SaveAssetIfDirty(clip);
+                else DeferredAssetSave.Queue(clip);
+            }
+            if (saveAssets) AssetDatabase.SaveAssetIfDirty(controller);
+            else DeferredAssetSave.Queue(controller);
         }
 
         private static Dictionary<GestureCombination, FaceExpressionAssignment> ReadMatrix(
@@ -396,18 +426,55 @@ namespace Ee4v.FaceExpression
             GestureCombination combination,
             Motion motion,
             FaceExpressionAssignment storedAssignment,
-            FaceExpressionAssignment effectiveAssignment)
+            FaceExpressionAssignment effectiveAssignment,
+            AnimatorState existingState = null)
         {
-            var state = FaceExpressionGenerationUndo.AddState(stateMachine,
-                ((int)combination.Left).ToString("00") + "-" +
-                ((int)combination.Right).ToString("00") + " " +
-                combination.Left + " + " + combination.Right);
-            state.motion = motion;
-            state.writeDefaultValues = false;
-            state.tag = CreateTag(combination, storedAssignment);
-            ConfigureTracking(state, effectiveAssignment);
+            var name = GestureStateName(combination);
+            var state = existingState ?? FaceExpressionGenerationUndo.AddState(stateMachine, name);
+            UpdateState(state, name, motion, CreateTag(combination, storedAssignment), effectiveAssignment);
             return state;
         }
+
+        private static void UpdateState(AnimatorState state, string name, Motion motion, string tag,
+            FaceExpressionAssignment assignment)
+        {
+            if (state.name != name || state.motion != motion || state.writeDefaultValues || state.tag != tag)
+            {
+                FaceExpressionGenerationUndo.RecordObject(state, "Update Face Expression State");
+                state.name = name;
+                state.motion = motion;
+                state.writeDefaultValues = false;
+                state.tag = tag;
+                EditorUtility.SetDirty(state);
+            }
+            ConfigureTracking(state, assignment);
+        }
+
+        private static int MenuStateValue(AnimatorState state) => state.name.Length > 5 && state.name[0] == 'M' &&
+            state.name[4] == ' ' && state.tag.StartsWith(MenuTagPrefix, StringComparison.Ordinal) &&
+            int.TryParse(state.name.Substring(1, 3), out var value) ? value : 0;
+
+        private static void RemoveUnusedMenuStates(AnimatorStateMachine machine, int count)
+        {
+            var removed = new HashSet<AnimatorState>(machine.states.Select(child => child.state)
+                .Where(state => MenuStateValue(state) > count));
+            if (removed.Count == 0) return;
+            var transitions = machine.anyStateTransitions;
+            machine.anyStateTransitions = transitions.Where(transition => !removed.Contains(transition.destinationState)).ToArray();
+            machine.states = machine.states.Where(child => !removed.Contains(child.state)).ToArray();
+            foreach (var transition in transitions.Where(transition => removed.Contains(transition.destinationState)))
+                FaceExpressionGenerationUndo.DestroyObjectImmediate(transition);
+            foreach (var state in removed)
+            {
+                foreach (var transition in state.transitions) FaceExpressionGenerationUndo.DestroyObjectImmediate(transition);
+                foreach (var behaviour in state.behaviours) FaceExpressionGenerationUndo.DestroyObjectImmediate(behaviour);
+                FaceExpressionGenerationUndo.DestroyObjectImmediate(state);
+            }
+        }
+
+        private static string GestureStateName(GestureCombination combination) =>
+            ((int)combination.Left).ToString("00") + "-" + ((int)combination.Right).ToString("00") + " " +
+            combination.Left + " + " + combination.Right;
 
         private static void AddAnyStateTransition(
             AnimatorStateMachine stateMachine,
@@ -439,8 +506,11 @@ namespace Ee4v.FaceExpression
             string outputFolder,
             IDictionary<NormalizedMotionKey, AnimationClip> normalizedMotions,
             IDictionary<AnimationClip, Motion> mouthMotions,
-            ISet<string> usedGeneratedClipPaths)
+            ISet<string> usedGeneratedClipPaths,
+            bool reuseGraph = false)
         {
+            var previousMenuStates = reuseGraph ? stateMachine.states.Select(child => child.state)
+                .Where(state => MenuStateValue(state) > 0).ToDictionary(MenuStateValue) : new Dictionary<int, AnimatorState>();
             for (var index = 0; index < entries.Count; index++)
             {
                 var value = index + 1;
@@ -463,12 +533,11 @@ namespace Ee4v.FaceExpression
                     outputFolder,
                     mouthMotions,
                     usedGeneratedClipPaths);
-                var state = FaceExpressionGenerationUndo.AddState(stateMachine,
-                    "M" + value.ToString("000") + " " + item.Entry.Name);
-                state.motion = motion;
-                state.writeDefaultValues = false;
-                state.tag = CreateMenuTag(item);
-                ConfigureTracking(state, item.Entry.Assignment);
+                var prefix = "M" + value.ToString("000") + " ";
+                var exists = previousMenuStates.TryGetValue(value, out var state);
+                if (!exists) state = FaceExpressionGenerationUndo.AddState(stateMachine, prefix + item.Entry.Name);
+                UpdateState(state, prefix + item.Entry.Name, motion, CreateMenuTag(item), item.Entry.Assignment);
+                if (exists) continue;
 
                 var activate = FaceExpressionGenerationUndo.AddAnyStateTransition(stateMachine, state);
                 ConfigureTransition(activate);
@@ -538,12 +607,9 @@ namespace Ee4v.FaceExpression
             AddBindings(result, avatarBindings.Eyes);
             AddBindings(result, avatarBindings.Mouth);
             AddBindings(result, avatarBindings.MouthMorph);
-            foreach (var assignment in assignments)
+            foreach (var clip in assignments.Select(assignment => assignment.Clip).Where(clip => clip != null).Distinct())
             {
-                if (assignment.Clip != null)
-                {
-                    AddBindings(result, AnimationUtility.GetCurveBindings(assignment.Clip));
-                }
+                AddBindings(result, AnimationUtility.GetCurveBindings(clip));
             }
 
             var rendererPaths = new HashSet<string>(
@@ -580,19 +646,6 @@ namespace Ee4v.FaceExpression
             foreach (var binding in bindings.Where(IsBlendShape))
             {
                 result[BindingKey(binding)] = binding;
-            }
-        }
-
-        private static void RemoveOwnedMouthBlendTrees(AnimatorController controller)
-        {
-            var controllerPath = AssetDatabase.GetAssetPath(controller);
-            foreach (var tree in AssetDatabase.LoadAllAssetsAtPath(controllerPath)
-                         .OfType<BlendTree>()
-                         .Where(tree => tree.name.StartsWith(
-                             "ee4v Mouth Morph ",
-                             StringComparison.Ordinal)))
-            {
-                FaceExpressionGenerationUndo.DestroyObjectImmediate(tree);
             }
         }
 
@@ -636,24 +689,34 @@ namespace Ee4v.FaceExpression
             var prefix = Path.GetFileNameWithoutExtension(controllerPath);
             var assetPath = outputFolder.TrimEnd('/') + "/" + prefix + " " + identity + ".anim";
             var generated = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
-            if (generated == null)
+            var defaultValues = bindings.Select(binding => GetDefaultValue(avatar, binding)).ToArray();
+            var signature = Hash128.Compute(avatar.GetInstanceID() + ":" +
+                (assignment.Clip == null ? "" : EditorJsonUtility.ToJson(assignment.Clip)) + ":" +
+                assignment.EnableBlink + ":" + assignment.FixMouth + ":" +
+                string.Join(";", bindings.Select((binding, index) => BindingKey(binding) + ":" +
+                    defaultValues[index].ToString("R", System.Globalization.CultureInfo.InvariantCulture))) + ":" +
+                string.Join(";", avatarBindings.Blink.Select(BindingKey)) + ":" +
+                string.Join(";", avatarBindings.Eyes.Select(BindingKey)) + ":" +
+                string.Join(";", avatarBindings.Mouth.Select(BindingKey)));
+            if (generated != null && MotionSignatures.TryGetValue(assetPath, out var saved) && saved == signature)
+                return generated;
+            var created = generated == null;
+            if (created)
             {
                 generated = new AnimationClip
                 {
                     name = Path.GetFileNameWithoutExtension(assetPath),
                     frameRate = 60f
                 };
-                AssetDatabase.CreateAsset(generated, assetPath);
-                FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(generated, "Create Face Expression Clip");
             }
             else
             {
                 FaceExpressionGenerationUndo.RecordObject(generated, "Update Face Expression Clip");
-                foreach (var oldBinding in AnimationUtility.GetCurveBindings(generated))
-                {
-                    AnimationUtility.SetEditorCurve(generated, oldBinding, null);
-                }
             }
+
+            var previousBindings = AnimationUtility.GetCurveBindings(generated);
+            var generatedBindings = new List<EditorCurveBinding>(bindings.Count + previousBindings.Length);
+            var generatedCurves = new List<AnimationCurve>(bindings.Count + previousBindings.Length);
 
             var blinkKeys = new HashSet<string>(
                 avatarBindings.Blink.Select(BindingKey),
@@ -669,8 +732,9 @@ namespace Ee4v.FaceExpression
             var sourceLooping = assignment.Clip != null &&
                                 AnimationUtility.GetAnimationClipSettings(
                                     assignment.Clip).loopTime;
-            foreach (var binding in bindings)
+            for (var index = 0; index < bindings.Count; index++)
             {
+                var binding = bindings[index];
                 var key = BindingKey(binding);
                 if (!assignment.FixMouth && mouthKeys.Contains(key))
                 {
@@ -680,7 +744,7 @@ namespace Ee4v.FaceExpression
                 var curve = assignment.Clip == null
                     ? null
                     : AnimationUtility.GetEditorCurve(assignment.Clip, binding);
-                var value = curve == null ? GetDefaultValue(avatar, binding) : curve.Evaluate(0f);
+                var value = curve == null ? defaultValues[index] : curve.Evaluate(0f);
                 AnimationCurve generatedCurve;
                 if (animateBlink && blinkKeys.Contains(key))
                 {
@@ -705,17 +769,29 @@ namespace Ee4v.FaceExpression
                         : CopyCurve(curve);
                 }
 
-                AnimationUtility.SetEditorCurve(
-                    generated,
-                    binding,
-                    generatedCurve);
+                generatedBindings.Add(binding);
+                generatedCurves.Add(generatedCurve);
             }
+            var retainedBindings = new HashSet<EditorCurveBinding>(generatedBindings);
+            foreach (var previous in previousBindings)
+            {
+                if (retainedBindings.Contains(previous)) continue;
+                generatedBindings.Add(previous);
+                generatedCurves.Add(null);
+            }
+            AnimationUtility.SetEditorCurves(generated, generatedBindings.ToArray(), generatedCurves.ToArray());
 
             var settings = AnimationUtility.GetAnimationClipSettings(generated);
             settings.loopTime = animateBlink || sourceLooping;
             AnimationUtility.SetAnimationClipSettings(generated, settings);
             generated.frameRate = 60f;
-            EditorUtility.SetDirty(generated);
+            if (created)
+            {
+                AssetDatabase.CreateAsset(generated, assetPath);
+                FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(generated, "Create Face Expression Clip");
+            }
+            else EditorUtility.SetDirty(generated);
+            MotionSignatures[assetPath] = signature;
             return generated;
         }
 
@@ -856,16 +932,14 @@ namespace Ee4v.FaceExpression
             AnimatorState state,
             FaceExpressionAssignment assignment)
         {
-            var type = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(assembly => TrackingControlTypeNames.Select(name =>
-                    assembly.GetType(name, false)))
-                .FirstOrDefault(candidate => candidate != null);
+            var type = TrackingControlType;
             if (type == null)
             {
                 return;
             }
 
-            var behaviour = FaceExpressionGenerationUndo.AddBehaviour(state, type);
+            var behaviour = state.behaviours.FirstOrDefault(candidate => candidate != null && candidate.GetType() == type) ??
+                FaceExpressionGenerationUndo.AddBehaviour(state, type);
             SetTrackingField(
                 behaviour,
                 "trackingEyes",
@@ -887,7 +961,10 @@ namespace Ee4v.FaceExpression
                 return;
             }
 
-            field.SetValue(behaviour, Enum.Parse(field.FieldType, value));
+            var next = Enum.Parse(field.FieldType, value);
+            if (Equals(field.GetValue(behaviour), next)) return;
+            FaceExpressionGenerationUndo.RecordObject(behaviour, "Update Face Expression Tracking");
+            field.SetValue(behaviour, next);
             EditorUtility.SetDirty(behaviour);
         }
 
@@ -910,7 +987,7 @@ namespace Ee4v.FaceExpression
                     assignment,
                     bindings,
                     avatarBindings,
-                    "Motion " + (motions.Count + 1).ToString("000"),
+                    "Motion " + key.Identity,
                     outputFolder);
                 motions.Add(key, motion);
             }
@@ -946,20 +1023,24 @@ namespace Ee4v.FaceExpression
                 outputFolder);
             usedGeneratedClipPaths.Add(AssetDatabase.GetAssetPath(neutralized));
 
-            var tree = new BlendTree
+            var treeName = "ee4v Mouth Morph " + normalized.name;
+            var tree = AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(controller))
+                .OfType<BlendTree>().FirstOrDefault(candidate => candidate.name == treeName);
+            if (tree == null)
             {
-                name = "ee4v Mouth Morph " + (motions.Count + 1).ToString("000"),
-                blendType = BlendTreeType.Simple1D,
-                blendParameter = VoiceParameter,
-                useAutomaticThresholds = false
-            };
-            tree.AddChild(normalized, 0f);
-            tree.AddChild(normalized, VoiceThreshold);
-            tree.AddChild(neutralized, VoiceThreshold + VoiceThresholdStep);
-            tree.AddChild(neutralized, 1f);
-            AssetDatabase.AddObjectToAsset(tree, controller);
-            FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(tree, "Create Mouth Morph Blend Tree");
-            EditorUtility.SetDirty(tree);
+                tree = new BlendTree
+                {
+                    name = treeName, blendType = BlendTreeType.Simple1D,
+                    blendParameter = VoiceParameter, useAutomaticThresholds = false
+                };
+                tree.AddChild(normalized, 0f);
+                tree.AddChild(normalized, VoiceThreshold);
+                tree.AddChild(neutralized, VoiceThreshold + VoiceThresholdStep);
+                tree.AddChild(neutralized, 1f);
+                AssetDatabase.AddObjectToAsset(tree, controller);
+                FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(tree, "Create Mouth Morph Blend Tree");
+                EditorUtility.SetDirty(tree);
+            }
             motions.Add(normalized, tree);
             return tree;
         }
@@ -973,13 +1054,16 @@ namespace Ee4v.FaceExpression
             var assetPath = outputFolder.TrimEnd('/') + "/" + source.name +
                             " Mouth Neutral.anim";
             var generated = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
-            if (generated == null)
+            var defaultValues = bindings.Select(binding => GetDefaultValue(avatar, binding)).ToArray();
+            var signature = Hash128.Compute(EditorJsonUtility.ToJson(source) + ":" +
+                string.Join(";", bindings.Select((binding, index) => BindingKey(binding) + ":" +
+                    defaultValues[index].ToString("R", System.Globalization.CultureInfo.InvariantCulture))));
+            if (generated != null && MotionSignatures.TryGetValue(assetPath, out var saved) && saved == signature)
+                return generated;
+            var created = generated == null;
+            if (created)
             {
                 generated = new AnimationClip();
-                AssetDatabase.CreateAsset(generated, assetPath);
-                FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(
-                    generated,
-                    "Create Mouth Neutral Face Expression Clip");
             }
             else
             {
@@ -988,18 +1072,16 @@ namespace Ee4v.FaceExpression
 
             EditorUtility.CopySerialized(source, generated);
             generated.name = Path.GetFileNameWithoutExtension(assetPath);
-            foreach (var binding in bindings)
-            {
-                AnimationUtility.SetEditorCurve(
-                    generated,
-                    binding,
-                    AnimationCurve.Constant(
-                        0f,
-                        Mathf.Max(1f / generated.frameRate, source.length),
-                        GetDefaultValue(avatar, binding)));
-            }
+            AnimationUtility.SetEditorCurves(generated, bindings.ToArray(), defaultValues.Select(value =>
+                AnimationCurve.Constant(0f, Mathf.Max(1f / generated.frameRate, source.length), value)).ToArray());
 
-            EditorUtility.SetDirty(generated);
+            if (created)
+            {
+                AssetDatabase.CreateAsset(generated, assetPath);
+                FaceExpressionGenerationUndo.RegisterCreatedObjectUndo(generated, "Create Mouth Neutral Face Expression Clip");
+            }
+            else EditorUtility.SetDirty(generated);
+            MotionSignatures[assetPath] = signature;
             return generated;
         }
 
@@ -1029,6 +1111,7 @@ namespace Ee4v.FaceExpression
                 if (name.StartsWith(prefix + "Motion ", StringComparison.Ordinal))
                 {
                     AssetDatabase.DeleteAsset(path);
+                    MotionSignatures.Remove(path);
                 }
             }
         }
@@ -1259,6 +1342,10 @@ namespace Ee4v.FaceExpression
             private AnimationClip Clip { get; }
             private bool EnableBlink { get; }
             private bool FixMouth { get; }
+
+            internal string Identity => (Clip == null ? "Default" : AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+                Clip, out string guid, out long localId) ? guid + "-" + localId : "Instance-" + Clip.GetInstanceID()) +
+                (EnableBlink ? " B1" : " B0") + (FixMouth ? " M1" : " M0");
 
             public bool Equals(NormalizedMotionKey other)
             {

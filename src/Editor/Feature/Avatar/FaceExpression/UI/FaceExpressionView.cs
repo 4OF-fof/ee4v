@@ -617,12 +617,14 @@ namespace Ee4v.FaceExpression
 
         public void SetAssignedLibraryClips(IEnumerable<AnimationClip> clips)
         {
+            var next = new HashSet<AnimationClip>(clips ?? Enumerable.Empty<AnimationClip>());
+            if (_assignedLibraryClips.SetEquals(next)) return;
+            var changed = new HashSet<AnimationClip>(_assignedLibraryClips);
+            changed.SymmetricExceptWith(next);
             _assignedLibraryClips.Clear();
-            if (clips != null) { _assignedLibraryClips.UnionWith(clips); }
-            foreach (var pair in _libraryClipItems)
-            {
-                SetLibraryAssignmentHighlight(pair.Key, pair.Value);
-            }
+            _assignedLibraryClips.UnionWith(next);
+            foreach (var clip in changed)
+                if (_libraryClipItems.TryGetValue(clip, out var item)) SetLibraryAssignmentHighlight(clip, item);
         }
 
         private void SetLibraryAssignmentHighlight(AnimationClip clip, VisualElement item)
@@ -639,15 +641,19 @@ namespace Ee4v.FaceExpression
 
         public void SetLibraryAssignments(IReadOnlyDictionary<AnimationClip, List<string>> assignments)
         {
-            _libraryAssignmentLabels.Clear();
+            var changed = new HashSet<AnimationClip>(_libraryAssignmentLabels.Keys.Where(clip => !assignments.ContainsKey(clip)));
+            foreach (var clip in changed) _libraryAssignmentLabels.Remove(clip);
             foreach (var pair in assignments)
             {
+                if (_libraryAssignmentLabels.TryGetValue(pair.Key, out var previous) && previous.SequenceEqual(pair.Value)) continue;
                 _libraryAssignmentLabels[pair.Key] = pair.Value.ToArray();
+                changed.Add(pair.Key);
             }
-            foreach (var pair in _libraryClipItems)
+            foreach (var clip in changed)
             {
-                RenderLibraryAssignmentBadges(pair.Key);
-                SetLibraryAssignmentHighlight(pair.Key, pair.Value);
+                if (!_libraryClipItems.TryGetValue(clip, out var item)) continue;
+                RenderLibraryAssignmentBadges(clip);
+                SetLibraryAssignmentHighlight(clip, item);
             }
         }
 
@@ -665,7 +671,7 @@ namespace Ee4v.FaceExpression
             if (labels.Count > visible.Count) { visible.Add("+" + (labels.Count - visible.Count)); }
             foreach (var label in visible)
             {
-                var badge = new Badge(label) { pickingMode = PickingMode.Ignore };
+                var badge = new Badge(label) { tooltip = string.Join("\n", labels) };
                 badge.AddToClassList("ee4v-face-expression__library-assignment-badge");
                 badge.TextElement.SetFontSize(10);
                 badge.TextElement.SetColor(UiColorTokens.TextPrimary);

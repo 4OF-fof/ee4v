@@ -98,6 +98,12 @@ namespace Ee4v.FaceExpression
                 }
             }
 
+            var before = RootSignature(root);
+            ConfigureRoot(root, paths.RootName, controller, menu, disableDescriptorBlink);
+            if (before == RootSignature(root) && PrefabUtility.IsAnyPrefabInstanceRoot(root) &&
+                PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root) == paths.PrefabPath)
+                return;
+
             if (PrefabUtility.IsAnyPrefabInstanceRoot(root))
             {
                 PrefabUtility.UnpackPrefabInstance(
@@ -106,12 +112,6 @@ namespace Ee4v.FaceExpression
                     InteractionMode.AutomatedAction);
             }
 
-            ConfigureRoot(
-                root,
-                paths.RootName,
-                controller,
-                menu,
-                disableDescriptorBlink);
             var saved = PrefabUtility.SaveAsPrefabAssetAndConnect(
                 root,
                 paths.PrefabPath,
@@ -122,6 +122,10 @@ namespace Ee4v.FaceExpression
                     "The generated face expression Prefab could not be saved and connected.");
             }
         }
+
+        private static string RootSignature(GameObject root) => root.name + ":" +
+            string.Join(";", root.GetComponents<Component>().Where(component => component != null)
+                .Select(component => EditorJsonUtility.ToJson(component)));
 
         private static void ConfigureRoot(
             GameObject root,
@@ -136,8 +140,7 @@ namespace Ee4v.FaceExpression
             root.transform.localScale = Vector3.one;
 
             var mergeType = FindType(MergeAnimatorTypeName);
-            RemoveComponents(root, mergeType);
-            var merge = AddRequiredComponent(root, mergeType);
+            var merge = GetOrAddRequiredComponent(root, mergeType);
             SetRequiredField(merge, "animator", controller);
             SetRequiredEnumField(merge, "layerType", "FX");
             SetRequiredEnumField(merge, "pathMode", "Absolute");
@@ -147,27 +150,33 @@ namespace Ee4v.FaceExpression
             EditorUtility.SetDirty(merge);
 
             var installerType = FindType(MenuInstallerTypeName);
-            RemoveComponents(root, installerType);
             if (GetMenuControlCount(menu) > 0)
             {
-                var installer = AddRequiredComponent(root, installerType);
+                var installer = GetOrAddRequiredComponent(root, installerType);
                 SetRequiredField(installer, "menuToAppend", menu);
                 EditorUtility.SetDirty(installer);
             }
+            else RemoveComponents(root, installerType);
 
             var parametersType = FindType(ParametersTypeName);
-            RemoveComponents(root, parametersType);
-            var parameters = AddRequiredComponent(root, parametersType);
+            var parameters = GetOrAddRequiredComponent(root, parametersType);
             ConfigureParameter(parameters);
 
             var blinkOverrideType = FindType(BlinkOverrideTypeName);
-            RemoveComponents(root, blinkOverrideType);
             if (disableDescriptorBlink)
             {
-                AddRequiredComponent(root, blinkOverrideType);
+                GetOrAddRequiredComponent(root, blinkOverrideType);
             }
+            else RemoveComponents(root, blinkOverrideType);
 
             EditorUtility.SetDirty(root);
+        }
+
+        private static Component GetOrAddRequiredComponent(GameObject root, Type type)
+        {
+            var components = root.GetComponents(type);
+            foreach (var duplicate in components.Skip(1)) UnityEngine.Object.DestroyImmediate(duplicate);
+            return components.FirstOrDefault() ?? AddRequiredComponent(root, type);
         }
 
         private static void ConfigureParameter(Component component)

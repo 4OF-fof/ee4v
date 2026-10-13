@@ -256,6 +256,16 @@ namespace Ee4v.FaceExpression
                    (_selectAllRight || combination.Right == _selectedCombination.Right);
         }
 
+        internal void SelectHands(FaceGesture? left, FaceGesture? right)
+        {
+            _selectedCombination = new GestureCombination(left ?? _selectedCombination.Left, right ?? _selectedCombination.Right);
+            _selectAllLeft = !left.HasValue;
+            _selectAllRight = !right.HasValue;
+            _hasSelection = true;
+            _selectedMenuEntry = null;
+            Changed?.Invoke();
+        }
+
         private IEnumerable<GestureCombination> GetSelectedCombinations()
         {
             foreach (FaceGesture left in Enum.GetValues(typeof(FaceGesture)))

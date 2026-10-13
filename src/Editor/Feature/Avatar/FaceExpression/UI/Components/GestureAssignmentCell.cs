@@ -16,6 +16,9 @@ namespace Ee4v.FaceExpression
         private readonly IMGUIContainer _preview;
         private readonly string _unassignedText;
         private UiTextElement _caption;
+        private AnimationClip _displayedClip;
+        private bool _hasDisplayedClip;
+        private bool _displayedHasContent;
 
         internal GestureAssignmentCell(
             string clipLabel,
@@ -143,6 +146,11 @@ namespace Ee4v.FaceExpression
 
         private void SetClip(AnimationClip clip)
         {
+            var hasContent = clip != null;
+            if (_hasDisplayedClip && _displayedClip == clip && _displayedHasContent == hasContent) return;
+            _hasDisplayedClip = true;
+            _displayedClip = clip;
+            _displayedHasContent = hasContent;
             _clipField.SetValueWithoutNotify(clip);
             _empty.SetText(clip == null ? _unassignedText : string.Empty);
             _previewArea.SetHasContent(clip != null);
