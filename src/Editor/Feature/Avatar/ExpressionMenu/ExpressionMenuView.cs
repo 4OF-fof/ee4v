@@ -305,7 +305,6 @@ namespace Ee4v.ExpressionMenu
                 listScroll.AddToClassList("ee4v-expression-menu__browser-scroll");
                 browser.Add(listScroll);
                 BuildSubmenuTree(listScroll);
-                BuildExcludedItems(listScroll);
             }
 
             var inspector = new VisualElement();
@@ -551,75 +550,6 @@ namespace Ee4v.ExpressionMenu
             name.SetEnabled(false);
             details.Add(name);
             if (!CanEditMenuRoot(_page)) AddEditableCopyAction(details, _page.Asset);
-            BuildRegistrationActions(host);
-        }
-
-        private void BuildExcludedItems(VisualElement host)
-        {
-            var entries = AvatarMenuExclusionUtility.Entries(_context.Root);
-            if (entries.Count == 0) return;
-            var section = new VisualElement();
-            section.AddToClassList("ee4v-expression-menu__exclusions");
-            section.Add(new SectionHeader(string.Format(T("excludedItems"), entries.Count)));
-            foreach (var entry in entries)
-            {
-                var row = new VisualElement();
-                row.AddToClassList("ee4v-expression-menu__exclusion-row");
-                var label = UiTextFactory.Create(entry.DisplayName, UiClassNames.SecondaryText);
-                label.tooltip = entry.Source != null ? entry.Source.name : T("missingExclusionSource");
-                label.AddToClassList("ee4v-expression-menu__exclusion-name");
-                row.Add(label);
-                if (entry.Source is ModularAvatarMenuInstaller)
-                    row.Add(UiTextFactory.Create(T("registrationScope"), UiClassNames.SecondaryText));
-                var restore = new UiButton(T("restoreItem"), () => Run(() =>
-                {
-                    ExpressionMenuModel.Restore(_context, entry.Id);
-                    NotifyChanged();
-                }), variant: UiButtonVariant.Ghost);
-                restore.SetEnabled(CanManageExclusions());
-                row.Add(restore);
-                section.Add(row);
-                if (entry.Source != null && !AvatarMenuExclusionUtility.IsCurrent(entry))
-                    section.Add(UiTextFactory.CreateHelpBox(T("exclusionSourceChanged"), HelpBoxMessageType.Warning));
-            }
-            host.Add(section);
-        }
-
-        private bool CanManageExclusions() => _context.Edits.CanEditPrefab() &&
-            ExpressionMenuModel.CanWrite(_context.Root) && ExpressionMenuModel.CanWrite(_context.PrefabAsset);
-
-        private void BuildRegistrationActions(VisualElement host)
-        {
-            var entries = AvatarMenuExclusionUtility.Entries(_context.Root);
-            var installers = _context.Root.GetComponentsInChildren<ModularAvatarMenuInstaller>(true)
-                .Where(installer => !ExpressionMenuInstaller.IsGeneratedPrefab(installer.gameObject) &&
-                    !entries.Any(entry => entry.Source == installer) &&
-                    (_source == 0 || installer.menuToAppend == _page.Asset)).ToArray();
-            if (installers.Length == 0) return;
-            host.Add(new SectionHeader(T("menuRegistrations")));
-            foreach (var installer in installers)
-            {
-                var row = new VisualElement();
-                row.AddToClassList("ee4v-expression-menu__exclusion-row");
-                var label = UiTextFactory.Create(installer.gameObject.name, UiClassNames.SecondaryText);
-                label.AddToClassList("ee4v-expression-menu__exclusion-name");
-                row.Add(label);
-                var exclude = new UiButton(T("excludeRegistration"), () =>
-                {
-                    var overlay = OpenOperationOverlay(new MessagePanelState(T("excludeItemTitle"),
-                        string.Format(T("excludeRegistrationMessage"), installer.gameObject.name), MessageSeverity.Warning));
-                    if (overlay == null) return;
-                    overlay.Notification.Actions.Add(new UiButton(T("excludeRegistration"), () =>
-                    {
-                        overlay.Close();
-                        Run(() => { ExpressionMenuModel.ExcludeInstaller(_context, installer); NotifyChanged(); });
-                    }));
-                    overlay.Notification.Actions.Add(new UiButton(T("cancel"), overlay.Close));
-                }, variant: UiButtonVariant.Ghost);
-                exclude.SetEnabled(CanManageExclusions());
-                row.Add(exclude);
-                host.Add(row);
-            }
         }
 
 
@@ -732,7 +662,12 @@ namespace Ee4v.ExpressionMenu
                 Run(Remove);
             }
             if (generated) overlay.AddDiscardAction(T(hasContents ? "deleteWithContents" : "remove"), Confirm);
-            else overlay.Notification.Actions.Add(new UiButton(T("excludeItem"), Confirm));
+            else
+            {
+                var exclude = new UiButton(T("excludeItem"), Confirm);
+                exclude.SetPrimaryActionEnabled(true);
+                overlay.Notification.Actions.Add(exclude);
+            }
             overlay.Notification.Actions.Add(new UiButton(T("cancel"), overlay.Close));
         }
 
