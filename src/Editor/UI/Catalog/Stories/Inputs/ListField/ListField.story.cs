@@ -34,6 +34,7 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/Core/Presentation/Settings/CommaSeparatedListSettingDrawer.cs",
+                        "Editor/Feature/Avatar/AvatarInfo/AvatarInfoSettings.cs",
                         "Editor/Feature/Avatar/FaceExpression/BlendShapeNamePresetSetting.cs"
                     }));
             }

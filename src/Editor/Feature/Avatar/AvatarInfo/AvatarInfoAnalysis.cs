@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Ee4v.AvatarEditing;
@@ -168,13 +169,14 @@ namespace Ee4v.AvatarInfo
             {
                 var child = transform.gameObject;
                 if (!PrefabUtility.IsAnyPrefabInstanceRoot(child) ||
-                    AvatarGeneratedPrefabs.IsExpressionMenu(child) ||
                     !string.IsNullOrEmpty(basePath) &&
                     PrefabUtility.GetCorrespondingObjectFromSourceAtPath(
                         child, basePath) != null)
                 {
                     continue;
                 }
+                var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(child);
+                if (AvatarInfoSettings.IsAttachmentWarningSuppressed(Path.GetFileNameWithoutExtension(prefabPath))) continue;
                 if (child.GetComponentInChildren<ModularAvatarMergeArmature>(true) == null &&
                     child.GetComponentInChildren<ModularAvatarBoneProxy>(true) == null)
                 {

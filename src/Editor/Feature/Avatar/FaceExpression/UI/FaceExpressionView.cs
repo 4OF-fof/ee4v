@@ -537,6 +537,7 @@ namespace Ee4v.FaceExpression
         public event Action NewClipRequested;
         public event Action<AnimationClip> CopyClipRequested;
         public event Action<AnimationClip> EditClipRequested;
+        public event Action<AnimationClip> ClearClipAssignmentsRequested;
         public event Action BackRequested;
         public event Action<string> LibraryFolderRequested;
         public event Action<BlendShapeChannel> ChannelChanged;
@@ -1297,11 +1298,22 @@ namespace Ee4v.FaceExpression
                     UiTextFactory.CreateGuiContent(_copyAndEdit),
                     false,
                     () => CopyClipRequested?.Invoke(clip));
+                menu.AddSeparator(string.Empty);
+                var clear = UiTextFactory.CreateGuiContent(I18N.Get("assignments.clear"));
+                if (CanClearLibraryAssignments(clip))
+                    menu.AddItem(clear, false, () =>
+                    {
+                        if (CanClearLibraryAssignments(clip)) ClearClipAssignmentsRequested?.Invoke(clip);
+                    });
+                else menu.AddDisabledItem(clear);
                 menu.ShowAsContext();
                 evt.StopPropagation();
             });
             return item;
         }
+
+        private bool CanClearLibraryAssignments(AnimationClip clip) => _avatarField.value != null && clip != null &&
+            _libraryAssignmentLabels.TryGetValue(clip, out var labels) && labels.Count > 0;
 
         private VisualElement CreateIconLibraryItem(
             string name,

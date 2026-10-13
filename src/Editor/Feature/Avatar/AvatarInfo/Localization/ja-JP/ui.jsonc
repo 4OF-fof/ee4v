@@ -1,4 +1,16 @@
 {
+  "settings": {
+    "section": { "warnings": "Avatar Info・警告" },
+    "attachmentWarningExclusions": {
+      "label": "装着警告を表示しないPrefab名",
+      "tooltip": "Prefabファイル名（拡張子なし）を正規表現で照合します。1行に1つ指定し、大文字小文字を区別せず部分一致します。完全一致には ^ と $ を使用してください。シーン上の名前を変更しても元のPrefabファイル名で判定します。空の一覧では名前による警告の抑制を行いません。",
+      "placeholder": "例: ^Accessory$",
+      "add": "正規表現を追加",
+      "remove": "削除",
+      "invalidList": "Prefab名の正規表現を一覧で指定してください。",
+      "invalidPattern": "正規表現が無効です: {0}"
+    }
+  },
   "workflow": {
     "overview": {
       "details": {

@@ -289,6 +289,7 @@ namespace Ee4v.FaceExpression
             _view.EditClipRequested += EditClip;
             _view.NewClipRequested += CreateClip;
             _view.CopyClipRequested += CopyClip;
+            _view.ClearClipAssignmentsRequested += ClearClipAssignments;
             _view.ConversionRequested += () =>
             {
                 StopPlayback();
@@ -404,6 +405,14 @@ namespace Ee4v.FaceExpression
             if (_avatar == null || !_assignments.HasSelection) { return; }
             _assignments.Activate();
             _assignments.SetSelectedClip(clip);
+        }
+
+        private void ClearClipAssignments(AnimationClip clip)
+        {
+            if (_disposed || _avatar == null || clip == null) return;
+            _assignments.Activate();
+            _assignments.SetClipConditions(clip, Array.Empty<GestureCombination>(),
+                Array.Empty<FaceExpressionMenuEntry>(), string.Empty, true, false);
         }
 
         private void RefreshLibraryAssignmentSelection()

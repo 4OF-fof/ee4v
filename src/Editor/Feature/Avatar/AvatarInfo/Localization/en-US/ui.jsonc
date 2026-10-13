@@ -1,4 +1,16 @@
 {
+  "settings": {
+    "section": { "warnings": "Avatar Info / Warnings" },
+    "attachmentWarningExclusions": {
+      "label": "Prefab names without attachment warnings",
+      "tooltip": "Match prefab file names without the extension using regular expressions. Enter one pattern per row. Matching is case-insensitive and may match part of the name; use ^ and $ for an exact match. Renaming a scene instance does not change its prefab file name. An empty list disables name-based warning suppression.",
+      "placeholder": "Example: ^Accessory$",
+      "add": "Add pattern",
+      "remove": "Remove",
+      "invalidList": "Specify prefab name regular expressions as a list.",
+      "invalidPattern": "Invalid regular expression: {0}"
+    }
+  },
   "workflow": {
     "overview": {
       "details": {
