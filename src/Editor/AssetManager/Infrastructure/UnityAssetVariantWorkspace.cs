@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using UnityEditor;
 using UnityEngine;
@@ -322,6 +323,8 @@ namespace Ee4v.AssetManager.Infrastructure
             var dependenciesOfRoot = saveVersion
                 ? AssetDatabase.GetDependencies(request.RootAssetPath, true)
                 : GetCachedDependencies(request.RootAssetPath);
+            var packageRoot = PackageAssetApi.GetPackageRootAssetPath();
+            var packagePrefix = string.IsNullOrEmpty(packageRoot) ? null : packageRoot + "/";
             var paths = dependenciesOfRoot
                 .Append(sourcePath)
                 .Concat(AssetDatabase.FindAssets(string.Empty, new[] { rootFolder })
@@ -329,6 +332,9 @@ namespace Ee4v.AssetManager.Infrastructure
                 .Append(rootFolder)
                 .Where(path => !string.IsNullOrEmpty(path) &&
                     path.StartsWith("Assets/", StringComparison.Ordinal))
+                // Assets-based installations are prerequisites, just like UPM packages.
+                .Where(path => packagePrefix == null ||
+                    (path != packageRoot && !path.StartsWith(packagePrefix, StringComparison.Ordinal)))
                 .Distinct(StringComparer.Ordinal).OrderBy(path => path, StringComparer.Ordinal).ToArray();
             var associations = _manager.GetImportedAssetAssociations()
                 .GroupBy(association => association.AssetGuid)

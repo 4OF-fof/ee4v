@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.AvatarInfo;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using static Ee4v.AvatarEditing.AvatarEditingUi;
@@ -433,7 +434,7 @@ namespace Ee4v.AssetManager.UI
                 {
                     var child = root.transform.GetChild(index).gameObject;
                     if (!PrefabUtility.IsAnyPrefabInstanceRoot(child) ||
-                        Ee4v.ExpressionMenu.ExpressionMenuInstaller.IsGeneratedPrefab(child) ||
+                        AvatarInfoSettings.IsPrefabExcluded(child) ||
                         excludedPrefixes.Any(prefix =>
                             child.name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
                     {

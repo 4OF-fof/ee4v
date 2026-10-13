@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using Ee4v.AvatarEditing;
@@ -175,8 +174,7 @@ namespace Ee4v.AvatarInfo
                 {
                     continue;
                 }
-                var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(child);
-                if (AvatarInfoSettings.IsAttachmentWarningSuppressed(Path.GetFileNameWithoutExtension(prefabPath))) continue;
+                if (AvatarInfoSettings.IsPrefabExcluded(child)) continue;
                 if (child.GetComponentInChildren<ModularAvatarMergeArmature>(true) == null &&
                     child.GetComponentInChildren<ModularAvatarBoneProxy>(true) == null)
                 {

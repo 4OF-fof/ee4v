@@ -1,10 +1,12 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AvatarInfo
@@ -13,36 +15,43 @@ namespace Ee4v.AvatarInfo
     public static class AvatarInfoSettings
     {
         private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(50);
-        private static readonly SettingDefinition<string[]> AttachmentWarningExclusions =
+        private static readonly SettingDefinition<string[]> PrefabExclusions =
             new SettingDefinition<string[]>("avatarInfo.attachmentWarningExcludedPrefabNames", SettingScope.User,
-                "AvatarInfo", "settings.section.warnings", "settings.attachmentWarningExclusions.label",
-                "settings.attachmentWarningExclusions.tooltip",
+                "AvatarInfo", "settings.section.prefabExclusions", "settings.prefabExclusions.label",
+                "settings.prefabExclusions.tooltip",
                 new[] { @"^(?:ExpressionMenu|MenuItem|Gimmick)$", @"_(?:ExpressionMenu|FacialSet)$" },
-                validator: ValidatePatterns, keywords: new[] { "avatar", "prefab", "attachment", "warning", "regex" });
+                validator: ValidatePatterns, keywords: new[] { "avatar", "prefab", "attachment", "warning", "list", "exclude", "regex" });
 
         private static string[] _cachedPatterns;
         private static Regex[] _cachedExpressions;
 
-        public static event Action AttachmentWarningsChanged;
+        public static event Action PrefabExclusionsChanged;
 
         static AvatarInfoSettings()
         {
-            SettingDrawerApi.Register(AttachmentWarningExclusions, CreateField);
-            CoreSettings.Current.Register(AttachmentWarningExclusions);
+            SettingDrawerApi.Register(PrefabExclusions, CreateField);
+            CoreSettings.Current.Register(PrefabExclusions);
             CoreSettings.Current.Changed += (sender, args) =>
             {
-                if (!ReferenceEquals(args.Definition, AttachmentWarningExclusions)) return;
+                if (!ReferenceEquals(args.Definition, PrefabExclusions)) return;
                 _cachedPatterns = null;
                 _cachedExpressions = null;
-                AttachmentWarningsChanged?.Invoke();
+                PrefabExclusionsChanged?.Invoke();
             };
         }
 
-        internal static bool IsAttachmentWarningSuppressed(string prefabName)
+        public static bool IsPrefabExcluded(GameObject prefabInstance)
+        {
+            if (prefabInstance == null) return false;
+            var path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(prefabInstance);
+            return !string.IsNullOrEmpty(path) && IsPrefabNameExcluded(Path.GetFileNameWithoutExtension(path));
+        }
+
+        private static bool IsPrefabNameExcluded(string prefabName)
         {
             var settings = CoreSettings.Current;
-            settings.Register(AttachmentWarningExclusions);
-            var patterns = settings.Get(AttachmentWarningExclusions);
+            settings.Register(PrefabExclusions);
+            var patterns = settings.Get(PrefabExclusions);
             if (!ReferenceEquals(patterns, _cachedPatterns))
             {
                 _cachedExpressions = patterns.Where(pattern => !string.IsNullOrWhiteSpace(pattern))
@@ -63,7 +72,7 @@ namespace Ee4v.AvatarInfo
         private static SettingValidationResult ValidatePatterns(string[] patterns)
         {
             if (patterns == null)
-                return SettingValidationResult.Error(I18N.Get("settings.attachmentWarningExclusions.invalidList"));
+                return SettingValidationResult.Error(I18N.Get("settings.prefabExclusions.invalidList"));
             foreach (var pattern in patterns)
             {
                 if (string.IsNullOrWhiteSpace(pattern)) continue;
@@ -71,7 +80,7 @@ namespace Ee4v.AvatarInfo
                 catch (ArgumentException)
                 {
                     return SettingValidationResult.Error(I18N.Get(
-                        "settings.attachmentWarningExclusions.invalidPattern", pattern));
+                        "settings.prefabExclusions.invalidPattern", pattern));
                 }
             }
             return SettingValidationResult.Success;
@@ -83,12 +92,12 @@ namespace Ee4v.AvatarInfo
                 (value, notify) =>
                 {
                     var input = new InputField(new InputFieldState(value,
-                        placeholder: I18N.Get("settings.attachmentWarningExclusions.placeholder")));
+                        placeholder: I18N.Get("settings.prefabExclusions.placeholder")));
                     input.ValueChanged += notify;
                     return input;
                 }, () => string.Empty, string.IsNullOrWhiteSpace, item => ((InputField)item).FocusInput(),
-                context.Tooltip, I18N.Get("settings.attachmentWarningExclusions.add"),
-                I18N.Get("settings.attachmentWarningExclusions.remove")));
+                context.Tooltip, I18N.Get("settings.prefabExclusions.add"),
+                I18N.Get("settings.prefabExclusions.remove")));
             field.ValuesChanged += values => context.NotifyValueChanged(values
                 .Where(value => !string.IsNullOrWhiteSpace(value)).ToArray());
             return field;

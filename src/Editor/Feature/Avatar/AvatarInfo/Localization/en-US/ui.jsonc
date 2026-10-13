@@ -1,9 +1,9 @@
 {
   "settings": {
-    "section": { "warnings": "Avatar Info / Warnings" },
-    "attachmentWarningExclusions": {
-      "label": "Prefab names without attachment warnings",
-      "tooltip": "Match prefab file names without the extension using regular expressions. Enter one pattern per row. Matching is case-insensitive and may match part of the name; use ^ and $ for an exact match. Renaming a scene instance does not change its prefab file name. An empty list disables name-based warning suppression.",
+    "section": { "prefabExclusions": "Avatar Info / Prefab exclusions" },
+    "prefabExclusions": {
+      "label": "Prefab names excluded from the list and attachment warnings",
+      "tooltip": "Exclude matching prefabs from the top item list and attachment warnings. Match prefab file names without the extension using regular expressions. Enter one pattern per row. Matching is case-insensitive and may match part of the name; use ^ and $ for an exact match. Renaming a scene instance does not change its prefab file name. An empty list disables name-based list exclusions and warning suppression. Prefab assets and attachment settings are unchanged.",
       "placeholder": "Example: ^Accessory$",
       "add": "Add pattern",
       "remove": "Remove",

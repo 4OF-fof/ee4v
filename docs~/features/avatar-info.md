@@ -20,9 +20,9 @@ Blueprint IDは`AvatarInfoAnalysis.GetBlueprintId`で対象ルートの`VRC.Core
 
 ## 取得する情報
 
-装着警告は追加されたアバター直下のPrefabインスタンスにMerge ArmatureとBone Proxyがない場合に表示します。ベースPrefab由来の子と、Preferencesの「Avatar Info・警告」にある「装着警告を表示しないPrefab名」に一致するPrefabは除外します。統合版と単独AvatarInfo Windowで同じ判定を使用し、設定変更後は表示中の警告を更新します。
+装着警告は追加されたアバター直下のPrefabインスタンスにMerge ArmatureとBone Proxyがない場合に表示します。ベースPrefab由来の子と、Preferencesの「Avatar Info・Prefabの除外」にある「一覧・装着警告から除外するPrefab名」に一致するPrefabは除外します。`AvatarInfoSettings.IsPrefabExcluded`がPrefabファイル名の照合を公開し、統合版の上部item一覧と装着警告、単独AvatarInfo Windowの装着警告で同じ判定を使用します。`PrefabExclusionsChanged`で設定変更を通知し、統合版はitem一覧と選択範囲、総合画面を再構築し、単独Windowは警告を更新します。ExMenu専用の一覧除外は行いません。
 
-`avatarInfo.attachmentWarningExcludedPrefabNames`はUser設定の文字列配列です。リストの1行を1つの正規表現として扱い、Prefabファイル名（拡張子なし）へ大文字小文字を区別せず部分一致で照合します。Sceneインスタンスの名前変更は照合へ影響しません。完全一致には`^`と`$`を使用します。既定値は`^(?:ExpressionMenu|MenuItem|Gimmick)$`と`_(?:ExpressionMenu|FacialSet)$`で、ExMenuと表情の生成Prefabを抑制します。リストを空にすると名前による抑制を解除できます。保存は配列のJSON形式とし、正規表現のカンマ・セミコロン・バックスラッシュを区切り文字として扱いません。不正な正規表現は設定画面の検証エラーにして保存しません。照合のtimeoutは50msで、時間切れとなった式は一致扱いにせず警告を維持します。この設定は装着警告だけに適用し、item一覧・装着設定・アバターのcomponentを変更しません。
+設定IDは`avatarInfo.attachmentWarningExcludedPrefabNames`で、User設定の文字列配列として保持します。リストの1行を1つの正規表現として扱い、Prefabファイル名（拡張子なし）へ大文字小文字を区別せず部分一致で照合します。Sceneインスタンスの名前変更は照合へ影響しません。完全一致には`^`と`$`を使用します。既定値は`^(?:ExpressionMenu|MenuItem|Gimmick)$`と`_(?:ExpressionMenu|FacialSet)$`で、ExMenuと表情の生成Prefabを一覧と装着警告から除外します。リストを空にすると両方の名前による除外を解除できます。保存は配列のJSON形式とし、正規表現のカンマ・セミコロン・バックスラッシュを区切り文字として扱いません。不正な正規表現は設定画面の検証エラーにして保存しません。照合のtimeoutは50msで、時間切れとなった式は一致扱いにせず一覧表示と警告対象を維持します。この設定は表示対象だけに適用し、Prefab本体・装着設定・アバターのcomponentを変更しません。
 
 `AvatarInfoAnalysis`は装着警告、AAOの有無とVRChatの性能情報を取得します。性能はEdit Modeで「測定」を押したときだけ取得します。`AvatarPlayModePerformanceCache.Bake`からNDMF接続を呼び、対象のコピーをPreview SceneでNDMFの全フェーズ（AAOを含む）に通します。処理成功後のコピーからPC／Quest性能結果、同期パラメーター使用量とアイテム別内訳、取得日時をSessionStateへ保持します。元のアバターは変更せず、コピー、Preview Sceneと測定ごとの専用フォルダーに作成した生成アセットは終了時に解放します。他のNDMFビルドの生成アセットは削除しません。SDKまたはNDMFがない場合、Play Mode中とその切り替え中、測定中はボタンを無効にします。失敗した場合は前回の成功結果と取得日時を保持してエラーを表示します。Play Modeへの移行、SDKビルド、画面表示とPC／Questの切り替えでは自動測定せず、最後の手動測定結果を表示します。
 

@@ -313,7 +313,7 @@ namespace Ee4v.AssetManager.UI
             AssetManagerSettings.PartListExclusionsChanged +=
                 OnPartListExclusionsChanged;
             AssetManagerSettings.ItemListExclusionsChanged += OnItemListExclusionsChanged;
-            AvatarInfoSettings.AttachmentWarningsChanged += OnPlayModePerformanceChanged;
+            AvatarInfoSettings.PrefabExclusionsChanged += OnItemListExclusionsChanged;
             EditorApplication.projectChanged += OnProjectChanged;
             AvatarPlayModePerformanceCache.Changed += OnPlayModePerformanceChanged;
             AvatarBuildSizeCache.Changed += OnPlayModePerformanceChanged;
@@ -344,7 +344,7 @@ namespace Ee4v.AssetManager.UI
             AssetManagerSettings.PartListExclusionsChanged -=
                 OnPartListExclusionsChanged;
             AssetManagerSettings.ItemListExclusionsChanged -= OnItemListExclusionsChanged;
-            AvatarInfoSettings.AttachmentWarningsChanged -= OnPlayModePerformanceChanged;
+            AvatarInfoSettings.PrefabExclusionsChanged -= OnItemListExclusionsChanged;
             EditorApplication.projectChanged -= OnProjectChanged;
             AvatarPlayModePerformanceCache.Changed -= OnPlayModePerformanceChanged;
             AvatarBuildSizeCache.Changed -= OnPlayModePerformanceChanged;
