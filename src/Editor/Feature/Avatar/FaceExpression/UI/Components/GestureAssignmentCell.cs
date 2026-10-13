@@ -15,6 +15,7 @@ namespace Ee4v.FaceExpression
         private readonly PreviewContainer _previewArea;
         private readonly IMGUIContainer _preview;
         private readonly string _unassignedText;
+        private UiTextElement _caption;
 
         internal GestureAssignmentCell(
             string clipLabel,
@@ -25,7 +26,7 @@ namespace Ee4v.FaceExpression
         {
             _unassignedText = unassignedText;
             AddToClassList("ee4v-gesture-assignment__cell");
-            RegisterCallback<MouseDownEvent>(_ => selected?.Invoke());
+            RegisterCallback<MouseDownEvent>(evt => { if (evt.button == 0) { selected?.Invoke(); } });
 
             _previewArea = new PreviewContainer();
             _previewArea.AddToClassList(
@@ -86,6 +87,19 @@ namespace Ee4v.FaceExpression
                 _clipField.value = clip;
                 evt.StopPropagation();
             });
+        }
+
+        internal void SetCaption(string caption)
+        {
+            if (_caption == null)
+            {
+                _caption = UiTextFactory.Create(string.Empty, "ee4v-gesture-assignment__cell-caption");
+                _caption.SetFontSize(10);
+                _caption.SetTextAlign(TextAnchor.MiddleCenter);
+                _caption.pickingMode = PickingMode.Ignore;
+                Add(_caption);
+            }
+            _caption.SetText(caption);
         }
 
         internal void SetClipEnabled(bool enabled)

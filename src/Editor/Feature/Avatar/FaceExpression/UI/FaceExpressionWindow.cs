@@ -177,6 +177,7 @@ namespace Ee4v.FaceExpression
             FaceExpressionGroupSession.Changed += ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged += RefreshClip;
             _assignments.ConfigurationChanged += RefreshSaveNotification;
+            _assignments.Changed += RefreshLibraryAssignmentSelection;
             _preview = new FaceExpressionPreview(RequestRepaint);
             Undo.undoRedoPerformed += OnUndoRedo;
             EditorApplication.projectChanged += RefreshLibrary;
@@ -218,6 +219,7 @@ namespace Ee4v.FaceExpression
             FaceExpressionGroupSession.Changed -= ApplyGroupFilter;
             FaceExpressionGroupSession.MeshesChanged -= RefreshClip;
             _assignments.ConfigurationChanged -= RefreshSaveNotification;
+            _assignments.Changed -= RefreshLibraryAssignmentSelection;
             _assignments.Dispose();
             ClearThumbnails();
             _preview?.Dispose();
@@ -311,14 +313,14 @@ namespace Ee4v.FaceExpression
             _assignmentView = new GestureAssignmentView(
                 GestureAssignmentWindow.CreateText(), DrawLibraryThumbnail, false, _assignments, readOnly: true);
             _assignmentView.SetAvatar(_avatar);
-            _assignmentPicker = new GestureAssignmentPickerView(GestureAssignmentWindow.CreateText(), _assignments);
+            _assignmentPicker = new GestureAssignmentPickerView(GestureAssignmentWindow.CreateText(), _assignments, _settings);
             _assignmentPicker.CandidateChanged += SelectAssignmentCandidate;
-            _assignmentPicker.AssignRequested += AssignClip;
+            _assignmentPicker.ExpressionApplyRequested += AssignExpression;
             _assignmentPicker.SetAvatar(_avatar);
             _assignmentPicker.SetCandidate(_assignmentCandidateClip);
-            _view.SetAssignmentContent(_assignmentView,
-                new GestureAssignmentSettingsView(GestureAssignmentWindow.CreateText(), _settings, _assignments), _assignmentPicker);
+            _view.SetAssignmentContent(_assignmentView, _assignmentPicker);
             _view.SetLibrarySelection(_assignmentCandidateClip);
+            RefreshLibraryAssignmentSelection();
             RenderLibrary();
             RefreshSaveNotification();
             root.Add(_view);
@@ -380,20 +382,6 @@ namespace Ee4v.FaceExpression
             else { AssignClip(clip); }
         }
 
-        private void AssignClip(AnimationClip clip)
-        {
-            if (_avatar == null || !_assignments.HasSelection) { return; }
-            _assignments.Activate();
-            if (_assignments.IsMenuSelection)
-            {
-                _assignments.SetClip(_assignments.SelectedMenuEntry, clip);
-            }
-            else
-            {
-                _assignments.SetClip(_assignments.SelectedCombination, clip);
-            }
-        }
-
         private void SelectAssignmentCandidate(AnimationClip clip)
         {
             if (_avatar == null) { return; }
@@ -401,6 +389,50 @@ namespace Ee4v.FaceExpression
             _assignmentPicker?.SetCandidate(clip);
             _view?.SetLibrarySelection(clip);
             if (_clip == null) { RefreshClip(); }
+        }
+
+        private void AssignClip(AnimationClip clip)
+        {
+            if (_avatar == null || !_assignments.HasSelection) { return; }
+            _assignments.Activate();
+            _assignments.SetSelectedClip(clip);
+        }
+
+        private void AssignExpression(AnimationClip clip, string menuName)
+        {
+            if (_avatar == null || !_assignments.HasSelection) { return; }
+            _assignments.Activate();
+            _assignments.SetSelectedExpression(clip, menuName);
+        }
+
+        private void RefreshLibraryAssignmentSelection()
+        {
+            _view?.SetAssignedLibraryClips(_assignments.SelectedClips);
+            if (_view == null) { return; }
+            var labels = new Dictionary<AnimationClip, List<string>>();
+            void AddLabel(AnimationClip clip, string label)
+            {
+                if (clip == null) { return; }
+                if (!labels.TryGetValue(clip, out var values))
+                {
+                    values = new List<string>();
+                    labels.Add(clip, values);
+                }
+                if (!values.Contains(label)) { values.Add(label); }
+            }
+            foreach (FaceGesture left in Enum.GetValues(typeof(FaceGesture)))
+            {
+                foreach (FaceGesture right in Enum.GetValues(typeof(FaceGesture)))
+                {
+                    AddLabel(_assignments.GetAssignment(new GestureCombination(left, right)).Clip,
+                        I18N.Get("gesture." + left) + "+" + I18N.Get("gesture." + right));
+                }
+            }
+            foreach (var entry in _assignments.MenuEntries)
+            {
+                AddLabel(entry.Assignment.Clip, I18N.Get("assignments.menuBadge"));
+            }
+            _view.SetLibraryAssignments(labels);
         }
 
         private void EditClip(AnimationClip clip)

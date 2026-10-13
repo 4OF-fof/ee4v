@@ -2,6 +2,7 @@ using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Ee4v.FaceExpression
 {
@@ -51,8 +52,11 @@ namespace Ee4v.FaceExpression
             UiComposition.Prepare(
                 root,
                 "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss");
-            root.Add(new GestureAssignmentSettingsView(
+            var scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll.style.flexGrow = 1f;
+            scroll.Add(new GestureAssignmentSettingsView(
                 GestureAssignmentWindow.CreateText(), session: GestureAssignmentSession.Active));
+            root.Add(scroll);
         }
 
         private void ConfigureWindow()

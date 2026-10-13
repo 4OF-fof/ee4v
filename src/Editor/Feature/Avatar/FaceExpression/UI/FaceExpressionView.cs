@@ -61,6 +61,9 @@ namespace Ee4v.FaceExpression
     {
         private const float LibraryItemLabelHeight = 30f;
         private const float LibraryFolderIconSize = 80f;
+        private const int DefaultLibraryColumns = 5;
+        private const int MinimumLibraryColumns = 3;
+        private const int MaximumLibraryColumns = 8;
 
         private readonly ObjectField _avatarField;
         private readonly ActionBar _toolbar;
@@ -69,15 +72,23 @@ namespace Ee4v.FaceExpression
         private readonly VisualElement _previewPane;
         private readonly ActionBar _previewNavbar;
         private readonly VisualElement _assignmentPane;
+        private readonly VisualElement _assignmentMatrix;
         private readonly VisualElement _rightPane;
         private readonly VisualElement _assignmentSettings;
+        private readonly VisualElement _assignmentActions;
         private readonly VisualElement _assignmentLibrary;
-        private readonly ActionBar _assignmentNavigation;
-        private readonly UiButton _assignmentMode;
-        private readonly UiButton _matrixMode;
+        private readonly SectionHeader _libraryHeader;
+        private readonly VisualElement _libraryGridControls;
+        private readonly SliderInt _libraryColumnsSlider;
+        private readonly List<VisualElement> _libraryItems = new List<VisualElement>();
+        private int _libraryColumns = DefaultLibraryColumns;
+        private readonly UiButton _confirmAssignments;
         private bool _showAssignmentMatrix;
         private AnimationClip _selectedLibraryClip;
+        private readonly HashSet<AnimationClip> _assignedLibraryClips = new HashSet<AnimationClip>();
         private readonly Dictionary<AnimationClip, VisualElement> _libraryClipItems = new Dictionary<AnimationClip, VisualElement>();
+        private readonly Dictionary<AnimationClip, VisualElement> _libraryBadgeHosts = new Dictionary<AnimationClip, VisualElement>();
+        private readonly Dictionary<AnimationClip, IReadOnlyList<string>> _libraryAssignmentLabels = new Dictionary<AnimationClip, IReadOnlyList<string>>();
         private readonly ObjectField _clipField;
         private readonly MessagePanel _validation;
         private readonly MessagePanel _saveNotification;
@@ -209,14 +220,6 @@ namespace Ee4v.FaceExpression
             _saveNotification.Add(_saveNotification.Actions);
             Add(_saveNotification);
 
-            _assignmentNavigation = new ActionBar();
-            _assignmentMode = new UiButton(I18N.Get("assignments.assignMode"), () => SetAssignmentMatrixVisible(false));
-            _matrixMode = new UiButton(I18N.Get("assignments.confirmMode"), () => SetAssignmentMatrixVisible(true));
-            _assignmentNavigation.Leading.Add(_assignmentMode);
-            _assignmentNavigation.Leading.Add(_matrixMode);
-            _assignmentNavigation.AddToClassList("ee4v-face-expression__assignment-navigation");
-            Add(_assignmentNavigation);
-
             var content = new VisualElement();
             content.AddToClassList("ee4v-face-expression__content");
             _previewPane = new VisualElement();
@@ -236,13 +239,41 @@ namespace Ee4v.FaceExpression
             _previewPane.Add(_previewViewport);
             _assignmentLibrary = new VisualElement();
             _assignmentLibrary.AddToClassList("ee4v-face-expression__assignment-library");
-            _assignmentLibrary.Add(new SectionHeader(_libraryTitle));
+            _libraryHeader = new SectionHeader(_libraryTitle);
+            _libraryGridControls = new VisualElement();
+            _libraryGridControls.AddToClassList("ee4v-face-expression__library-grid-controls");
+            _libraryGridControls.tooltip = I18N.Get("libraryGrid.columns");
+            _libraryGridControls.Add(CreateLibraryGridEndpoint("subtract.png", "libraryGrid.decrease", -1));
+            _libraryColumnsSlider = UiTextFactory.CreateSliderInt(
+                string.Empty, MinimumLibraryColumns, MaximumLibraryColumns,
+                "ee4v-face-expression__library-grid-slider");
+            _libraryColumnsSlider.showInputField = false;
+            _libraryColumnsSlider.SetValueWithoutNotify(_libraryColumns);
+            _libraryColumnsSlider.RegisterValueChangedCallback(evt => SetLibraryColumns(evt.newValue));
+            _libraryGridControls.Add(_libraryColumnsSlider);
+            _libraryGridControls.Add(CreateLibraryGridEndpoint("add.png", "libraryGrid.increase", 1));
+            _libraryHeader.Actions.Add(_libraryGridControls);
+            _assignmentLibrary.Add(_libraryHeader);
             _previewPane.Add(_assignmentLibrary);
             content.Add(_previewPane);
 
             _assignmentPane = new VisualElement();
             _assignmentPane.AddToClassList("ee4v-face-expression__assignment-pane");
             _assignmentPane.style.display = DisplayStyle.None;
+            var reviewNavbar = new ActionBar();
+            reviewNavbar.AddToClassList("ee4v-face-expression__review-navbar");
+            var reviewBack = new UiButton(
+                string.Empty,
+                () => SetAssignmentMatrixVisible(false),
+                text.BackToAssignments ?? text.BackToLibrary,
+                FluentUiIcons.CreateState("arrow_left.png", UiSizeTokens.Size20));
+            reviewBack.AddToClassList("ee4v-face-expression__back-to-library");
+            reviewNavbar.Leading.Add(reviewBack);
+            reviewNavbar.Leading.Add(UiTextFactory.Create(I18N.Get("assignments.confirmMode")));
+            _assignmentPane.Add(reviewNavbar);
+            _assignmentMatrix = new VisualElement();
+            _assignmentMatrix.AddToClassList("ee4v-face-expression__assignment-matrix");
+            _assignmentPane.Add(_assignmentMatrix);
             content.Add(_assignmentPane);
 
             var rightPane = new VisualElement();
@@ -252,6 +283,14 @@ namespace Ee4v.FaceExpression
             _editorContent.AddToClassList("ee4v-face-expression__editor-content");
             var editorPane = _editorContent;
             rightPane.Add(editorPane);
+            _confirmAssignments = new UiButton(
+                I18N.Get("assignments.reviewList"),
+                () => SetAssignmentMatrixVisible(true));
+            _confirmAssignments.AddToClassList("ee4v-face-expression__confirm-assignments");
+            _assignmentActions = new VisualElement();
+            _assignmentActions.AddToClassList("ee4v-face-expression__assignment-actions");
+            _assignmentActions.style.display = DisplayStyle.None;
+            rightPane.Add(_assignmentActions);
             _conversionPane = new VisualElement();
             _conversionPane.AddToClassList("ee4v-face-expression__conversion-pane");
             _conversionPane.style.display = DisplayStyle.None;
@@ -570,13 +609,15 @@ namespace Ee4v.FaceExpression
             _avatarField.SetEnabled(editable);
         }
 
-        public void SetAssignmentContent(VisualElement assignments, VisualElement settings, VisualElement picker = null)
+        public void SetAssignmentContent(VisualElement assignments, GestureAssignmentPickerView picker)
         {
-            _assignmentPane.Clear();
-            _assignmentPane.Add(assignments);
+            _assignmentMatrix.Clear();
+            _assignmentMatrix.Add(assignments);
             _assignmentSettings.Clear();
-            if (picker != null) { _assignmentSettings.Add(picker); }
-            _assignmentSettings.Add(settings);
+            _assignmentSettings.Add(picker);
+            _assignmentActions.Clear();
+            _assignmentActions.Add(picker.Footer);
+            picker.ReviewActions.Add(_confirmAssignments);
             RefreshFilter();
         }
 
@@ -585,6 +626,64 @@ namespace Ee4v.FaceExpression
             _selectedLibraryClip = clip;
             foreach (var pair in _libraryClipItems)
                 pair.Value.EnableInClassList("ee4v-face-expression__library-item--selected", pair.Key == clip);
+        }
+
+        public void SetAssignedLibraryClips(IEnumerable<AnimationClip> clips)
+        {
+            _assignedLibraryClips.Clear();
+            if (clips != null) { _assignedLibraryClips.UnionWith(clips); }
+            foreach (var pair in _libraryClipItems)
+            {
+                SetLibraryAssignmentHighlight(pair.Key, pair.Value);
+            }
+        }
+
+        private void SetLibraryAssignmentHighlight(AnimationClip clip, VisualElement item)
+        {
+            var assigned = _assignedLibraryClips.Contains(clip);
+            item.EnableInClassList("ee4v-face-expression__library-item--assigned", assigned);
+            var tooltip = clip.name;
+            if (_libraryAssignmentLabels.TryGetValue(clip, out var labels))
+            {
+                tooltip += "\n" + I18N.Get("assignments.assignmentBadgeHint") + "\n" + string.Join("\n", labels);
+            }
+            item.tooltip = assigned ? tooltip + "\n" + I18N.Get("assignments.currentAssignment") : tooltip;
+        }
+
+        public void SetLibraryAssignments(IReadOnlyDictionary<AnimationClip, List<string>> assignments)
+        {
+            _libraryAssignmentLabels.Clear();
+            foreach (var pair in assignments)
+            {
+                _libraryAssignmentLabels[pair.Key] = pair.Value.ToArray();
+            }
+            foreach (var pair in _libraryClipItems)
+            {
+                RenderLibraryAssignmentBadges(pair.Key);
+                SetLibraryAssignmentHighlight(pair.Key, pair.Value);
+            }
+        }
+
+        private void RenderLibraryAssignmentBadges(AnimationClip clip)
+        {
+            if (!_libraryBadgeHosts.TryGetValue(clip, out var host)) { return; }
+            host.Clear();
+            if (!_libraryAssignmentLabels.TryGetValue(clip, out var labels) || labels.Count == 0) { return; }
+            var visible = new List<string> { labels[0] };
+            if (labels.Count > 1)
+            {
+                var menu = I18N.Get("assignments.menuBadge");
+                visible.Add(labels.Contains(menu) && labels[0] != menu ? menu : labels[1]);
+            }
+            if (labels.Count > visible.Count) { visible.Add("+" + (labels.Count - visible.Count)); }
+            foreach (var label in visible)
+            {
+                var badge = new Badge(label) { pickingMode = PickingMode.Ignore };
+                badge.AddToClassList("ee4v-face-expression__library-assignment-badge");
+                badge.TextElement.SetFontSize(10);
+                badge.TextElement.SetColor(UiColorTokens.TextPrimary);
+                host.Add(badge);
+            }
         }
 
         private void SetAssignmentMatrixVisible(bool visible)
@@ -1027,11 +1126,12 @@ namespace Ee4v.FaceExpression
         private void RenderLibraryItems()
         {
             _libraryClipItems.Clear();
-            _library.Clear();
+            _libraryBadgeHosts.Clear();
+            _libraryItems.Clear();
             var folders = _libraryFolders;
             var clips = _libraryClips;
             var query = (_librarySearch.Value ?? string.Empty).Trim();
-            var items = new List<VisualElement>();
+            var items = _libraryItems;
             if (_canNavigateLibraryBack)
             {
                 items.Add(CreateIconLibraryItem(
@@ -1073,24 +1173,53 @@ namespace Ee4v.FaceExpression
                         _drawLibraryPreview)));
             }
 
+            LayoutLibraryItems();
+            RefreshFilter();
+        }
+
+        private UiButton CreateLibraryGridEndpoint(string iconName, string tooltipKey, int delta)
+        {
+            var button = new UiButton(
+                string.Empty,
+                () => SetLibraryColumns(_libraryColumns + delta),
+                I18N.Get(tooltipKey),
+                FluentUiIcons.CreateState(iconName, UiSizeTokens.Size12),
+                UiButtonVariant.Ghost);
+            button.AddToClassList("ee4v-face-expression__library-grid-endpoint");
+            return button;
+        }
+
+        private void SetLibraryColumns(int columns)
+        {
+            columns = Mathf.Clamp(columns, MinimumLibraryColumns, MaximumLibraryColumns);
+            _libraryColumnsSlider.SetValueWithoutNotify(columns);
+            if (_libraryColumns == columns) { return; }
+            _libraryColumns = columns;
+            LayoutLibraryItems();
+        }
+
+        private void LayoutLibraryItems()
+        {
+            var scrollOffset = _library.scrollOffset;
+            _library.Clear();
             for (var firstIndex = 0;
-                 firstIndex < items.Count;
-                 firstIndex += 3)
+                 firstIndex < _libraryItems.Count;
+                 firstIndex += _libraryColumns)
             {
                 var row = new VisualElement();
                 row.AddToClassList("ee4v-face-expression__library-row");
-                for (var column = 0; column < 3; column++)
+                for (var column = 0; column < _libraryColumns; column++)
                 {
                     var slot = new VisualElement();
                     slot.AddToClassList(
                         "ee4v-face-expression__library-slot");
-                    slot.style.marginRight = column < 2
+                    slot.style.marginRight = column < _libraryColumns - 1
                         ? UiSpacingTokens.Small
                         : 0f;
                     var clipIndex = firstIndex + column;
-                    if (clipIndex < items.Count)
+                    if (clipIndex < _libraryItems.Count)
                     {
-                        slot.Add(items[clipIndex]);
+                        slot.Add(_libraryItems[clipIndex]);
                     }
                     else
                     {
@@ -1103,7 +1232,7 @@ namespace Ee4v.FaceExpression
                 _library.Add(row);
             }
 
-            RefreshFilter();
+            _library.scrollOffset = scrollOffset;
         }
 
         private VisualElement CreateNewClipLibraryItem()
@@ -1162,6 +1291,12 @@ namespace Ee4v.FaceExpression
                 () => LibraryClipSelected?.Invoke(clip));
             item.EnableInClassList("ee4v-face-expression__library-item--selected", clip == _selectedLibraryClip);
             _libraryClipItems[clip] = item;
+            var badges = new VisualElement { pickingMode = PickingMode.Ignore };
+            badges.AddToClassList("ee4v-face-expression__library-assignment-badges");
+            ((UiButton)item).Content.Add(badges);
+            _libraryBadgeHosts[clip] = badges;
+            RenderLibraryAssignmentBadges(clip);
+            SetLibraryAssignmentHighlight(clip, item);
             item.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button != 0) { return; }
@@ -1209,9 +1344,12 @@ namespace Ee4v.FaceExpression
             preview.AddToClassList("ee4v-face-expression__library-preview");
             preview.AddToClassList(
                 "ee4v-face-expression__library-preview--icon");
-            preview.Add(new Icon(FluentUiIcons.CreateState(
+            var icon = new Icon(FluentUiIcons.CreateState(
                 iconName,
-                iconSize)));
+                iconSize));
+            preview.Add(icon);
+            preview.RegisterCallback<GeometryChangedEvent>(evt =>
+                icon.SetSize(Mathf.Max(1f, Mathf.Min(iconSize, evt.newRect.width, evt.newRect.height))));
             return CreateLibraryItem(name, selected, preview);
         }
 
@@ -1318,20 +1456,26 @@ namespace Ee4v.FaceExpression
             }
         }
 
-        internal bool IsAssigning => !_hasClip && _assignmentPane.childCount > 0;
+        internal bool IsAssigning => !_hasClip && _assignmentMatrix.childCount > 0;
 
         private void RefreshFilter()
         {
             var assigning = IsAssigning;
             var confirming = assigning && _showAssignmentMatrix;
+            EnableInClassList("ee4v-face-expression--editing", _hasClip);
             _previewPane.style.display = confirming ? DisplayStyle.None : DisplayStyle.Flex;
+            _previewViewport.style.display = assigning ? DisplayStyle.None : DisplayStyle.Flex;
             _assignmentPane.style.display = confirming ? DisplayStyle.Flex : DisplayStyle.None;
             _assignmentSettings.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
             _rightPane.style.display = confirming ? DisplayStyle.None : DisplayStyle.Flex;
-            _assignmentNavigation.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
-            _assignmentMode.EnableInClassList("ee4v-gesture-picker__hand--selected", !confirming);
-            _matrixMode.EnableInClassList("ee4v-gesture-picker__hand--selected", confirming);
+            _assignmentActions.style.display = assigning && !confirming ? DisplayStyle.Flex : DisplayStyle.None;
             _assignmentLibrary.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
+            _libraryGridControls.style.display = _hasClip ? DisplayStyle.None : DisplayStyle.Flex;
+            var libraryActions = assigning ? _libraryHeader.Actions : _sectionHeader.Actions;
+            if (_libraryGridControls.parent != libraryActions)
+            {
+                libraryActions.Add(_libraryGridControls);
+            }
             var libraryHost = assigning ? _assignmentLibrary : _editorContent;
             if (_library.parent != libraryHost)
             {
@@ -1339,7 +1483,6 @@ namespace Ee4v.FaceExpression
                 libraryHost.Add(_library);
             }
             _sectionHeader.style.display = assigning ? DisplayStyle.None : DisplayStyle.Flex;
-            _previewPane.EnableInClassList("ee4v-face-expression__preview-pane--assigning", assigning);
             _rightPane.EnableInClassList("ee4v-face-expression__editor-pane--assigning", assigning);
             _sectionHeader.SetTitle(_hasClip ? _sectionTitle : _libraryTitle);
             _toolbar.style.display = _showAvatarField ? DisplayStyle.Flex : DisplayStyle.None;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.UI;
 using UnityEditor;
@@ -399,9 +400,6 @@ namespace Ee4v.FaceExpression
                     RightHand = "Right hand",
                     Selection = "Selected",
                     ExpressionSettings = "Expression settings",
-                    Synchronization = "Synchronization",
-                    SynchronizeLeft = "Synchronize the same left hand",
-                    SynchronizeRight = "Synchronize the same right hand",
                     GlobalSettings = "Global settings",
                     Clip = "Expression clip",
                     EnableBlink = "Enable blinking",
@@ -410,10 +408,10 @@ namespace Ee4v.FaceExpression
                     MenuOnly = "Extra (menu only)",
                     MenuOnlyHint = "Select an Extra cell below the divider to edit it in the settings window.",
                     MenuName = "Menu name",
-                    DisableMenuIcons = "Disable preview menu icons",
+                    EnableMenuIcons = "Generate thumbnails",
                     AddMenuExpression = "Add menu-only expression",
                     Remove = "Remove",
-                    GestureName = gesture => gesture.ToString()
+                    GestureName = gesture => I18N.Get("gesture." + gesture)
                 }, readOnly: true);
             view.SetConfiguration(new FaceExpressionConfiguration(
                 new Dictionary<GestureCombination, FaceExpressionAssignment>(),
@@ -436,15 +434,11 @@ namespace Ee4v.FaceExpression
             var avatar = new GameObject("Assignment preview") { hideFlags = HideFlags.HideAndDontSave };
             var clip = new AnimationClip { name = "Smile", hideFlags = HideFlags.HideAndDontSave };
             session.SetConfiguration(new FaceExpressionConfiguration(new Dictionary<GestureCombination, FaceExpressionAssignment>(), null));
-            var picker = new GestureAssignmentPickerView(GestureAssignmentWindow.CreateText(), session);
+            var picker = new GestureAssignmentPickerView(GestureAssignmentWindow.CreateText(), session, new StorySettingsService());
             picker.SetAvatar(avatar);
             picker.SetCandidate(clip);
             picker.CandidateChanged += picker.SetCandidate;
-            picker.AssignRequested += candidate =>
-            {
-                if (session.IsMenuSelection) { session.SetClip(session.SelectedMenuEntry, candidate); }
-                else if (session.HasSelection) { session.SetClip(session.SelectedCombination, candidate); }
-            };
+            picker.ExpressionApplyRequested += session.SetSelectedExpression;
             picker.RegisterCallback<DetachFromPanelEvent>(_ =>
             {
                 session.Dispose();
@@ -464,17 +458,14 @@ namespace Ee4v.FaceExpression
                 {
                     Selection = "Selected",
                     ExpressionSettings = "Expression settings",
-                    Synchronization = "Synchronization",
-                    SynchronizeLeft = "Synchronize the same left hand",
-                    SynchronizeRight = "Synchronize the same right hand",
                     GlobalSettings = "Global settings",
                     EnableBlink = "Enable blinking",
                     FixMouth = "Fix mouth movement",
                     MenuOnly = "Extra (menu only)",
                     MenuName = "Menu name",
-                    DisableMenuIcons = "Disable preview menu icons",
+                    EnableMenuIcons = "Generate thumbnails",
                     Remove = "Remove",
-                    GestureName = gesture => gesture.ToString()
+                    GestureName = gesture => I18N.Get("gesture." + gesture)
                 },
                 new StorySettingsService()));
             parent.Add(settingsSurface);

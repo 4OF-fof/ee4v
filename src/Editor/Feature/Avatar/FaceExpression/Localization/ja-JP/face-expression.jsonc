@@ -87,6 +87,11 @@
     "avatar": "アバター",
     "clip": "表情クリップ"
   },
+  "libraryGrid": {
+    "columns": "ライブラリの列数",
+    "decrease": "列数を減らす",
+    "increase": "列数を増やす"
+  },
   "section": {
     "blendShapes": "BlendShape",
     "library": "表情ライブラリ",
@@ -133,10 +138,29 @@
   },
   "assignments": {
     "target": "表情の割り当て先",
-    "assign": "この組に割り当てる",
+    "expressionInputs": "表情",
+    "newRegistration": "新規登録",
+    "registerMenu": "メニューに登録",
+    "updateMenu": "更新する",
+    "currentAssignment": "選択先に割り当て済み",
+    "expressionTab": "表情設定",
+    "settingsTab": "設定",
+    "reviewList": "一覧を確認",
+    "menuExpressions": "メニュー専用表情",
+    "menuSelection": "メニュー専用",
+    "menuBadge": "メニュー",
+    "menuOverviewHint": "Expression Menuに登録される表情です。",
+    "assignmentBadgeHint": "左手 + 右手",
+    "add": "追加",
+    "unnamedMenuEntry": "名前なしの表情",
+    "clipNamePlaceholder": "クリップ名を使用",
+    "assign": "割り当てる",
+    "allGestures": "すべて",
+    "selectionCount": "（{0}組）",
+    "mixedClips": "複数の表情が割り当て済み",
+    "mixedValues": "複数の値",
     "clear": "割り当てを解除",
-    "assignMode": "割り当て",
-    "confirmMode": "8×8で確認",
+    "confirmMode": "確認",
     "unsavedChanges": "未保存の変更があります。",
     "save": "保存",
     "saveFailed": "保存できませんでした。変更は未保存のままです。",
@@ -148,9 +172,6 @@
     "selection": "選択中",
     "noSelection": "未選択",
     "expressionSettings": "選択中の表情設定",
-    "synchronization": "同期",
-    "synchronizeLeft": "同じ左手の組み合わせを同期",
-    "synchronizeRight": "同じ右手の組み合わせを同期",
     "globalSettings": "グローバル設定",
     "enableBlink": "まばたきを有効化",
     "fixMouth": "口の動きを固定",
@@ -158,7 +179,7 @@
     "menuOnly": "Extra（メニュー限定）",
     "menuOnlyHint": "メニューからだけ選ぶ表情です。太線より下のセルを選ぶと右側で割り当てと設定を編集できます。",
     "menuName": "メニュー名",
-    "disableMenuIcons": "プレビューアイコンを無効化"
+    "enableMenuIcons": "サムネイルを生成"
   },
   "empty": {
     "blendShapes": "BlendShape がありません。"
@@ -179,14 +200,14 @@
     "copyBlendShapes": "BlendShapeとしてコピー"
   },
   "gesture": {
-    "Neutral": "自然",
-    "Fist": "グー",
-    "Open": "パー",
-    "Point": "指差し",
-    "Victory": "ピース",
-    "RockNRoll": "ロック",
-    "HandGun": "ガン",
-    "ThumbsUp": "親指"
+    "Neutral": "Neutral",
+    "Fist": "Fist",
+    "Open": "HandOpen",
+    "Point": "FingerPoint",
+    "Victory": "Victory",
+    "RockNRoll": "RockNRoll",
+    "HandGun": "HandGun",
+    "ThumbsUp": "ThumbsUp"
   },
   "dialog": {
     "createTitle": "表情クリップを作成",

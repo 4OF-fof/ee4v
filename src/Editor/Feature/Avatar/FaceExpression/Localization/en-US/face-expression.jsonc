@@ -87,6 +87,11 @@
     "avatar": "Avatar",
     "clip": "Expression clip"
   },
+  "libraryGrid": {
+    "columns": "Library columns",
+    "decrease": "Show fewer columns",
+    "increase": "Show more columns"
+  },
   "section": {
     "blendShapes": "BlendShapes",
     "library": "Expression Library",
@@ -133,10 +138,29 @@
   },
   "assignments": {
     "target": "Assign expression to",
-    "assign": "Assign to this combination",
+    "expressionInputs": "Expression",
+    "newRegistration": "New entry",
+    "registerMenu": "Add to menu",
+    "updateMenu": "Update",
+    "currentAssignment": "Assigned to the selected target",
+    "expressionTab": "Expression",
+    "settingsTab": "Settings",
+    "reviewList": "Review grid",
+    "menuExpressions": "Menu-only expressions",
+    "menuSelection": "Menu only",
+    "menuBadge": "Menu",
+    "menuOverviewHint": "Expressions included in the Expression Menu.",
+    "assignmentBadgeHint": "Left hand + Right hand",
+    "add": "Add",
+    "unnamedMenuEntry": "Unnamed expression",
+    "clipNamePlaceholder": "Use clip name",
+    "assign": "Assign",
+    "allGestures": "All",
+    "selectionCount": "({0} combinations)",
+    "mixedClips": "Multiple assigned expressions",
+    "mixedValues": "Mixed values",
     "clear": "Clear assignment",
-    "assignMode": "Assign",
-    "confirmMode": "Review 8×8",
+    "confirmMode": "Review",
     "unsavedChanges": "You have unsaved changes.",
     "save": "Save",
     "saveFailed": "Saving failed. Your changes are still unsaved.",
@@ -148,9 +172,6 @@
     "selection": "Selected",
     "noSelection": "None",
     "expressionSettings": "Selected expression settings",
-    "synchronization": "Synchronization",
-    "synchronizeLeft": "Synchronize combinations with the same left hand",
-    "synchronizeRight": "Synchronize combinations with the same right hand",
     "globalSettings": "Global settings",
     "enableBlink": "Enable blinking",
     "fixMouth": "Fix mouth movement",
@@ -158,7 +179,7 @@
     "menuOnly": "Extra (menu only)",
     "menuOnlyHint": "Menu-only expressions. Select a cell below the divider to assign and configure it on the right.",
     "menuName": "Menu name",
-    "disableMenuIcons": "Disable preview menu icons"
+    "enableMenuIcons": "Generate thumbnails"
   },
   "empty": {
     "blendShapes": "No BlendShapes were found."
@@ -181,8 +202,8 @@
   "gesture": {
     "Neutral": "Neutral",
     "Fist": "Fist",
-    "Open": "Open",
-    "Point": "Point",
+    "Open": "HandOpen",
+    "Point": "FingerPoint",
     "Victory": "Victory",
     "RockNRoll": "RockNRoll",
     "HandGun": "HandGun",

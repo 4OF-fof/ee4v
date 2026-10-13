@@ -19,7 +19,7 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 
 ### Inputs
 
-型付きの標準Sliderは`UiTextFactory.CreateSlider`を使用します。生成したSliderの`value`・`SetValueWithoutNotify`・`showInputField`で操作値と数値入力を設定し、ラベルを標準UIの`text`へ直接書き込みません。
+型付きの標準Sliderは`UiTextFactory.CreateSlider`、整数のSliderIntは`UiTextFactory.CreateSliderInt`を使用します。生成した入力の`value`・`SetValueWithoutNotify`・`showInputField`で操作値と数値入力を設定し、ラベルを標準UIの`text`へ直接書き込みません。
 
 `InputField`は左クリックで内部のTextFieldへフォーカスします。文字の上だけでなく入力欄の余白もクリック対象です。無効な入力欄はフォーカスしません。
 
