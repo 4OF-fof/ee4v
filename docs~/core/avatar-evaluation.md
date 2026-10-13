@@ -1,6 +1,8 @@
 # Avatarの評価・プレビュー
 
-`Core/AvatarEvaluation`の`Ee4v.Core.AvatarEvaluation.Editor`は、NDMF Preview APIを使うアバタープレビューと、MAを考慮したExpression Menu・パラメーターの取得APIを提供します。プレビューはUIのPrefabScenePreview・FaceExpression・AssetManager、情報取得はExpression Menuが使用します。機能モジュール、UI、編集対象の保存やUndoへ依存しません。
+`Core/AvatarEvaluation`の`Ee4v.Core.AvatarEvaluation.Editor`は、NDMF Preview APIを使うアバタープレビューと、MAを考慮したExpression Menu・パラメーターの取得APIを提供します。プレビューはUIのPrefabScenePreview・FaceExpression・AssetManager、情報取得はExpression Menuが使用します。機能モジュール、UI、編集対象の保存やUndoへ依存しません。共有のアバターメニュー除外データは`Runtime/Core`の`Ee4v.Core.Runtime`に置き、VRChatの`IEditorOnly`を実装した`AvatarMenuExclusions`に保持します。AvatarEvaluationとExpression Menuが同じデータを読むためCoreのRuntime assemblyへ依存し、機能モジュールへの参照は追加しません。
+
+`AvatarAuthoringMenu.Read`はMAのVirtualMenuに登録するInstallerとInstall Targetを除外設定で絞り、解決した項目を元のMA Menu ItemまたはSDK Controlへ照合して個別除外を反映します。元オブジェクトは変更しません。Installer由来のSDK assetは編集元として保持しますが、合成表示にはその除外した登録を加えません。`AvatarMenuExclusionUtility`は設定の照合・変更検出とビルド用コピーの追跡／生成結果の除外を共有します。設定の変更・UndoはExpression Menu、NDMFの実行順序はExpression MenuのNDMF assemblyが所有します。
 
 | 責務 | 公開API | 入力・結果 |
 |---|---|---|
@@ -40,7 +42,7 @@ Scene入力ではサンプリングした姿勢・Renderer値を最終段のNDMF
 
 `AvatarMenuEntry.Submenu`はControlTypeが`SubMenu`の場合だけ設定します。Toggle・Button・Puppetなどに未使用の`subMenu`参照やMA Children設定が残っていても、階層として読み取りません。元asset・元Control・MA componentの設定は変更しません。この判定は合成メニューと表示・編集元の候補の両方へ適用します。
 
-MAの内部`VirtualMenu.ForAvatar`、`RootMenuNode`とChildrenのnode keyへのreflectionはこのモジュールへ隔離します。resolverが利用できない場合は例外を返します。合成Controlと元Controlの照合が曖昧な場合はOwnerを確定しません。元Controlはコピーせず参照を保持し、利用側の変更検出に使います。
+MAの内部`VirtualMenu`の構築・InstallerとInstall Targetの登録・`FreezeMenu`・`RootMenuNode`とChildrenのnode keyへのreflectionはこのモジュールへ隔離します。resolverが利用できない場合は例外を返します。合成Controlと元Controlの照合が曖昧な場合はOwnerを確定しません。元Controlはコピーせず参照を保持し、利用側の変更検出に使います。
 
 編集元候補は名前とControlTypeで索引化してから残りの設定を照合し、各合成Controlについて候補全体を走査しません。同じ設定が複数候補へ一致する場合は引き続き出所不明として返します。Coreは読み取り結果を永続キャッシュせず、画面移動時の再利用と変更通知による無効化は利用側のViewが所有します。
 

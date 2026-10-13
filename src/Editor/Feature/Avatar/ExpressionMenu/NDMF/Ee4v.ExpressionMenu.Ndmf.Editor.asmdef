@@ -1,0 +1,9 @@
+{
+  "name": "Ee4v.ExpressionMenu.Ndmf.Editor",
+  "rootNamespace": "Ee4v.ExpressionMenu.Ndmf",
+  "references": ["Ee4v.Core.AvatarEvaluation.Editor", "nadena.dev.ndmf"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false,
+  "defineConstraints": ["EE4V_NDMF"],
+  "versionDefines": [{"name": "nadena.dev.ndmf", "expression": "1.4.1", "define": "EE4V_NDMF"}]
+}

@@ -28,6 +28,9 @@
 .ee4v-expression-menu__browser-layout { flex-grow: 1; flex-direction: row; min-width: 0; min-height: 0; }
 .ee4v-expression-menu__browser { flex-grow: 1; flex-basis: 0; min-width: 0; min-height: 0; padding: var(--ee4v-space-xl); }
 .ee4v-expression-menu__browser-scroll { flex-grow: 1; min-width: 0; min-height: 0; }
+.ee4v-expression-menu__exclusions { margin-top: var(--ee4v-space-xl); flex-shrink: 0; }
+.ee4v-expression-menu__exclusion-row { flex-direction: row; align-items: center; min-height: 32px; flex-shrink: 0; }
+.ee4v-expression-menu__exclusion-name { flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; margin-right: var(--ee4v-space-md); }
 .ee4v-expression-menu__browser--preview { padding: 0; }
 .ee4v-expression-menu__browser--preview > .ee4v-expression-menu__preview-column { flex-basis: 0; min-height: 240px; margin-right: 0; }
 .ee4v-expression-menu__inspector { width: 460px; min-width: 420px; flex-shrink: 0; min-height: 0; padding: var(--ee4v-space-2xl); border-left-width: var(--ee4v-border-hairline); border-left-color: var(--ee4v-color-border-default); background-color: var(--ee4v-color-surface-subtle); }

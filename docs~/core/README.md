@@ -30,6 +30,7 @@ Core は機能横断の契約、共通実装、Unity Editor との接続部を�
 | `Ee4v.Core.Unity.Editor` | Settings の保存と JSON 変換 | あり |
 | `Ee4v.Core.Editor` | Unity Editor 操作と内部 API の隔離 | あり |
 | `Ee4v.Core.AvatarEvaluation.Editor` | NDMF Preview描画・MA骨対応を反映したClip再生、MAを考慮した編集用情報 | あり |
+| `Ee4v.Core.Runtime` | アバターメニューの除外設定を保持するEditorOnly Component | なし |
 | `Ee4v.Core.Presentation.Editor` | Settings 画面、表示注入、状態表示 | あり |
 | `Ee4v.UI.Editor` | 機能横断のUI Toolkitコンポーネント | あり |
 
