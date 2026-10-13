@@ -47,6 +47,7 @@ npm run check
 - status window は bridge、`VRCAsset`、保留 import 件数を表示する
 - `http://127.0.0.1:48196` を公開する
 - bridge は `GET /health`, `POST /v1/status`, `POST /v1/import` を受け、BOOTH library userscript へ BoothMeta / download 状態を返す
+- 取込済み判定はBoothMetaのdownload履歴、Eagle itemのdownload ID、対象商品のfolder内のファイル名の順に照合する。ファイル名はEagleの名前と別フィールドの拡張子を組み合わせ、履歴やdownload IDで一致しない既存ZIPも検出する。他の商品folderの同名ファイルと削除済みitemはファイル名照合の対象にしない
 - `/v1/import` はBoothMetaの状態だけで受付を完了して保留jobを登録し、既存item照合はdownload監視処理で対象商品のfolder内に限定して行う
 - `127.0.0.1` のみに bind し、BOOTH HTTPS origin だけへ CORS を許可する
 - `/health` が返す session token を `X-EE4V-Bridge-Token` に付けた POST だけを受け付ける

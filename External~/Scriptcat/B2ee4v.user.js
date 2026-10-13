@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Booth to ee4v
 // @namespace    https://4of.dev
-// @version      0.1.5
+// @version      0.1.6
 // @description  Add ee4v import badges and actions to the BOOTH library and item pages.
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
@@ -667,9 +667,16 @@
           return null;
         }
 
-        const productLink = card.querySelector(selectors.productLink);
+        const productLink =
+          thumbnail.closest(selectors.productLink) ||
+          card.querySelector(selectors.productLink);
         const product = this.readProduct(card, thumbnail, productLink);
         if (!product) {
+          return null;
+        }
+
+        const downloads = this.readDownloads(card, product);
+        if (downloads.length === 0) {
           return null;
         }
 
@@ -678,7 +685,7 @@
           header:
             card.querySelector(selectors.header) || card.firstElementChild,
           product,
-          downloads: this.readDownloads(card, product),
+          downloads,
         };
       },
 
@@ -687,6 +694,10 @@
         // 商品 URL と download action を一緒に含む最小の祖先をカードとみなす。
         let current = thumbnail.parentElement;
         while (current && current !== document.body) {
+          // ダウンロードのないカードから商品一覧全体へ探索を広げない。
+          if (current.querySelectorAll(selectors.thumbnail).length > 1) {
+            break;
+          }
           if (
             current.querySelector(selectors.productLink) &&
             current.querySelector(selectors.downloadTrigger)
@@ -696,7 +707,10 @@
           current = current.parentElement;
         }
 
-        return thumbnail.closest(selectors.cardFromThumbnail);
+        const fallback = thumbnail.closest(selectors.cardFromThumbnail);
+        return fallback && fallback.querySelectorAll(selectors.thumbnail).length === 1
+          ? fallback
+          : null;
       },
 
       readProduct(card, thumbnail, productLink) {

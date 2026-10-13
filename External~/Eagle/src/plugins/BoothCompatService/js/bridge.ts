@@ -489,7 +489,7 @@
       itemUrl: core().normalizeBoothItemUrl(product.itemUrl),
       hasBoothMeta: Boolean(boothMeta),
       downloads: downloads.map(download => {
-        const match = findImportedDownload(boothMeta && boothMeta.meta, download, allItems);
+        const match = findImportedDownload(boothMeta && boothMeta.meta, download, allItems, boothMeta && boothMeta.folder.id);
         const job = importJobs.get(core().buildDownloadKey(download));
         return {
           downloadUrl: core().normalizeDownloadUrl(download.downloadUrl),
@@ -658,7 +658,7 @@
       limit: 1000,
       folders: job.boothMetaFolderId
     });
-    const existing = findImportedDownload(meta, job.download, productItems);
+    const existing = findImportedDownload(meta, job.download, productItems, job.boothMetaFolderId);
     if (existing) {
       job.status = "imported";
       return;
@@ -1088,7 +1088,7 @@
     return normalized;
   }
 
-  function findImportedDownload(meta: Partial<BoothMeta> | null | undefined, download: BridgeDownload, allItems: EagleWebItem[]): ImportedDownloadMatch | null {
+  function findImportedDownload(meta: Partial<BoothMeta> | null | undefined, download: BridgeDownload, allItems: EagleWebItem[], productFolderId?: string): ImportedDownloadMatch | null {
     if (isDownloadImported(meta, download)) {
       return {
         matchedBy: "boothmeta"
@@ -1097,17 +1097,29 @@
 
     const downloadId = core().extractDownloadId(download.downloadUrl || "");
     const filename = core().normalizeFilename(download.filename);
-    const item = allItems.find(candidate => {
+    const candidates = allItems.filter(candidate => !candidate.isDeleted);
+    const item = candidates.find(candidate => {
       const annotation = core().safeString(candidate.annotation);
       const url = core().safeString(candidate.url);
-      const name = core().normalizeFilename(candidate.name);
-      return (downloadId > 0 && (annotation.includes(String(downloadId)) || url.includes(`/downloadables/${downloadId}`)))
-        || (filename && name === filename);
+      return downloadId > 0 && (annotation.includes(String(downloadId)) || url.includes(`/downloadables/${downloadId}`));
     });
 
-    return item
-      ? { matchedBy: downloadId > 0 ? "downloadId" : "filename" }
-      : null;
+    if (item) {
+      return { matchedBy: "downloadId" };
+    }
+
+    const filenameMatch = filename && productFolderId && candidates.find(candidate => {
+      if (!core().getItemFolderIds(candidate).includes(productFolderId)) {
+        return false;
+      }
+
+      // Eagle stores the extension separately from the item name.
+      const name = core().normalizeFilename(candidate.name);
+      const ext = core().normalizeFilename(candidate.ext).replace(/^\./, "");
+      const storedFilename = ext && !name.endsWith(`.${ext}`) ? `${name}.${ext}` : name;
+      return storedFilename === filename;
+    });
+    return filenameMatch ? { matchedBy: "filename" } : null;
   }
 
   function isDownloadImported(meta: Partial<BoothMeta> | null | undefined, download: BridgeDownload): boolean {
