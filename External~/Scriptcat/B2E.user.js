@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Booth to Ealge
 // @namespace    https://4of.dev
-// @version      0.1.5
+// @version      0.1.7
 // @description  Add Eagle import badges and actions to the BOOTH library and item pages.
 // @match        https://accounts.booth.pm/library*
 // @match        https://accounts.booth.pm/library/gifts*
@@ -78,6 +78,8 @@
     rootFolderAvailable: false,
     healthTimerId: 0,
     statusTimerId: 0,
+    statusRefreshRunning: false,
+    statusRefreshPending: false,
     productStates: new Map(),
     downloadStates: new Map(),
     pendingDownloads: new Map(),
@@ -272,6 +274,24 @@
   }
 
   async function refreshStatuses() {
+    if (state.statusRefreshRunning) {
+      state.statusRefreshPending = true;
+      return;
+    }
+
+    state.statusRefreshRunning = true;
+    try {
+      await updateStatuses();
+    } finally {
+      state.statusRefreshRunning = false;
+      if (state.statusRefreshPending) {
+        state.statusRefreshPending = false;
+        scheduleStatusRefresh();
+      }
+    }
+  }
+
+  async function updateStatuses() {
     const contexts = collectCardContexts();
 
     if (
@@ -283,12 +303,18 @@
       return;
     }
 
+    const bridgeToken = state.bridgeToken;
     const result = await bridgeRequest(
       "POST",
       "/v1/status",
       buildStatusPayload(contexts),
     );
-    if (!result || !Array.isArray(result.items)) {
+    if (
+      !state.bridgeConnected ||
+      state.bridgeToken !== bridgeToken ||
+      !result ||
+      !Array.isArray(result.items)
+    ) {
       return;
     }
 
@@ -389,17 +415,26 @@
     const enabled =
       state.bridgeConnected &&
       state.rootFolderAvailable &&
+      Boolean(downloadState) &&
       !state.importAllRunning &&
       !pending &&
       !imported;
     item.setAttribute("aria-disabled", enabled ? "false" : "true");
     item.disabled = !enabled;
-    item.dataset.state = imported ? "imported" : pending ? "pending" : "ready";
+    item.dataset.state = imported
+      ? "imported"
+      : pending
+        ? "pending"
+        : downloadState
+          ? "ready"
+          : "checking";
     const label = imported
       ? "取込済み"
       : pending
         ? "取込待ち"
-        : "Import Eagle";
+        : downloadState
+          ? "Import Eagle"
+          : "確認中";
     if (item.textContent !== label) {
       item.textContent = label;
     }
@@ -496,7 +531,8 @@
         const downloadKey = buildDownloadKey(download);
         const downloadState = state.downloadStates.get(downloadKey);
         if (
-          (downloadState && downloadState.imported) ||
+          !downloadState ||
+          downloadState.imported ||
           addedDownloadKeys.has(downloadKey)
         ) {
           return;
@@ -667,9 +703,16 @@
           return null;
         }
 
-        const productLink = card.querySelector(selectors.productLink);
+        const productLink =
+          thumbnail.closest(selectors.productLink) ||
+          card.querySelector(selectors.productLink);
         const product = this.readProduct(card, thumbnail, productLink);
         if (!product) {
+          return null;
+        }
+
+        const downloads = this.readDownloads(card, product);
+        if (downloads.length === 0) {
           return null;
         }
 
@@ -678,7 +721,7 @@
           header:
             card.querySelector(selectors.header) || card.firstElementChild,
           product,
-          downloads: this.readDownloads(card, product),
+          downloads,
         };
       },
 
@@ -687,6 +730,10 @@
         // 商品 URL と download action を一緒に含む最小の祖先をカードとみなす。
         let current = thumbnail.parentElement;
         while (current && current !== document.body) {
+          // ダウンロードのないカードから商品一覧全体へ探索を広げない。
+          if (current.querySelectorAll(selectors.thumbnail).length > 1) {
+            break;
+          }
           if (
             current.querySelector(selectors.productLink) &&
             current.querySelector(selectors.downloadTrigger)
@@ -696,7 +743,10 @@
           current = current.parentElement;
         }
 
-        return thumbnail.closest(selectors.cardFromThumbnail);
+        const fallback = thumbnail.closest(selectors.cardFromThumbnail);
+        return fallback && fallback.querySelectorAll(selectors.thumbnail).length === 1
+          ? fallback
+          : null;
       },
 
       readProduct(card, thumbnail, productLink) {
