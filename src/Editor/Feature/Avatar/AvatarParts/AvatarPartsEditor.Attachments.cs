@@ -132,17 +132,7 @@ namespace Ee4v.AvatarParts
         {
             var panel = new VisualElement();
             panel.AddToClassList("ee4v-part-attachment__setup");
-            var animator = _context.Root.GetComponentsInChildren<Animator>(true)
-                .FirstOrDefault(candidate => !candidate.transform.IsChildOf(part) && candidate.isHuman);
-            var recommended = armature != null
-                ? animator?.GetBoneTransform(HumanBodyBones.Hips)?.parent
-                : animator?.GetBoneTransform(HumanBodyBones.Head);
-            if (armature != null && recommended == null)
-            {
-                recommended = _context.Root.GetComponentsInChildren<Transform>(true)
-                    .FirstOrDefault(candidate => !candidate.IsChildOf(part) && candidate != _context.Root.transform &&
-                        string.Equals(candidate.name, armature.name, StringComparison.OrdinalIgnoreCase));
-            }
+            var recommended = RecommendedAttachmentTarget(part, armature);
             var targetField = UiTextFactory.CreateObjectField();
             targetField.objectType = typeof(Transform);
             targetField.allowSceneObjects = true;
@@ -161,30 +151,12 @@ namespace Ee4v.AvatarParts
                 var target = targetField.value as Transform;
                 if (!ValidAttachmentTarget(part, target)) { return; }
                 if (!_context.Edits.CanEditPrefab() || !FlushPendingPartVisibility()) { return; }
-                Undo.IncrementCurrentGroup();
-                var undo = Undo.GetCurrentGroup();
-                Undo.SetCurrentGroupName(I18N.Get("workflow.attachment.undo"));
                 try
                 {
-                    if (armature != null)
-                    {
-                        var merge = Undo.AddComponent<ModularAvatarMergeArmature>(armature.gameObject);
-                        merge.mergeTarget.Set(target.gameObject);
-                        PrefabUtility.RecordPrefabInstancePropertyModifications(merge);
-                    }
-                    else
-                    {
-                        var proxy = Undo.AddComponent<ModularAvatarBoneProxy>(part.gameObject);
-                        proxy.target = target;
-                        proxy.attachmentMode = BoneProxyAttachmentMode.AsChildKeepWorldPose;
-                        PrefabUtility.RecordPrefabInstancePropertyModifications(proxy);
-                    }
-                    Undo.CollapseUndoOperations(undo);
-                    AttachmentChanged();
+                    ApplyAttachment(part, armature ?? part, armature != null ? "MergeArmature" : "BoneProxy", target, null, null);
                 }
                 catch (Exception exception)
                 {
-                    Undo.RevertAllDownToGroup(undo);
                     Debug.LogException(exception);
                     _context.Edits.ShowAssetError("workflow.assets.saveFailed");
                 }

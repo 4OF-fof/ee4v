@@ -21,10 +21,10 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_list_variants",
-                "Lists Project works, including compositions without a base, with their working Scene, source Prefab, root path, and editable Material Variants.",
-                McpSchemas.Object(new JObject { ["itemId"] = McpSchemas.String() }, "itemId"),
+                "Lists Project works belonging to itemId with their Scene/source/Material Variants. Omit itemId to list all Project and saved works, including works absent from this Project; use variantId for history and metadata operations.",
+                McpSchemas.Object(new JObject { ["itemId"] = McpSchemas.String() }),
                 arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
-                    ListVariants(McpJson.RequireString(arguments, "itemId"))))),
+                    arguments["itemId"] == null ? AssetManagerWorkMcpTools.List() : ListVariants(McpJson.RequireString(arguments, "itemId"))))),
                 readOnly: true));
 
             McpToolRegistry.Register(new McpToolDefinition(

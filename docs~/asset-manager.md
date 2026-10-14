@@ -379,6 +379,8 @@ SQLite接続はmasterと同じ`Ee4v.SQLite.Editor`境界とvendor済みの`sqlit
 
 ## 公開API
 
+`DerivedAssetCreator.CreateOwnedWork`は新しい所有Itemと通常Prefab／ベース付きVariantを作り、Prefab作成失敗時は所有Itemを片付けます。試着用の`GetFittingAvatar`／`SetFittingAvatar`も外部integrationへ公開し、Scene環境と制作物の保存範囲をUIと共有します。MCPのItem／File／Source／Collectionは共通manager、制作物metadata・版・画像は共通Variant managerを使用し、独自のDB・履歴形式を持ちません。公開toolと入力・破壊性の契約は[mcp.md](mcp.md)を参照してください。
+
 `DerivedAssetCreator.AddPrefabToWorkingRoot`はUIとMCPの共通Prefab追加処理です。循環参照を検証し、作業Sceneのroot直下へ接続を保持して配置し、Undo、素体倍率への追従とSceneのdirty通知を行います。元Prefabを編集せず、Prefabへの適用と履歴保存は既存の保存操作が担当します。
 
 `IAssetManager`は次を提供します。

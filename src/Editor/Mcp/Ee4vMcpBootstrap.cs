@@ -104,6 +104,7 @@ namespace Ee4v.Mcp
             _toolsRegistered = true;
             McpStatusTools.Register();
             AvatarMcpTools.Register();
+            AvatarAuthoringMcpTools.Register();
             FaceExpressionMcpTools.Register();
             AssetManagerMcpTools.Register();
             AvatarSimulationMcpTools.Register();

@@ -160,6 +160,32 @@ namespace Ee4v.FaceExpression
 
     public static class FaceExpressionApi
     {
+        public static FaceExpressionAnimationEditResult SetAnimationChannelEnabled(GameObject avatar, AnimationClip clip,
+            string rendererPath, string shapeName, bool enabled, int poseIndex = 0, float? value = null,
+            bool dryRun = false, string expectedRevision = null)
+        {
+            ValidateAnimationEditTarget(avatar, clip, expectedRevision);
+            ValidateClipPath(AssetDatabase.GetAssetPath(clip));
+            if (string.IsNullOrWhiteSpace(expectedRevision)) throw new ArgumentException("expectedRevision is required for channel changes.");
+            if (value.HasValue && (float.IsNaN(value.Value) || float.IsInfinity(value.Value))) throw new ArgumentException("Channel value must be finite.");
+            var times = FaceExpressionClipEditor.GetPoseTimes(clip);
+            if (times.Count == 0) times = new[] { 0f };
+            if (poseIndex < 0 || poseIndex >= times.Count) throw new ArgumentOutOfRangeException(nameof(poseIndex));
+            var channel = ReadEditableChannels(avatar, clip, times[poseIndex]).SingleOrDefault(candidate =>
+                candidate.RendererPath == (rendererPath ?? string.Empty) && candidate.Name == shapeName);
+            if (channel == null) throw new ArgumentException("The editable BlendShape channel was not found.");
+            var changed = channel.Animated != enabled;
+            if (changed && !dryRun)
+            {
+                channel.Animated = enabled;
+                if (value.HasValue) channel.Value = value.Value;
+                FaceExpressionClipEditor.WritePose(clip, channel, times[poseIndex], times);
+                AssetDatabase.SaveAssetIfDirty(clip);
+            }
+            return AnimationEditResult(clip, changed, dryRun,
+                dryRun ? times.Count : FaceExpressionClipEditor.GetPoseTimes(clip).Count, poseIndex, times[poseIndex]);
+        }
+
         public static IReadOnlyList<FaceExpressionChannelData> Inspect(
             GameObject avatar,
             AnimationClip clip = null,

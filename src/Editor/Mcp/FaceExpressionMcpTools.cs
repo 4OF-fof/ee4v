@@ -13,6 +13,19 @@ namespace Ee4v.Mcp
     {
         internal static void Register()
         {
+            McpToolRegistry.Register(new McpToolDefinition("ee4v_ensure_blendshape_presets",
+                "Creates missing FBX classifications for an Avatar using the UI preset initializer; preserves existing presets and mappings.",
+                McpSchemas.Object(new JObject { ["avatarRef"] = McpSchemas.String() }, "avatarRef"),
+                args => Task.FromResult(McpToolResult.Success(McpJson.From(BlendShapePresetApi.EnsurePresets(Avatar(args))))), false));
+            McpToolRegistry.Register(new McpToolDefinition("ee4v_set_expression_channel_enabled",
+                "Enables a BlendShape curve across the existing pose times, or removes that entire curve from a static/animated expression using UI channel editing. Existing enabled curves are retained. value affects only newly enabled curves at poseIndex; dryRun and expectedRevision protect writes.",
+                McpSchemas.Object(new JObject { ["avatarRef"] = McpSchemas.String(), ["clipPath"] = McpSchemas.String(),
+                    ["rendererPath"] = McpSchemas.String(), ["shapeName"] = McpSchemas.String(), ["enabled"] = McpSchemas.Boolean(),
+                    ["poseIndex"] = McpSchemas.Integer(), ["value"] = McpSchemas.Number(), ["expectedRevision"] = McpSchemas.String(), ["dryRun"] = McpSchemas.Boolean() },
+                    "avatarRef", "clipPath", "rendererPath", "shapeName", "enabled", "expectedRevision"),
+                args => Task.FromResult(McpToolResult.Success(McpJson.From(FaceExpressionApi.SetAnimationChannelEnabled(Avatar(args), RequiredClip(args),
+                    (string)args["rendererPath"], McpJson.RequireString(args, "shapeName"), (bool)args["enabled"], (int?)args["poseIndex"] ?? 0,
+                    (float?)args["value"], (bool?)args["dryRun"] ?? false, McpJson.RequireString(args, "expectedRevision"))))), false, destructive: true));
             RegisterListBlendShapePresets();
             RegisterGetBlendShapePreset();
             RegisterUpdateBlendShapePreset();

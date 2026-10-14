@@ -108,6 +108,7 @@ namespace Ee4v.AvatarParts
             Exception exception,
             bool rebuildControls)
         {
+            if (_throwOnEditingFailure) throw new InvalidOperationException("Avatar authoring edit failed.", exception);
             Debug.LogException(exception);
             _context.Feedback = I18N.Get(
                 "workflow.appearance.sizeSaveFailed");

@@ -24,18 +24,22 @@ namespace Ee4v.Mcp
             RegisterCollections();
             AssetManagerPrefabMcpTools.Register();
             AssetManagerVariantMcpTools.Register();
+            AssetManagerLibraryMcpTools.Register();
+            AssetManagerWorkMcpTools.Register();
         }
 
         private static void RegisterSearch()
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_search",
-                "Searches the ee4v AssetManager database by name/description text, tag, file extension, archive state, and pagination.",
+                "Searches the shared library by query/tags/extension, an explicit And/Or/Not filter tree, or a saved collectionId. Choose one search mode. Pagination applies to all modes; includeArchived is available outside collection mode.",
                 McpSchemas.Object(new JObject
                 {
                     ["query"] = McpSchemas.String(),
                     ["tags"] = McpSchemas.Array(McpSchemas.String()),
                     ["extension"] = McpSchemas.String(),
+                    ["filter"] = new JObject { ["type"] = "object", ["description"] = "AssetFilterNode tree: type And/Or/Not/Condition, conditionType, value and children." },
+                    ["collectionId"] = McpSchemas.String(),
                     ["includeArchived"] = McpSchemas.Boolean(),
                     ["offset"] = McpSchemas.Integer(),
                     ["limit"] = McpSchemas.Integer()
@@ -43,6 +47,12 @@ namespace Ee4v.Mcp
                 arguments => AssetResult(() =>
                 {
                     var filters = new List<AssetFilterNode>();
+                    if (arguments["filter"] != null && arguments["collectionId"] != null ||
+                        (arguments["filter"] != null || arguments["collectionId"] != null) &&
+                        new[] { "query", "tags", "extension" }.Any(field => arguments[field] != null))
+                        throw new McpToolException("invalid_request", "Use either collectionId, filter, or query/tags/extension.");
+                    if (arguments["collectionId"] != null && arguments["includeArchived"] != null)
+                        throw new McpToolException("invalid_request", "Collection search uses the collection API's archive scope; do not pass includeArchived.");
                     var query = ((string)arguments["query"] ?? string.Empty).Trim();
                     if (query.Length > 0)
                     {
@@ -76,15 +86,18 @@ namespace Ee4v.Mcp
                     }
 
                     var limit = Math.Max(1, Math.Min(200, (int?)arguments["limit"] ?? 50));
-                    var result = Manager().SearchItems(new AssetItemQuery
+                    var offset = Math.Max(0, (int?)arguments["offset"] ?? 0);
+                    var result = arguments["collectionId"] != null
+                        ? Manager().SearchCollection(McpJson.RequireString(arguments, "collectionId"), offset, limit)
+                        : Manager().SearchItems(new AssetItemQuery
                     {
-                        Filter = filters.Count == 0
+                        Filter = arguments["filter"] != null ? ReadFilter(arguments["filter"]) : filters.Count == 0
                             ? null
                             : filters.Count == 1
                                 ? filters[0]
                                 : AssetFilterNode.And(filters.ToArray()),
                         IncludeArchived = (bool?)arguments["includeArchived"] ?? false,
-                        Offset = Math.Max(0, (int?)arguments["offset"] ?? 0),
+                        Offset = offset,
                         Limit = limit
                     });
                     return Success(new
@@ -409,7 +422,7 @@ namespace Ee4v.Mcp
                     var name = arguments.Property("name") == null && existing != null
                         ? existing.Name : McpJson.RequireString(arguments, "name");
                     var filter = arguments.Property("filter") == null && existing != null
-                        ? existing.Root : McpJson.To<AssetFilterNode>(arguments["filter"]);
+                        ? existing.Root : ReadFilter(arguments["filter"]);
                     var icon = CollectionIcon(arguments);
                     return Success(existing == null
                         ? manager.CreateCollection(new CreateAssetCollectionRequest
@@ -470,7 +483,38 @@ namespace Ee4v.Mcp
             return AssetManagerFactory.OpenSession(path);
         }
 
-        private static Task<McpToolResult> AssetResult(Func<McpToolResult> action)
+        private static AssetFilterNode ReadFilter(JToken value, int depth = 0)
+        {
+            if (depth > 32 || !(value is JObject node)) throw new McpToolException("invalid_request", "Filter nodes must be objects within 32 levels.");
+            foreach (var property in node.Properties())
+                if (!new[] { "type", "conditionType", "value", "children" }.Contains(property.Name))
+                    throw new McpToolException("invalid_request", "Unknown filter field: " + property.Name);
+            var type = FilterEnum<AssetFilterNodeType>(node["type"]);
+            var children = node["children"];
+            if (children != null && children.Type != JTokenType.Null && !(children is JArray))
+                throw new McpToolException("invalid_request", "Filter children must be an array.");
+            if (type == AssetFilterNodeType.Condition)
+            {
+                if (node["value"]?.Type != JTokenType.String) throw new McpToolException("invalid_request", "Filter condition value must be a string.");
+                return new AssetFilterNode { Type = type, ConditionType = FilterEnum<AssetFilterConditionType>(node["conditionType"]),
+                    Value = (string)node["value"], Children = children is JArray conditionChildren && conditionChildren.Count != 0
+                        ? throw new McpToolException("invalid_request", "A condition cannot have children.") : Array.Empty<AssetFilterNode>() };
+            }
+            if (node["conditionType"] != null && node["conditionType"].Type != JTokenType.Null || node["value"] != null && node["value"].Type != JTokenType.Null)
+                throw new McpToolException("invalid_request", "Group filters cannot carry a condition or value.");
+            var parsed = (children as JArray ?? new JArray()).Select(child => ReadFilter(child, depth + 1)).ToArray();
+            if (type == AssetFilterNodeType.Not && parsed.Length != 1) throw new McpToolException("invalid_request", "Not requires exactly one child.");
+            return new AssetFilterNode { Type = type, Children = parsed };
+        }
+        private static T FilterEnum<T>(JToken value) where T : struct
+        {
+            if (value == null || value.Type != JTokenType.String && value.Type != JTokenType.Integer ||
+                !Enum.TryParse(value.ToString(), out T result) || !Enum.IsDefined(typeof(T), result))
+                throw new McpToolException("invalid_request", "A defined " + typeof(T).Name + " is required.");
+            return result;
+        }
+
+        internal static Task<McpToolResult> AssetResult(Func<McpToolResult> action)
         {
             try
             {
@@ -484,7 +528,7 @@ namespace Ee4v.Mcp
             }
         }
 
-        private static McpToolResult Success(object value)
+        internal static McpToolResult Success(object value)
         {
             return McpToolResult.Success(McpJson.From(new
             {
@@ -501,7 +545,7 @@ namespace Ee4v.Mcp
             }, "itemId");
         }
 
-        private static IReadOnlyList<string> RequiredStrings(
+        internal static IReadOnlyList<string> RequiredStrings(
             JObject arguments,
             string name)
         {

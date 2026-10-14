@@ -48,6 +48,8 @@ Expression Menu、表情ロック、トリガー量による変化は対象外�
 
 ## 公開APIとMCP
 
+`BlendShapePresetApi.EnsurePresets`はAvatarが使用するFBXの未作成分類を既存のUI初期化処理で作り、既存Mappingを保持します。`SetAnimationChannelEnabled`は静止／animation Clipの曲線全体を有効化または除去し、必須revisionとdryRunを使用します。有効化はUIのWritePoseと同じポーズ時刻・既定値を使い、既に存在する曲線は変更しません。除去は全ポーズへ及び、最後の曲線の場合はポーズ時刻も失われ得ます。ポーズ単位の値の更新とは別の破壊的操作としてMCPに公開します。
+
 `FaceExpressionApi`はUIと同じdomain処理を外部integrationから利用する公開境界です。AvatarとRenderer pathを基準にBlendShape channelを列挙し、静止表情Clipの作成・部分更新・完全置換、表情アニメーションのポーズ調査・追加・更新・並び替え・削除・Loop設定、revision取得、validation、時刻指定preview PNG、完全一致とpreset roleによるremap、FacialSet設定の読込・plan・適用を提供します。MCPではClip指定時の調査をBlendShape調査へ統合し、他の割り当てを維持したまま左右Gestureの1組だけを更新する操作も提供します。AnimationClipの一般検索とProject内Prefab検索は汎用Unity MCPへ任せます。
 
 `Ee4v.Mcp.Editor`はこのAPIを静止表情、表情アニメーション、preview、remap、FacialSetの用途別toolとして公開します。Clip調査とvalidationは`ee4v_inspect_expression_clip`、ポーズ追加・更新・移動・Loop変更は`ee4v_edit_expression_animation`のaction、削除は`ee4v_remove_expression_pose`を使用します。Gesture単独更新も`ee4v_apply_facial_set`の`mode: patch`へ統合し、全置換は`mode: replace`で行います。保存済みFBX別BlendShapeプリセットは`BlendShapePresetApi`を通して一覧・詳細取得・Mappingの部分更新を公開し、revision照合とdryRunで共同編集を扱います。MCP固有のJSON変換とObject参照はMCP assemblyに閉じ、Face Expression moduleはMCPへ依存しません。詳細は[`../mcp.md`](../mcp.md)を参照します。

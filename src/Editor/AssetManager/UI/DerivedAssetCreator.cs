@@ -253,6 +253,25 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
+        public static DerivedAssetInfo CreateOwnedWork(IAssetManager manager, string name, string description, GameObject source = null)
+        {
+            if (manager == null) throw new ArgumentNullException(nameof(manager));
+            if (!IsValidName(name) || AssetDatabase.IsValidFolder(GetVariantFolder(name)))
+                throw new InvalidOperationException("The work name is invalid or already exists.");
+            var owner = manager.CreateItem(new CreateAssetItemRequest { Name = name.Trim(), Description = description ?? string.Empty, IsOriginal = true });
+            try
+            {
+                return Create(new DerivedAssetCreationRequest { ParentItemId = owner.Id, Name = name, Description = description,
+                    Prefab = source, CreateOriginal = source == null });
+            }
+            catch
+            {
+                manager.SetItemArchived(new[] { owner.Id }, true);
+                manager.DeleteItem(new[] { owner.Id });
+                throw;
+            }
+        }
+
         public static IReadOnlyList<GameObject> FindPrefabCandidates(IAssetManager manager, AssetItem item)
         {
             if (item == null) { return Array.Empty<GameObject>(); }
@@ -566,6 +585,7 @@ namespace Ee4v.AssetManager.UI
         public static GameObject ApplyWorkingScene(string prefabPath)
         {
             var root = OpenWorkingScene(prefabPath);
+            Ee4v.AvatarParts.AvatarPartsEditor.PrepareAuthoringForSave(root);
             if (!IsAvatarPrefab(root))
             {
                 ValidateCompositionReferences(root);
@@ -630,7 +650,7 @@ namespace Ee4v.AssetManager.UI
                 "VRC.SDK3.Avatars.Components.VRCAvatarDescriptor");
         }
 
-        internal static GameObject GetFittingAvatar(GameObject root)
+        public static GameObject GetFittingAvatar(GameObject root)
         {
             var avatar = root != null ? root.transform.parent : null;
             var environment = avatar != null ? avatar.parent : null;
@@ -640,7 +660,7 @@ namespace Ee4v.AssetManager.UI
                 ? avatar.gameObject : null;
         }
 
-        internal static void SetFittingAvatar(GameObject root, GameObject prefab)
+        public static void SetFittingAvatar(GameObject root, GameObject prefab)
         {
             var record = root != null ? DerivedAssetCatalog.Read(
                 PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root)) : null;

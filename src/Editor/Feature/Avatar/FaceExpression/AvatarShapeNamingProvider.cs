@@ -11,7 +11,8 @@ namespace Ee4v.FaceExpression
         private readonly FaceExpressionShapeNamingSnapshot _snapshot;
         static AvatarShapeNamingProvider()
         {
-            AvatarShapeNaming.Register((avatar, meshes) => new AvatarShapeNamingProvider(avatar, meshes));
+            AvatarShapeNaming.Register((avatar, meshes) => new AvatarShapeNamingProvider(avatar, meshes, true),
+                (avatar, meshes) => new AvatarShapeNamingProvider(avatar, meshes, false));
             FaceExpressionShapeNamingSnapshot.PresetsChanged += AvatarShapeNaming.NotifyChanged;
             Ee4v.Core.Settings.CoreSettings.Current.Changed += (_, args) =>
             {
@@ -19,8 +20,8 @@ namespace Ee4v.FaceExpression
                     AvatarShapeNaming.NotifyChanged();
             };
         }
-        private AvatarShapeNamingProvider(GameObject avatar, IEnumerable<Mesh> meshes)
-        { _snapshot = FaceExpressionShapeNamingSnapshot.Create(avatar, meshes); }
+        private AvatarShapeNamingProvider(GameObject avatar, IEnumerable<Mesh> meshes, bool ensurePresets)
+        { _snapshot = FaceExpressionShapeNamingSnapshot.Create(avatar, meshes, ensurePresets); }
         public bool IsHeader(string name) => _snapshot.IsHeader(name);
         public bool TryGetMapping(string guid, long id, string name, out AvatarShapeMapping mapping)
         {

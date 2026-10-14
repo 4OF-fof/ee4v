@@ -129,6 +129,21 @@ namespace Ee4v.Mcp
             return new McpToolResult(result.StructuredContent, content, false);
         }
 
+        internal static McpToolResult MediaImage(JToken metadata, byte[] bytes)
+        {
+            if (bytes == null || bytes.Length < 8) throw new McpToolException("image_unavailable", "Image data is unavailable.");
+            var mime = bytes[0] == 137 && bytes[1] == 80 && bytes[2] == 78 && bytes[3] == 71 ? "image/png" :
+                bytes[0] == 255 && bytes[1] == 216 ? "image/jpeg" :
+                bytes[0] == 71 && bytes[1] == 73 && bytes[2] == 70 ? "image/gif" :
+                bytes.Length >= 12 && bytes[0] == 82 && bytes[1] == 73 && bytes[2] == 70 && bytes[3] == 70 &&
+                    bytes[8] == 87 && bytes[9] == 69 && bytes[10] == 66 && bytes[11] == 80 ? "image/webp" : null;
+            if (mime == null) throw new McpToolException("unsupported_image", "The image must be PNG, JPEG, GIF or WebP.");
+            var result = Success(metadata);
+            var content = result.Content.ToList();
+            content.Add(new JObject { ["type"] = "image", ["mimeType"] = mime, ["data"] = Convert.ToBase64String(bytes) });
+            return new McpToolResult(result.StructuredContent, content, false);
+        }
+
         internal static McpToolResult Error(
             string code,
             string message,
