@@ -150,16 +150,7 @@ namespace Ee4v.Mcp
             }
 
             var root = DerivedAssetCreator.OpenWorkingScene(variant.AssetPath);
-            var added = PrefabUtility.InstantiatePrefab(
-                source.Asset, root.scene) as GameObject;
-            if (added == null)
-            {
-                throw new McpToolException("prefab_instantiate_failed",
-                    "The source Prefab could not be instantiated.");
-            }
-            added.transform.SetParent(root.transform, false);
-            Undo.RegisterCreatedObjectUndo(added, "Add Variant Prefab");
-            EditorSceneManager.MarkSceneDirty(root.scene);
+            var added = DerivedAssetCreator.AddPrefabToWorkingRoot(root, source.Asset);
             return new
             {
                 VariantGuid = AssetDatabase.AssetPathToGUID(variant.AssetPath),

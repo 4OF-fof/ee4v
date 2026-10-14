@@ -109,7 +109,7 @@ namespace Ee4v.Mcp
         {
             ["ok"] = true, ["isPlaying"] = EditorApplication.isPlaying,
             ["connected"] = GestureManagerIntegration.IsConnected(avatar),
-            ["visibleAvatarRef"] = UnityObjectReference.Create(GestureManagerIntegration.VisibleAvatar(avatar)),
+            ["visibleAvatarRef"] = UnityObjectReference.CreateAvatar(GestureManagerIntegration.VisibleAvatar(avatar)),
             ["parameters"] = McpJson.From(GestureManagerIntegration.ReadParameters(avatar))
         });
         private static McpToolResult Performance(GameObject avatar) => McpToolResult.Success(new JObject

@@ -13,14 +13,23 @@ namespace Ee4v.AvatarParts
     {
         public void MatchAddedPrefabBodyScale(GameObject added)
         {
-            if (_context.Root == null || added == null ||
-                added.transform.parent != _context.Root.transform ||
-                !_context.Edits.CanEditPrefab())
-            {
-                return;
-            }
+            if (!_context.Edits.CanEditPrefab()) return;
+            MatchAddedPrefabBodyScale(_context.Root, added, _context.PrefabAsset, _context.PrefabSiblingIndices);
+        }
 
-            var scales = ResolveAddedPrefabBodyScales(added);
+        public static void MatchAddedPrefabBodyScale(GameObject avatar, GameObject added)
+        {
+            var siblings = avatar == null ? Array.Empty<int>() : Enumerable.Range(0, avatar.transform.childCount)
+                .Where(index => PrefabUtility.IsAnyPrefabInstanceRoot(avatar.transform.GetChild(index).gameObject)).ToArray();
+            MatchAddedPrefabBodyScale(avatar, added, null, siblings);
+        }
+
+        private static void MatchAddedPrefabBodyScale(GameObject avatar, GameObject added,
+            GameObject prefabAsset, IReadOnlyCollection<int> prefabSiblingIndices)
+        {
+            if (avatar == null || added == null || added.transform.parent != avatar.transform ||
+                EditorUtility.IsPersistent(avatar) || !avatar.scene.IsValid() || EditorApplication.isPlayingOrWillChangePlaymode) return;
+            var scales = ResolveAddedPrefabBodyScales(avatar, added, prefabAsset, prefabSiblingIndices);
             if (scales.Count == 0)
             {
                 return;

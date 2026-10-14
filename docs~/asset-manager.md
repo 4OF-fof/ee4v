@@ -379,6 +379,8 @@ SQLite接続はmasterと同じ`Ee4v.SQLite.Editor`境界とvendor済みの`sqlit
 
 ## 公開API
 
+`DerivedAssetCreator.AddPrefabToWorkingRoot`はUIとMCPの共通Prefab追加処理です。循環参照を検証し、作業Sceneのroot直下へ接続を保持して配置し、Undo、素体倍率への追従とSceneのdirty通知を行います。元Prefabを編集せず、Prefabへの適用と履歴保存は既存の保存操作が担当します。
+
 `IAssetManager`は次を提供します。
 
 - 条件式によるItem検索、Collection検索、Item単体のCollection一致判定

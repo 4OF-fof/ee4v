@@ -44,6 +44,34 @@ namespace Ee4v.AssetManager.UI
 
     public static class DerivedAssetCreator
     {
+        public static GameObject AddPrefabToWorkingRoot(GameObject root, GameObject source)
+        {
+            if (root == null || source == null || EditorUtility.IsPersistent(root) ||
+                !root.scene.IsValid() || !root.scene.isLoaded || EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("A writable working Scene root and a source Prefab are required.");
+            var sourcePath = AssetDatabase.GetAssetPath(source);
+            var rootPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root);
+            if (PrefabUtility.GetPrefabAssetType(source) == PrefabAssetType.NotAPrefab ||
+                string.Equals(sourcePath, rootPath, StringComparison.OrdinalIgnoreCase) ||
+                AssetDatabase.GetDependencies(sourcePath, true).Contains(rootPath, StringComparer.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The source must be a Prefab without a dependency cycle.");
+            var added = PrefabUtility.InstantiatePrefab(source, root.scene) as GameObject;
+            if (added == null) throw new InvalidOperationException("The child Prefab could not be instantiated.");
+            try
+            {
+                added.transform.SetParent(root.transform, false);
+                Undo.RegisterCreatedObjectUndo(added, "Add Variant Prefab");
+                Ee4v.AvatarParts.AvatarPartsEditor.MatchAddedPrefabBodyScale(root, added);
+                EditorSceneManager.MarkSceneDirty(root.scene);
+                return added;
+            }
+            catch
+            {
+                Object.DestroyImmediate(added);
+                throw;
+            }
+        }
+
         internal const string VariantRoot = DerivedAssetCatalog.VariantRoot;
         private const string MaterialsFolderName = "Materials";
         private const string FittingEnvironmentName = "__ee4vFittingEnvironment";

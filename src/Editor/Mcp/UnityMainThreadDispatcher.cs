@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 
@@ -16,21 +17,28 @@ namespace Ee4v.Mcp
             EditorApplication.update += Drain;
         }
 
-        internal static Task<T> Run<T>(Func<Task<T>> action)
+        internal static Task<T> Run<T>(Func<Task<T>> action, CancellationToken cancellationToken = default)
         {
             if (action == null)
             {
                 throw new ArgumentNullException(nameof(action));
             }
 
-            var completion = new TaskCompletionSource<T>();
+            var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var registration = cancellationToken.Register(() => completion.TrySetCanceled());
+            _ = completion.Task.ContinueWith(_ => registration.Dispose(), TaskScheduler.Default);
             lock (Queue)
             {
                 Queue.Enqueue(async () =>
                 {
                     try
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         completion.TrySetResult(await action());
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        completion.TrySetCanceled();
                     }
                     catch (Exception exception)
                     {

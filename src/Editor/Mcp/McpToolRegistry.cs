@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -18,12 +19,14 @@ namespace Ee4v.Mcp
             bool destructive = false,
             bool idempotent = true,
             bool openWorld = false,
-            bool allowDuringPlayMode = false)
+            bool allowDuringPlayMode = false,
+            Func<JObject, CancellationToken, Task<McpToolResult>> invokeWithCancellation = null)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Description = description ?? string.Empty;
             InputSchema = inputSchema ?? McpSchemas.Object();
-            Invoke = invoke ?? throw new ArgumentNullException(nameof(invoke));
+            if (invoke == null) throw new ArgumentNullException(nameof(invoke));
+            Invoke = invokeWithCancellation ?? ((arguments, _) => invoke(arguments));
             ReadOnly = readOnly;
             Destructive = destructive;
             Idempotent = idempotent;
@@ -34,7 +37,7 @@ namespace Ee4v.Mcp
         internal string Name { get; }
         internal string Description { get; }
         internal JObject InputSchema { get; }
-        internal Func<JObject, Task<McpToolResult>> Invoke { get; }
+        internal Func<JObject, CancellationToken, Task<McpToolResult>> Invoke { get; }
         internal bool ReadOnly { get; }
         internal bool Destructive { get; }
         internal bool Idempotent { get; }
@@ -190,7 +193,8 @@ namespace Ee4v.Mcp
 
         internal static async Task<McpToolResult> Invoke(
             string name,
-            JObject arguments)
+            JObject arguments,
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(name) ||
                 !Tools.TryGetValue(name, out var tool))
@@ -202,13 +206,21 @@ namespace Ee4v.Mcp
 
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                arguments = arguments ?? new JObject();
+                McpSchemas.Validate(tool.InputSchema, arguments);
                 if (!tool.ReadOnly && !tool.AllowDuringPlayMode &&
                     (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode))
                 {
                     return McpToolResult.Error("edit_mode_required",
                         "Stop Play Mode and wait for the transition to finish before editing assets or avatar configuration.");
                 }
-                return await tool.Invoke(arguments ?? new JObject());
+                cancellationToken.ThrowIfCancellationRequested();
+                return await tool.Invoke(arguments, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (McpToolException exception)
             {

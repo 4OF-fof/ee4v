@@ -25,12 +25,15 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 
 - Listenerは`127.0.0.1`だけへbindし、remote endpoint、`Host` header、指定されている場合の`Origin`もloopbackか検証する。IPv4、IPv6をURIとして解析してloopbackを判定する。1 requestは8 MiBまでとし、`Content-Length`がないchunked requestもstream読取時に上限を適用する。
 - 認証は持たない。同じ端末のprocessはendpointへ接続できるため、外部interfaceへproxyまたは公開しない。
-- `/mcp`はJSON-RPCの`initialize`、`ping`、`tools/list`、`tools/call`とnotificationを処理する。`/health`はserverの生存確認だけに使用する。
+- `/mcp`はJSON-RPCの`initialize`、`ping`、`tools/list`、`tools/call`とnotificationを処理する。`/health`はserverの生存確認だけに使用する。対応protocol versionは`2025-11-25`、`2025-06-18`、`2025-03-26`。initializeで未対応versionを要求された場合は最新の対応versionを返し、不正・未対応の`MCP-Protocol-Version` headerはHTTP 400で拒否する。
+- initializeの応答で`MCP-Session-Id`を発行する。以後のtool要求とnotificationにはこのheaderを付け、protocol versionは同じsessionの交渉結果に合わせる。終了済みsessionはHTTP 404、header欠落はHTTP 400。`DELETE /mcp`はsessionを終了し、実行中の要求をキャンセルする。
+- request IDはsessionごとに追跡し、同一sessionの実行中IDの重複を拒否する。`notifications/cancelled`とserver停止は待機中のmain-thread操作を取り消す。Importでは既存APIへキャンセルトークンを渡す。開始済みの同期生成・保存は中断や巻き戻しを保証しない。
 - Unity objectへ触れるtool実行は`EditorApplication.update`からmain threadへdispatchする。
 - dispatch待ちの操作がないEditor frameではqueueの配列を生成しない。
 - tool結果は機械処理用の`structuredContent`と、同じ内容のtext contentを返す。preview PNGはimage contentも返す。
 - AssetManagerとVariantの必須文字列入力は`McpJson.RequireString`で前後の空白を除き、空なら`invalid_request`を返す。
 - tool annotationでread-only、破壊性、冪等性、open-world accessを宣言する。
+- registryは実行前にcatalogのinputSchemaを検証する。必須項目、型、enum、未知の項目、配列要素と最小件数、oneOf／anyOfによる操作別入力を検証し、欠落・null・不正入力を`invalid_request`として拒否する。数値は有限値に限る。
 - 通常の書き込みはtool registryでPlay Mode中・切り替え中に`edit_mode_required`として拒否する。実行中のGestureManager操作とライティングプリセット保存・削除だけは明示的な例外とする。read-onlyな画像描画は一時状態を必ず復元する。
 - AssetManagerではmetadata編集、明示的な`ee4v_asset_import`によるUnity ProjectへのImport、Itemに紐付くVariantの作成・改変・履歴保存を公開する。同期、Item／Fileの削除、File登録、新規Item作成は公開しない。Collectionの作成・削除も公開し、削除toolは削除前の名前と条件を返す。Importは既存Project Assetを上書きする可能性があるため、破壊性あり・冪等性なしのannotationを付ける。
 - AssetManagerのPrefab調査は、既にUnity Projectへ取り込まれたPrefab assetとAssetManagerで作成済みの派生Prefabだけを対象にする。Prefab調査・previewからImportを暗黙には開始しない。必要な場合は登録済みFileを明示的なImport toolで取り込む。
@@ -39,13 +42,15 @@ portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。�
 
 ## Object参照
 
-`ee4v_find_avatars`は、loaded SceneとPrefab Modeから後続toolへ渡す`avatarRef`を返します。内部Preview Sceneは除外します。参照にはUnityの`GlobalObjectId`を優先し、Play Modeの実体と未保存ObjectはEditor session限定の`instance:<session>:<id>`で参照します。対象破棄、Play Mode停止、Domain Reload後は再取得します。Project内Prefabの検索は汎用Unity MCPへ任せます。
+`ee4v_find_avatars`は、loaded Sceneと現在のPrefab Modeから後続toolへ渡す`avatarRef`を返します。Prefab Stage以外の内部Preview Sceneは除外します。参照にはUnityの`GlobalObjectId`を優先し、Play Modeの実体と未保存ObjectはEditor session限定の`instance:<session>:<id>`で参照します。対象破棄、Play Mode停止、Domain Reload後は再取得します。Project内Prefabの検索は汎用Unity MCPへ任せます。
 
 書き込みtoolは取得済みの参照を再解決し、対象がAvatar配下にあること、永続Prefab assetを直接編集しようとしていないこと、必要なVRChat SDK型が存在することを再検証します。
 
+Avatar参照は現在のdomain sessionでAvatar一覧またはruntime toolが発行したものだけを受け入れ、loaded SceneのVRChat Avatar rootであることを再確認します。任意のAsset path、Hierarchy path、未発行のGlobalObjectIdは受け付けません。Prefab Modeは調査と別Clip assetの編集に使用でき、FacialSetとExpression MenuのAvatar設定の書き込みには利用者のScene上のinstanceを使用します。
+
 ## Tool設計
 
-現行catalogは51 tools。対象と編集単位が同じ操作は、部分更新または明示的なactionへ統合する。読み取り、書き込み、破壊的な削除はannotationと承認単位が異なるため分離する。検索／一覧と詳細取得は返す情報量と用途が異なるため維持する。Avatar inventoryとauditも、事実の取得と問題の検出を分ける。
+現行catalogは53 tools。対象と編集単位が同じ操作は、部分更新または明示的なactionへ統合する。読み取り、書き込み、破壊的な削除はannotationと承認単位が異なるため分離する。検索／一覧と詳細取得は返す情報量と用途が異なるため維持する。Avatar inventoryとauditも、事実の取得と問題の検出を分ける。静止Clipの部分更新・完全置換、リマップとFacialSet適用は既存内容の削除・置換を含み得るため、破壊性ありとして宣言する。
 
 Item編集へ名前・説明・Tag・Archive・Import Targetを統合し、一括編集を維持する。Collectionの作成と更新はupsertへ、ポーズ追加・更新・移動・Loop変更はanimation編集へ、Clipの調査とvalidationはClip調査へ統合する。左右Gestureの単独更新はFacialSetのpatch適用で扱う。
 
@@ -123,9 +128,9 @@ Play Modeの開始・停止は汎用Unity MCPで行います。開始後に`ee4v
 | `ee4v_edit_expression_animation` | `action`の`add`、`update`、`move`、`setLoop`でポーズ追加・部分更新・隣接移動・Loop変更を行う |
 | `ee4v_remove_expression_pose` | ポーズを削除して時間の空きを詰める。最後の1ポーズは削除しない |
 | `ee4v_render_expression_preview` | AvatarへClipを指定時刻で適用したpreviewをPNGとして返す。描画可能なSkinnedMeshがなければ`expression_preview_unavailable`を返す |
-| `ee4v_remap_expression_clip` | Renderer pathとBlendShape名の完全一致を優先し、一致しないchannelはFBX別presetのroleとsideで別Avatarへ対応付ける |
+| `ee4v_remap_expression_clip` | 静止ClipのRenderer pathとBlendShape名の完全一致を優先し、一致しないchannelはFBX別presetのroleとsideで別Avatarへ対応付ける。複数ポーズ入力は拒否する |
 | `ee4v_get_facial_configuration` | Gesture matrix、menu専用表情、Blink、口固定の現在値を返す |
-| `ee4v_plan_facial_set_apply` | FacialSet適用の入力、生成物、前提条件を検証する |
+| `ee4v_plan_facial_set_apply` | FacialSet適用の前提条件と生成先を検証する。任意の`configuration`と`mode`を渡すと、applyと同じpatch／replace後の設定を検証する |
 | `ee4v_apply_facial_set` | FX Controller、Expression Parameters、Expression Menu、Modular Avatar installerを生成・更新する。`mode: patch`は指定Gesture／Menuだけ更新し、`mode: replace`は全設定を置き換える。`dryRun`では設定と前提条件だけを検証する |
 
 AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。同じ内容を再指定した場合は`changed: false`としてAssetを書き直しません。複数ポーズClipはこの静止表情toolで誤って単一frameへ戻さず、アニメーション専用toolだけで更新します。
@@ -135,6 +140,8 @@ AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_exp
 アニメーション編集は`ee4v_inspect_expression_clip`でポーズindexとrevisionを取得し、`ee4v_edit_expression_animation`のactionを選び、書き込みtoolをまず`dryRun: true`で呼んでから同じ入力で適用します。ポーズ追加は指定ポーズの表情を複製し、`transitionDuration`後へ挿入します。ポーズ更新では参照Clipと明示的なchannel値を同時に指定できません。参照Clipをローカル編集へ戻して値も変更する場合は、空の`sourceClipPath`と`channels`を同じ呼び出しへ指定します。参照Clipとポーズ名はUIと同じ`.anim`内のsub-assetへ保存され、移動と削除にも追従します。更新用revisionはアニメーション調査の結果を使用します。
 
 `ee4v_remap_expression_clip`はRenderer pathとBlendShape名が完全一致するchannelを直接対応付け、それ以外だけpreset roleとsideを使用します。対応不能channelは結果へ残し、無言で別名へ割り当てません。表情previewにはMeshが割り当てられた描画可能な`SkinnedMeshRenderer`が1つ以上必要で、存在しない場合は空画像を成功扱いにしません。アニメーションClipでは`time`を指定して各ポーズや遷移途中を描画できます。
+
+FacialSetのplanとapplyは同じGesture名・重複・Clip参照の検証を使用します。割り当て要素の`clipPath`は必須で、空文字でその組を解除します。planとapplyの前提不足・適用失敗は`isError: true`と詳細を返します。リマップは静止Clip専用で、アニメーションのキー・ポーズ・Loopを単一frameへ変換しません。既存の静止リマップ先は置換するため、適用前に`dryRun`で確認します。
 
 ### AssetManager
 
@@ -172,6 +179,8 @@ MCPはUIと同じ公開API、validation、change notificationを使用し、独�
 ```json
 {"itemId":"item-id","sourcePrefabGuid":"0123456789abcdef0123456789abcdef","name":"My Avatar Variant","description":"改変内容"}
 ```
+
+Prefabの追加はUIとMCPが共通の`DerivedAssetCreator.AddPrefabToWorkingRoot`を使用し、配置・Undo・作業Sceneのdirty通知と、素体の現在の部位倍率に合わせる`AvatarPartsEditor.MatchAddedPrefabBodyScale`を実行します。Prefab rootのlocal Transformは維持し、対応できる衣装boneだけへ元Prefab基準のlocal倍率を適用します。元Prefabと素体を変更せず、同じ倍率を累積しません。
 
 ### 明示的なImport
 
@@ -245,6 +254,33 @@ ee4v MCPは、Avatarの発見と監査、表情ClipとFacialSet、AssetManager�
 - Console、Play Mode、screenshot、build、test、任意Editor C#実行
 
 ee4v MCPは任意C#実行toolを公開しません。高水準toolで扱っていない変更は汎用Unity MCPで実行し、最後に`ee4v_audit_avatar`でAvatar固有の前提を確認します。
+
+## UIとの機能対応
+
+MCPは画面状態の操作ではなく、保存対象とdomain操作を公開します。UIにある操作がすべて専用toolで提供されるわけではありません。
+
+| UIの操作 | MCPの対応・制約 |
+|---|---|
+| Avatar調査、性能測定、実行時parameter、照明保存・比較 | 専用toolで提供。Clip数はAnimator、DescriptorのPlayable Layers、MA Merge Animatorが参照するClipを重複除去して集計する |
+| 静止表情・ポーズ・遷移・参照Clip・Loop、Gestureとメニュー専用表情 | 専用toolで提供。メニュー専用表情の削除・改名は現在の全設定を取得して`mode: replace`を使用する。UIの手の「すべて」は64組の明示的な割り当てへ展開する |
+| 表情アニメーションのBlendShape曲線の有効／無効切り替え | 未提供。ポーズ編集は値を更新するだけで、曲線全体の除去を受け付けない。静止Clipの`animated: false`とは適用範囲が異なる |
+| 表情Rendererの選択、Group絞り込み、Clip複製 | Rendererは`rendererPaths`と各channelのpathで指定できる。Groupの画面状態はUI専用。Clip複製は汎用Unity操作を使用する |
+| FBX別分類の編集 | 保存済みpresetの一覧・詳細・Mapping更新を提供。初期presetの作成はUIでAvatarを選択して行う |
+| お気に入り、区切り文字、サムネイル生成設定、画面選択・折りたたみ | ユーザー設定／UI状態として専用toolを持たない |
+| Expression Menuの生成・編集・動作・移動・コピー・除外・復元 | 専用toolで提供。新規Clip動作の追加はUIとMCPの両方で提供せず、既存Clip動作を編集・除去する |
+| Item検索・情報・Tag・Archive・Import Target、依存・Collection編集 | 専用toolで提供。Collection IDによる結果検索、任意のAnd／Or／Not filterでの検索、Tag候補一覧、Collection並び替えは未提供。検索toolは名前／説明・Tag・拡張子の条件に限る |
+| 同期、新規Item／File登録、未所属Fileの所属変更、Item／Fileの削除・FileのArchive | UI専用。MCPの書き込み範囲から明示的に除外する |
+| Item由来Variantの作成、Prefab追加、Material Variant作成、版保存 | 専用toolで提供。Prefab追加時の素体倍率追従もUIと同じ公開処理を使用する |
+| 新しい所有Itemを持つマイアセットの作成、ベースなしの通常Prefab作成 | 未提供。既存ItemからのVariant作成とは別の操作で、新規Item作成を含むためUIで行う |
+| 制作物の名前・説明・Tag・Archive・削除、ギャラリー追加・削除・並び替え | 未提供。Item編集と制作物自身のmetadata・保存画像の管理は別の公開APIである |
+| 版一覧・版詳細・現在の編集元・保存差分・破棄差分・過去版復元・変更破棄 | 未提供。MCPは版保存だけを公開し、Projectに存在しない制作物の履歴操作もできない。安全な復元にはAssetManagerの履歴と素材依存の検証を使用する必要がある |
+| ベースなし制作物の試着Avatar設定・変更・解除 | 未提供。作業Sceneと保存対象Prefabを分離するAssetManager固有の操作で、汎用の親子変更と同等ではない |
+| Avatar身長・ViewPosition連動、部位倍率、体型BlendShape同期 | 専用toolは未提供。単純なTransform／BlendShape値は汎用Unity操作で変更できるが、元Prefab基準の倍率・ViewPosition補正・MA BlendShape同期の設定はUIのdomain処理を再現する必要がある |
+| MA Merge Armature／Bone Proxyの追加・装着先・位置回転・scale追従 | 専用toolは未提供。汎用Component操作は可能だが、UIの推奨方式判定、Avatar内かつパーツ外の装着先検証、world姿勢の維持は自動では適用されない |
+| パーツactive、Component Inspector、Material値・割り当て、制作物からPrefabを除去 | 汎用Unity操作へ委ねる。改変対象は作業Sceneのinstanceと派生Materialを指定し、最後に`ee4v_asset_save_variant`で保存する |
+| Project／Hierarchyの色・アイコン・タブ、Window Group、言語・data root設定 | Editorの表示・ユーザー設定として専用toolを持たない |
+
+専用操作の拡張では、読み取りのCollection結果・履歴・差分を先に公開し、復元・変更破棄・曲線削除は独立した破壊的操作として扱う。体型・装着・試着は汎用SerializedProperty操作へ薄く転送せず、UIと共通のdomain validation・Undo・保存境界を公開APIとして定義する。
 
 ## 実装境界
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Infrastructure;
@@ -295,14 +296,15 @@ namespace Ee4v.Mcp
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_import",
                 "Imports registered AssetManager content into the current Unity Project. Supply itemId and optional selectedTargets (one choice per named group) to import saved targets and dependencies, or fileId and nonempty paths to import selected file entries. Never supply both modes. ZIP targets must be internal non-ZIP entries. Returns imported file IDs, Unity asset GUIDs, and failure or cancellation details. Existing Project assets may be overwritten.",
-                schema, Import,
+                schema, arguments => Import(arguments, CancellationToken.None),
                 readOnly: false,
                 destructive: true,
                 idempotent: false,
-                openWorld: true));
+                openWorld: true,
+                invokeWithCancellation: Import));
         }
 
-        private static async Task<McpToolResult> Import(JObject arguments)
+        private static async Task<McpToolResult> Import(JObject arguments, CancellationToken cancellationToken)
         {
             try
             {
@@ -321,7 +323,7 @@ namespace Ee4v.Mcp
                         throw new McpToolException("invalid_request", "selectedTargets must be an array.");
                     }
                     result = await Manager().ImportItemTargets(McpJson.RequireString(arguments, "itemId"),
-                        McpJson.To<List<AssetFileTarget>>(arguments["selectedTargets"]) ?? new List<AssetFileTarget>());
+                        McpJson.To<List<AssetFileTarget>>(arguments["selectedTargets"]) ?? new List<AssetFileTarget>(), cancellationToken);
                 }
                 else
                 {
@@ -329,7 +331,7 @@ namespace Ee4v.Mcp
                     {
                         throw new McpToolException("invalid_request", "paths must contain at least one string.");
                     }
-                    result = await Manager().ImportFileEntries(McpJson.RequireString(arguments, "fileId"), paths.Values<string>().ToArray());
+                    result = await Manager().ImportFileEntries(McpJson.RequireString(arguments, "fileId"), paths.Values<string>().ToArray(), cancellationToken);
                 }
                 return result.Succeeded ? Success(result) : McpToolResult.Error(
                     result.Canceled ? "asset_import_canceled" : "asset_import_failed",

@@ -504,18 +504,7 @@ namespace Ee4v.AssetManager.UI
 
                 EditAssetChildren(root =>
                 {
-                    var added = PrefabUtility.InstantiatePrefab(
-                        prefab,
-                        root.scene) as GameObject;
-                    if (added == null)
-                    {
-                        throw new InvalidOperationException(
-                            "The child Prefab could not be instantiated.");
-                    }
-                    added.transform.SetParent(root.transform, false);
-                    Undo.RegisterCreatedObjectUndo(added,
-                        "Add Variant Prefab");
-                    _parts.MatchAddedPrefabBodyScale(added);
+                    DerivedAssetCreator.AddPrefabToWorkingRoot(root, prefab);
                     _avatarContext.SelectedPrefabSiblingIndex = null;
                     _avatarContext.SelectedPrefabName = string.Empty;
                     _avatarContext.SelectedBodyPart = null;

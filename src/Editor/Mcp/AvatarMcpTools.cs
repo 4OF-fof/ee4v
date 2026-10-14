@@ -82,10 +82,7 @@ namespace Ee4v.Mcp
             var avatars = Resources.FindObjectsOfTypeAll(descriptorType)
                 .Cast<Component>()
                 .Select(component => component.gameObject)
-                .Where(gameObject =>
-                    !EditorUtility.IsPersistent(gameObject) &&
-                    gameObject.scene.IsValid() && gameObject.scene.isLoaded &&
-                    !EditorSceneManager.IsPreviewScene(gameObject.scene));
+                .Where(UnityObjectReference.IsLoadedAvatarScene);
 
             var values = avatars
                 .Distinct()
@@ -112,7 +109,7 @@ namespace Ee4v.Mcp
                     : "scene";
             return new JObject
             {
-                ["avatarRef"] = UnityObjectReference.Create(avatar),
+                ["avatarRef"] = UnityObjectReference.CreateAvatar(avatar),
                 ["name"] = avatar.name,
                 ["kind"] = kind,
                 ["isPlaying"] = EditorApplication.isPlaying,
@@ -167,7 +164,9 @@ namespace Ee4v.Mcp
                     ["uniqueMeshCount"] = meshes.Length,
                     ["triangleCount"] = skinned.Select(renderer => renderer.sharedMesh)
                         .Concat(meshRenderers.Select(renderer => renderer.GetComponent<MeshFilter>()?.sharedMesh))
-                        .Where(mesh => mesh != null).Sum(mesh => (long)mesh.triangles.Length / 3L),
+                        .Where(mesh => mesh != null).Sum(mesh => Enumerable.Range(0, mesh.subMeshCount)
+                            .Where(index => mesh.GetTopology(index) == MeshTopology.Triangles)
+                            .Sum(index => (long)mesh.GetIndexCount(index) / 3L)),
                     ["blendShapeCount"] = meshes.Sum(mesh => mesh.blendShapeCount),
                     ["materialSlotCount"] = avatar.GetComponentsInChildren<Renderer>(true)
                         .Sum(renderer => renderer.sharedMaterials.Length),
@@ -524,9 +523,19 @@ namespace Ee4v.Mcp
 
         private static int CountReferencedAnimationClips(GameObject avatar)
         {
-            return avatar.GetComponentsInChildren<Animator>(true)
+            var controllers = avatar.GetComponentsInChildren<Animator>(true)
                 .Select(animator => animator.runtimeAnimatorController)
-                .Where(controller => controller != null)
+                .ToList();
+            var descriptor = GetComponent(avatar, DescriptorTypeName);
+            foreach (var field in new[] { "baseAnimationLayers", "specialAnimationLayers" })
+                if (GetMemberValue(descriptor, field) is IEnumerable layers)
+                    foreach (var layer in layers)
+                        controllers.Add(GetMemberValue(layer, "animatorController") as RuntimeAnimatorController);
+            foreach (var component in avatar.GetComponentsInChildren<Component>(true))
+                if (component != null && component.GetType().FullName == "nadena.dev.modular_avatar.core.ModularAvatarMergeAnimator")
+                    controllers.Add(GetMemberValue(component, "animator") as RuntimeAnimatorController);
+            return controllers.Where(controller => controller != null)
+                .Distinct()
                 .SelectMany(controller => controller.animationClips)
                 .Where(clip => clip != null)
                 .Distinct()

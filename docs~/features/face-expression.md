@@ -54,6 +54,8 @@ Expression Menu、表情ロック、トリガー量による変化は対象外�
 
 Clip更新は`expectedRevision`が現在値と一致しない場合に拒否します。同じ値、使用状態、単一frame curveを再指定した場合は変更なしとしてAssetを書き直しません。静止表情toolは複数ポーズClipの更新を拒否し、curveの一部だけを誤って単一frameへ戻しません。表情アニメーションtoolはUIと同じポーズindex、遷移時間、任意名、参照Clipを使用し、参照Clipと明示的なchannel値の同時指定を拒否します。各書き込みの`dryRun`はAssetを書きません。FacialSet適用も`dryRun`で設定内のGesture名とClip参照、Avatar Descriptor、Modular Avatarの前提条件を検証できます。実適用は既存UIと同じ生成先、Modular Avatar installer、Blinkと口固定の契約を使用します。
 
+FacialSetの`PlanApply`は任意の適用予定設定を受け取り、`ApplyConfiguration`と同じGesture名・重複・Clip参照を検証します。MCPのplanとapplyは同じpatch／replace後の設定を使用し、前提不足や適用失敗をMCP errorとして返します。MCPからのAvatar設定変更にはScene上のinstanceを使用し、Prefab Modeと永続Prefabを直接変更しません。remapは静止Clip専用で、複数ポーズ入力を拒否します。
+
 ## 編集画面のライフサイクル
 
 未保存変更の確認には機能横断の`ConfirmationOverlay`を使用します。表示と背景の操作抑止・取消をExpressionMenuのタイプ切り替えと共有し、保存・復元と画面遷移はFaceExpressionが担当します。
