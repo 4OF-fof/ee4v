@@ -25,7 +25,12 @@ namespace Ee4v.Mcp
             }
 
             var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var registration = cancellationToken.Register(() => completion.TrySetCanceled());
+            var gate = new object();
+            var started = false;
+            var registration = cancellationToken.Register(() =>
+            {
+                lock (gate) if (!started) completion.TrySetCanceled();
+            });
             _ = completion.Task.ContinueWith(_ => registration.Dispose(), TaskScheduler.Default);
             lock (Queue)
             {
@@ -33,7 +38,11 @@ namespace Ee4v.Mcp
                 {
                     try
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        lock (gate)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            started = true;
+                        }
                         completion.TrySetResult(await action());
                     }
                     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

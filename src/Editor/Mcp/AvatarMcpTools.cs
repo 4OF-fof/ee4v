@@ -8,6 +8,7 @@ using Ee4v.AvatarInfo;
 using Ee4v.Core.AvatarEvaluation;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -534,12 +535,28 @@ namespace Ee4v.Mcp
             foreach (var component in avatar.GetComponentsInChildren<Component>(true))
                 if (component != null && component.GetType().FullName == "nadena.dev.modular_avatar.core.ModularAvatarMergeAnimator")
                     controllers.Add(GetMemberValue(component, "animator") as RuntimeAnimatorController);
-            return controllers.Where(controller => controller != null)
-                .Distinct()
-                .SelectMany(controller => controller.animationClips)
-                .Where(clip => clip != null)
-                .Distinct()
-                .Count();
+            // animationClips builds/validates native controllers. MA sources can deliberately
+            // reference parameters supplied by another source, so inventory must only read refs.
+            var pending = new Queue<UnityEngine.Object>(controllers.Where(controller => controller != null).Distinct());
+            var visited = new HashSet<UnityEngine.Object>();
+            var clips = new HashSet<AnimationClip>();
+            while (pending.Count > 0)
+            {
+                var current = pending.Dequeue();
+                if (current == null || !visited.Add(current)) continue;
+                if (current is AnimationClip clip) { clips.Add(clip); continue; }
+                using (var serialized = new SerializedObject(current))
+                using (var property = serialized.GetIterator())
+                    while (property.Next(true))
+                    {
+                        if (property.propertyType != SerializedPropertyType.ObjectReference) continue;
+                        var reference = property.objectReferenceValue;
+                        if (reference is RuntimeAnimatorController || reference is AnimatorStateMachine ||
+                            reference is AnimatorState || reference is BlendTree || reference is AnimationClip)
+                            pending.Enqueue(reference);
+                    }
+            }
+            return clips.Count;
         }
 
         private static int CountComponents(GameObject avatar, string fullName)

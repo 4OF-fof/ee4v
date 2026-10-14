@@ -1,5 +1,7 @@
 # テスト一覧
 
+CLIは[CLI動作確認](cli.md)に従い、起動中Unity 2022.3 EditorでMCP catalogとの全操作一致、引数、構造化失敗、画像、job・取消・reloadを確認します。Scene/Projectのwriterは隔離SceneとAssetへ実行し、元Sceneと共通Libraryを保持します。共通Library・FBX分類・照明preset・制作履歴などProjectをまたぐwriterはCLI導入時の実機検証から除外します。新規テストケースは追加しません。
+
 MCPのauthoring操作は、既存FaceExpressionTests・DerivedAssetCreatorTests・AssetManagerApiTestsで共有の曲線・Prefab・Library・履歴処理を回帰確認します。手動ではbody調査／dryRunでpreset・Sceneを変更しないこと、元Prefab基準の倍率とViewPosition連動、個別・GroupのBlendShape同期／remap、追加装着の推奨先・外部参照拒否・既存設定保持・Undoを確認します。Collectionの検索tree、Item／Fileの所有権とArchive、制作物の新規作成・metadata・試着、Projectにない保存版の一覧・復元、dirty Sceneの明示的な破棄指定、Galleryの画像検証とID・順序、animation曲線の除去・再有効化とrevisionも確認します。新規テストケースは追加しません。
 
 MCPの入力・参照・transportは手動で、必須項目や型の欠落、未知の項目、操作別入力の不一致が書き込み前に拒否されること、未発行参照・Prefab asset・内部Preview SceneへAvatar設定を書き込めないこと、Prefab Modeの調査はできることを確認します。sessionごとのversion交渉とheader拒否、同じIDの重複、別sessionのキャンセル分離、待機中のキャンセル・Server停止・session終了、Importのキャンセル、FacialSet失敗のerror応答とplanの設定検証、アニメーションのremap拒否を確認します。Prefab追加はUIとMCPで同じ素体倍率追従・Undo・循環拒否となることを確認します。関連する既存FaceExpressionTestsとDerivedAssetCreatorTestsで回帰を確認し、新規テストケースは追加しません。

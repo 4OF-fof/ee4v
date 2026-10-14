@@ -19,7 +19,9 @@ Codexの`config.toml`には次を追加します。
 url = "http://127.0.0.1:48884/mcp"
 ```
 
-portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。通常のUnity Editor起動時は常に自動開始し、バッチモードでは開始しません。
+portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。占有時は最大31個の後続portを試します。実際のendpointは起動ログとCLIのProject一覧で確認できます。通常のUnity Editor起動時は常に自動開始し、バッチモードでは開始しません。
+
+同じserverに[CLI接続](cli.md)を併設します。MCPの既存protocol・sessionと操作の契約は維持し、CLIも同じ80操作のregistryを使用します。
 
 ## Transportと安全境界
 
@@ -310,7 +312,7 @@ MCPは画面状態の操作ではなく、保存対象とdomain操作を公開�
 
 | UIの操作 | MCPの対応・制約 |
 |---|---|
-| Avatar調査、性能測定、実行時parameter、照明保存・比較 | 専用toolで提供。Clip数はAnimator、DescriptorのPlayable Layers、MA Merge Animatorが参照するClipを重複除去して集計する |
+| Avatar調査、性能測定、実行時parameter、照明保存・比較 | 専用toolで提供。Clip数はAnimator、DescriptorのPlayable Layers、MA Merge Animatorのserialized controller graphが参照するClipを重複除去して集計する。Controllerを実行用に評価せず、未合成MAのparameter検証を起こさない |
 | 静止表情・ポーズ・遷移・参照Clip・Loop、Gestureとメニュー専用表情 | 専用toolで提供。メニュー専用表情の削除・改名は現在の全設定を取得して`mode: replace`を使用する。UIの手の「すべて」は64組の明示的な割り当てへ展開する |
 | 表情アニメーションのBlendShape曲線の有効／無効切り替え | `ee4v_set_expression_channel_enabled`で提供。ポーズ値の更新とは別の曲線全体の編集で、revision・dryRunと破壊性annotationを使用する |
 | 表情Rendererの選択、Group絞り込み、Clip複製 | Rendererは`rendererPaths`と各channelのpathで指定できる。Groupの画面状態はUI専用。Clip複製は汎用Unity操作を使用する |
@@ -332,6 +334,8 @@ MCPは画面状態の操作ではなく、保存対象とdomain操作を公開�
 復元・変更破棄・曲線除去・削除は、読み取り・通常編集と区別する破壊的操作として公開する。体型・装着・試着は汎用SerializedProperty操作へ薄く転送せず、UIと共通のdomain validation・Undo・保存境界を公開APIとして使用する。
 
 ## 実装境界
+
+animationClipCountはserialized参照の数量で、Override Controllerに保存された原Clipと置換Clipも含む。最終合成後に再生するClip数ではない。state machine・state・BlendTree・Controller参照を循環除去して読む。
 
 - `Ee4v.Mcp.Editor`はMCP protocol、loopback HTTP server、tool registry、Unity main-thread dispatch、各moduleへのadapterを所有する。
 - Face Expressionは機能moduleの公開APIをMCP adapterから呼ぶ。MCPのJSON DTOを機能moduleへ持ち込まない。

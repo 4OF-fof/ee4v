@@ -15,7 +15,7 @@ namespace Ee4v.Mcp
     internal sealed class Ee4vMcpHttpServer : IDisposable
     {
         private const string ServerName = "ee4v";
-        private const string ServerVersion = "0.1.0";
+        private const string ServerVersion = "0.2.0";
         private const long MaximumRequestBytes = 8L * 1024L * 1024L;
         private static readonly string[] ProtocolVersions = { "2025-11-25", "2025-06-18", "2025-03-26" };
         private readonly ConcurrentDictionary<string, RequestSession> _sessions = new ConcurrentDictionary<string, RequestSession>();
@@ -23,8 +23,9 @@ namespace Ee4v.Mcp
         private HttpListener _listener;
         private CancellationTokenSource _cancellation;
         private Task _listenTask;
+        private readonly Ee4vCliBridge _cli;
 
-        internal Ee4vMcpHttpServer(int port)
+        internal Ee4vMcpHttpServer(int port, Ee4vCliBridge cli = null)
         {
             if (port < 1024 || port > 65535)
             {
@@ -32,6 +33,7 @@ namespace Ee4v.Mcp
             }
 
             _port = port;
+            _cli = cli;
         }
 
         internal bool IsRunning => _listener != null && _listener.IsListening;
@@ -73,6 +75,7 @@ namespace Ee4v.Mcp
             cancellation?.Cancel();
             foreach (var session in _sessions.Values) session.Close();
             _sessions.Clear();
+            _cli?.Dispose();
             try
             {
                 listener?.Stop();
@@ -137,6 +140,12 @@ namespace Ee4v.Mcp
                             ["server"] = ServerName,
                             ["version"] = ServerVersion
                         });
+                    return;
+                }
+
+                if (context.Request.Url.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal))
+                {
+                    await ProcessCli(context, cancellationToken);
                     return;
                 }
 
@@ -251,21 +260,28 @@ namespace Ee4v.Mcp
             }
             catch (McpToolException exception)
             {
-                await TryWriteJson(context.Response, 400, Error(null, -32600, "Invalid request", exception.Message));
+                await TryWriteJson(context.Response, 400,
+                    context.Request.Url.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal)
+                        ? McpToolResult.Error(exception.Code, exception.Message, exception.Details).StructuredContent
+                        : Error(null, -32600, "Invalid request", exception.Message));
             }
             catch (RequestTooLargeException exception)
             {
                 await TryWriteJson(
                     context.Response,
                     413,
-                    Error(null, -32600, "Request too large", exception.Message));
+                    context.Request.Url.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal)
+                        ? McpToolResult.Error("request_too_large", exception.Message).StructuredContent
+                        : Error(null, -32600, "Request too large", exception.Message));
             }
             catch (JsonException exception)
             {
                 await TryWriteJson(
                     context.Response,
                     400,
-                    Error(null, -32700, "Parse error", exception.Message));
+                    context.Request.Url.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal)
+                        ? McpToolResult.Error("invalid_json", exception.Message).StructuredContent
+                        : Error(null, -32700, "Parse error", exception.Message));
             }
             catch (Exception exception)
             {
@@ -313,6 +329,38 @@ namespace Ee4v.Mcp
                     return reader.ReadToEnd();
                 }
             }
+        }
+
+        private async Task ProcessCli(HttpListenerContext context, CancellationToken cancellationToken)
+        {
+            if (_cli == null) { await WriteStatus(context.Response, 404, "CLI transport is unavailable."); return; }
+            if (!_cli.Authorize(context.Request.Headers["Authorization"]))
+            { await WriteStatus(context.Response, 401, "The Editor connection token is missing or expired."); return; }
+            var path = context.Request.Url.AbsolutePath;
+            var method = context.Request.HttpMethod;
+            if (method == "GET" && path == "/api/health")
+                await WriteJson(context.Response, 200, _cli.Health());
+            else if (method == "GET" && path == "/api/operations")
+                await WriteJson(context.Response, 200, new JObject { ["apiVersion"] = Ee4vCliBridge.ApiVersion, ["operations"] = McpToolRegistry.List() });
+            else if (method == "POST" && path == "/api/invoke")
+            {
+                var request = JObject.Parse(await ReadRequestBody(context.Request, cancellationToken));
+                await WriteJson(context.Response, 202, _cli.Submit(request));
+            }
+            else if (method == "GET" && path == "/api/jobs")
+                await WriteJson(context.Response, 200, _cli.ListJobs());
+            else if (path.StartsWith("/api/jobs/", StringComparison.Ordinal))
+            {
+                var parts = path.Substring("/api/jobs/".Length).Split('/');
+                var action = parts.Length == 1 && method == "GET" ? "get" :
+                    parts.Length == 1 && method == "DELETE" ? "release" :
+                    parts.Length == 2 && parts[1] == "cancel" && method == "POST" ? "cancel" : null;
+                if (action == null) { await WriteStatus(context.Response, 405, "Invalid job operation."); return; }
+                try { await WriteJson(context.Response, 200, _cli.GetJob(Uri.UnescapeDataString(parts[0]), action)); }
+                catch (McpToolException exception)
+                { await WriteJson(context.Response, exception.Code == "job_not_found" ? 404 : 409, McpToolResult.Error(exception.Code, exception.Message).StructuredContent); }
+            }
+            else await WriteStatus(context.Response, 404, "Unknown CLI endpoint.");
         }
 
         private static async Task<JObject> HandleRequest(

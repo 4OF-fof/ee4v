@@ -12,6 +12,9 @@ src/Generated.meta
 # External tool build outputs
 External~/Eagle/build/
 External~/Eagle/dist/
+External~/Cli/bin/
+External~/Cli/obj/
+External~/Cli/dist/
 
 # Documentation build outputs
 docs~/.vitepress/cache/

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>ee4v-cli</AssemblyName>
+    <Version>0.2.0</Version>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="../Agent/Skill/ee4v-cli/**/*"
+             Exclude="../Agent/Skill/ee4v-cli/bin/**/*;../Agent/Skill/ee4v-cli/.ee4v-cli-managed"
+             Link="ee4v-cli/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="BundleCliInSkill" AfterTargets="Publish">
+    <Error Condition="'$(RuntimeIdentifier)' != 'win-x64' or '$(SelfContained)' != 'true' or '$(PublishSingleFile)' != 'true'"
+           Text="The skill bundle requires a self-contained, single-file win-x64 publish." />
+    <PropertyGroup>
+      <SkillSourceRoot>$(MSBuildProjectDirectory)/../Agent/Skill/ee4v-cli</SkillSourceRoot>
+      <SkillPublishRoot>$(PublishDir)ee4v-cli</SkillPublishRoot>
+    </PropertyGroup>
+    <MakeDir Directories="$(SkillSourceRoot)/bin/win-x64;$(SkillPublishRoot)/bin/win-x64" />
+    <Copy SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFiles="$(SkillSourceRoot)/bin/win-x64/$(AssemblyName).exe" />
+    <Move SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFiles="$(SkillPublishRoot)/bin/win-x64/$(AssemblyName).exe" />
+  </Target>
+</Project>
