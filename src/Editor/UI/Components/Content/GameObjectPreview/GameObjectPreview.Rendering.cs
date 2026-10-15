@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    public sealed partial class PrefabScenePreview
+    public sealed partial class GameObjectPreview
     {
         private void DrawPreview(Rect rect)
         {

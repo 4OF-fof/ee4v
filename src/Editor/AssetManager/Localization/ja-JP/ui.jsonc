@@ -174,7 +174,8 @@
       "name": "派生アセット名",
       "assetDescription": "説明",
       "openManager": "AssetManagerを開く",
-      "backToEditing": "編集に戻る"
+      "backToEditing": "編集に戻る",
+      "prefabPlaceholder": "Prefabを選択"
     },
     "asset": {
       "change": "変更"

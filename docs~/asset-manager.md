@@ -20,7 +20,7 @@ UIとMCPの共有sessionは選択中Sourceの素材と、Sourceに依存しな�
 
 統合ee4vはUnityのモードに合わせてカテゴリ一覧を切り替えます。Edit Modeは「総合」「外見」「表情」「Expression Menu」、Play Modeは「操作確認」「ライティング確認」を表示します。「外見」の右ペイン上部には「パーツ」「体型」「マテリアル」の3タブを配置します。各確認タブは作業Scene内のアバター全体を対象とします。GestureManagerはVPMの必須外部依存（`>=3.9.9 <4.0.0-a`）とし、接続を`AssetManager/Simulation`のEditor assemblyへまとめます。AssetManager UIはこの内部モジュールの公開APIを使用します。エミュレーション、PlayableGraph、パラメーター伝播、メニューの動作と円形描画は導入済みGestureManagerが担当します。ee4vはソースやアセットを取り込まず、`SetModule`、`GetOrCreateRadial`、`GetParam`などの公開APIを使用します。依存先とライセンスの記載は`ThirdParty~/THIRD_PARTY_NOTICES.md`に置きます。
 
-UnityのToolbarでPlay Modeを開始すると「操作確認」へ切り替え、NDMFのビルド後に作業SceneのGestureManagerを対象へ接続します。停止すると元の編集カテゴリへ戻します。編集カテゴリはdomain reloadを跨いで保持します。Play Mode中はPrefab構成・保存・破棄の操作を表示せず、左上の編集中アセット名横の変更ボタンと区切り線も表示しません。アセット名は維持し、Variantの切り替えは行えません。Play Modeへ入る前に体型のドラッグと保留中のパーツ変更を確定して編集用Previewを解放します。操作確認では編集用Previewを併設せず、同じ`PrefabScenePreview`で実行中のアバターを描画します。初期表示とリセット時のカメラ距離、中心の補正、画角とサイズ追従は編集モードのAppearance Previewと同じ拡大表示設定を使用します。背景には共通の明暗グリッドを表示し、右上へ背景切り替えとリセットのアイコンを配置します。操作確認では正面・背面のトグルを表示しません。見出しにテキストの表示リセットボタンは置きません。Scene内のGestureManagerは保存された構成として維持し、タブやWindowを閉じても実行中のModuleを切断しません。同じアバターを制御中の別GestureManagerがあれば接続に失敗します。ee4vは既存エミュレーターを削除しません。SceneにGestureManagerがない場合は配置の案内を表示します。
+UnityのToolbarでPlay Modeを開始すると「操作確認」へ切り替え、NDMFのビルド後に作業SceneのGestureManagerを対象へ接続します。停止すると元の編集カテゴリへ戻します。編集カテゴリはdomain reloadを跨いで保持します。Play Mode中はPrefab構成・保存・破棄の操作を表示せず、左上の編集中アセット名横の変更ボタンと区切り線も表示しません。アセット名は維持し、Variantの切り替えは行えません。Play Modeへ入る前に体型のドラッグと保留中のパーツ変更を確定して編集用Previewを解放します。操作確認では編集用Previewを併設せず、同じ`GameObjectPreview`で実行中のアバターを描画します。初期表示とリセット時のカメラ距離、中心の補正、画角とサイズ追従は編集モードのAppearance Previewと同じ拡大表示設定を使用します。背景には共通の明暗グリッドを表示し、右上へ背景切り替えとリセットのアイコンを配置します。操作確認では正面・背面のトグルを表示しません。見出しにテキストの表示リセットボタンは置きません。Scene内のGestureManagerは保存された構成として維持し、タブやWindowを閉じても実行中のModuleを切断しません。同じアバターを制御中の別GestureManagerがあれば接続に失敗します。ee4vは既存エミュレーターを削除しません。SceneにGestureManagerがない場合は配置の案内を表示します。
 
 右ペインに外部GestureManagerの300pxラジアルUI、左右0〜7のジェスチャーと強さを表示します。GestureManagerのOptionsもそのまま利用し、入力はPlay Mode内のModuleへ渡します。外部のラジアルUIの文字とアイコンはパッケージ側が生成します。ee4v自身の文字はUiTextFactoryを使用します。ラジアルは固定の高さに配置し、選択要素の文字をee4v側で追加表示しません。
 
@@ -66,7 +66,7 @@ Edit Modeの編集中画面では、左のカテゴリ一覧の最下部に「�
 
 構成Prefabの追加Pickerは1040×720pxで開き、上部に検索欄を表示します。最初の画面は、Catalog内で取り込み済みPrefabを持つ非アーカイブItemをサムネイル・名前・Prefab件数のカードGridで表示します。幅に応じて1〜5列へ切り替え、カード画像は切り取らず全体を収めます。折り返しGridはScrollViewのcontentContainer直下の独立した要素に配置し、内容の高さを縮めずスクロール範囲へ反映します。最下部は最後のカードと下余白の位置で止まり、画像の読み込みや検索・列数変更後もスクロール範囲を更新します。Item画像は表示範囲と上下240pxにある未取得Itemだけを最大4件並列で非同期取得し、Picker内のCore画像cacheで保持します。スクロールは80ms後、検索は入力が止まって150ms後に反映し、不要な取得をキャンセルします。読み込み中や画像がないItemにはUnityのMiniThumbnailを表示し、Item一覧では3D描画を行いません。
 
-Itemを選ぶと、左のPrefab一覧と右の大きなプレビューへ切り替えます。最初の候補を仮選択し、候補のクリックは選択とプレビューだけを変更します。「追加」で選択中Prefabを追加します。検索結果がない場合は空表示にし、追加ボタンを無効化します。Itemは名前、Prefabは名前とProject pathで検索できます。Prefab確認画面には選択中Itemの名前とItem一覧へ戻る操作を置き、戻るとItemの検索条件を復元します。Escや閉じる操作では追加しません。追加PickerはAssetManagerのUIが所有し、共通PrefabSelectorは渡されたPrefab候補の選択を担当します。
+Itemを選ぶと、左のPrefab一覧と右の大きなプレビューへ切り替えます。最初の候補を仮選択し、候補のクリックは選択とプレビューだけを変更します。「追加」で選択中Prefabを追加します。検索結果がない場合は空表示にし、追加ボタンを無効化します。Itemは名前、Prefabは名前とProject pathで検索できます。Prefab確認画面には選択中Itemの名前とItem一覧へ戻る操作を置き、戻るとItemの検索条件を復元します。Escや閉じる操作では追加しません。追加PickerはAssetManagerのUIが所有し、共通ObjectSelector<TObject>は渡されたPrefab候補の選択を担当します。
 
 構成Prefabの追加Pickerは候補生成時に編集中のPrefab自身と、それを再帰的に参照するPrefabを除外します。除外後にPrefab候補が空になるItemもItem一覧へ表示しません。追加実行時にも同じ条件を再検証します。ベースなしの制作物もこの除外を適用し、他の制作物やアバターを編集している場合は追加候補として使用できます。新規作成のベース選択には、編集中のPrefabの除外を適用しません。
 
@@ -79,10 +79,10 @@ UIとMCPの追加Material Variantは`DerivedAssetCreator`の共通生成処理�
 | `PreviewPane` | 共通UI / Containers | プレビューの見出し、操作と描画要素の配置 |
 | `SelectionTabBar` | 共通UI / Containers | 固定タブ、横スクロールするタブと操作の配置 |
 | `SelectionTab` | 共通UI / Inputs | タブの名前と選択表示。クリック、表示切り替えとcontext menuは利用側が接続する |
-| `BodyPartSelector` | 共通UI / Inputs | 部位の選択表示と、利用側が判定した部位の操作可否 |
-| `PrefabSelector` | 共通UI / Inputs | 利用側が渡した候補Prefabの選択、Pickerとドラッグへの接続 |
-| `PrefabThumbnail` | 共通UI / Displays | UnityのAssetPreviewを取得するPrefabサムネイル |
-| `PrefabScenePreview` | 共通UI / Displays | 編集用3Dプレビュー、対象の複製、選択判定とカメラ操作 |
+| `ExclusiveButtonGroup<TValue>` | 共通UI / Inputs | 値とラベルを受け取る排他選択ボタン群。部位の候補・翻訳はAvatarEditingが渡す |
+| `ObjectSelector<TObject>` | 共通UI / Inputs | 利用側が渡したUnity Object候補の選択、Pickerとドラッグへの接続 |
+| `ObjectThumbnail` | 共通UI / Displays | UnityのAssetPreviewを取得するObjectサムネイル |
+| `GameObjectPreview` | 共通UI / Displays | Scene上のGameObjectとPrefabアセットの3D表示、選択判定とカメラ操作 |
 | `WorkflowEditorLayout` | AssetManager / Domain/AssetManager/Containers | カテゴリ、プレビュー、編集ペインと表情・操作確認の専用領域の切り替え。Expression Menuではプレビューを非表示にし、編集ペインを残りの横幅へ広げる |
 | `WorkflowCategoryRail` | AssetManager / Domain/AssetManager/Inputs | モードに応じたカテゴリ一覧、選択表示とPrefab選択中の操作可否 |
 | `AvatarPartsEditor` | Feature/Avatar/AvatarParts / Domain/AvatarParts/Containers | パーツ階層・体型編集、保留変更と機能内キャッシュ |
@@ -94,7 +94,7 @@ UIとMCPの追加Material Variantは`DerivedAssetCreator`の共通生成処理�
 
 共通UI部品は`src/Editor/UI/Components`の公開APIです。AssetManagerのDB、Window session、改変カテゴリや翻訳に依存せず、他の編集補助ツールも同じAPIを使用できます。部位を表す`BodyPartCategory`とPrefab内の範囲判定・名前分割を行う`PrefabHierarchyUtility`はCoreの公開APIを使用します。固定の改変画面切り替えはAssetManager、詳細はAvatarInfo、GestureManager接続はSimulationへ置きます。
 
-編集用と実行用の外枠には`PreviewPane`を、編集用の描画面には`ScenePreviewViewport`を使用します。`PrefabScenePreview`は本体、`Rendering`、`Selection`、`Camera`のpartialに分けます。共通部品のスタイルは`UiComposition.Prepare`で読み込みます。統合配置は`asset-modification-workflow.uss`と`UI/Components/Workflow`、パーツ・体型とMaterialのスタイルは各Feature、共有編集スタイルは`Feature/Shared/AvatarEditing`、詳細は`AvatarInfo/UI`が所有します。操作確認のスタイルは`Simulation/avatar-execution.uss`に置きます。
+編集用と実行用の外枠には`PreviewPane`を、編集用の描画面には`ScenePreviewViewport`を使用します。`GameObjectPreview`は本体、`Rendering`、`Selection`、`Camera`のpartialに分けます。共通部品のスタイルは`UiComposition.Prepare`で読み込みます。統合配置は`asset-modification-workflow.uss`と`UI/Components/Workflow`、パーツ・体型とMaterialのスタイルは各Feature、共有編集スタイルは`Feature/Shared/AvatarEditing`、詳細は`AvatarInfo/UI`が所有します。操作確認のスタイルは`Simulation/avatar-execution.uss`に置きます。
 
 統合ホストのpartialは`Workspace`（配置、カテゴリと版保存）、`Selection`（Variant選択・作成）、`Composition`（構成Prefabと共通グループ操作）、`EditingSession`（作業Sceneと共通選択）、`MaterialAssets`（Materialの編集保護・Variant作成と機能呼び出し）に分けます。機能間の更新はホストが調整し、体型・パーツとMaterialの編集実装をホストのpartialへ置きません。単独のShape and PartsとMaterialsは各FeatureのWindowが共有の`AvatarPrefabEditorWindow`でHierarchy上のPrefabインスタンスを直接編集し、元Prefabへ保存します。AssetManagerのDBや統合ホストへ依存せず、PartsとMaterialsの編集コンポーネントを統合版と共有します。
 
@@ -124,7 +124,7 @@ Information（inspector）でItem・File・マイアセットが未選択の場�
 
 Variant作成画面は`VariantCreationView`をAssetManagerのItem詳細と統合ee4vで共有します。上部は最小高さ48pxのナビゲーション行とし、Ghostの戻るアイコン、画面名、縦の区切り線、Libraryアイコンと作成元Item名を左から並べます。大きな説明欄や読み取り専用フォームは置きません。Item名は長い場合に右端で切り、全文をtooltipで確認できます。作成元Prefabのラベルとselectorは左ペインのプレビュー上部で横一列に並べ、selectorは高さ32px・Prefab名だけの表示とします。Project内pathはtooltipで確認できます。画面幅が940px未満ならItem情報を同じHeader内の次の行へ折り返します。
 
-作成元PrefabのPickerは構成Prefabの追加と同じ`AssetPrefabPickerWindow`を使用します。`ShowForSource`は現在のItemの取り込み済みPrefab一覧へ直接進み、検索欄、Prefab一覧、大きな3Dプレビューと選択ボタンを追加時と共有します。現在選択中のPrefabを初期選択とし、候補はPrefab名またはProject内pathで検索できます。この入口には別Itemへの移動とAssetManager起動を表示せず、確定ボタンの名称は「このPrefabを選択」とします。`PrefabSelector`の`showPicker`でこの入口へ接続し、候補外Prefabの拒否とドラッグ受け入れは共通selectorで維持します。Previewと右の入力ペインはPickerからの選択確定に応じて同じ画面で更新します。
+作成元PrefabのPickerは構成Prefabの追加と同じ`AssetObjectPickerWindow`を使用します。`ShowForSource`は現在のItemの取り込み済みPrefab一覧へ直接進み、検索欄、Prefab一覧、大きな3Dプレビューと選択ボタンを追加時と共有します。現在選択中のPrefabを初期選択とし、候補はPrefab名またはProject内pathで検索できます。この入口には別Itemへの移動とAssetManager起動を表示せず、確定ボタンの名称は「このPrefabを選択」とします。`ObjectSelector<TObject>`の`showPicker`でこの入口へ接続し、候補外Prefabの拒否とドラッグ受け入れは共通selectorで維持します。Previewと右の入力ペインはPickerからの選択確定に応じて同じ画面で更新します。
 
 本文は左の3Dプレビューと、名前・任意の説明・保存先を持つ右の入力ペインに分けます。Material・パーツタブと`workflow-editor-layout.uss`のペイン幅設定を共有し、右端の入力ペインは幅460px・最小幅420px、左ペインは最小幅480pxとして残りの幅と本文の高さへ広げます。本文の最大幅と中央寄せは設けません。3Dプレビューは`SetFlexibleLayout(true)`で正方形への自動調整を止め、左ペイン全体へ伸縮します。入力は`FormInput`と`InputField`を使用し、折りたたみやカードの囲みを持たないフォームに共通トークンの余白と細い区切り線を適用します。入力ペインの内容だけを縦スクロールし、エラー表示と全幅の作成ボタンは右ペイン下部のFooterへ固定します。統合ee4vのボタンは「改変を開始」とし、Variantの作成後に編集画面へ進みます。画面幅が940px未満なら上下2ペインに切り替え、上部にプレビュー、下部にスクロールする入力欄と固定Footerを表示します。
 
@@ -158,11 +158,11 @@ UI上の総称は「マイアセット」です。新規作成カードは通常
 
 AssetManagerの「マイアセット」タブはベースを継承するVariantとベースなしの制作物を同じ一覧に表示します。Gridの先頭には「新規作成」の追加カードを常に表示し、検索・並び替え・制作物が0件の場合もその位置を維持します。追加カードは選択・範囲選択・サムネイル取得・context menuの対象から除外し、クリックまたはEnter／Spaceで作成画面を開きます。統合ee4vではホストの作成画面へ、単独AssetManagerでは同じ作成フォームへ接続します。
 
-名前、任意の説明と「ベースPrefab（任意）」を指定します。説明用のHelpBoxは表示しません。ベース未選択の場合は`DerivedAssetCreationRequest.CreateOriginal`をtrueとして、ベースを継承しない通常Prefab・作業Sceneを作成し、`sourceGuid`は空文字列になります。ベース選択時は同Requestをfalseとして、選択Prefabを継承するPrefab Variant・Material Variant・作業Sceneを作成します。候補は選択中Sourceで取り込み済みのPrefabと、制作物Itemに所有されるProject内の未Archive Prefabです。候補の取得は`AssetPrefabPickerWindow.FindSources`を統合・単独画面で共用し、作成時にも候補を再検証します。選択したベースは解除でき、解除後は名前だけで作成できます。解除ボタンはベース選択時だけ表示し、未選択時と解除後は非表示にします。FormInputの右端に32px四方で配置し、選択欄と高さを揃えます。選択状態はフォーム再構築時にも保持します。
+名前、任意の説明と「ベースPrefab（任意）」を指定します。説明用のHelpBoxは表示しません。ベース未選択の場合は`DerivedAssetCreationRequest.CreateOriginal`をtrueとして、ベースを継承しない通常Prefab・作業Sceneを作成し、`sourceGuid`は空文字列になります。ベース選択時は同Requestをfalseとして、選択Prefabを継承するPrefab Variant・Material Variant・作業Sceneを作成します。候補は選択中Sourceで取り込み済みのPrefabと、制作物Itemに所有されるProject内の未Archive Prefabです。候補の取得は`AssetObjectPickerWindow.FindSources`を統合・単独画面で共用し、作成時にも候補を再検証します。選択したベースは解除でき、解除後は名前だけで作成できます。解除ボタンはベース選択時だけ表示し、未選択時と解除後は非表示にします。FormInputの右端に32px四方で配置し、選択欄と高さを揃えます。選択状態はフォーム再構築時にも保持します。
 
 どちらの場合も`CreateAssetItemRequest.IsOriginal`で制作物自身を表す独立した所有Itemを作成します。このItemの`IsOriginal`は外部Sourceから独立した所有Itemであることを示し、Prefabがベースを継承するかは制作物metadataの`sourceGuid`で判定します。素材Itemから直接Variantを作成する場合は、その素材Itemを所有先に維持します。統合ee4vは作成後に編集を開始し、単独AssetManagerは制作物の詳細を開きます。作成に失敗した場合は生成途中のAssetと新規所有Itemを取り除きます。作成後にSceneを開く操作をキャンセルした場合は生成済み制作物を保持し、一覧から再選択できます。
 
-共通`PrefabSelector`の`allowEmpty: true`は未選択状態を許可し、`ClearValue`でベースを解除して通常の`ValueChanged`を通知します。既定では選択必須を維持します。Prefab以外のドラッグを解除操作として扱いません。
+共通`ObjectSelector<TObject>`の`allowEmpty: true`は未選択状態を許可し、`ClearValue`でベースを解除して通常の`ValueChanged`を通知します。既定では選択必須を維持します。Prefab以外のドラッグを解除操作として扱いません。
 
 `parentItemId`は素材の出自ではなく所有Itemを表します。制作物は新規Itemを所有先として版とGalleryを管理し、単体素材からの改変は選択した素材Itemを所有先として扱います。作成元Prefabの`sourceGuid`は任意の継承元、複数の使用素材は保存版の依存Fileとして別に保持します。制作物Itemは`AssetItem.IsOriginal`で識別し、Sourceの選択によらず検索・Collection・Tag候補・派生アセット一覧へ表示します。
 
@@ -199,7 +199,7 @@ Variant作成時は同じVariantフォルダーに`<Variant名>.prefab`と`<Vari
 
 共通のFBX別`BlendShape Presets`の各Mappingは役割名、左右、口形状に加えて見た目の部位とグループ名を保持します。体型タブを開いたとき、表示対象のBlendShapeが属するFBXにプリセットがなければ、FBX別プリセットを自動分類して共通data rootへ保存します。既存プリセットは上書きしません。体型タブにプリセット編集ボタンは置きません。保存済みの自動生成プリセットはPreferencesから開く保存フォルダー内のJSONまたはee4v MCPの部分更新toolから整えます。部位は「自動」「表情のみ」「頭・首」「胸」「腰・胴」「肩・腕」「腕」「手」「脚」「足」「全身のみ」から選び、空欄の既存JSONは「自動」として扱います。「自動」はBody meshを表情専用として除外し、その他をBlendShape名とRenderer名から部位推定します。明示した部位は推定より優先し、「表情のみ」は見た目から除外します。Body meshのBlendShapeでも明示した見た目部位があれば表示します。見た目のグループ名があればそれを、なければ保存済みの役割名を使い、同じ名前のBlendShapeを部位内でまとめて表示します。縮小用BlendShapeはプリセットの役割名と見た目グループ名に`Shrink`を指定し、各部位内でまとめます。プリセット保存時は開いている見た目一覧を更新し、BlendShape値は派生Prefab Variantのoverrideとして保存します。
 
-統合画面の総合・体型・マテリアルは同じ`PrefabScenePreview`インスタンスを使用します。構成Prefabタブの切り替えではPreviewとNDMF sessionを維持し、次の描画から選択した範囲だけを表示します。全体表示を挟む画面再構築は行いません。選択範囲の変更時は選択中の部位と部位ポーズを維持し、パーツ行とMaterialの選択を解除して表示対象だけを切り替えます。Cameraの位置・角度・距離は維持し、進行中のCamera移動アニメーションはその位置で停止します。部位選択や表示リセットによるフレーミングは通常通り行います。描画はCoreの[AvatarPreviewRenderer](./core/avatar-preview.md)が管理し、Edit Modeでは作業SceneのAvatarに対するNDMF Previewを、Play ModeではGestureManagerなどが制御している実際のAvatarを表示します。SceneのAvatarを表示用に複製せず、SDKやNDMFの実行処理を再起動しません。Play Mode移行前に編集用Previewを破棄し、開始・停止後にそれぞれの対象へ接続します。表示するだけでPlay Modeの開始・停止は行いません。グリッド背景、背景の明暗切り替え、表示リセット、未表示時のPlaceholderと上部アセットタブの表示・非表示は共通UIが担当します。
+統合画面の総合・体型・マテリアルは同じ`GameObjectPreview`インスタンスを使用します。構成Prefabタブの切り替えではPreviewとNDMF sessionを維持し、次の描画から選択した範囲だけを表示します。全体表示を挟む画面再構築は行いません。選択範囲の変更時は選択中の部位と部位ポーズを維持し、パーツ行とMaterialの選択を解除して表示対象だけを切り替えます。Cameraの位置・角度・距離は維持し、進行中のCamera移動アニメーションはその位置で停止します。部位選択や表示リセットによるフレーミングは通常通り行います。描画はCoreの[AvatarPreviewRenderer](./core/avatar-preview.md)が管理し、Edit Modeでは作業SceneのAvatarに対するNDMF Previewを、Play ModeではGestureManagerなどが制御している実際のAvatarを表示します。SceneのAvatarを表示用に複製せず、SDKやNDMFの実行処理を再起動しません。Play Mode移行前に編集用Previewを破棄し、開始・停止後にそれぞれの対象へ接続します。表示するだけでPlay Modeの開始・停止は行いません。グリッド背景、背景の明暗切り替え、表示リセット、未表示時のPlaceholderと上部アセットタブの表示・非表示は共通UIが担当します。
 
 カテゴリの並びは「総合」「外見」「表情」「Expression Menu」です。「外見」内の切り替えは「パーツ」「体型」「マテリアル」の順です。外見内と表情内のタブは、透明背景・最小高さ32px・青い2pxの選択下線・下端の共通区切り線と同じ文字色・ホバー背景を使用します。外見のタブに外枠や丸角は設けず、タブ行の下へ追加の区切り線を重ねません。部位選択とタブを含む外見ヘッダーは透明な背景で、右ペイン本文と同じ親の背景色を表示します。上部アセットタブの非表示設定はカテゴリ間と内部タブ間で維持します。
 
@@ -360,9 +360,9 @@ Item GridはEscapeまたはカード外の空白を左クリックすると全�
 
 実画面と同じ`AssetManagerView`は`ee4v/Debug/Catalog`の`Domain/AssetManager/AssetManagerView` Storyでサンプルデータを使って確認できます。同じGroupには分離表示とコレクション編集Popupを配置します。`SearchableFileTree`はFile解析を担うため`Domain/AssetManager/Collections`、汎用`ImageGridView`は`Collections`に配置します。
 
-共通UIの`Inputs`にはBreadcrumb、TagField、FormInput、StepperSlider、EnumFormInput、ImageGridCard、SettingRowを、`Displays`にはThumbnailStack、MetricDisplay、KeyValueRowを、`Containers`にはDetailHeader、DetailSection、SettingListを配置します。簡易通知はMessagePanelのCompact表示を使用します。AssetManager固有のFilter Editorは`Domain/AssetManager/Inputs`に配置します。`AssetManagerControls`は接続用のFactoryであり独立したStoryを作りません。TagFieldは共有TagPillを組み合わせます。Storyの操作はSQLiteや外部Sourceを変更しません。
+共通UIの`Inputs`にはBreadcrumb、TagField、FormInput、StepperSlider、EnumFormInput、ImageGridCard、PropertyRowを、`Displays`にはThumbnailStack、MetricDisplay、KeyValueRowを、`Containers`にはDetailHeader、DetailSection、PropertyListを配置します。簡易通知はMessagePanelのCompact表示を使用します。AssetManager固有のFilter Editorは`Domain/AssetManager/Inputs`に配置します。`AssetManagerControls`は接続用のFactoryであり独立したStoryを作りません。TagFieldは共有TagPillを組み合わせます。Storyの操作はSQLiteや外部Sourceを変更しません。
 
-内部操作部品は`Editor/AssetManager/UI/AssetManagerControls.cs`と`UI/Components`に置き、`AssetManagerView`はCore componentを組み合わせます。文字はすべて`UiTextFactory`を通します。Toolbarは`ActionBar`、Navigation一件は`NavigationItem`、件数は`Badge`、サムネイル枠は`PreviewContainer`、ラベル付き入力は`FormInput`を使用します。関連する複数の入力を囲う場合は`InputGroup`へまとめます。検索欄は先頭操作に対応した共有`SearchField`を使用します。`SearchableFileTree`は共有`SearchableTreeView<FileTreeNode>`から派生し、File解析と行表示だけを追加します。詳細の見出し、セクション、概要値、設定行は`Editor/UI/Components/Content/Details/Details.cs`の共通部品を使用します。取り込み設定とFile設定の一覧は外枠を四辺とも1pxとし、`SettingList.AddRow`で追加した2行目以降の上辺だけに1pxの区切り線を付けます。先頭行の上辺と最終行の下辺には区切り線を付けず、外枠との二重描画を避けます。File Treeと詳細領域の追加スタイルは`searchable-file-tree.uss`と`asset-detail.uss`へ分け、`asset-manager.uss`は画面全体の構成を担当します。Domain固有の入力、一覧行、Card、詳細PanelもCoreと同じ境界線、面、角丸、hover、選択状態を使用します。AssetManager固有の配置と選択・更新の業務処理だけを機能側へ残します。UIからの更新操作中はmanagerの変更通知を蓄積し、操作完了時に一覧と詳細を1回だけ再描画します。
+内部操作部品は`Editor/AssetManager/UI/AssetManagerControls.cs`と`UI/Components`に置き、`AssetManagerView`はCore componentを組み合わせます。文字はすべて`UiTextFactory`を通します。Toolbarは`ActionBar`、Navigation一件は`NavigationItem`、件数は`Badge`、サムネイル枠は`PreviewContainer`、ラベル付き入力は`FormInput`を使用します。関連する複数の入力を囲う場合は`InputGroup`へまとめます。検索欄は先頭操作に対応した共有`SearchField`を使用します。`SearchableFileTree`は共有`SearchableTreeView<FileTreeNode>`から派生し、File解析と行表示だけを追加します。詳細の見出し、セクション、概要値、設定行は`Editor/UI/Components/Content/Details/Details.cs`の共通部品を使用します。取り込み設定とFile設定の一覧は外枠を四辺とも1pxとし、`PropertyList.AddRow`で追加した2行目以降の上辺だけに1pxの区切り線を付けます。先頭行の上辺と最終行の下辺には区切り線を付けず、外枠との二重描画を避けます。File Treeと詳細領域の追加スタイルは`searchable-file-tree.uss`と`asset-detail.uss`へ分け、`asset-manager.uss`は画面全体の構成を担当します。Domain固有の入力、一覧行、Card、詳細PanelもCoreと同じ境界線、面、角丸、hover、選択状態を使用します。AssetManager固有の配置と選択・更新の業務処理だけを機能側へ残します。UIからの更新操作中はmanagerの変更通知を蓄積し、操作完了時に一覧と詳細を1回だけ再描画します。
 
 ## 構成
 

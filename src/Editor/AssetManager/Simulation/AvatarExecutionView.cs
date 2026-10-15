@@ -15,7 +15,7 @@ namespace Ee4v.AssetManager.Simulation
         private readonly GameObject _avatar;
         private readonly Action _repaint;
         private readonly GestureManager _manager;
-        private readonly PrefabScenePreview _viewport;
+        private readonly GameObjectPreview _viewport;
         private readonly UiTextElement _status;
         private readonly VisualElement _inputs;
         private readonly VisualElement _radialHost;
@@ -40,12 +40,12 @@ namespace Ee4v.AssetManager.Simulation
             AddToClassList("ee4v-execution");
             var preview = new PreviewPane(Text("title"));
             preview.AddToClassList("ee4v-modification-workflow__preview-pane");
-            _viewport = new PrefabScenePreview();
+            _viewport = new GameObjectPreview();
             _viewport.AddToClassList("ee4v-modification-workflow__preview");
             _viewport.SetFlexibleLayout(true);
             _viewport.SetViewToggleVisible(false);
             _viewport.SetFullBodyFraming(previewOnly);
-            _viewport.SetPrefab(avatar);
+            _viewport.SetTarget(avatar);
             preview.Content.Add(_viewport);
             Add(preview);
 

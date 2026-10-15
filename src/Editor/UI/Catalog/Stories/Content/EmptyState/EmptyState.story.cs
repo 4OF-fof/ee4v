@@ -26,7 +26,7 @@ namespace Ee4v.UI
                         "Editor/UI/Components/Inputs/TagField/TagField.cs",
                         "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs",
                         "Editor/Feature/Shared/AvatarEditing/AvatarEditingUi.cs",
-                        "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs",
+                        "Editor/UI/Components/Inputs/ObjectSelector/ObjectPickerWindow.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/Components/GestureAssignmentCell.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
                         "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/HiddenObjectTreeView.cs",

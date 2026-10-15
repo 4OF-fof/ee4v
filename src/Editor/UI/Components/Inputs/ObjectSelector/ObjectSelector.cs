@@ -7,30 +7,27 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    public sealed class PrefabSelector : NavigationItem
+    public sealed class ObjectSelector<TObject> : NavigationItem where TObject : UnityEngine.Object
     {
-        private readonly IReadOnlyList<GameObject> _candidates;
-        private readonly HashSet<string> _candidatePaths;
-        private readonly Action<VisualElement, GameObject, Action<GameObject>> _showPicker;
+        private readonly IReadOnlyList<TObject> _candidates;
+        private readonly Action<VisualElement, TObject, Action<TObject>> _showPicker;
         private readonly bool _allowEmpty;
-        private GameObject _value;
+        private readonly string _placeholder;
+        private TObject _value;
 
-        public PrefabSelector(
-            IReadOnlyList<GameObject> candidates,
-            Action<VisualElement, GameObject, Action<GameObject>> showPicker = null,
-            bool allowEmpty = false)
+        public ObjectSelector(
+            IReadOnlyList<TObject> candidates,
+            Action<VisualElement, TObject, Action<TObject>> showPicker = null,
+            bool allowEmpty = false,
+            string placeholder = null)
             : base(onClick: null)
         {
-            _candidates = candidates ?? Array.Empty<GameObject>();
+            _candidates = candidates ?? Array.Empty<TObject>();
             _showPicker = showPicker;
             _allowEmpty = allowEmpty;
-            _candidatePaths = new HashSet<string>(
-                _candidates
-                    .Where(candidate => candidate != null)
-                    .Select(AssetDatabase.GetAssetPath),
-                StringComparer.OrdinalIgnoreCase);
+            _placeholder = placeholder ?? UiLocalization.Get("ui.objectPicker.select");
             AddToClassList(
-                "ee4v-ui-prefab-selector");
+                "ee4v-ui-object-selector");
             clicked += OpenPopup;
             Trailing.Add(new Icon(
                 FluentUiIcons.CreateState(
@@ -43,11 +40,11 @@ namespace Ee4v.UI
             Refresh();
         }
 
-        public event Action<GameObject> ValueChanged;
+        public event Action<TObject> ValueChanged;
 
         public event Action SelectionRejected;
 
-        public GameObject Value => _value;
+        public TObject Value => _value;
 
         public void ClearValue()
         {
@@ -55,20 +52,22 @@ namespace Ee4v.UI
         }
 
         public static void ShowPicker(VisualElement anchor,
-            IReadOnlyList<GameObject> candidates, GameObject selected,
-            Action<GameObject> select, bool showAsGrid = false)
+            IReadOnlyList<TObject> candidates, TObject selected,
+            Action<TObject> select, bool showAsGrid = false)
         {
-            PrefabPickerWindow.Show(anchor, candidates, selected, select, showAsGrid);
+            if (select == null) { return; }
+            ObjectPickerWindow.Show(anchor, candidates?.Cast<UnityEngine.Object>().ToArray(), selected,
+                value => select(value as TObject), showAsGrid);
         }
 
-        public void SetValueWithoutNotify(GameObject prefab)
+        public void SetValueWithoutNotify(TObject candidate)
         {
-            if (!Accepts(prefab))
+            if (!Accepts(candidate))
             {
                 return;
             }
 
-            _value = prefab;
+            _value = candidate;
             Refresh();
         }
 
@@ -79,27 +78,27 @@ namespace Ee4v.UI
                 _showPicker(this, _value, SetValue);
                 return;
             }
-            PrefabPickerWindow.Show(
+            ObjectPickerWindow.Show(
                 this,
-                _candidates,
+                _candidates.Cast<UnityEngine.Object>().ToArray(),
                 _value,
-                SetValue);
+                value => SetValue(value as TObject));
         }
 
-        private void SetValue(GameObject prefab)
+        private void SetValue(TObject candidate)
         {
-            if (!Accepts(prefab))
+            if (!Accepts(candidate))
             {
                 SelectionRejected?.Invoke();
                 return;
             }
 
-            if (_value == prefab)
+            if (_value == candidate)
             {
                 return;
             }
 
-            _value = prefab;
+            _value = candidate;
             Refresh();
             ValueChanged?.Invoke(_value);
         }
@@ -110,23 +109,21 @@ namespace Ee4v.UI
             SetState(new NavigationItemState(
                 _value != null
                     ? _value.name
-                    : UiLocalization.Get("ui.prefabPicker.select"),
+                    : _placeholder,
                 path));
             tooltip = path;
         }
 
-        private bool Accepts(GameObject prefab)
+        private bool Accepts(TObject candidate)
         {
-            if (prefab == null) { return _allowEmpty; }
-            var path = AssetDatabase.GetAssetPath(prefab);
-            return _candidates.Contains(prefab) ||
-                (!string.IsNullOrEmpty(path) && _candidatePaths.Contains(path));
+            if (candidate == null) { return _allowEmpty; }
+            return _candidates.Contains(candidate);
         }
 
         private void OnDragUpdated(DragUpdatedEvent evt)
         {
-            var prefab = GetDraggedPrefab();
-            DragAndDrop.visualMode = prefab != null && Accepts(prefab)
+            var candidate = GetDraggedObject();
+            DragAndDrop.visualMode = candidate != null && Accepts(candidate)
                 ? DragAndDropVisualMode.Link
                 : DragAndDropVisualMode.Rejected;
             evt.StopPropagation();
@@ -134,11 +131,11 @@ namespace Ee4v.UI
 
         private void OnDragPerform(DragPerformEvent evt)
         {
-            var prefab = GetDraggedPrefab();
-            if (prefab != null && Accepts(prefab))
+            var candidate = GetDraggedObject();
+            if (candidate != null && Accepts(candidate))
             {
                 DragAndDrop.AcceptDrag();
-                SetValue(prefab);
+                SetValue(candidate);
             }
             else
             {
@@ -148,10 +145,10 @@ namespace Ee4v.UI
             evt.StopPropagation();
         }
 
-        private static GameObject GetDraggedPrefab()
+        private static TObject GetDraggedObject()
         {
             return DragAndDrop.objectReferences
-                .OfType<GameObject>()
+                .OfType<TObject>()
                 .FirstOrDefault();
         }
     }

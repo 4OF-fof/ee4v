@@ -79,12 +79,12 @@ namespace Ee4v.AssetManager.UI
             var assignedItemId = files[0].ItemId;
             var settings = new DetailSection(
                 I18N.Get("detail.settings"));
-            var settingList = new SettingList();
+            var settingList = new PropertyList();
             var itemId = AssetManagerControls.CreateTextField(
                 string.Empty,
                 "ee4v-asset-manager__setting-input");
             itemId.Input.Value = assignedItemId ?? string.Empty;
-            settingList.AddRow(SettingRow.Editable(
+            settingList.AddRow(PropertyRow.Editable(
                 I18N.Get("field.assignedItem"),
                 string.IsNullOrWhiteSpace(assignedItemId)
                     ? I18N.Get("common.none")
@@ -98,7 +98,7 @@ namespace Ee4v.AssetManager.UI
             AddDependencySetting(settingList, dependencySources);
             if (showFileId)
             {
-                settingList.AddRow(new SettingRow(
+                settingList.AddRow(new PropertyRow(
                     I18N.Get("field.fileId"),
                     CreateMonoValue(fileIds[0])));
             }
@@ -107,7 +107,7 @@ namespace Ee4v.AssetManager.UI
         }
 
         private void AddDependencySetting(
-            SettingList settingList,
+            PropertyList settingList,
             IReadOnlyList<AssetFileTarget> sources)
         {
             if (sources == null || sources.Count == 0)
@@ -137,7 +137,7 @@ namespace Ee4v.AssetManager.UI
                     ? I18N.Get("common.none")
                     : string.Join(" · ", dependencySummary));
             summary.SetWhiteSpace(WhiteSpace.Normal);
-            settingList.AddRow(new SettingRow(
+            settingList.AddRow(new PropertyRow(
                 I18N.Get("field.dependencies"),
                 summary,
                 editDependencies));
@@ -165,22 +165,22 @@ namespace Ee4v.AssetManager.UI
 
             var information = new DetailSection(
                 I18N.Get("detail.entryInformation"));
-            var settingList = new SettingList();
-            settingList.AddRow(new SettingRow(
+            var settingList = new PropertyList();
+            settingList.AddRow(new PropertyRow(
                 I18N.Get("field.file"),
                 UiTextFactory.Create(
                     file?.FileName ?? I18N.Get("common.none"))));
-            settingList.AddRow(new SettingRow(
+            settingList.AddRow(new PropertyRow(
                 I18N.Get("field.kind"),
                 UiTextFactory.Create(I18N.Get(
                     entry.Kind == AssetFileContentEntryKind.Directory
                         ? "detail.file.directory"
                         : "detail.file.file"))));
-            settingList.AddRow(new SettingRow(
+            settingList.AddRow(new PropertyRow(
                 I18N.Get("field.size"),
                 UiTextFactory.Create(
                     entry.SizeBytes.ToString("N0") + " B")));
-            settingList.AddRow(new SettingRow(
+            settingList.AddRow(new PropertyRow(
                 I18N.Get("field.imported"),
                 UiTextFactory.Create(I18N.Get(
                     IsEntryImported(file, entry)

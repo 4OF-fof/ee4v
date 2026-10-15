@@ -12,8 +12,8 @@ Catalogは利用場面ではなく、部品が公開する責務で分類しま�
 |---|---|
 | Inputs | `EnumFormInput`、`StepperSlider`、`ScalarInput`、`TagField`、`Breadcrumb` |
 | Displays | `MetricDisplay`、`KeyValueRow`、`ThumbnailStack`、`MessagePanel` |
-| Containers | `DetailHeader`、`DetailSection`、`SettingList` |
-| Inputs / 編集行 | `SettingRow` |
+| Containers | `DetailHeader`、`DetailSection`、`PropertyList` |
+| Inputs / 編集行 | `PropertyRow` |
 | Collections / 選択カード | `ImageGridView` / `ImageGridCard` |
 
 `FormInput<TInput>`は型付きの`Input`を公開する配置部品です。文字入力は`FormInput<InputField>`へまとめ、値・読み取り専用・フォーカスは`Input`へ設定します。`EnumFormInput`は標準EnumFieldまたは表示名formatter付きPopupFieldを配置し、独自の入力枠を重ねません。`StepperSlider`は整数値と範囲・増減操作を公開します。`ScalarInput`はSlider、FloatField、任意単位、リセットの配置を共有し、値の同期・丸め・保存は利用側が担当します。
@@ -51,8 +51,8 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 - `InputGroup`はfieldset風の外枠へ開閉可能な必須見出しを重ね、1個以上の`FormInput`をまとめる入力グループです。見出しから内容を開閉し、閉状態は高さとシェブロンで示します。枠の内外と見出し背景は通常色へ揃え、シェブロンと文字の領域だけをホバー対象として外枠の色を変えます。枠内の内容上や子孫入力のフォーカスでは外観を変えません。展開状態の変更を通知し、各`FormInput`のラベルは省略できます。
 - `NavigationItem`は`ItemRow`へクリックと選択状態を加えた操作項目です。
 - `SelectionTab`は名称と選択状態を持つタブです。通常と強調用の`SelectionTabVariant`を持ち、クリック時の操作は利用側が接続します。
-- `BodyPartSelector`はCoreの`BodyPartCategory`を使う部位選択です。選択通知と利用可否の判定は利用側が渡します。`Refresh`は既存のボタンと文字要素を保持し、選択状態と利用可否だけを更新します。
-- `PrefabSelector`は候補Prefabの選択とドラッグの受け入れを行います。constructorの任意の`showPicker`には、anchor・現在値・選択確定callbackを受け取る機能固有Pickerを指定できます。callbackで受け取る値にも同じ候補の検証を適用し、ドラッグの受け入れと値変更通知を共有します。未指定時は共通のPickerを使用します。`ShowPicker`は同じ候補を検索付きの一覧・Gridから選択する入口で、候補取得や保存は行いません。共通PickerのWindowは内部実装です。
+- `ExclusiveButtonGroup<TValue>`は値とラベルの組を受け取り、選択状態を一つだけ保持するボタン群です。値の型、表示順、ラベル、利用可否は呼び出し側が決めます。値は重複不可で、選択値は候補に含まれる必要があります。クリックでは選択状態を更新してcallbackを通知し、同じ値の再選択も通知します。`SetSelected`と`Refresh`は通知せず、既存のボタンと文字要素を保持します。`Refresh`は利用可否も更新します。部位の定義や翻訳には依存しません。
+- `ObjectSelector<TObject>`は呼び出し側が渡したUnity Object候補の選択とドラッグの受け入れを行います。同じファイル内の別sub-assetを候補として受け入れず、Object単位で検証します。constructorの任意の`showPicker`には、anchor・現在値・選択確定callbackを受け取る機能固有Pickerを指定できます。callbackで受け取る値にも同じ候補の検証を適用し、ドラッグの受け入れと値変更通知を共有します。`placeholder`で未選択時の表示文字を指定できます。未指定時は共通のPickerと中立な文言を使用します。`ShowPicker`は同じ候補を検索付きの一覧・Gridから選択する入口で、候補取得や保存は行いません。共通Pickerの`ObjectPickerWindow`は内部実装です。
 - `AssetPicker.Show(anchor, type, reference, usageContext)`はMaterial・Texture・AnimationClipなどを探して既存の入力欄へドラッグするProject assetブラウザーPopupの入口です。`CreateButton(type, getReference, getUsageContext)`は同じPopupの起動ボタンを返し、押した時点の参照元・contextを取得します。`GetReferenceType(type)`はMaterial・Textureに対してMaterial、AnimationClipと種類「すべて」に対してnull、それ以外に対して候補の型を返します。起動時の参照元はその型の保存済みassetだけを受け入れます。統合ee4vでは編集中画面の左のカテゴリ一覧の最下部に「AssetManagerを開く」と縦に並べて配置します。Popupで型を変更でき、Material・Textureの参照元にはMaterialの標準ObjectFieldを使用します。MaterialとTextureの切り替えでは同じ参照Materialを保持します。AnimationClipでは参照欄を表示せず、すべて・表情の分類ドロップダウンを表示します。分類は候補metadataを使い、所属カード・候補一覧・件数のすべてへ適用します。分類選択肢はenumと表示名で定義し、追加分類を拡張できます。型と参照元・分類のラベル幅は文字に合わせ、入力欄との間隔は共通の余白に揃えます。名前・所属名・path・GUIDで検索できます。Materialの順位は同じUV0配置でのMaterial使用、同一主Texture参照、参照元自身の同一フォルダー、同一Item所属の順です。Textureの順位は同じUV0のMaterialが参照するTexture、参照元の主Texture、参照元の他のTexture property参照、同じフォルダー、同じItemの順です。Textureのフォルダー判定には参照元Materialと参照Textureの親フォルダーを使います。複数に該当する場合は最優先の理由を使い、いずれかに一致した候補を関連アセットに含めます。AnimationClipは関連順位と関連アセットカードを持ちません。関連アセットの一覧では関連順位を先に適用し、同順位では所属・フォルダー・名前で並べます。通常の所属内一覧と分類なしの一覧は同一フォルダーごとの見出しでまとめ、フォルダーpathと各グループ内の候補名の順に並べます。未登録の所属を推測で補いません。候補はvirtualized ListViewへ表示し、ファイルごとの候補読み込みとPrefab/ModelのUV調査をEditor tickへ分割します。一つの大きなファイルの解析中は処理時間がtickの目標を超える場合があります。Catalogの`Inputs/AssetPicker`へ登録します。
 - `TagPill`は任意の選択操作と削除操作を持つタグ入力です。pill形と薄い面を保ち、境界線と選択操作にはInputFieldと同じフォーカス色を使用します。
 
@@ -90,17 +90,17 @@ AnimationClipの右ペインは画像領域を表示せず、表情・その他�
 - `ConfirmationOverlay`は指定host全体へ確認カードを重ね、既存の子要素の操作を無効にします。hostはEditorWindowのrootVisualElementまたはその配下とし、Editorのフォントとテーマを継承します。FaceExpressionの未保存変更とExpressionMenuのタイプ切り替えで共有します。状態は`SetState`、操作ボタンは`Notification.Actions`を通じて利用側が設定します。カードは最大幅480pxの不透明な中立色のraised surfaceとし、余白20pxの本文に状態アイコンと通常色の見出しを配置します。見出しはアイコン右の残り幅を使用し、IMGUI文字の計測前も最小高さを確保します。警告・エラーはアイコンの色で示し、カード面と見出しの色を維持します。本文の下へ区切り線付きの操作欄を全幅で配置し、`AddDiscardAction`の赤い破棄ボタンを左端、通常の取消とprimaryの保存を右端へ並べます。`Close`・Esc・detachで各要素の元の有効状態とフォーカスを復元し、`Closed`を通知します。データの保存・破棄・画面遷移は利用側が成功を確認してから行います。
 - `StatusOverlay`はspinnerと状態メッセージを表示する小型パネルです。バックグラウンド処理ではウィンドウ右下へ重ね、統合ee4vの変更破棄では再読み込み完了まで、AvatarInfoの手動測定では測定完了まで画面中央へ表示します。AssetPickerでは候補・UV使用先の調査中にPopup内へ表示します。配置と操作の抑止は使用側が制御します。
 - `Icon`はFluent UI System Icons、実使用するUnity固有の組み込みアイコン、任意Textureの表示を共通化します。通常の操作アイコンと`InputGroup`の開閉chevronにはFluent UI System Iconsを使用します。組み込みアイコンはUnityのFolder、Scene、GameObject、Model FileとHierarchyの非表示操作に限定します。Fluent画像が読み込めない場合は組み込みアイコンへ代替せず非表示にします。
-- `PrefabThumbnail`はUnityのAssetPreviewを表示し、読み込み中はMiniThumbnailを表示します。取得の再試行は表示中だけ行います。
-- `PrefabScenePreview`はCoreの[`AvatarPreviewRenderer`](./avatar-preview.md)へ描画を委ねます。Scene上の対象は複製せず、Edit ModeではNDMF Previewの加工後Renderer、Play Modeでは実際の対象を描画します。Prefabアセットは隔離された表示用コピーを使用します。対象、部位・Material選択、Cameraと破棄を担当し、`SetFlexibleLayout`で親のサイズへ追従し、`SetViewToggleVisible`で視点切り替えとポーズの操作を非表示にでき、Cameraのフレーミングは変えません。`FocusBodyPart`で部位ポーズを適用し、右下のFluent Accessibilityアイコンまたは`SetTPose`で基準姿勢と切り替えます。ポーズ操作はHumanoidを持つEdit Modeの対象だけに表示します。`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。表示中は約30fpsで再描画し、NDMFの更新、時間依存Shaderと実行中の姿勢を表示します。
+- `ObjectThumbnail`はUnityのAssetPreviewを表示し、読み込み中はMiniThumbnailを表示します。取得の再試行は表示中だけ行います。
+- `GameObjectPreview`はCoreの[`AvatarPreviewRenderer`](./avatar-preview.md)へ描画を委ねます。Scene上の対象は複製せず、Edit ModeではNDMF Previewの加工後Renderer、Play Modeでは実際の対象を描画します。Prefabアセットは隔離された表示用コピーを使用します。対象、部位・Material選択、Cameraと破棄を担当し、`SetFlexibleLayout`で親のサイズへ追従し、`SetViewToggleVisible`で視点切り替えとポーズの操作を非表示にでき、Cameraのフレーミングは変えません。`FocusBodyPart`で部位ポーズを適用し、右下のFluent Accessibilityアイコンまたは`SetTPose`で基準姿勢と切り替えます。ポーズ操作はHumanoidを持つEdit Modeの対象だけに表示します。`SetFullBodyFraming`で全体を収める標準表示と編集向けの拡大表示を切り替えます。既定では全体を収めます。保存、DB、Play Modeの切り替えは行いません。表示中は約30fpsで再描画し、NDMFの更新、時間依存Shaderと実行中の姿勢を表示します。
 - `CachedImage`はデコード済みTextureを複数の画像表示で共有します。
 
-`PrefabScenePreview.FeatureOverlay`はプレビュー画像上の機能固有操作の配置先です。Expression Menuは正面・背面切り替えを隠した左上へ戻るボタン、下部中央へ枠付きの動作操作を配置します。`MatchFullBodyFraming`は参照プレビューの全身boundsと拡大表示設定を取得し、初期表示・リセット・サイズ変更時のカメラ計算に使用します。参照のCamera操作値はコピーせず、通常の全身フレーミングを適用します。`SetAnimationSampler`はAvatarEvaluationのMA対応サンプリングを登録し、Scene参照と隔離コピーの両方で使用できます。UIの再構築・再接続でもcallbackを引き継ぎ、描画資源は表示中だけ保持します。null指定は再生用コピーを解放し、再描画を要求します。
+`GameObjectPreview.FeatureOverlay`はプレビュー画像上の機能固有操作の配置先です。Expression Menuは正面・背面切り替えを隠した左上へ戻るボタン、下部中央へ枠付きの動作操作を配置します。`MatchFullBodyFraming`は参照プレビューの全身boundsと拡大表示設定を取得し、初期表示・リセット・サイズ変更時のカメラ計算に使用します。参照のCamera操作値はコピーせず、通常の全身フレーミングを適用します。`SetAnimationSampler`はAvatarEvaluationのMA対応サンプリングを登録し、Scene参照と隔離コピーの両方で使用できます。UIの再構築・再接続でもcallbackを引き継ぎ、描画資源は表示中だけ保持します。null指定は再生用コピーを解放し、再描画を要求します。
 
-`PrefabScenePreview.SetScope`は描画対象とboundsを同期的に切り替え、PreviewとNDMF sessionを再生成しません。選択した構成Prefab rootのEditorOnly除外規則も同時に再計算し、scope変更後の最初の描画から選択範囲だけを表示します。
+`GameObjectPreview.SetScope`は描画対象とboundsを同期的に切り替え、PreviewとNDMF sessionを再生成しません。選択した構成Prefab rootのEditorOnly除外規則も同時に再計算し、scope変更後の最初の描画から選択範囲だけを表示します。
 
 `FocusBodyPart`は通常、選択部位へCameraをアニメーションで合わせます。`preserveView: true`では部位選択と視点ボタンだけを更新し、Cameraの位置・角度・距離を維持して進行中のアニメーションを止めます。構成Prefabの選択解除・切り替え時に使用します。部位フォーカス、表示方向の切り替え、表示リセットは描画scopeにかかわらずアバター全体のboneとboundsを基準にし、同じ部位・表示方向では注視点・角度・距離を一致させます。全身の余白調整も全体表示と個別Prefab表示で共通です。Cameraのboundsと顔のMesh判定には全体表示時と同じ非表示・EditorOnly規則を適用します。描画対象と部位ボタンの有効／無効判定は選択中のscopeに従います。
 
-`PrefabScenePreview`の選択輪郭は、選択中のRenderer・Material slotの加工後submeshをGeometry maskへ投影して生成します。maskは深度判定を行わず、手前のオブジェクトに遮られた部分や背面も含め、輪郭をPreview画像の上へ重ねます。透過・cutoutのテクスチャ形状ではなくMeshの形状を使用します。別Materialのsubmeshや影はmaskに含めません。部位選択では対象Renderer内の表示中slotをすべて含め、表示切替で非表示にした部位・Materialは輪郭にも含めません。Geometry maskは更新ごとに解放し、共有Meshを複製・変更しません。クリック選択では元Materialの描画差分を使用して見えている対象を判定します。
+`GameObjectPreview`の選択輪郭は、選択中のRenderer・Material slotの加工後submeshをGeometry maskへ投影して生成します。maskは深度判定を行わず、手前のオブジェクトに遮られた部分や背面も含め、輪郭をPreview画像の上へ重ねます。透過・cutoutのテクスチャ形状ではなくMeshの形状を使用します。別Materialのsubmeshや影はmaskに含めません。部位選択では対象Renderer内の表示中slotをすべて含め、表示切替で非表示にした部位・Materialは輪郭にも含めません。Geometry maskは更新ごとに解放し、共有Meshを複製・変更しません。クリック選択では元Materialの描画差分を使用して見えている対象を判定します。
 
 ### Containers
 
@@ -116,9 +116,9 @@ AnimationClipの右ペインは画像領域を表示せず、表情・その他�
 
 `PreviewContainer` Storyはコンテナの範囲を枠で示し、中央のContent、空表示のPlaceholder、右上のOverlay操作を重ねて確認できる構成にします。
 
-`PreviewPane` Storyは実部品へ内容と操作ボタンを配置し、見出しの更新を確認します。共通の3D描画は`Displays/PrefabScenePreview`、機能固有の描画内容はDomain側のStoryで確認します。
+`PreviewPane` Storyは実部品へ内容と操作ボタンを配置し、見出しの更新を確認します。共通の3D描画は`Displays/GameObjectPreview`、機能固有の描画内容はDomain側のStoryで確認します。
 
-`ScenePreviewViewport` Storyは共有グリッド、右上の背景切り替えと表示リセット、左上の機能固有オーバーレイを一つのPreview内で確認できる構成にします。AssetManagerのAppearance PreviewとPlay Modeの操作確認は`PrefabScenePreview`を介してこの部品を使用し、表情エディターは自身の顔向けCamera制御と組み合わせます。描画画像は透過で重ね、グリッド背景と明暗切り替えを表示します。`PreviewGridBackground`は同じグリッドの描画とTextureの破棄を担当し、表情サムネイルでも使用します。
+`ScenePreviewViewport` Storyは共有グリッド、右上の背景切り替えと表示リセット、左上の機能固有オーバーレイを一つのPreview内で確認できる構成にします。AssetManagerのAppearance PreviewとPlay Modeの操作確認は`GameObjectPreview`を介してこの部品を使用し、表情エディターは自身の顔向けCamera制御と組み合わせます。描画画像は透過で重ね、グリッド背景と明暗切り替えを表示します。`PreviewGridBackground`は同じグリッドの描画とTextureの破棄を担当し、表情サムネイルでも使用します。
 
 ### Collections
 

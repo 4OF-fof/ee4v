@@ -59,7 +59,7 @@ namespace Ee4v.AssetManager.UI
                     BuildVariantCreation,
                     dependencies: new[]
                     {
-                        "SectionHeader", "FormInput", "InputField", "PrefabSelector", "AssetPrefabPickerWindow", "PrefabScenePreview", "UiButton"
+                        "SectionHeader", "FormInput", "InputField", "ObjectSelector", "AssetPrefabPickerWindow", "GameObjectPreview", "UiButton"
                     },
                     usageLocations: new[]
                     {

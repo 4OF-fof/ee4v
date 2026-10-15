@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using Ee4v.Core.EditorIntegration;
+using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEngine.UIElements;
 
@@ -6,6 +9,21 @@ namespace Ee4v.AvatarEditing
 {
     public static class AvatarEditingUi
     {
+        public static ExclusiveButtonGroup<BodyPartCategory?> CreateBodyPartSelector(
+            BodyPartCategory? selected, Func<BodyPartCategory, bool> available, Action<BodyPartCategory?> select)
+        {
+            var options = new List<ExclusiveButtonOption<BodyPartCategory?>>
+            { new ExclusiveButtonOption<BodyPartCategory?>(null, I18N.Get("avatarEditor.bodyPart.wholeBody")) };
+            foreach (var part in new[] { BodyPartCategory.Head, BodyPartCategory.Shoulders, BodyPartCategory.Hands,
+                BodyPartCategory.Chest, BodyPartCategory.Waist, BodyPartCategory.Legs, BodyPartCategory.Feet })
+            {
+                options.Add(new ExclusiveButtonOption<BodyPartCategory?>(part,
+                    I18N.Get("avatarEditor.bodyPart." + part.ToString().ToLowerInvariant())));
+            }
+            return new ExclusiveButtonGroup<BodyPartCategory?>(options, selected, select,
+                part => !part.HasValue || available == null || available(part.Value));
+        }
+
         public static IconState CreateBlendShapeFavoriteIcon(bool selected)
         {
             return FluentUiIcons.CreateState(selected ? "star_20.png" : "star_regular_20.png",

@@ -129,7 +129,7 @@ namespace Ee4v.ExpressionMenu
             var entry = sources.SelectMany(page => page.Controls).First(value => value.Owner == item);
             var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
             surface.Add(new ExpressionMenuPreview(context, entry, () => result.SetText("プレビューから戻りました")));
-            surface.Q<PrefabScenePreview>().SetFullBodyFraming(true);
+            surface.Q<GameObjectPreview>().SetFullBodyFraming(true);
             surface.Add(result);
         }
     }

@@ -1,4 +1,4 @@
-.ee4v-ui-prefab-scene-preview {
+.ee4v-ui-game-object-preview {
     flex-shrink: 0;
     width: 100%;
     min-height: 320px;
@@ -10,7 +10,7 @@
     overflow: hidden;
 }
 
-.ee4v-ui-prefab-scene-preview__side-toggle {
+.ee4v-ui-game-object-preview__side-toggle {
     position: absolute;
     top: var(--ee4v-space-lg);
     left: var(--ee4v-space-lg);
@@ -22,7 +22,7 @@
     background-color: var(--ee4v-color-panel);
 }
 
-.ee4v-ui-prefab-scene-preview__selection {
+.ee4v-ui-game-object-preview__selection {
     position: absolute;
     bottom: var(--ee4v-space-lg);
     left: var(--ee4v-space-lg);
@@ -36,7 +36,7 @@
     align-items: center;
 }
 
-.ee4v-ui-prefab-scene-preview__pose-toggle.ee4v-ui-button {
+.ee4v-ui-game-object-preview__pose-toggle.ee4v-ui-button {
     position: absolute;
     bottom: var(--ee4v-space-lg);
     right: var(--ee4v-space-lg);
@@ -51,16 +51,16 @@
     background-color: var(--ee4v-color-panel);
 }
 
-.ee4v-ui-prefab-scene-preview__pose-toggle--active.ee4v-ui-button {
+.ee4v-ui-game-object-preview__pose-toggle--active.ee4v-ui-button {
     border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
 }
 
-.ee4v-ui-prefab-scene-preview__selection--highlight-hidden {
+.ee4v-ui-game-object-preview__selection--highlight-hidden {
     border-color: var(--ee4v-color-border-default);
 }
 
-.ee4v-ui-prefab-scene-preview__selection-label {
+.ee4v-ui-game-object-preview__selection-label {
     min-width: 0;
     flex-shrink: 1;
     color: var(--ee4v-color-text-primary);
@@ -69,7 +69,7 @@
     text-overflow: ellipsis;
 }
 
-.ee4v-ui-prefab-scene-preview__selection-toggle.ee4v-ui-button {
+.ee4v-ui-game-object-preview__selection-toggle.ee4v-ui-button {
     flex-shrink: 0;
     width: 28px;
     height: 28px;
@@ -78,7 +78,7 @@
     border-radius: var(--ee4v-radius-lg);
 }
 
-.ee4v-ui-prefab-scene-preview__side-button.ee4v-ui-button {
+.ee4v-ui-game-object-preview__side-button.ee4v-ui-button {
     min-width: 44px;
     min-height: 28px;
     padding-left: var(--ee4v-space-sm);
@@ -87,8 +87,8 @@
     background-color: var(--ee4v-color-transparent);
 }
 
-.ee4v-ui-prefab-scene-preview__side-button--active.ee4v-ui-button,
-.ee4v-ui-prefab-scene-preview__side-button--active.ee4v-ui-button:hover {
+.ee4v-ui-game-object-preview__side-button--active.ee4v-ui-button,
+.ee4v-ui-game-object-preview__side-button--active.ee4v-ui-button:hover {
     border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
 }

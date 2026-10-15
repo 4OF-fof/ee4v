@@ -800,7 +800,7 @@ namespace Ee4v.AssetManager.UI
                     item.Id,
                     files),
                 "ee4v-ui-details__inline-action");
-            var targetSetting = new SettingRow(
+            var targetSetting = new PropertyRow(
                 I18N.Get("field.target"),
                 targetTree,
                 editTargets);
@@ -812,7 +812,7 @@ namespace Ee4v.AssetManager.UI
                     item.Id,
                     payload.Targets,
                     null));
-            var targetList = new SettingList();
+            var targetList = new PropertyList();
             targetList.AddRow(targetSetting);
             importSettings.Add(targetList);
             detail.Add(importSettings);

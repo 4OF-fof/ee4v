@@ -172,12 +172,13 @@ namespace Ee4v.AssetManager.UI
             {
                 candidates = candidates.Append(currentPrefab).ToArray();
             }
-            var selector = new PrefabSelector(candidates, (anchor, selected, select) =>
+            var selector = new ObjectSelector<GameObject>(candidates, (anchor, selected, select) =>
                 AssetPrefabPickerWindow.Show(anchor, GetVariantSources().Select(source => new VariantSourceOption
                 {
                     Item = source.Item,
                     Prefabs = source.Prefabs.Where(DerivedAssetCreator.IsAvatarPrefab).ToArray()
-                }).Where(source => source.Prefabs.Count > 0).ToArray(), _manager, select, ShowTemporaryAssetManager));
+                }).Where(source => source.Prefabs.Count > 0).ToArray(), _manager, select, ShowTemporaryAssetManager),
+                placeholder: I18N.Get("workflow.selection.prefabPlaceholder"));
             selector.SetValueWithoutNotify(currentPrefab);
             selector.ValueChanged += prefab => ChangeFittingAvatar(prefab);
             controls.Add(new FormInput(I18N.Get("workflow.original.fittingAvatar"), selector));
@@ -194,9 +195,9 @@ namespace Ee4v.AssetManager.UI
                     SceneView.lastActiveSceneView?.FrameSelected();
                 }, variant: UiButtonVariant.Ghost));
                 controls.Add(actions);
-                var preview = new PrefabScenePreview();
+                var preview = new GameObjectPreview();
                 preview.SetFullBodyFraming(true);
-                preview.SetPrefab(fittingAvatar);
+                preview.SetTarget(fittingAvatar);
                 controls.Add(preview);
             }
             return controls;

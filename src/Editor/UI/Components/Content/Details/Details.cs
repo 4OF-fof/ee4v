@@ -104,25 +104,25 @@ namespace Ee4v.UI
         }
     }
 
-    public sealed class SettingList : VisualElement
+    public sealed class PropertyList : VisualElement
     {
-        public SettingList()
+        public PropertyList()
         {
-            AddToClassList("ee4v-ui-details__setting-list");
+            AddToClassList("ee4v-ui-details__property-list");
         }
 
-        public void AddRow(SettingRow row)
+        public void AddRow(PropertyRow row)
         {
             row.EnableInClassList(
-                "ee4v-ui-details__setting-row--separated",
+                "ee4v-ui-details__property-row--separated",
                 childCount > 0);
             Add(row);
         }
     }
 
-    public sealed class SettingRow : VisualElement
+    public sealed class PropertyRow : VisualElement
     {
-        public SettingRow(
+        public PropertyRow(
             string label,
             VisualElement value,
             VisualElement action = null)
@@ -131,53 +131,53 @@ namespace Ee4v.UI
             if (value != null)
             {
                 value.AddToClassList(
-                    "ee4v-ui-details__setting-value-content");
+                    "ee4v-ui-details__property-value-content");
                 _value.Add(value);
             }
             if (action != null)
             {
                 action.AddToClassList(
-                    "ee4v-ui-details__setting-action");
+                    "ee4v-ui-details__property-action");
                 _value.Add(action);
             }
         }
 
-        private SettingRow(string label)
+        private PropertyRow(string label)
         {
-            AddToClassList("ee4v-ui-details__setting-row");
+            AddToClassList("ee4v-ui-details__property-row");
             Add(UiTextFactory.Create(
                 label,
                 UiClassNames.FormLabel,
-                "ee4v-ui-details__setting-label"));
+                "ee4v-ui-details__property-label"));
             _value = new VisualElement();
-            _value.AddToClassList("ee4v-ui-details__setting-value");
+            _value.AddToClassList("ee4v-ui-details__property-value");
             Add(_value);
         }
 
-        public static SettingRow Editable(
+        public static PropertyRow Editable(
             string label,
             string summary,
             FormInput<InputField> editor,
             VisualElement saveAction,
             string editLabel)
         {
-            var row = new SettingRow(label);
+            var row = new PropertyRow(label);
             var display = new VisualElement();
             display.AddToClassList(
-                "ee4v-ui-details__setting-display");
+                "ee4v-ui-details__property-display");
             var summaryText = UiTextFactory.Create(
                 summary,
-                "ee4v-ui-details__setting-summary");
+                "ee4v-ui-details__property-summary");
             summaryText.SetWhiteSpace(WhiteSpace.Normal);
             display.Add(summaryText);
 
             var editorRow = new VisualElement();
             editorRow.AddToClassList(
-                "ee4v-ui-details__setting-editor");
+                "ee4v-ui-details__property-editor");
             editorRow.style.display = DisplayStyle.None;
             editorRow.Add(editor);
             saveAction.AddToClassList(
-                "ee4v-ui-details__setting-action");
+                "ee4v-ui-details__property-action");
             editorRow.Add(saveAction);
 
             var edit = new UiButton(

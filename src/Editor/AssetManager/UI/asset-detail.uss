@@ -728,7 +728,7 @@
     margin-right: var(--ee4v-space-xl);
 }
 
-.ee4v-variant-creation__prefab.ee4v-ui-prefab-selector {
+.ee4v-variant-creation__prefab.ee4v-ui-object-selector {
     width: auto;
     min-width: 0;
     flex-basis: 0;
@@ -764,7 +764,7 @@
     padding-left: 36px;
 }
 
-.ee4v-variant-creation__preview.ee4v-ui-prefab-scene-preview {
+.ee4v-variant-creation__preview.ee4v-ui-game-object-preview {
     flex-grow: 1;
     flex-shrink: 1;
     min-height: 0;

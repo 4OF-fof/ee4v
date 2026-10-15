@@ -56,7 +56,7 @@ namespace Ee4v.AvatarParts
                 new AvatarEditingHost(Render, Render, () => { }, parent.MarkDirtyRepaint, () => { }))
             {
                 Root = avatar, UiRoot = parent, ControlsHost = controls,
-                SelectedPartKey = showDetails ? PrefabScenePreview.GetPartKey(-1, new[] { 0 }) : null
+                SelectedPartKey = showDetails ? GameObjectPreview.GetPartKey(-1, new[] { 0 }) : null
             };
             editor = new AvatarPartsEditor(context);
             void Render()

@@ -565,7 +565,7 @@ namespace Ee4v.AssetManager.UI
             _previewPane = new PreviewPane(string.Empty);
             _previewPane.AddToClassList("ee4v-modification-workflow__preview-pane");
             _previewPane.Content.AddToClassList("ee4v-modification-workflow__preview-viewport");
-            _avatarContext.Preview = new PrefabScenePreview();
+            _avatarContext.Preview = new GameObjectPreview();
             _avatarContext.Preview.PreviewObjectClicked += OnPreviewObjectClicked;
             _avatarContext.Preview.PreviewSelectionCleared +=
                 OnPreviewSelectionCleared;
@@ -580,7 +580,7 @@ namespace Ee4v.AssetManager.UI
                 _avatarContext.BasePrefabHidden,
                 _avatarContext.HiddenPrefabSiblingIndices);
             _avatarContext.Preview.SetHiddenParts(_avatarContext.HiddenPreviewParts);
-            _avatarContext.Preview.SetPrefab(_avatarContext.Root);
+            _avatarContext.Preview.SetTarget(_avatarContext.Root);
             _avatarContext.Preview.FocusBodyPart(_avatarContext.SelectedBodyPart, true);
             SyncPreviewSelection();
             _previewPane.Content.Add(_avatarContext.Preview);
@@ -784,8 +784,7 @@ namespace Ee4v.AssetManager.UI
                 _bodyPartSelector = BuildBodyPartSelector();
                 _appearanceHeader.Add(_bodyPartSelector);
             }
-            _bodyPartSelector.Refresh(_avatarContext.SelectedBodyPart, HasAvailableBodyPart);
-            _bodyPartSelector.RemoveFromClassList("ee4v-ui-body-part-selector--standalone");
+            _bodyPartSelector.Refresh(_avatarContext.SelectedBodyPart, part => !part.HasValue || HasAvailableBodyPart(part.Value));
             if (_appearanceTabs == null)
             {
                 _appearanceTabs = _parts.BuildShapePartsTabs(ShowAppearancePanel, _appearancePanel);

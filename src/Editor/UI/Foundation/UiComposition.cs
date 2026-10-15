@@ -30,13 +30,13 @@ namespace Ee4v.UI
             "Editor/UI/Components/Content/InfoCard/info-card.uss",
             "Editor/UI/Components/Content/MessagePanel/message-panel.uss",
             "Editor/UI/Components/Content/PreviewPane/preview-pane.uss",
-            "Editor/UI/Components/Inputs/BodyPartSelector/body-part-selector.uss",
-            "Editor/UI/Components/Inputs/PrefabSelector/prefab-selector.uss",
+            "Editor/UI/Components/Inputs/ExclusiveButtonGroup/exclusive-button-group.uss",
+            "Editor/UI/Components/Inputs/ObjectSelector/object-selector.uss",
             "Editor/UI/Components/Inputs/AssetPicker/asset-picker.uss",
             "Editor/UI/Components/Inputs/SelectionTab/selection-tab.uss",
             "Editor/UI/Components/Content/SelectionTabBar/selection-tab-bar.uss",
-            "Editor/UI/Components/Content/PrefabThumbnail/prefab-thumbnail.uss",
-            "Editor/UI/Components/Content/PrefabScenePreview/prefab-scene-preview.uss",
+            "Editor/UI/Components/Content/ObjectThumbnail/object-thumbnail.uss",
+            "Editor/UI/Components/Content/GameObjectPreview/game-object-preview.uss",
             "Editor/UI/Components/Content/ScenePreviewViewport/scene-preview-viewport.uss",
             "Editor/UI/Components/Content/TagPill/tag-pill.uss"
         };

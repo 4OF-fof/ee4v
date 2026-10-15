@@ -1,4 +1,4 @@
-.ee4v-ui-prefab-thumbnail {
+.ee4v-ui-object-thumbnail {
     flex-shrink: 0;
     width: 48px;
     min-width: 48px;
@@ -12,8 +12,8 @@
     overflow: hidden;
 }
 
-.ee4v-ui-prefab-thumbnail > .ee4v-ui-preview-container__content,
-.ee4v-ui-prefab-thumbnail__image {
+.ee4v-ui-object-thumbnail > .ee4v-ui-preview-container__content,
+.ee4v-ui-object-thumbnail__image {
     flex-grow: 1;
     width: 100%;
     height: 100%;

@@ -7,11 +7,11 @@ using UnityEngine;
 
 namespace Ee4v.UI
 {
-    public sealed partial class PrefabScenePreview
+    public sealed partial class GameObjectPreview
     {
         private Bounds? _fullBodyFramingBounds;
 
-        public void MatchFullBodyFraming(PrefabScenePreview reference)
+        public void MatchFullBodyFraming(GameObjectPreview reference)
         {
             if (reference == null || reference._instance == null) return;
             _fullBodyFramingBounds = reference.GetAvatarFocusBounds();

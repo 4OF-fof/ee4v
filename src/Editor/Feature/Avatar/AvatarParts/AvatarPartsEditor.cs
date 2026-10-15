@@ -18,7 +18,7 @@ namespace Ee4v.AvatarParts
         {
             var entries = ReadPrefabObjects();
             var entry = entries.FirstOrDefault(candidate =>
-                PrefabScenePreview.GetPartKey(
+                GameObjectPreview.GetPartKey(
                     candidate.PrefabSiblingIndex,
                     candidate.SiblingPath) == partKey);
             while (entry == null && !string.IsNullOrEmpty(partKey))
@@ -28,7 +28,7 @@ namespace Ee4v.AvatarParts
                     ? string.Empty
                     : partKey.Substring(0, separator);
                 entry = entries.FirstOrDefault(candidate =>
-                    PrefabScenePreview.GetPartKey(
+                    GameObjectPreview.GetPartKey(
                         candidate.PrefabSiblingIndex,
                         candidate.SiblingPath) == partKey);
             }
@@ -48,7 +48,7 @@ namespace Ee4v.AvatarParts
             {
                 _context.SelectedBodyPart = null;
             }
-            var selectedKey = PrefabScenePreview.GetPartKey(
+            var selectedKey = GameObjectPreview.GetPartKey(
                 entry.PrefabSiblingIndex, entry.SiblingPath);
             var separatorIndex = selectedKey.IndexOf('/');
             while (separatorIndex >= 0)

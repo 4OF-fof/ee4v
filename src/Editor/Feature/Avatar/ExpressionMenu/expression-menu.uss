@@ -5,7 +5,7 @@
 .ee4v-expression-menu__scroll .unity-scroll-view__content-container { min-width: 100%; align-items: center; }
 .ee4v-expression-menu__editor { width: 100%; min-width: 0; padding: 8px; }
 .ee4v-expression-menu__preview-column { flex-grow: 1; flex-shrink: 1; flex-basis: 320px; min-width: 0; min-height: 0; margin-right: 8px; }
-.ee4v-expression-menu__preview.ee4v-ui-prefab-scene-preview { flex-grow: 1; flex-shrink: 1; width: 100%; min-width: 0; min-height: 0; margin-bottom: 0; }
+.ee4v-expression-menu__preview.ee4v-ui-game-object-preview { flex-grow: 1; flex-shrink: 1; width: 100%; min-width: 0; min-height: 0; margin-bottom: 0; }
 .ee4v-expression-menu__preview-back { position: absolute; left: var(--ee4v-space-lg); top: var(--ee4v-space-lg); }
 .ee4v-expression-menu__preview-control-overlay { position: absolute; left: 0; right: 0; bottom: var(--ee4v-space-lg); align-items: center; }
 .ee4v-expression-menu__preview-controls { flex-shrink: 0; min-width: 0; max-width: 90%; padding: var(--ee4v-space-xxs); border-width: var(--ee4v-border-hairline); border-color: var(--ee4v-color-border-default); border-radius: var(--ee4v-radius-xl); background-color: var(--ee4v-color-panel); }

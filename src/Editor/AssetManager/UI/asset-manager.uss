@@ -917,24 +917,24 @@
     margin-bottom: var(--ee4v-space-xl);
 }
 
-.ee4v-asset-manager__target-setting > .ee4v-ui-details__setting-label {
+.ee4v-asset-manager__target-setting > .ee4v-ui-details__property-label {
     align-self: center;
     padding-top: var(--ee4v-space-none);
 }
 
-.ee4v-asset-manager__target-setting .ee4v-ui-details__setting-value {
+.ee4v-asset-manager__target-setting .ee4v-ui-details__property-value {
     align-items: stretch;
 }
 
-.ee4v-asset-manager__target-setting .ee4v-ui-details__setting-action {
+.ee4v-asset-manager__target-setting .ee4v-ui-details__property-action {
     align-self: center;
 }
 
-.ee4v-asset-manager__target-list.ee4v-ui-details__setting-value-content {
+.ee4v-asset-manager__target-list.ee4v-ui-details__property-value-content {
     padding-top: var(--ee4v-space-none);
 }
 
-.ee4v-ui-details__setting-editor > .ee4v-asset-manager__setting-input {
+.ee4v-ui-details__property-editor > .ee4v-asset-manager__setting-input {
     flex-grow: 1;
     min-width: 0;
 }

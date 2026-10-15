@@ -66,8 +66,9 @@ namespace Ee4v.AssetManager.UI
                 Item = item,
                 Prefabs = prefabs
             };
-            Prefab = new PrefabSelector(prefabs, showPrefabPicker ?? ((anchor, selected, select) =>
-                AssetPrefabPickerWindow.ShowForSource(anchor, pickerSource, selected, select)), allowEmpty: original);
+            Prefab = new ObjectSelector<GameObject>(prefabs, showPrefabPicker ?? ((anchor, selected, select) =>
+                AssetPrefabPickerWindow.ShowForSource(anchor, pickerSource, selected, select)), allowEmpty: original,
+                placeholder: I18N.Get("workflow.selection.prefabPlaceholder"));
             Prefab.AddToClassList("ee4v-variant-creation__prefab");
             UiButton clearBase = null;
             if (original)
@@ -86,7 +87,7 @@ namespace Ee4v.AssetManager.UI
                 source.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("notice.derivedAssetPrefabNotFound"), MessageSeverity.Warning));
             }
-            var preview = new PrefabScenePreview();
+            var preview = new GameObjectPreview();
             preview.SetFlexibleLayout(true);
             preview.AddToClassList("ee4v-variant-creation__preview");
             source.Add(preview);
@@ -139,7 +140,7 @@ namespace Ee4v.AssetManager.UI
             Prefab.ValueChanged += prefab =>
             {
                 Prefab.Row.DescriptionText.style.display = DisplayStyle.None;
-                preview.SetPrefab(prefab);
+                preview.SetTarget(prefab);
                 if (clearBase != null)
                 {
                     clearBase.style.display = prefab != null ? DisplayStyle.Flex : DisplayStyle.None;
@@ -161,7 +162,7 @@ namespace Ee4v.AssetManager.UI
                 clearBase.style.display = Prefab.Value != null ? DisplayStyle.Flex : DisplayStyle.None;
             }
             Prefab.Row.DescriptionText.style.display = DisplayStyle.None;
-            preview.SetPrefab(Prefab.Value);
+            preview.SetTarget(Prefab.Value);
             SetFeedback(string.Empty);
             RefreshAction();
             RegisterCallback<GeometryChangedEvent>(evt =>
@@ -170,7 +171,7 @@ namespace Ee4v.AssetManager.UI
 
         internal InputField Name { get; }
         internal InputField Description { get; }
-        internal PrefabSelector Prefab { get; }
+        internal ObjectSelector<GameObject> Prefab { get; }
         internal UiTextElement Feedback { get; }
         internal UiButton Create { get; }
 

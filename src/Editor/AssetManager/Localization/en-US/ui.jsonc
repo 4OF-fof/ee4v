@@ -174,7 +174,8 @@
       "name": "Derived asset name",
       "assetDescription": "Description",
       "openManager": "Open AssetManager",
-      "backToEditing": "Back to editing"
+      "backToEditing": "Back to editing",
+      "prefabPlaceholder": "Select Prefab"
     },
     "asset": {
       "change": "Change"

@@ -12,6 +12,18 @@
     "readOnly": "このPrefabは読み取り専用です。編集には書き込み可能なPrefabを選択してください。",
     "shapePartsTitle": "体型・パーツ",
     "materialsTitle": "マテリアル",
-    "infoTitle": "アバター詳細"
+    "infoTitle": "アバター詳細",
+    "bodyPart": {
+      "wholeBody": "全身",
+      "head": "頭・首",
+      "chest": "胸",
+      "waist": "腰・胴",
+      "shoulders": "肩・腕",
+      "arms": "腕",
+      "hands": "手",
+      "legs": "脚",
+      "feet": "足",
+      "other": "その他"
+    }
   }
 }

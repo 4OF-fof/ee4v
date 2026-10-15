@@ -693,7 +693,7 @@ namespace Ee4v.AvatarMaterials
             _context.Host.ClearCaches();
             _context.Edits.Changed();
             RefreshMaterialVisibility();
-            _context.Preview?.ReloadPrefabPreservingView(_context.Root);
+            _context.Preview?.ReloadTargetPreservingView(_context.Root);
             _context.Host.ShowMaterials();
         }
 

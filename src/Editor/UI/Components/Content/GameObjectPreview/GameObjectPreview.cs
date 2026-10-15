@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    public sealed partial class PrefabScenePreview
+    public sealed partial class GameObjectPreview
         : VisualElement, IDisposable
     {
         private sealed class MaterialPreviewTarget
@@ -34,7 +34,7 @@ namespace Ee4v.UI
         }
 
         private static readonly int PreviewControlHash =
-            nameof(PrefabScenePreview).GetHashCode();
+            nameof(GameObjectPreview).GetHashCode();
         private const float PreviewFitPadding = 1.05f;
         private const float AppearanceFullBodyDistanceScale = 0.52f;
         private const float AppearanceFullBodyVerticalOffsetScale = 0.025f;
@@ -84,7 +84,7 @@ namespace Ee4v.UI
             new HashSet<Transform>();
         private bool _basePrefabHidden;
         private AvatarPreviewRenderer _utility;
-        private GameObject _prefab;
+        private GameObject _target;
         private GameObject _instance;
         private Texture _previewTexture;
         private Vector2 _previewTextureSize;
@@ -118,36 +118,36 @@ namespace Ee4v.UI
         public event Action<string, Material> PreviewObjectClicked;
         public event Action PreviewSelectionCleared;
 
-        public PrefabScenePreview()
+        public GameObjectPreview()
         {
             AddToClassList(
-                "ee4v-ui-prefab-scene-preview");
+                "ee4v-ui-game-object-preview");
 
             _viewport = new ScenePreviewViewport(
                 DrawPreview,
                 ResetView,
-                UiLocalization.Get("ui.prefabPreview.background"),
-                UiLocalization.Get("ui.prefabPreview.reset"));
+                UiLocalization.Get("ui.gameObjectPreview.background"),
+                UiLocalization.Get("ui.gameObjectPreview.reset"));
             _viewport.AddToClassList(
-                "ee4v-ui-prefab-scene-preview-viewport");
+                "ee4v-ui-game-object-preview-viewport");
             _orbit = new PreviewOrbitController(
                 PreviewControlHash,
                 RequestPreviewRepaint);
             _viewToggle = new VisualElement();
             _viewToggle.AddToClassList(
-                "ee4v-ui-prefab-scene-preview__side-toggle");
+                "ee4v-ui-game-object-preview__side-toggle");
             _primaryViewButton = new UiButton(
-                UiLocalization.Get("ui.prefabPreview.left"),
+                UiLocalization.Get("ui.gameObjectPreview.left"),
                 () => SelectPreviewView(true),
                 variant: UiButtonVariant.Ghost);
             _secondaryViewButton = new UiButton(
-                UiLocalization.Get("ui.prefabPreview.right"),
+                UiLocalization.Get("ui.gameObjectPreview.right"),
                 () => SelectPreviewView(false),
                 variant: UiButtonVariant.Ghost);
             _primaryViewButton.AddToClassList(
-                "ee4v-ui-prefab-scene-preview__side-button");
+                "ee4v-ui-game-object-preview__side-button");
             _secondaryViewButton.AddToClassList(
-                "ee4v-ui-prefab-scene-preview__side-button");
+                "ee4v-ui-game-object-preview__side-button");
             _viewToggle.Add(_primaryViewButton);
             _viewToggle.Add(_secondaryViewButton);
             _viewport.FeatureOverlay.Add(_viewToggle);
@@ -156,18 +156,18 @@ namespace Ee4v.UI
                 () => SetTPose(!_tPose),
                 icon: FluentUiIcons.CreateState("accessibility.png", UiSizeTokens.Size18),
                 variant: UiButtonVariant.Ghost);
-            _poseToggleButton.AddToClassList("ee4v-ui-prefab-scene-preview__pose-toggle");
+            _poseToggleButton.AddToClassList("ee4v-ui-game-object-preview__pose-toggle");
             _viewport.FeatureOverlay.Add(_poseToggleButton);
             _selectionOverlay = new VisualElement
             {
                 pickingMode = PickingMode.Position
             };
             _selectionOverlay.AddToClassList(
-                "ee4v-ui-prefab-scene-preview__selection");
+                "ee4v-ui-game-object-preview__selection");
             _selectionOverlay.style.display = DisplayStyle.None;
             _selectionLabel = UiTextFactory.Create(
                 string.Empty,
-                "ee4v-ui-prefab-scene-preview__selection-label");
+                "ee4v-ui-game-object-preview__selection-label");
             _selectionLabel.pickingMode = PickingMode.Ignore;
             _selectionOverlay.Add(_selectionLabel);
             _selectionHighlightButton = new UiButton(
@@ -175,7 +175,7 @@ namespace Ee4v.UI
                 ToggleSelectionHighlight,
                 variant: UiButtonVariant.Ghost);
             _selectionHighlightButton.AddToClassList(
-                "ee4v-ui-prefab-scene-preview__selection-toggle");
+                "ee4v-ui-game-object-preview__selection-toggle");
             _selectionOverlay.Add(_selectionHighlightButton);
             _viewport.FeatureOverlay.Add(_selectionOverlay);
             RefreshSelectionHighlightButton();
@@ -204,14 +204,14 @@ namespace Ee4v.UI
             }).Every(33);
         }
 
-        public void SetPrefab(GameObject prefab)
+        public void SetTarget(GameObject target)
         {
-            if (_prefab == prefab && _instance != null)
+            if (_target == target && _instance != null)
             {
                 return;
             }
 
-            _prefab = prefab;
+            _target = target;
             RebuildPreview();
         }
 
@@ -325,15 +325,15 @@ namespace Ee4v.UI
         private void RefreshSelectionHighlightButton()
         {
             var tooltip = UiLocalization.Get(_selectionHighlightVisible
-                ? "ui.prefabPreview.hideHighlight"
-                : "ui.prefabPreview.showHighlight");
+                ? "ui.gameObjectPreview.hideHighlight"
+                : "ui.gameObjectPreview.showHighlight");
             _selectionHighlightButton.tooltip = tooltip;
             _selectionHighlightButton.SetIcon(FluentUiIcons.CreateState(
                 _selectionHighlightVisible ? "eye.png" : "eye_off.png",
                 UiSizeTokens.Size18,
                 tooltip));
             _selectionOverlay.EnableInClassList(
-                "ee4v-ui-prefab-scene-preview__selection--highlight-hidden",
+                "ee4v-ui-game-object-preview__selection--highlight-hidden",
                 !_selectionHighlightVisible);
         }
 
@@ -448,35 +448,35 @@ namespace Ee4v.UI
             RequestPreviewRepaint();
         }
 
-        public void ReloadPrefab()
+        public void ReloadTarget()
         {
             RebuildPreview();
         }
 
-        public void ReloadPrefabPreservingView(GameObject prefab)
+        public void ReloadTargetPreservingView(GameObject target)
         {
             _orbit.UpdateTransition(EditorApplication.timeSinceStartup);
-            _prefab = prefab;
+            _target = target;
             RebuildPreview(true);
         }
 
-        public void UpdatePrefabReference(GameObject prefab)
+        public void UpdateTargetReference(GameObject target)
         {
-            _prefab = prefab;
+            _target = target;
         }
 
         public void SetPartVisibility(
-            GameObject prefab,
+            GameObject target,
             int prefabSiblingIndex,
             IReadOnlyList<int> siblingPath,
             string objectName,
             bool activeSelf,
             bool included)
         {
-            _prefab = prefab;
+            _target = target;
             if (_instance == null || siblingPath == null)
             {
-                ReloadPrefabPreservingView(prefab);
+                ReloadTargetPreservingView(target);
                 return;
             }
 
@@ -485,21 +485,21 @@ namespace Ee4v.UI
             {
                 if (prefabSiblingIndex >= current.childCount)
                 {
-                    ReloadPrefabPreservingView(prefab);
+                    ReloadTargetPreservingView(target);
                     return;
                 }
                 current = current.GetChild(prefabSiblingIndex);
             }
             else if (prefabSiblingIndex != -1)
             {
-                ReloadPrefabPreservingView(prefab);
+                ReloadTargetPreservingView(target);
                 return;
             }
             foreach (var index in siblingPath)
             {
                 if (index < 0 || index >= current.childCount)
                 {
-                    ReloadPrefabPreservingView(prefab);
+                    ReloadTargetPreservingView(target);
                     return;
                 }
                 current = current.GetChild(index);
@@ -507,7 +507,7 @@ namespace Ee4v.UI
             if (!string.Equals(current.name, objectName,
                     StringComparison.Ordinal))
             {
-                ReloadPrefabPreservingView(prefab);
+                ReloadTargetPreservingView(target);
                 return;
             }
 
@@ -638,19 +638,19 @@ namespace Ee4v.UI
             }
 
             _primaryViewButton.SetLabel(UiLocalization.Get(sideSelection
-                ? "ui.prefabPreview.left"
-                : "ui.prefabPreview.front"));
+                ? "ui.gameObjectPreview.left"
+                : "ui.gameObjectPreview.front"));
             _secondaryViewButton.SetLabel(UiLocalization.Get(sideSelection
-                ? "ui.prefabPreview.right"
-                : "ui.prefabPreview.back"));
+                ? "ui.gameObjectPreview.right"
+                : "ui.gameObjectPreview.back"));
             var primaryActive = sideSelection
                 ? IsLeftSide(_focusedBodyPart.Value)
                 : !IsBackView(_focusedBodyPart);
             _primaryViewButton.EnableInClassList(
-                "ee4v-ui-prefab-scene-preview__side-button--active",
+                "ee4v-ui-game-object-preview__side-button--active",
                 primaryActive);
             _secondaryViewButton.EnableInClassList(
-                "ee4v-ui-prefab-scene-preview__side-button--active",
+                "ee4v-ui-game-object-preview__side-button--active",
                 !primaryActive);
         }
 
@@ -758,9 +758,9 @@ namespace Ee4v.UI
                 _utility.SetHumanoidPose(_tPose);
             }
             _poseToggleButton.EnableInClassList(
-                "ee4v-ui-prefab-scene-preview__pose-toggle--active", _tPose);
+                "ee4v-ui-game-object-preview__pose-toggle--active", _tPose);
             _poseToggleButton.tooltip = UiLocalization.Get(_tPose
-                ? "ui.prefabPreview.usePartPose" : "ui.prefabPreview.useTPose");
+                ? "ui.gameObjectPreview.usePartPose" : "ui.gameObjectPreview.useTPose");
             _poseToggleButton.SetIcon(FluentUiIcons.CreateState(
                 "accessibility.png", UiSizeTokens.Size18, _poseToggleButton.tooltip));
             RequestPreviewRepaint();
@@ -782,7 +782,7 @@ namespace Ee4v.UI
 
         private void RebuildPreview(bool preserveView = false)
         {
-            if (preserveView && _utility != null && _instance != null && _instance == _prefab)
+            if (preserveView && _utility != null && _instance != null && _instance == _target)
             {
                 _utility.ClearOverrides();
                 _utility.RefreshHierarchy();
@@ -798,14 +798,14 @@ namespace Ee4v.UI
                 return;
             }
             CleanupPreview();
-            if (_prefab == null || panel == null)
+            if (_target == null || panel == null)
             {
                 return;
             }
 
             try
             {
-                _utility = new AvatarPreviewRenderer(_prefab);
+                _utility = new AvatarPreviewRenderer(_target);
                 if (_animationSampler != null) _utility.SetAnimationSampler(_animationSampler);
                 _instance = _utility.Root;
                 _utility.IsVisible = renderer => IsInScope(renderer) && !_hiddenPartRenderers.Contains(renderer);

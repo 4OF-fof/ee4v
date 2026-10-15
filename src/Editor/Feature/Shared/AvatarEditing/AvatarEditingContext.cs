@@ -17,7 +17,7 @@ namespace Ee4v.AvatarEditing
         public GameObject PrefabAsset { get; set; }
         public VisualElement UiRoot { get; set; }
         public ScrollView ControlsHost { get; set; }
-        public PrefabScenePreview Preview { get; set; }
+        public GameObjectPreview Preview { get; set; }
         public BodyPartCategory? SelectedBodyPart { get; set; }
         public int? SelectedPrefabSiblingIndex { get; set; }
         public string SelectedPrefabName { get; set; } = string.Empty;

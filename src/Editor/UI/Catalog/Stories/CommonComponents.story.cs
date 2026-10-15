@@ -173,15 +173,15 @@ namespace Ee4v.UI
                         "Editor/AssetManager/UI/AssetManagerView.Items.cs"
                     }),
                 new UiStory(
-                    "setting-list",
+                    "property-list",
                     "Containers",
-                    "SettingList",
-                    "複数の設定行を縦に配置する詳細領域です。",
-                    "設定行とキー・値行を同じ間隔でまとめます。値の保持や編集は各行が担当します。",
-                    BuildDetailSettingList,
+                    "PropertyList",
+                    "複数の項目と値の行を縦に配置するコンテナです。",
+                    "項目行とキー・値行を同じ間隔でまとめます。値の保持や編集は各行が担当します。",
+                    BuildPropertyList,
                     dependencies: new[]
                     {
-                        "SettingRow",
+                        "PropertyRow",
                         "KeyValueRow"
                     },
                     usageLocations: new[]
@@ -190,12 +190,12 @@ namespace Ee4v.UI
                         "Editor/AssetManager/UI/AssetManagerView.Files.cs"
                     }),
                 new UiStory(
-                    "setting-row",
+                    "property-row",
                     "Inputs",
-                    "SettingRow",
-                    "ラベル、値、任意操作を横に配置する設定行です。",
+                    "PropertyRow",
+                    "ラベル、値、任意操作を横に配置する項目行です。",
                     "表示だけの値と、編集表示へ切り替わる値の両方を構成できます。",
-                    BuildDetailSettingRow,
+                    BuildPropertyRow,
                     dependencies: new[]
                     {
                         "FormInput<InputField>",
@@ -408,25 +408,25 @@ namespace Ee4v.UI
             parent.Add(surface);
         }
 
-        private static void BuildDetailSettingList(VisualElement parent)
+        private static void BuildPropertyList(VisualElement parent)
         {
             var surface = CreateDetailStorySurface();
-            var list = new SettingList();
-            list.AddRow(new SettingRow(
+            var list = new PropertyList();
+            list.AddRow(new PropertyRow(
                 "Target",
                 UiTextFactory.Create("Avatar")));
-            list.AddRow(new SettingRow(
+            list.AddRow(new PropertyRow(
                 "Source",
                 UiTextFactory.Create("Eagle / Summer Costume")));
             surface.Add(list);
             parent.Add(surface);
         }
 
-        private static void BuildDetailSettingRow(VisualElement parent)
+        private static void BuildPropertyRow(VisualElement parent)
         {
             var surface = CreateDetailStorySurface();
-            var list = new SettingList();
-            list.AddRow(new SettingRow(
+            var list = new PropertyList();
+            list.AddRow(new PropertyRow(
                 "Target",
                 UiTextFactory.Create("Avatar")));
 
@@ -434,7 +434,7 @@ namespace Ee4v.UI
             editor.Input.Value = "Summer Costume";
             var save = CreateButton("Save");
             save.clicked += () => save.SetLabel("Saved");
-            list.AddRow(SettingRow.Editable(
+            list.AddRow(PropertyRow.Editable(
                 "Name",
                 "Summer Costume",
                 editor,

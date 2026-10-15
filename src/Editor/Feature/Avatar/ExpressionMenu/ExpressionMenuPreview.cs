@@ -18,7 +18,7 @@ namespace Ee4v.ExpressionMenu
     internal sealed class ExpressionMenuPreview : VisualElement
     {
         private readonly float[] _values;
-        private readonly PrefabScenePreview _preview;
+        private readonly GameObjectPreview _preview;
         private readonly ExpressionMenuAnimationRecipe.PreviewAnimation _animation;
         private readonly UiTextElement _parameters;
         private bool _disposed;
@@ -28,7 +28,7 @@ namespace Ee4v.ExpressionMenu
         internal ExpressionMenuPreview(AvatarEditingContext context, MenuEntry entry, Action back)
         {
             AddToClassList("ee4v-expression-menu__preview-column");
-            _preview = new PrefabScenePreview { name = "expressionMenuPreview" };
+            _preview = new GameObjectPreview { name = "expressionMenuPreview" };
             _preview.AddToClassList("ee4v-expression-menu__preview");
             _preview.SetFlexibleLayout(true);
             _preview.SetFullBodyFraming(false);
@@ -40,10 +40,10 @@ namespace Ee4v.ExpressionMenu
             }
             else
             {
-                var reference = new PrefabScenePreview();
+                var reference = new GameObjectPreview();
                 try
                 {
-                    reference.SetPrefab(context.Root);
+                    reference.SetTarget(context.Root);
                     _preview.MatchFullBodyFraming(reference);
                 }
                 finally { reference.Dispose(); }
@@ -74,13 +74,13 @@ namespace Ee4v.ExpressionMenu
                 UiButton on = null;
                 void Select(bool enabled)
                 {
-                    off.EnableInClassList("ee4v-ui-prefab-scene-preview__side-button--active", !enabled);
-                    on.EnableInClassList("ee4v-ui-prefab-scene-preview__side-button--active", enabled);
+                    off.EnableInClassList("ee4v-ui-game-object-preview__side-button--active", !enabled);
+                    on.EnableInClassList("ee4v-ui-game-object-preview__side-button--active", enabled);
                 }
                 off = new UiButton(TemplateText.Get("offValue"), () => { Change(0, 0f); Select(false); }) { name = "expressionMenuPreviewOff" };
                 on = new UiButton(TemplateText.Get("onValue"), () => { Change(0, 1f); Select(true); }) { name = "expressionMenuPreviewOn" };
-                off.AddToClassList("ee4v-ui-prefab-scene-preview__side-button");
-                on.AddToClassList("ee4v-ui-prefab-scene-preview__side-button");
+                off.AddToClassList("ee4v-ui-game-object-preview__side-button");
+                on.AddToClassList("ee4v-ui-game-object-preview__side-button");
                 toggle.Add(on);
                 toggle.Add(off);
                 Select(_values[0] != 0f);
@@ -135,7 +135,7 @@ namespace Ee4v.ExpressionMenu
                 Add(UiTextFactory.CreateMessagePanel(exception.GetBaseException().Message, MessageSeverity.Error));
             }
             _changedAt = EditorApplication.timeSinceStartup;
-            _preview.SetPrefab(context.Root);
+            _preview.SetTarget(context.Root);
             RegisterCallback<DetachFromPanelEvent>(evt =>
             {
                 if (evt.target != this) return;

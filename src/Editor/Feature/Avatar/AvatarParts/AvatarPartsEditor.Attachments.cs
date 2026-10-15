@@ -209,7 +209,7 @@ namespace Ee4v.AvatarParts
             _context.Edits.WorkingSceneDirty = true;
             _context.Host.ClearCaches();
             _context.Edits.Changed();
-            _context.Preview?.ReloadPrefabPreservingView(_context.Root);
+            _context.Preview?.ReloadTargetPreservingView(_context.Root);
             _context.Host.Refresh();
         }
     }

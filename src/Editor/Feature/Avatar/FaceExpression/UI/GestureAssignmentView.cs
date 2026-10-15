@@ -1144,7 +1144,7 @@ namespace Ee4v.FaceExpression
         {
             checkbox.AddToClassList("ee4v-gesture-assignment__checkbox");
             var row = new FormInput(label, checkbox);
-            row.AddToClassList("ee4v-gesture-assignment__setting-row");
+            row.AddToClassList("ee4v-gesture-assignment__property-row");
             row.LabelText.RegisterCallback<ClickEvent>(evt =>
             {
                 if (evt.button != 0 || !checkbox.enabledInHierarchy) { return; }

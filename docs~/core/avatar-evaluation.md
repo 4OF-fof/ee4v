@@ -1,6 +1,6 @@
 # Avatarの評価・プレビュー
 
-`Core/AvatarEvaluation`の`Ee4v.Core.AvatarEvaluation.Editor`は、NDMF Preview APIを使うアバタープレビューと、MAを考慮したExpression Menu・パラメーターの取得APIを提供します。プレビューはUIのPrefabScenePreview・FaceExpression・AssetManager、情報取得はExpression Menuが使用します。機能モジュール、UI、編集対象の保存やUndoへ依存しません。共有のアバターメニュー除外データは`Runtime/Core`の`Ee4v.Core.Runtime`に置き、VRChatの`IEditorOnly`を実装した`AvatarMenuExclusions`に保持します。AvatarEvaluationとExpression Menuが同じデータを読むためCoreのRuntime assemblyへ依存し、機能モジュールへの参照は追加しません。
+`Core/AvatarEvaluation`の`Ee4v.Core.AvatarEvaluation.Editor`は、NDMF Preview APIを使うアバタープレビューと、MAを考慮したExpression Menu・パラメーターの取得APIを提供します。プレビューはUIのGameObjectPreview・FaceExpression・AssetManager、情報取得はExpression Menuが使用します。機能モジュール、UI、編集対象の保存やUndoへ依存しません。共有のアバターメニュー除外データは`Runtime/Core`の`Ee4v.Core.Runtime`に置き、VRChatの`IEditorOnly`を実装した`AvatarMenuExclusions`に保持します。AvatarEvaluationとExpression Menuが同じデータを読むためCoreのRuntime assemblyへ依存し、機能モジュールへの参照は追加しません。
 
 `AvatarAuthoringMenu.Read`はMAのVirtualMenuに登録するInstallerとInstall Targetを除外設定で絞り、解決した項目を元のMA Menu ItemまたはSDK Controlへ照合して個別除外を反映します。元オブジェクトは変更しません。Installer由来のSDK assetは編集元として保持しますが、合成表示にはその除外した登録を加えません。`AvatarMenuExclusionUtility`は設定の照合・変更検出とビルド用コピーの追跡／生成結果の除外を共有します。設定の変更・UndoはExpression Menu、NDMFの実行順序はExpression MenuのNDMF assemblyが所有します。
 

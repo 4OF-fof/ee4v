@@ -50,7 +50,7 @@ namespace Ee4v.AvatarParts
                     entries, _context.SelectedBodyPart.Value);
             }
             var selected = displayed.FirstOrDefault(entry =>
-                PrefabScenePreview.GetPartKey(entry.PrefabSiblingIndex,
+                GameObjectPreview.GetPartKey(entry.PrefabSiblingIndex,
                     entry.SiblingPath) == _context.SelectedPartKey);
             if (selected != null)
             {
@@ -221,7 +221,7 @@ namespace Ee4v.AvatarParts
                 content.Add(BuildObjectNode(child, depth + 1));
             }
 
-            var key = PrefabScenePreview.GetPartKey(
+            var key = GameObjectPreview.GetPartKey(
                 node.Entry.PrefabSiblingIndex,
                 node.Entry.SiblingPath);
             UiButton toggle = null;
@@ -326,7 +326,7 @@ namespace Ee4v.AvatarParts
             var row = new VisualElement();
             row.AddToClassList(
                 "ee4v-modification-workflow__object-row");
-            var key = PrefabScenePreview.GetPartKey(
+            var key = GameObjectPreview.GetPartKey(
                 entry.PrefabSiblingIndex, entry.SiblingPath);
             row.EnableInClassList(
                 "ee4v-modification-workflow__object-row--selected",
@@ -452,7 +452,7 @@ namespace Ee4v.AvatarParts
             }
             var previewVisible = entry.IsVisibleInHierarchy &&
                 !_context.HiddenPreviewParts.Contains(
-                    PrefabScenePreview.GetPartKey(
+                    GameObjectPreview.GetPartKey(
                         entry.PrefabSiblingIndex, entry.SiblingPath));
             var previewTooltip = entry.IsVisibleInHierarchy
                 ? I18N.Get(previewVisible
@@ -473,7 +473,7 @@ namespace Ee4v.AvatarParts
             {
                 return;
             }
-            var key = PrefabScenePreview.GetPartKey(
+            var key = GameObjectPreview.GetPartKey(
                 entry.PrefabSiblingIndex, entry.SiblingPath);
             if (!_context.HiddenPreviewParts.Add(key))
             {
@@ -693,7 +693,7 @@ namespace Ee4v.AvatarParts
                             .GetChild(entry.PrefabSiblingIndex)
                             .gameObject.activeSelf);
                 }
-                _context.Preview?.ReloadPrefabPreservingView(_context.Root);
+                _context.Preview?.ReloadTargetPreservingView(_context.Root);
                 _context.AssetFeedback = string.Empty;
                 _context.Host.ClearCaches();
                 _context.Edits.Changed();

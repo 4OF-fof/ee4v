@@ -324,17 +324,17 @@
     margin-bottom: var(--ee4v-space-md);
 }
 
-.ee4v-gesture-assignment__setting-row {
+.ee4v-gesture-assignment__property-row {
     min-height: 32px;
     margin-bottom: var(--ee4v-space-xs);
 }
 
-.ee4v-gesture-assignment__setting-row > .ee4v-ui-form-input__label {
+.ee4v-gesture-assignment__property-row > .ee4v-ui-form-input__label {
     flex-grow: 1;
     flex-shrink: 1;
 }
 
-.ee4v-gesture-assignment__setting-row > .ee4v-gesture-assignment__checkbox {
+.ee4v-gesture-assignment__property-row > .ee4v-gesture-assignment__checkbox {
     width: 18px;
     flex-grow: 0;
     flex-basis: auto;

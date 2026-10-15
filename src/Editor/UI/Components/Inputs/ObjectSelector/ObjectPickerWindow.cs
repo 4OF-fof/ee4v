@@ -3,30 +3,31 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    internal sealed class PrefabPickerWindow
+    internal sealed class ObjectPickerWindow
         : CustomPopupWindow
     {
         private static readonly Vector2 PopupSize =
             new Vector2(520f, 420f);
 
-        private IReadOnlyList<GameObject> _candidates;
-        private GameObject _selected;
-        private Action<GameObject> _select;
+        private IReadOnlyList<Object> _candidates;
+        private Object _selected;
+        private Action<Object> _select;
         private bool _showAsGrid;
         private SearchField _search;
         private VisualElement _options;
-        private IReadOnlyList<GameObject> _filtered =
-            Array.Empty<GameObject>();
+        private IReadOnlyList<Object> _filtered =
+            Array.Empty<Object>();
 
         internal static void Show(
             VisualElement anchor,
-            IReadOnlyList<GameObject> candidates,
-            GameObject selected,
-            Action<GameObject> select,
+            IReadOnlyList<Object> candidates,
+            Object selected,
+            Action<Object> select,
             bool showAsGrid = false)
         {
             if (anchor == null ||
@@ -39,13 +40,13 @@ namespace Ee4v.UI
 
             foreach (var existing in Resources
                          .FindObjectsOfTypeAll<
-                             PrefabPickerWindow>())
+                             ObjectPickerWindow>())
             {
                 existing.Close();
             }
 
             var window = CreateInstance<
-                PrefabPickerWindow>();
+                ObjectPickerWindow>();
             window._candidates = candidates;
             window._selected = selected;
             window._select = select;
@@ -61,16 +62,16 @@ namespace Ee4v.UI
             ConfigureCloseAndSubmitKeys(root, SelectFirst);
 
             var popup = new CustomPopup(
-                UiLocalization.Get("ui.prefabPicker.title"),
+                UiLocalization.Get("ui.objectPicker.title"),
                 closeTooltip: UiLocalization.Get(
-                    "ui.prefabPicker.close"));
+                    "ui.objectPicker.close"));
 
             var body = new VisualElement();
             body.AddToClassList(
-                "ee4v-ui-prefab-picker__body");
+                "ee4v-ui-object-picker__body");
             _search = new SearchField(new SearchFieldState(
                 placeholder: UiLocalization.Get(
-                    "ui.prefabPicker.search"),
+                    "ui.objectPicker.search"),
                 searchIconState:
                     FluentUiIcons.CreateState(
                         "search.png",
@@ -80,7 +81,7 @@ namespace Ee4v.UI
                         "dismiss.png",
                         UiSizeTokens.Size10)));
             _search.AddToClassList(
-                "ee4v-ui-prefab-picker__search");
+                "ee4v-ui-object-picker__search");
             _search.ValueChanged += _ => RebuildOptions();
             body.Add(_search);
 
@@ -89,12 +90,12 @@ namespace Ee4v.UI
                 horizontalScrollerVisibility = ScrollerVisibility.Hidden
             };
             scroll.AddToClassList(
-                "ee4v-ui-prefab-picker__content");
+                "ee4v-ui-object-picker__content");
             _options = scroll.contentContainer;
             _options.AddToClassList(
-                "ee4v-ui-prefab-picker__options");
+                "ee4v-ui-object-picker__options");
             _options.EnableInClassList(
-                "ee4v-ui-prefab-picker__options--grid",
+                "ee4v-ui-object-picker__options--grid",
                 _showAsGrid);
             body.Add(scroll);
             popup.Content.Add(body);
@@ -114,28 +115,28 @@ namespace Ee4v.UI
 
             _options.Clear();
             var query = (_search?.Value ?? string.Empty).Trim();
-            _filtered = (_candidates ?? Array.Empty<GameObject>())
-                .Where(prefab => Matches(prefab, query))
+            _filtered = (_candidates ?? Array.Empty<Object>())
+                .Where(candidate => Matches(candidate, query))
                 .ToArray();
-            foreach (var prefab in _filtered)
+            foreach (var candidate in _filtered)
             {
-                var selectedPrefab = prefab;
-                var path = AssetDatabase.GetAssetPath(prefab);
+                var selectedObject = candidate;
+                var path = AssetDatabase.GetAssetPath(candidate);
                 var option = new NavigationItem(
                     new NavigationItemState(
-                        prefab.name,
+                        candidate.name,
                         _showAsGrid ? string.Empty : path,
-                        selected: prefab == _selected),
-                    () => Select(selectedPrefab));
+                        selected: candidate == _selected),
+                    () => Select(selectedObject));
                 option.tooltip = path;
                 option.AddToClassList(
-                    "ee4v-ui-prefab-picker__option");
+                    "ee4v-ui-object-picker__option");
                 option.EnableInClassList(
-                    "ee4v-ui-prefab-picker__option--grid",
+                    "ee4v-ui-object-picker__option--grid",
                     _showAsGrid);
-                var preview = new PrefabThumbnail(prefab);
+                var preview = new ObjectThumbnail(candidate);
                 preview.EnableInClassList(
-                    "ee4v-ui-prefab-picker__preview--grid",
+                    "ee4v-ui-object-picker__preview--grid",
                     _showAsGrid);
                 option.Leading.Add(preview);
                 _options.Add(option);
@@ -145,16 +146,16 @@ namespace Ee4v.UI
             {
                 var empty = new EmptyState(new EmptyStateState(
                     string.Empty,
-                    UiLocalization.Get("ui.prefabPicker.noMatch")));
+                    UiLocalization.Get("ui.objectPicker.noMatch")));
                 empty.AddToClassList(
-                    "ee4v-ui-prefab-picker__empty");
+                    "ee4v-ui-object-picker__empty");
                 _options.Add(empty);
             }
         }
 
-        private static bool Matches(GameObject prefab, string query)
+        private static bool Matches(Object candidate, string query)
         {
-            if (prefab == null)
+            if (candidate == null)
             {
                 return false;
             }
@@ -164,22 +165,22 @@ namespace Ee4v.UI
                 return true;
             }
 
-            return prefab.name.IndexOf(
+            return candidate.name.IndexOf(
                        query,
                        StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   AssetDatabase.GetAssetPath(prefab).IndexOf(
+                   AssetDatabase.GetAssetPath(candidate).IndexOf(
                        query,
                        StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        private void Select(GameObject prefab)
+        private void Select(Object candidate)
         {
-            if (prefab == null)
+            if (candidate == null)
             {
                 return;
             }
 
-            _select?.Invoke(prefab);
+            _select?.Invoke(candidate);
             Close();
         }
 
@@ -197,7 +198,7 @@ namespace Ee4v.UI
             _select = null;
             _candidates = null;
             _selected = null;
-            _filtered = Array.Empty<GameObject>();
+            _filtered = Array.Empty<Object>();
         }
     }
 }

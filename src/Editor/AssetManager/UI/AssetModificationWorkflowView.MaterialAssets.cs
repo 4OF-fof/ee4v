@@ -105,7 +105,7 @@ namespace Ee4v.AssetManager.UI
 
             if (IsEditableWorkflowPrefab()) { _workingSceneDirty = true; }
 
-            _avatarContext.Preview?.ReloadPrefab();
+            _avatarContext.Preview?.ReloadTarget();
             if (_avatarContext.ControlsHost == null)
             {
                 return;

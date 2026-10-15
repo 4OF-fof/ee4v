@@ -130,7 +130,7 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement _appearanceHeader;
 
-        private BodyPartSelector _bodyPartSelector;
+        private ExclusiveButtonGroup<BodyPartCategory?> _bodyPartSelector;
 
         private VisualElement _appearanceTabs;
 

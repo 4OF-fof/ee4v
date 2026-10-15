@@ -92,7 +92,7 @@ namespace Ee4v.AvatarParts
             _context.Host.InvalidateControls(AvatarEditorPanel.Shape);
             _context.Edits.Changed();
             if (enabledOnly) { _context.Preview?.RefreshPreview(); }
-            else { _context.Preview?.ReloadPrefabPreservingView(_context.Root); }
+            else { _context.Preview?.ReloadTargetPreservingView(_context.Root); }
             _context.Host.SyncPreviewSelection();
         }
 

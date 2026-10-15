@@ -647,7 +647,7 @@ namespace Ee4v.AssetManager.UI
             }
             edit(_avatarContext.Root);
             _workingSceneDirty = true;
-            _avatarContext.Preview?.ReloadPrefabPreservingView(_avatarContext.Root);
+            _avatarContext.Preview?.ReloadTargetPreservingView(_avatarContext.Root);
             InvalidateVariantSaveStatus();
             _parts.InvalidateShapeTargets();
             _avatarContext.SelectedMaterial = null;
