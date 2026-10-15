@@ -21,6 +21,7 @@ namespace Ee4v.UI
             "Editor/UI/Components/Content/Details/details.uss",
             "Editor/UI/Components/Content/ThumbnailStack/thumbnail-stack.uss",
             "Editor/UI/Components/Collections/ImageGridView/image-grid.uss",
+            "Editor/UI/Components/Collections/PickerBrowser/picker-browser.uss",
             "Editor/UI/Components/Inputs/SearchField/search-field.uss",
             "Editor/UI/Components/Inputs/InputField/input-field.uss",
             "Editor/UI/Components/Inputs/PathField/path-field.uss",

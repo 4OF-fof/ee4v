@@ -40,6 +40,7 @@ namespace Ee4v.UI
                     {
                         "Editor/UI/Components/Inputs/ListField/ListField.cs",
                         "Editor/UI/Components/Inputs/PathField/PathField.cs",
+                        "Editor/UI/Components/Inputs/SearchField/SearchField.cs",
                         "Editor/UI/Catalog/helper/Controls.cs",
                         "Editor/AssetManager/UI/AssetManagerView.Items.cs",
                         "Editor/AssetManager/UI/AssetVariantSaveOverlay.cs",

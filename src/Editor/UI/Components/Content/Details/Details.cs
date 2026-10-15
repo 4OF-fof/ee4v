@@ -86,21 +86,30 @@ namespace Ee4v.UI
         }
     }
 
-    public sealed class MetricDisplay : VisualElement
+    public enum ValueDisplayLayout { Inline, Stacked }
+
+    public sealed class ValueDisplay : FormInput
     {
-        public MetricDisplay(string label, string value)
+        public ValueDisplay(string label, string value, ValueDisplayLayout layout = ValueDisplayLayout.Inline)
+            : this(label, CreateValue(value, layout), layout) { }
+
+        public ValueDisplay(string label, VisualElement value, ValueDisplayLayout layout = ValueDisplayLayout.Inline)
+            : base(label, value ?? new VisualElement(), null,
+                layout == ValueDisplayLayout.Stacked ? UiClassNames.SecondaryText : UiClassNames.FormLabel, false)
         {
-            AddToClassList("ee4v-ui-details__overview-fact");
-            Add(UiTextFactory.Create(
-                label,
-                UiClassNames.SecondaryText,
-                "ee4v-ui-details__overview-fact-label"));
-            var valueText = UiTextFactory.Create(
-                value,
-                UiClassNames.SectionTitle,
-                "ee4v-ui-details__overview-fact-value");
-            valueText.SetWhiteSpace(WhiteSpace.Normal);
-            Add(valueText);
+            AddToClassList("ee4v-ui-value-display");
+            AddToClassList(layout == ValueDisplayLayout.Stacked
+                ? "ee4v-ui-value-display--stacked" : "ee4v-ui-value-display--inline");
+            LabelText.AddToClassList("ee4v-ui-value-display__label");
+            Input.AddToClassList("ee4v-ui-value-display__value");
+        }
+
+        private static UiTextElement CreateValue(string value, ValueDisplayLayout layout)
+        {
+            var text = layout == ValueDisplayLayout.Stacked
+                ? UiTextFactory.Create(value, UiClassNames.SectionTitle) : UiTextFactory.Create(value);
+            text.SetWhiteSpace(WhiteSpace.Normal);
+            return text;
         }
     }
 
@@ -120,7 +129,7 @@ namespace Ee4v.UI
         }
     }
 
-    public sealed class PropertyRow : VisualElement
+    public sealed class PropertyRow : FormInput
     {
         public PropertyRow(
             string label,
@@ -142,16 +151,12 @@ namespace Ee4v.UI
             }
         }
 
-        private PropertyRow(string label)
+        private PropertyRow(string label) : base(label, new VisualElement(), null, UiClassNames.FormLabel, false)
         {
             AddToClassList("ee4v-ui-details__property-row");
-            Add(UiTextFactory.Create(
-                label,
-                UiClassNames.FormLabel,
-                "ee4v-ui-details__property-label"));
-            _value = new VisualElement();
+            LabelText.AddToClassList("ee4v-ui-details__property-label");
+            _value = Input;
             _value.AddToClassList("ee4v-ui-details__property-value");
-            Add(_value);
         }
 
         public static PropertyRow Editable(
@@ -198,34 +203,4 @@ namespace Ee4v.UI
         private readonly VisualElement _value;
     }
 
-    public sealed class KeyValueRow : VisualElement
-    {
-        public KeyValueRow(string key, string value)
-            : this(key, CreateValue(value))
-        {
-        }
-
-        public KeyValueRow(
-            string key,
-            VisualElement value)
-        {
-            AddToClassList("ee4v-ui-details__key-value");
-            Add(UiTextFactory.Create(
-                key,
-                UiClassNames.FormLabel,
-                "ee4v-ui-details__key"));
-            if (value != null)
-            {
-                value.AddToClassList("ee4v-ui-details__value");
-                Add(value);
-            }
-        }
-
-        private static VisualElement CreateValue(string value)
-        {
-            var text = UiTextFactory.Create(value);
-            text.SetWhiteSpace(WhiteSpace.Normal);
-            return text;
-        }
-    }
 }

@@ -24,7 +24,8 @@ namespace Ee4v.UI
                     "全周枠と検索アイコンで用途を示し、境界線とフォーカス色はInputFieldと共有します。先頭アイコンは任意の操作ボタンとしても使用できます。",
                     new[]
                     {
-                        "Icon"
+                        "InputField",
+                        "UiButton"
                     },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildSearchFieldStory(parent),

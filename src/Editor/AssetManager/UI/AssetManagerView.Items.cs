@@ -775,15 +775,15 @@ namespace Ee4v.AssetManager.UI
 
             var facts = new VisualElement();
             facts.AddToClassList("ee4v-asset-manager__overview-facts");
-            facts.Add(new MetricDisplay(
+            facts.Add(new ValueDisplay(
                 I18N.Get("field.fileCount"),
-                files.Count.ToString()));
-            facts.Add(new MetricDisplay(
+                files.Count.ToString(), ValueDisplayLayout.Stacked));
+            facts.Add(new ValueDisplay(
                 I18N.Get("field.fileTypes"),
-                GetFileTypes(files)));
-            var sourceFact = new MetricDisplay(
+                GetFileTypes(files), ValueDisplayLayout.Stacked));
+            var sourceFact = new ValueDisplay(
                 I18N.Get("field.source"),
-                GetItemSources(item, files));
+                GetItemSources(item, files), ValueDisplayLayout.Stacked);
             sourceFact.AddToClassList(
                 "ee4v-asset-manager__overview-fact--last");
             facts.Add(sourceFact);
@@ -908,13 +908,13 @@ namespace Ee4v.AssetManager.UI
             var information = new DetailSection(
                 I18N.Get("detail.information"));
             AddBoothInformation(information, item.Booth);
-            information.Add(new KeyValueRow(
+            information.Add(new ValueDisplay(
                 I18N.Get("field.totalFileSize"),
                 FormatTotalFileSize(files)));
-            information.Add(new KeyValueRow(
+            information.Add(new ValueDisplay(
                 I18N.Get("field.createdAt"),
                 FormatTimestamp(item.CreatedAt)));
-            information.Add(new KeyValueRow(
+            information.Add(new ValueDisplay(
                 I18N.Get("field.updatedAt"),
                 FormatTimestamp(item.UpdatedAt)));
             detail.Add(information);
@@ -932,13 +932,13 @@ namespace Ee4v.AssetManager.UI
             if (!string.IsNullOrWhiteSpace(booth.ShopName) &&
                 TryGetWebUrl(booth.ShopUrl, out var shopUrl))
             {
-                information.Add(new KeyValueRow(
+                information.Add(new ValueDisplay(
                     I18N.Get("field.boothStore"),
                     CreateDetailLink(booth.ShopName, shopUrl)));
             }
             if (TryGetWebUrl(booth.ItemUrl, out var itemUrl))
             {
-                information.Add(new KeyValueRow(
+                information.Add(new ValueDisplay(
                     I18N.Get("field.boothLink"),
                     CreateDetailLink(itemUrl, itemUrl)));
             }

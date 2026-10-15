@@ -11,7 +11,7 @@ Catalogは利用場面ではなく、部品が公開する責務で分類しま�
 | 責務 | 汎用部品 |
 |---|---|
 | Inputs | `EnumFormInput`、`StepperSlider`、`ScalarInput`、`TagField`、`Breadcrumb` |
-| Displays | `MetricDisplay`、`KeyValueRow`、`ThumbnailStack`、`MessagePanel` |
+| Displays | `ValueDisplay`、`ThumbnailStack`、`MessagePanel` |
 | Containers | `DetailHeader`、`DetailSection`、`PropertyList` |
 | Inputs / 編集行 | `PropertyRow` |
 | Collections / 選択カード | `ImageGridView` / `ImageGridCard` |
@@ -30,7 +30,17 @@ Storyページは詳細カードと実部品の描画領域を分離し、内容
 
 `InputGroup`のStoryは設定画面と同じ通常のpanel背景で表示し、囲み枠の内外と見出しの背景色を揃えます。プレビューカードの標準背景で色の差を付けません。
 
-`MetricDisplay`のStoryは実使用と同じ横並びのコンテナへ配置し、プレビュー枠が部品の高さを含むようにします。`MessagePanel`のStoryは表示状態の変更後に親の`InfoCard.RefreshLayout`を呼び、初期表示と非表示からの再表示を反映します。
+`ValueDisplay`のStoryは横並びと縦並びの表示を同じStoryで確認し、プレビュー枠が部品の高さを含むようにします。`MessagePanel`のStoryは表示状態の変更後に親の`InfoCard.RefreshLayout`を呼び、初期表示と非表示からの再表示を反映します。
+
+`SearchField`は`InputField`を継承し、値変更通知、通知なし更新、フォーカスとプレースホルダーの処理を共有します。検索は空白だけの値を空表示として扱い、先頭の検索操作と末尾の消去操作を追加します。文字を入力するTextFieldは基底側の一つだけです。
+
+`InfoCard`は`SectionHeader`で見出し・説明・操作欄を構成し、eyebrowとBadgeを追加します。`PreviewPane`は`InfoCard`を継承し、本文の拡張とプレビュー用の枠を適用します。描画やCameraの所有は追加しません。
+
+`PropertyRow`と`ValueDisplay`は`FormInput`のラベル・内容の構造を継承します。`PropertyRow`は値と操作の横並び、および表示・編集の切り替えを追加します。`ValueDisplay`は読み取り専用の値表示で、`ValueDisplayLayout.Inline`は横並び、`Stacked`は枠付きの縦並びです。任意のVisualElementも値として受け取れます。
+
+`ExclusiveButtonGroup<TValue>`の`tabVariant`を指定すると、同じ排他選択の実装で`SelectionTab`を並べます。部位ボタン、パーツ・体型・Materialのタブ、表情ライブラリと割り当て設定のタブで選択更新を共有します。保存可否や画面の切り替えはcallback側が扱い、切り替えを拒否した場合は`SetSelected`で元の値へ戻します。
+
+`PickerBrowser`は所属一覧・候補一覧・プレビューの配置と表示切り替え、およびカード幅の計算を共有します。所属カードは`PickerBrowserCard`でPreviewContainerと名称・説明を組み合わせます。`AssetPickerWindow`と`AssetPrefabPickerWindow`が使用し、候補の取得、サムネイルの供給、ドラッグ、追加・確定と保存は各利用側が所有します。共通側はAssetManagerの型やDBへ依存しません。
 
 Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します。共通部品のスタイルはこの入口から読み込み、機能固有の`styleSheetPaths`はそのStoryの描画領域へだけ追加します。他のStoryが登録した機能スタイルには依存しません。
 

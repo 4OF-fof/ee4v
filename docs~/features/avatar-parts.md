@@ -1,5 +1,7 @@
 # AvatarParts
 
+パーツ・体型・Materialの切り替えは共通`ExclusiveButtonGroup<AvatarEditorPanel>`の下線型タブを使用します。選択表示の更新は共通UIが担当し、保留中の体型変更の確定と画面切り替えはAvatarPartsまたは統合ホストが担当します。確定できない場合は元のタブを維持します。
+
 `src/Editor/Feature/Avatar/AvatarParts`と`Ee4v.AvatarParts.Editor`がパーツ・体型タブの編集処理を所有します。`AvatarPartsEditor`は統合ee4vと独立版Shape and Partsの共通実装です。
 
 ## 公開境界

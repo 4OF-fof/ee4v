@@ -54,33 +54,31 @@ namespace Ee4v.UI
         private readonly Badge _badge;
         private InfoCardState _state;
 
-        public InfoCard(InfoCardState state = null)
+        public InfoCard(InfoCardState state = null) : this(state, UiClassNames.InfoCardTitle) { }
+
+        protected InfoCard(InfoCardState state, string titleTypography)
         {
             AddToClassList(RootClassName);
 
-            _header = new VisualElement();
+            var header = new SectionHeader(null, null, titleTypography, UiClassNames.InfoCardDescription, false);
+            _header = header;
             _header.AddToClassList(HeaderClassName);
 
-            _headerText = new VisualElement();
+            _headerText = header.TextContent;
             _headerText.style.flexGrow = 1f;
             _headerText.style.flexShrink = 1f;
             _headerText.style.minWidth = 0f;
             _headerText.AddToClassList("ee4v-ui-info-card__header-text");
 
             _eyebrowLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardEyebrow);
-            _titleLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardTitle);
-            _descriptionLabel = UiTextFactory.Create(string.Empty, UiClassNames.InfoCardDescription);
-            _headerText.Add(_eyebrowLabel);
-            _headerText.Add(_titleLabel);
-            _headerText.Add(_descriptionLabel);
+            _titleLabel = header.TitleText;
+            _descriptionLabel = header.DescriptionText;
+            _headerText.Insert(0, _eyebrowLabel);
 
-            HeaderRight = new VisualElement();
+            HeaderRight = header.Actions;
             HeaderRight.AddToClassList(HeaderRightClassName);
             _badge = new Badge();
             HeaderRight.Add(_badge);
-
-            _header.Add(_headerText);
-            _header.Add(HeaderRight);
 
             Body = new InfoCardBodyElement(RefreshLayout);
             Body.AddToClassList(BodyClassName);
@@ -92,6 +90,7 @@ namespace Ee4v.UI
         }
 
         public VisualElement HeaderRight { get; }
+        protected VisualElement Header => _header;
 
         public InfoCardBodyElement Body { get; }
 
@@ -147,7 +146,12 @@ namespace Ee4v.UI
             RefreshLayout();
         }
 
-        public void RefreshLayout()
+        public void SetTitle(string title)
+        {
+            SetState(new InfoCardState(title, _state.Description, _state.Eyebrow, _state.BadgeState));
+        }
+
+        public virtual void RefreshLayout()
         {
             var hasBody = HasVisibleBodyChild();
             var hasHeader = _header.style.display != DisplayStyle.None;

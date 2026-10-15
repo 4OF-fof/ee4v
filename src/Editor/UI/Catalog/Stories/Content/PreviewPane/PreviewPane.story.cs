@@ -14,7 +14,7 @@ namespace Ee4v.UI
                 new UiStory("preview-pane", "Containers", "PreviewPane",
                     "プレビューの見出し、操作と描画内容を配置する外枠です。",
                     "描画方法に依存しないContentとActionsを、編集用・実行用プレビューで共有します。",
-                    Build, dependencies: new[] { "UiTextFactory", "UiButton" },
+                    Build, dependencies: new[] { "InfoCard", "SectionHeader" },
                     usageLocations: new[]
                     {
                         "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",

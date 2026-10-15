@@ -37,6 +37,7 @@ namespace Ee4v.UI
                         "Editor/Core/Presentation/Settings/SettingsUiRenderer.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs",
+                        "Editor/UI/Components/Content/Details/Details.cs",
                         "Editor/Feature/Shared/ItemStyle/ItemStyleEditor.cs",
                         "Editor/Feature/WindowGroup/UI/WindowGroupSettingsView.cs"
                     }));

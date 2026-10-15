@@ -17,7 +17,6 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed class AssetPrefabPickerWindow : CustomPopupWindow
     {
-        private const float CardSpacing = 12f;
         private const int MaximumCachedPreviews = 8;
 
         private sealed class ItemPreview
@@ -47,7 +46,7 @@ namespace Ee4v.AssetManager.UI
         private Action _openAssetManager;
         private SearchField _search;
         private VisualElement _sourceHeader;
-        private VisualElement _browser;
+        private PickerBrowser _browser;
         private ScrollView _scroll;
         private VisualElement _options;
         private VisualElement _previewPanel;
@@ -152,7 +151,7 @@ namespace Ee4v.AssetManager.UI
                     }, "ee4v-asset-prefab-picker__manager"));
             }
             body.Add(toolbar);
-            _browser = new VisualElement();
+            _browser = new PickerBrowser();
             _browser.AddToClassList("ee4v-asset-prefab-picker__browser");
             _scroll = new ScrollView(ScrollViewMode.Vertical)
             {
@@ -165,9 +164,8 @@ namespace Ee4v.AssetManager.UI
             _options.RegisterCallback<GeometryChangedEvent>(_ => UpdateCardSizes());
             _scroll.Add(_options);
             _scroll.verticalScroller.valueChanged += _ => ScheduleVisibleThumbnails();
-            _browser.Add(_scroll);
             BuildPreviewPanel();
-            _browser.Add(_previewPanel);
+            _browser.SetPanels(_scroll, _scroll, _previewPanel, _options);
             body.Add(_browser);
             popup.Content.Add(body);
             SetPopup(popup);
@@ -256,6 +254,7 @@ namespace Ee4v.AssetManager.UI
             _scroll.scrollOffset = Vector2.zero;
             var query = _search.Value.Trim();
             var prefabStage = _source != null;
+            _browser.ShowDetails(prefabStage);
             _browser.EnableInClassList("ee4v-asset-prefab-picker__browser--prefabs", prefabStage);
             _filteredItems = Array.Empty<VariantSourceOption>();
             _filteredPrefabs = Array.Empty<GameObject>();
@@ -265,13 +264,12 @@ namespace Ee4v.AssetManager.UI
                 _filteredItems = _sources.Where(source => Matches(source.Item.Name, query)).ToArray();
                 foreach (var source in _filteredItems)
                 {
-                    var option = new NavigationItem(new NavigationItemState(source.Item.Name,
+                    var option = new PickerBrowserCard(new NavigationItemState(source.Item.Name,
                         I18N.Get("workflow.assets.prefabCount", source.Prefabs.Count)), () => ShowPrefabs(source));
                     option.tooltip = source.Item.Name;
                     BindSubmit(option, () => ShowPrefabs(source));
                     option.AddToClassList("ee4v-asset-prefab-picker__card");
-                    option.Row.TitleText.SetWhiteSpace(WhiteSpace.Normal);
-                    var frame = new PreviewContainer { pickingMode = PickingMode.Ignore };
+                    var frame = option.Preview;
                     frame.AddToClassList("ee4v-asset-prefab-picker__thumbnail");
                     var fallback = new Image
                     {
@@ -286,7 +284,6 @@ namespace Ee4v.AssetManager.UI
                     frame.Content.Add(image);
                     frame.SetHasContent(image.DisplayedTexture != null);
                     _itemPreviews[source.Item.Id] = new ItemPreview { Frame = frame, Image = image };
-                    option.Leading.Add(frame);
                     options.Add(option);
                 }
             }
@@ -471,16 +468,7 @@ namespace Ee4v.AssetManager.UI
         private void UpdateCardSizes()
         {
             if (_source != null) { return; }
-            var width = _options.contentRect.width;
-            if (float.IsNaN(width) || width <= 0f) { return; }
-            var columns = Mathf.Clamp(Mathf.FloorToInt((width + CardSpacing) / 224f), 1, 5);
-            var cardWidth = Mathf.Max(1f, (width - columns * CardSpacing) / columns);
-            foreach (var card in _options.Children().OfType<NavigationItem>())
-            {
-                card.style.width = cardWidth;
-                var preview = card.Leading.Q<PreviewContainer>();
-                if (preview != null) { preview.style.height = Mathf.Clamp(cardWidth - 16f, 120f, 220f); }
-            }
+            _browser.RefreshCardSizes();
             ScheduleVisibleThumbnails();
         }
 

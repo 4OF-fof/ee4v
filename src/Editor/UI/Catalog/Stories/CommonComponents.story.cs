@@ -161,16 +161,17 @@ namespace Ee4v.UI
                         "Editor/AssetManager/UI/AssetManagerView.Variants.cs"
                     }),
                 new UiStory(
-                    "metric-display",
+                    "value-display",
                     "Displays",
-                    "MetricDisplay",
-                    "短いラベルと値を強調して表示する概要値です。",
+                    "ValueDisplay",
+                    "ラベルと値を横並びまたは縦並びで表示します。",
                     "件数など、対象の要点を一組ずつ表示します。",
-                    BuildDetailFact,
-                    dependencies: new[] { "UiTextFactory" },
+                    BuildValueDisplay,
+                    dependencies: new[] { "FormInput", "UiTextFactory" },
                     usageLocations: new[]
                     {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs"
+                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Variants.cs"
                     }),
                 new UiStory(
                     "property-list",
@@ -182,7 +183,7 @@ namespace Ee4v.UI
                     dependencies: new[]
                     {
                         "PropertyRow",
-                        "KeyValueRow"
+                        "ValueDisplay"
                     },
                     usageLocations: new[]
                     {
@@ -205,19 +206,6 @@ namespace Ee4v.UI
                     {
                         "Editor/AssetManager/UI/AssetManagerView.Items.cs",
                         "Editor/AssetManager/UI/AssetManagerView.Files.cs"
-                    }),
-                new UiStory(
-                    "key-value-row",
-                    "Displays",
-                    "KeyValueRow",
-                    "詳細情報のキーと値を一行で表示します。",
-                    "Sourceや識別子などの補足情報を、折り返し可能な値として表示します。",
-                    BuildDetailKeyValueRow,
-                    dependencies: new[] { "UiTextFactory" },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Variants.cs"
                     })
             }.Select(Decorate).ToArray();
         }
@@ -394,18 +382,19 @@ namespace Ee4v.UI
                 "Updated just now");
             var facts = new VisualElement();
             facts.style.flexDirection = FlexDirection.Row;
-            facts.Add(new MetricDisplay("Files", "12"));
-            facts.Add(new MetricDisplay("Tags", "3"));
+            facts.Add(new ValueDisplay("Files", "12", ValueDisplayLayout.Stacked));
+            facts.Add(new ValueDisplay("Tags", "3", ValueDisplayLayout.Stacked));
             overview.Add(facts);
             surface.Add(overview);
             parent.Add(surface);
         }
 
-        private static void BuildDetailFact(VisualElement parent)
+        private static void BuildValueDisplay(VisualElement parent)
         {
             var surface = CreateDetailStorySurface();
             surface.style.flexDirection = FlexDirection.Row;
-            surface.Add(new MetricDisplay("Files", "12"));
+            surface.Add(new ValueDisplay("Files", "12"));
+            surface.Add(new ValueDisplay("Files", "12", ValueDisplayLayout.Stacked));
             parent.Add(surface);
         }
 
@@ -442,15 +431,6 @@ namespace Ee4v.UI
                 save,
                 "Edit"));
             surface.Add(list);
-            parent.Add(surface);
-        }
-
-        private static void BuildDetailKeyValueRow(VisualElement parent)
-        {
-            var surface = CreateDetailStorySurface();
-            surface.Add(new KeyValueRow(
-                "Source",
-                "Eagle / Summer Costume"));
             parent.Add(surface);
         }
 

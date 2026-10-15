@@ -2,33 +2,34 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
-    public sealed class PreviewPane : VisualElement
+    public sealed class PreviewPane : InfoCard
     {
-        private readonly UiTextElement _title;
-
-        public PreviewPane(string title)
+        public PreviewPane(string title) : base(new InfoCardState(title), UiClassNames.SectionTitle)
         {
+            RemoveFromClassList("ee4v-ui-info-card");
             AddToClassList("ee4v-ui-preview-pane");
-            var toolbar = new VisualElement();
-            toolbar.AddToClassList("ee4v-ui-preview-pane__toolbar");
-            _title = UiTextFactory.Create(title, UiClassNames.SectionTitle,
-                "ee4v-ui-preview-pane__title");
-            toolbar.Add(_title);
-            Actions = new VisualElement();
-            Actions.AddToClassList("ee4v-ui-preview-pane__actions");
-            toolbar.Add(Actions);
-            Add(toolbar);
-            Content = new VisualElement();
-            Content.AddToClassList("ee4v-ui-preview-pane__content");
-            Add(Content);
+            Header.RemoveFromClassList("ee4v-ui-info-card__header");
+            Header.RemoveFromClassList("ee4v-ui-info-card__header--single-line");
+            Header.AddToClassList("ee4v-ui-preview-pane__toolbar");
+            TitleText.AddToClassList("ee4v-ui-preview-pane__title");
+            HeaderRight.RemoveFromClassList("ee4v-ui-info-card__header-right");
+            HeaderRight.AddToClassList("ee4v-ui-preview-pane__actions");
+            Body.RemoveFromClassList("ee4v-ui-info-card__body");
+            Body.AddToClassList("ee4v-ui-preview-pane__content");
+            RefreshLayout();
         }
 
-        public VisualElement Actions { get; }
-        public VisualElement Content { get; }
+        public VisualElement Actions => HeaderRight;
+        public VisualElement Content => Body;
 
-        public void SetTitle(string title)
+        public override void RefreshLayout()
         {
-            _title.SetText(title);
+            base.RefreshLayout();
+            Body.RemoveFromClassList("ee4v-ui-info-card__body--compact");
+            Body.RemoveFromClassList("ee4v-ui-info-card__body--with-header");
+            Body.style.display = DisplayStyle.Flex;
+            Header.style.display = DisplayStyle.Flex;
+            HeaderRight.style.display = DisplayStyle.Flex;
         }
     }
 }

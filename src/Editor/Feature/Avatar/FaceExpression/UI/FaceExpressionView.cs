@@ -70,8 +70,7 @@ namespace Ee4v.FaceExpression
         private readonly VisualElement _previewPane;
         private readonly VisualElement _leftPane;
         private readonly VisualElement _browserTabs;
-        private readonly SelectionTab _libraryMode;
-        private readonly SelectionTab _overviewMode;
+        private readonly ExclusiveButtonGroup<bool> _browserSelection;
         private readonly ActionBar _previewNavbar;
         private readonly VisualElement _assignmentPane;
         private readonly VisualElement _assignmentMatrix;
@@ -222,16 +221,15 @@ namespace Ee4v.FaceExpression
             content.AddToClassList("ee4v-face-expression__content");
             _leftPane = new VisualElement();
             _leftPane.AddToClassList("ee4v-face-expression__left-pane");
-            _browserTabs = SelectionTab.CreateStrip();
+            _browserSelection = new ExclusiveButtonGroup<bool>(new[]
+            {
+                new ExclusiveButtonOption<bool>(false, I18N.Get("assignments.libraryView")),
+                new ExclusiveButtonOption<bool>(true, I18N.Get("assignments.reviewList"))
+            }, false, SetAssignmentMatrixVisible, tabVariant: SelectionTabVariant.Underline);
+            _browserTabs = _browserSelection;
             _browserTabs.AddToClassList("ee4v-face-expression__browser-tabs");
-            _libraryMode = new SelectionTab(I18N.Get("assignments.libraryView"), SelectionTabVariant.Underline,
-                () => SetAssignmentMatrixVisible(false));
-            _overviewMode = new SelectionTab(I18N.Get("assignments.reviewList"), SelectionTabVariant.Underline,
-                () => SetAssignmentMatrixVisible(true));
-            _libraryMode.AddToClassList("ee4v-face-expression__browser-tab");
-            _overviewMode.AddToClassList("ee4v-face-expression__browser-tab");
-            _browserTabs.Add(_libraryMode);
-            _browserTabs.Add(_overviewMode);
+            foreach (var tab in _browserTabs.Children())
+            { tab.AddToClassList("ee4v-face-expression__browser-tab"); }
             _leftPane.Add(_browserTabs);
             content.Add(_leftPane);
             _previewPane = new VisualElement();
@@ -1456,8 +1454,7 @@ namespace Ee4v.FaceExpression
             _rightPane.style.display = DisplayStyle.Flex;
             _assignmentActions.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
             _browserTabs.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
-            _libraryMode.SetSelected(!confirming);
-            _overviewMode.SetSelected(confirming);
+            _browserSelection.SetSelected(confirming);
             _assignmentLibrary.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
             var libraryHost = assigning ? _assignmentLibrary : _editorContent;
             if (_library.parent != libraryHost)

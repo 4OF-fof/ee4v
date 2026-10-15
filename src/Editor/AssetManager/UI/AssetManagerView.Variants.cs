@@ -163,11 +163,11 @@ namespace Ee4v.AssetManager.UI
                 size = DerivedAssetCreator.GetVariantFileSize(variant.AssetPath, out var filesUpdatedAt);
                 if (filesUpdatedAt > updatedAt) updatedAt = filesUpdatedAt;
             }
-            information.Add(new KeyValueRow(I18N.Get("field.totalFileSize"),
+            information.Add(new ValueDisplay(I18N.Get("field.totalFileSize"),
                 size.HasValue ? AssetFileTreeBuilder.FormatSize(size.Value) : I18N.Get("common.unknown")));
-            information.Add(new KeyValueRow(I18N.Get("field.createdAt"),
+            information.Add(new ValueDisplay(I18N.Get("field.createdAt"),
                 FormatTimestamp(variant.CreatedAt)));
-            information.Add(new KeyValueRow(I18N.Get("field.updatedAt"),
+            information.Add(new ValueDisplay(I18N.Get("field.updatedAt"),
                 FormatTimestamp(updatedAt)));
             detail.Add(information);
         }

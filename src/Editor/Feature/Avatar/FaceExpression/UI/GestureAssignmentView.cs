@@ -594,7 +594,7 @@ namespace Ee4v.FaceExpression
         private readonly VisualElement _expressionPanel;
         private readonly VisualElement _settingsPanel;
         private readonly GestureAssignmentSettingsView _settingsView;
-        private readonly List<SelectionTab> _tabs = new List<SelectionTab>();
+        private readonly ExclusiveButtonGroup<int> _tabs;
         private readonly List<Condition> _conditions = new List<Condition>();
         private HashSet<GestureCombination> _observedCombinations;
         private FaceExpressionMenuEntry[] _observedMenuEntries = Array.Empty<FaceExpressionMenuEntry>();
@@ -644,19 +644,14 @@ namespace Ee4v.FaceExpression
             inputs.Add(menuName);
             Header.Add(inputs);
 
-            var tabs = SelectionTab.CreateStrip();
-            tabs.AddToClassList("ee4v-gesture-picker__tabs");
-            var tabKeys = new[] { "assignments.expressionTab", "assignments.settingsTab" };
-            for (var index = 0; index < tabKeys.Length; index++)
+            _tabs = new ExclusiveButtonGroup<int>(new[]
             {
-                var tabIndex = index;
-                var button = new SelectionTab(I18N.Get(tabKeys[index]), SelectionTabVariant.Underline,
-                    () => SelectTab(tabIndex));
-                button.AddToClassList("ee4v-gesture-picker__tab");
-                _tabs.Add(button);
-                tabs.Add(button);
-            }
-            Header.Add(tabs);
+                new ExclusiveButtonOption<int>(ExpressionTab, I18N.Get("assignments.expressionTab")),
+                new ExclusiveButtonOption<int>(SettingsTab, I18N.Get("assignments.settingsTab"))
+            }, _selectedTab, SelectTab, tabVariant: SelectionTabVariant.Underline);
+            _tabs.AddToClassList("ee4v-gesture-picker__tabs");
+            foreach (var tab in _tabs.Children()) { tab.AddToClassList("ee4v-gesture-picker__tab"); }
+            Header.Add(_tabs);
             _expressionPanel = CreatePanel();
             _settingsPanel = CreatePanel();
             _conditionList = new VisualElement();
@@ -1006,10 +1001,7 @@ namespace Ee4v.FaceExpression
                 RefreshConditions();
                 RefreshCommonInputs();
                 RefreshConditionButtons();
-                for (var index = 0; index < _tabs.Count; index++)
-                {
-                    _tabs[index].SetSelected(index == _selectedTab);
-                }
+                _tabs.SetSelected(_selectedTab);
                 _expressionPanel.style.display = _selectedTab == ExpressionTab ? DisplayStyle.Flex : DisplayStyle.None;
                 _settingsPanel.style.display = _selectedTab == SettingsTab ? DisplayStyle.Flex : DisplayStyle.None;
                 _settingsView.SetClipTarget(_hasAvatar ? _candidate : null);

@@ -21,7 +21,7 @@ namespace Ee4v.UI
                     "InfoCard",
                     "タイトル、説明、eyebrow、badge、body を組み合わせて情報面を構成する基本コンポーネントです。",
                     "シンプルな情報表示から、結果一覧の見出し付きカードまで幅広く使う土台です。header の各値が欠けても自然に見えるように余白を調整し、内蔵の badge と本文を組み合わせて情報密度を調整できます。",
-                    new string[0],
+                    new[] { "SectionHeader" },
                     ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildInfoCardStory(parent),
                     new[]
@@ -30,6 +30,7 @@ namespace Ee4v.UI
                         "Editor/UI/Catalog/helper/PreviewHelper.cs",
                         "Editor/UI/Catalog/helper/Controls.cs",
                         "Editor/UI/Components/Content/Details/Details.cs",
+                        "Editor/UI/Components/Content/PreviewPane/PreviewPane.cs",
                         "Editor/AssetManager/UI/AssetManagerView.Items.cs",
                         "Editor/Feature/Avatar/AvatarInfo/UI/AvatarInfoView.cs"
                     }));

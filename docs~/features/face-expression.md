@@ -1,5 +1,7 @@
 # Face Expression
 
+ライブラリと割り当て一覧、および割り当て編集と設定の切り替えには共通`ExclusiveButtonGroup`の下線型タブを使用します。選択表示と排他制御は共通UIが担当し、表示する内容と選択可能な状態はFaceExpressionが決定します。
+
 Catalogの表情変換Storyは専用Preview SceneのMesh・Clipを使います。`ExpressionConversionView`の`previewOnly`では通常と同じ変換・検証を実行し、結果通知後に一時Clipを破棄します。保存ダイアログとAsset作成は行いません。BlendShapeの数値行は共通`ScalarInput`を使い、Storyのお気に入り状態もメモリ内に保持します。
 
 `FaceExpressionEmbeddedView.IsAssignmentView`は現在のViewが割当画面を表示しているかを返します。判定はClip選択の有無と割当paneの存在による実際の表示条件を共有し、View未生成・破棄済みの場合はfalseです。統合ee4vは表情タブでこの値がtrueのとき、「アセットを探す」をAnimationClipの「表情」絞り込みで開きます。FaceExpressionからAssetManagerへは依存しません。

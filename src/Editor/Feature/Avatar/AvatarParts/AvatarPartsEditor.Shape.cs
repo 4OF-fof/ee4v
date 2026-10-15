@@ -1006,25 +1006,39 @@ namespace Ee4v.AvatarParts
             Action<AvatarEditorPanel> selectPanel = null,
             AvatarEditorPanel? selectedPanel = null)
         {
-            var tabs = SelectionTab.CreateStrip();
+            var current = selectedPanel ?? (_shapePartsSection == ShapePartsSection.Shape
+                ? AvatarEditorPanel.Shape : AvatarEditorPanel.Parts);
+            var options = new List<ExclusiveButtonOption<AvatarEditorPanel>>
+            {
+                new ExclusiveButtonOption<AvatarEditorPanel>(AvatarEditorPanel.Parts, I18N.Get("workflow.shapeParts.parts")),
+                new ExclusiveButtonOption<AvatarEditorPanel>(AvatarEditorPanel.Shape, I18N.Get("workflow.shapeParts.shape"))
+            };
+            if (selectPanel != null)
+            { options.Add(new ExclusiveButtonOption<AvatarEditorPanel>(AvatarEditorPanel.Material, I18N.Get("workflow.shapeParts.material"))); }
+            ExclusiveButtonGroup<AvatarEditorPanel> tabs = null;
+            tabs = new ExclusiveButtonGroup<AvatarEditorPanel>(options, current, panel =>
+            {
+                var previous = (AvatarEditorPanel)tabs.userData;
+                if (previous == panel) { return; }
+                tabs.SetSelected(previous);
+                if (selectPanel != null) { selectPanel(panel); return; }
+                if (_shapePartsSection == ShapePartsSection.Shape)
+                {
+                    EndBodyScaleDrag();
+                    SaveBodyScalePrefab();
+                    if (_bodyScaleDirty) { return; }
+                }
+                _shapePartsSection = panel == AvatarEditorPanel.Shape
+                    ? ShapePartsSection.Shape : ShapePartsSection.Parts;
+                RefreshShapePartsTabs(tabs, panel);
+                _context.Host.ShowParts();
+                _context.ControlsHost.scrollOffset = Vector2.zero;
+            }, tabVariant: SelectionTabVariant.Underline);
             UiComposition.Prepare(tabs,
                 "Editor/Feature/Shared/AvatarEditing/avatar-editing.uss",
                 "Editor/Feature/Avatar/AvatarParts/avatar-parts.uss");
-            tabs.AddToClassList(
-                "ee4v-modification-workflow__shape-parts-tabs");
-            AddShapePartsButton(
-                tabs,
-                AvatarEditorPanel.Parts,
-                "workflow.shapeParts.parts", selectPanel);
-            AddShapePartsButton(
-                tabs,
-                AvatarEditorPanel.Shape,
-                "workflow.shapeParts.shape", selectPanel);
-            if (selectPanel != null)
-            {
-                AddShapePartsButton(tabs, AvatarEditorPanel.Material,
-                    "workflow.shapeParts.material", selectPanel);
-            }
+            tabs.AddToClassList("ee4v-modification-workflow__shape-parts-tabs");
+            foreach (var tab in tabs.Children()) { tab.AddToClassList("ee4v-modification-workflow__shape-parts-tab"); }
             RefreshShapePartsTabs(tabs, selectedPanel);
             return tabs;
         }
@@ -1034,53 +1048,7 @@ namespace Ee4v.AvatarParts
             var current = selectedPanel ?? (_shapePartsSection == ShapePartsSection.Shape
                 ? AvatarEditorPanel.Shape : AvatarEditorPanel.Parts);
             tabs.userData = current;
-            foreach (var child in tabs.Children())
-            {
-                if (child.userData is AvatarEditorPanel panel)
-                {
-                    if (child is SelectionTab button)
-                    {
-                        button.SetSelected(panel == current);
-                    }
-                }
-            }
-        }
-
-        private void AddShapePartsButton(
-            VisualElement tabs,
-            AvatarEditorPanel panel,
-            string labelKey,
-            Action<AvatarEditorPanel> selectPanel)
-        {
-            var button = new SelectionTab(
-                I18N.Get(labelKey),
-                SelectionTabVariant.Underline,
-                () =>
-                {
-                    if (tabs.userData is AvatarEditorPanel current && current == panel)
-                    {
-                        return;
-                    }
-                    if (selectPanel != null)
-                    {
-                        selectPanel(panel);
-                        return;
-                    }
-                    if (_shapePartsSection == ShapePartsSection.Shape)
-                    {
-                        EndBodyScaleDrag();
-                        SaveBodyScalePrefab();
-                        if (_bodyScaleDirty) { return; }
-                    }
-                    _shapePartsSection = panel == AvatarEditorPanel.Shape
-                        ? ShapePartsSection.Shape : ShapePartsSection.Parts;
-                    _context.Host.ShowParts();
-                    _context.ControlsHost.scrollOffset = Vector2.zero;
-                });
-            button.AddToClassList(
-                "ee4v-modification-workflow__shape-parts-tab");
-            button.userData = panel;
-            tabs.Add(button);
+            ((ExclusiveButtonGroup<AvatarEditorPanel>)tabs).SetSelected(current);
         }
     }
 }

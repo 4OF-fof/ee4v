@@ -25,7 +25,10 @@ namespace Ee4v.UI
                     BuildSelectionTab, "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs"),
                 Story("exclusive-button-group", "Inputs", "ExclusiveButtonGroup",
                     "選択肢のボタンから一つを選ぶ汎用入力です。無効な選択肢も表示します。",
-                    BuildExclusiveButtonGroup, "Editor/Feature/Shared/AvatarEditing/AvatarEditingUi.cs"),
+                    BuildExclusiveButtonGroup, "Editor/Feature/Shared/AvatarEditing/AvatarEditingUi.cs",
+                    "Editor/Feature/Avatar/AvatarParts/AvatarPartsEditor.Shape.cs",
+                    "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                    "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs"),
                 Story("game-object-preview", "Displays", "GameObjectPreview",
                     "共通の3Dプレビューです。独立したPreview Sceneのサンプルでカメラと選択を確認します。",
                     BuildScenePreview, "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",
@@ -37,7 +40,15 @@ namespace Ee4v.UI
                     BuildObjectSelector, "Editor/AssetManager/UI/VariantCreationView.cs"),
                 Story("object-thumbnail", "Displays", "ObjectThumbnail",
                     "UnityのAssetPreviewを使うObjectのサムネイルです。",
-                    BuildObjectThumbnail, "Editor/UI/Components/Inputs/ObjectSelector/ObjectPickerWindow.cs")
+                    BuildObjectThumbnail, "Editor/UI/Components/Inputs/ObjectSelector/ObjectPickerWindow.cs"),
+                Story("picker-browser", "Containers", "PickerBrowser",
+                    "所属カードと候補・プレビューの表示を切り替える共通レイアウトです。",
+                    BuildPickerBrowser, "Editor/UI/Components/Inputs/AssetPicker/AssetPickerWindow.cs",
+                    "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs"),
+                Story("picker-browser-card", "Inputs", "PickerBrowserCard",
+                    "プレビュー領域を持つ選択カードです。",
+                    BuildPickerBrowserCard, "Editor/UI/Components/Inputs/AssetPicker/AssetPickerWindow.cs",
+                    "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs")
             };
         }
 
@@ -137,6 +148,45 @@ namespace Ee4v.UI
                 new ExclusiveButtonOption<string>("disabled", "無効な選択肢")
             }, "all", available: value => value != "disabled");
             parent.Add(selector);
+            parent.Add(new ExclusiveButtonGroup<string>(new[]
+            {
+                new ExclusiveButtonOption<string>("first", "タブA"),
+                new ExclusiveButtonOption<string>("second", "タブB")
+            }, "first", tabVariant: SelectionTabVariant.Underline));
+        }
+
+        private static void BuildPickerBrowser(VisualElement parent)
+        {
+            var browser = new PickerBrowser();
+            browser.style.height = 320;
+            var overview = new ScrollView();
+            var cards = new VisualElement();
+            cards.style.flexDirection = FlexDirection.Row;
+            cards.style.flexWrap = Wrap.Wrap;
+            overview.Add(cards);
+            var candidates = new VisualElement();
+            candidates.style.width = 240;
+            var preview = new PreviewPane("プレビュー");
+            preview.Content.Add(UiTextFactory.Create("ダミーの候補です。"));
+            candidates.Add(new NavigationItem(new NavigationItemState("サンプル候補", selected: true)));
+            candidates.Add(new UiButton("所属一覧へ戻る", () => browser.ShowDetails(false)));
+            browser.SetPanels(overview, candidates, preview, cards);
+            for (var i = 0; i < 4; i++)
+            { cards.Add(new PickerBrowserCard(new NavigationItemState("所属 " + (i + 1)), () => browser.ShowDetails(true))); }
+            cards.RegisterCallback<GeometryChangedEvent>(_ => browser.RefreshCardSizes());
+            browser.ShowDetails(false);
+            parent.Add(browser);
+        }
+
+        private static void BuildPickerBrowserCard(VisualElement parent)
+        {
+            var result = UiTextFactory.Create("選択してください。", UiClassNames.SecondaryText);
+            var card = new PickerBrowserCard(new NavigationItemState("Sample", "ダミーの所属"),
+                () => result.SetText("選択しました。"));
+            card.style.width = 224;
+            card.Preview.Placeholder.Add(new Icon(FluentUiIcons.CreateState("cube.png", UiSizeTokens.Size31)));
+            parent.Add(card);
+            parent.Add(result);
         }
 
         private static void BuildScenePreview(VisualElement parent)
