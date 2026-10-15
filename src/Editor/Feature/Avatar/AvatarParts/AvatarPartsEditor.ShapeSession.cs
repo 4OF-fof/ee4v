@@ -1,7 +1,7 @@
 using System;
 using Ee4v.Core.I18n;
+using Ee4v.UI;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Ee4v.AvatarParts
 {
@@ -112,7 +112,7 @@ namespace Ee4v.AvatarParts
             Debug.LogException(exception);
             _context.Feedback = I18N.Get(
                 "workflow.appearance.sizeSaveFailed");
-            _context.FeedbackType = HelpBoxMessageType.Error;
+            _context.FeedbackType = MessageSeverity.Error;
             if (rebuildControls && _context.UiRoot.panel != null)
             {
                 _context.UiRoot.schedule.Execute(() =>

@@ -83,8 +83,8 @@ namespace Ee4v.AssetManager.UI
             if (!original && prefabs.Count == 0)
             {
                 Prefab.SetEnabled(false);
-                source.Add(UiTextFactory.CreateHelpBox(
-                    I18N.Get("notice.derivedAssetPrefabNotFound"), HelpBoxMessageType.Warning));
+                source.Add(UiTextFactory.CreateMessagePanel(
+                    I18N.Get("notice.derivedAssetPrefabNotFound"), MessageSeverity.Warning));
             }
             var preview = new PrefabScenePreview();
             preview.SetFlexibleLayout(true);

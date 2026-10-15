@@ -98,7 +98,7 @@ namespace Ee4v.AssetManager.UI
             catch (Exception exception)
             {
                 error.Clear();
-                error.Add(UiTextFactory.CreateHelpBox(exception.Message, HelpBoxMessageType.Error));
+                error.Add(UiTextFactory.CreateMessagePanel(exception.Message, MessageSeverity.Error));
                 Debug.LogException(exception);
             }
             finally

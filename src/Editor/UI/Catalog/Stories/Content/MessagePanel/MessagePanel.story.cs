@@ -18,10 +18,32 @@ namespace Ee4v.UI
                     "共通の色・文字・余白とFluentアイコンを使用し、多数の対象は一覧内でスクロールします。通知内へ操作ボタンを配置できます。",
                     new string[0], ComponentImplementationKind.UiToolkit,
                     (window, parent) => window.BuildMessagePanelStory(parent),
-                    new[] { "Editor/UI/Components/Overlays/ConfirmationOverlay/ConfirmationOverlay.cs",
-                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                    new[]
+                    {
+                        "Editor/AssetManager/UI/AssetManagerControls.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Metadata.cs",
+                        "Editor/AssetManager/UI/AssetManagerView.Variants.cs",
+                        "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs",
+                        "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",
+                        "Editor/AssetManager/UI/VariantCreationView.cs",
+                        "Editor/Core/Presentation/Settings/SettingFieldRenderer.cs",
+                        "Editor/Core/Presentation/Settings/SettingsUiRenderer.cs",
+                        "Editor/Feature/Avatar/AvatarInfo/UI/AvatarInfoView.cs",
+                        "Editor/Feature/Avatar/AvatarMaterials/AvatarMaterialsEditor.Materials.cs",
+                        "Editor/Feature/Avatar/AvatarParts/AvatarPartsEditor.Details.cs",
+                        "Editor/Feature/Avatar/AvatarParts/AvatarPartsEditor.Parts.cs",
+                        "Editor/Feature/Avatar/AvatarParts/AvatarPartsEditor.Shape.cs",
+                        "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuPreview.cs",
+                        "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuPropertyEditor.cs",
+                        "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuTemplateEditor.cs",
+                        "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/ExpressionConversionView.cs",
-                        "Editor/Feature/Avatar/AvatarInfo/UI/AvatarInfoView.cs" }));
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                        "Editor/Feature/Shared/AvatarEditing/AvatarEditingUi.cs",
+                        "Editor/Feature/Shared/AvatarEditing/AvatarPrefabEditorWindow.cs",
+                        "Editor/UI/Components/Overlays/ConfirmationOverlay/ConfirmationOverlay.cs",
+                        "Editor/UI/Foundation/Typography/UiTextFactory.cs"
+                    }));
             }
         }
 

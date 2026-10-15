@@ -38,7 +38,7 @@ namespace Ee4v.AssetManager.UI
             internal BodyPartCategory? BodyPart { get; set; }
             internal Material Material { get; set; }
             internal string Feedback { get; set; }
-            internal HelpBoxMessageType FeedbackType { get; set; }
+            internal MessageSeverity FeedbackType { get; set; }
         }
 
         internal sealed class VariantSourceOption

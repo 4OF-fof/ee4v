@@ -20,7 +20,7 @@ namespace Ee4v.AvatarEditing
             {
                 return;
             }
-            panel.Add(UiTextFactory.CreateHelpBox(
+            panel.Add(UiTextFactory.CreateMessagePanel(
                 context.Feedback,
                 context.FeedbackType,
                 "ee4v-modification-workflow__feedback"));

@@ -179,9 +179,9 @@ namespace Ee4v.AssetManager.UI
                 {
                     _avatarContext.PrefabSiblingIndices = Array.Empty<int>();
                     Debug.LogException(exception);
-                    header.Add(UiTextFactory.CreateHelpBox(
+                    header.Add(UiTextFactory.CreateMessagePanel(
                         I18N.Get("workflow.assets.readFailed"),
-                        HelpBoxMessageType.Error));
+                        MessageSeverity.Error));
                 }
                 UiButton add = null;
                 add = new UiButton(
@@ -228,9 +228,9 @@ namespace Ee4v.AssetManager.UI
 
             if (!string.IsNullOrEmpty(_avatarContext.AssetFeedback))
             {
-                header.Add(UiTextFactory.CreateHelpBox(
+                header.Add(UiTextFactory.CreateMessagePanel(
                     _avatarContext.AssetFeedback,
-                    HelpBoxMessageType.Error));
+                    MessageSeverity.Error));
             }
             return header;
         }

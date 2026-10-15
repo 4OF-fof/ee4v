@@ -150,14 +150,16 @@ namespace Ee4v.UI
                 classNames);
         }
 
-        public static HelpBox CreateHelpBox(
-            string text,
-            HelpBoxMessageType messageType,
+        public static MessagePanel CreateMessagePanel(
+            string message,
+            MessageSeverity severity,
             params string[] classNames)
         {
-            return ConfigureNativeTextElement(
-                new HelpBox(text ?? string.Empty, messageType),
-                classNames);
+            var panel = new MessagePanel(
+                new MessagePanelState(string.Empty, message, severity),
+                MessagePanelDensity.Compact);
+            AddClassNames(panel, classNames);
+            return panel;
         }
 
         public static GUIContent CreateGuiContent(string text = "")
@@ -170,16 +172,6 @@ namespace Ee4v.UI
         {
             if (editor == null) { throw new ArgumentNullException(nameof(editor)); }
             return ConfigureNativeTextElement(new InspectorElement(editor), classNames);
-        }
-
-        public static void SetText(HelpBox helpBox, string text)
-        {
-            if (helpBox == null)
-            {
-                throw new ArgumentNullException(nameof(helpBox));
-            }
-
-            helpBox.text = text ?? string.Empty;
         }
 
         private static T ConfigureNativeInput<T>(

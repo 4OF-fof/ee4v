@@ -19,7 +19,7 @@ namespace Ee4v.AvatarEditing
         private ObjectField _prefabField;
         private UiButton _save;
         private UiButton _revert;
-        private HelpBox _feedback;
+        private MessagePanel _feedback;
         private VisualElement _body;
         private BodyPartSelector _bodyPartSelector;
         protected AvatarEditingContext Context { get; private set; }
@@ -94,7 +94,7 @@ namespace Ee4v.AvatarEditing
                 toolbar.Add(_save);
             }
             rootVisualElement.Add(toolbar);
-            _feedback = UiTextFactory.CreateHelpBox(string.Empty, HelpBoxMessageType.Info);
+            _feedback = UiTextFactory.CreateMessagePanel(string.Empty, MessageSeverity.Info);
             _feedback.style.display = DisplayStyle.None;
             rootVisualElement.Add(_feedback);
             _body = new VisualElement();
@@ -208,7 +208,7 @@ namespace Ee4v.AvatarEditing
             RefreshSaveButtons();
             if (Context.Root == null)
             {
-                if (_prefab == null) ShowMessage(I18N.Get("avatarEditor.selectPrefab"), HelpBoxMessageType.Info);
+                if (_prefab == null) ShowMessage(I18N.Get("avatarEditor.selectPrefab"), MessageSeverity.Info);
                 return;
             }
             if (UsesBodyPartSelector)
@@ -240,7 +240,7 @@ namespace Ee4v.AvatarEditing
                 }
                 _bodyPartSelector.Refresh(Context.SelectedBodyPart, IsAvailable);
             }
-            if (ShowsSaveButton && !CanEditPrefab()) ShowMessage(I18N.Get("avatarEditor.readOnly"), HelpBoxMessageType.Info);
+            if (ShowsSaveButton && !CanEditPrefab()) ShowMessage(I18N.Get("avatarEditor.readOnly"), MessageSeverity.Info);
             else _feedback.style.display = DisplayStyle.None;
             RenderFeature();
             SyncPreviewSelection();
@@ -304,12 +304,11 @@ namespace Ee4v.AvatarEditing
             catch (Exception exception) { ShowError(exception.Message); }
         }
 
-        protected void ShowError(string message) => ShowMessage(message, HelpBoxMessageType.Error);
-        private void ShowMessage(string message, HelpBoxMessageType type)
+        protected void ShowError(string message) => ShowMessage(message, MessageSeverity.Error);
+        private void ShowMessage(string message, MessageSeverity type)
         {
             if (_feedback == null) return;
-            UiTextFactory.SetText(_feedback, message);
-            _feedback.messageType = type;
+            _feedback.SetState(new MessagePanelState(string.Empty, message, type));
             _feedback.style.display = DisplayStyle.Flex;
         }
 

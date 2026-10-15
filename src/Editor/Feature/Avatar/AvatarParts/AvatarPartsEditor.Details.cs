@@ -61,16 +61,16 @@ namespace Ee4v.AvatarParts
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                panel.Add(UiTextFactory.CreateHelpBox(I18N.Get("workflow.assets.readFailed"),
-                    HelpBoxMessageType.Error));
+                panel.Add(UiTextFactory.CreateMessagePanel(I18N.Get("workflow.assets.readFailed"),
+                    MessageSeverity.Error));
                 return panel;
             }
             foreach (var component in target.GetComponents<Component>())
             {
                 if (component == null)
                 {
-                    panel.Add(UiTextFactory.CreateHelpBox(I18N.Get("workflow.objects.missingScript"),
-                        HelpBoxMessageType.Warning));
+                    panel.Add(UiTextFactory.CreateMessagePanel(I18N.Get("workflow.objects.missingScript"),
+                        MessageSeverity.Warning));
                     continue;
                 }
                 panel.Add(new PartComponentInspector(component,
@@ -165,8 +165,8 @@ namespace Ee4v.AvatarParts
                 {
                     Debug.LogException(exception);
                     ReleaseInspector();
-                    _body.Add(UiTextFactory.CreateHelpBox(I18N.Get("workflow.objects.editorUnavailable"),
-                        HelpBoxMessageType.Error));
+                    _body.Add(UiTextFactory.CreateMessagePanel(I18N.Get("workflow.objects.editorUnavailable"),
+                        MessageSeverity.Error));
                 }
             }
 

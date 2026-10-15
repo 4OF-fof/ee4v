@@ -121,7 +121,7 @@ Project の保存では `ProjectSettings` フォルダがなければ作成し�
 
 ## Settings UI
 
-標準 drawer は `bool`、`int`、`float`、`double`、`string`、`Color`、enum に対応します。未対応型は警告用 `HelpBox` を表示します。
+標準 drawer は `bool`、`int`、`float`、`double`、`string`、`Color`、enum に対応します。未対応型は共通`MessagePanel`のCompact表示で警告します。値の検証エラーも同じ部品で表示し、正常値の確定時に通知を解除します。
 
 文字列設定の入力欄は最小幅120px、パス入力欄は最小幅240pxとし、内容の必要幅を基準に伸縮します。最大幅はラベルと余白を除いた枠内の利用可能幅です。入力欄の余白を含む左クリックで内部のTextFieldへフォーカスします。`PathSettingDrawer.Register`で文字列設定をフォルダー選択またはファイル選択付きの`PathField`へ変更できます。手入力はEnterまたはフォーカスを外した時に保存し、ダイアログで選択した値は即時保存します。パス入力行の残り幅が最小幅に満たない場合は入力欄を次の行へ折り返します。
 

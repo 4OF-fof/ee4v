@@ -23,9 +23,9 @@ namespace Ee4v.AvatarParts
                 "ee4v-modification-workflow__objects-content");
             if (!_context.Edits.CanEditPrefab())
             {
-                panel.Add(UiTextFactory.CreateHelpBox(
+                panel.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.assets.protected"),
-                    HelpBoxMessageType.Warning));
+                    MessageSeverity.Warning));
                 return panel;
             }
 
@@ -37,9 +37,9 @@ namespace Ee4v.AvatarParts
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                panel.Add(UiTextFactory.CreateHelpBox(
+                panel.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.assets.readFailed"),
-                    HelpBoxMessageType.Error));
+                    MessageSeverity.Error));
                 return panel;
             }
 
@@ -70,9 +70,9 @@ namespace Ee4v.AvatarParts
             }
             if (displayed.Count == 0)
             {
-                panel.Add(UiTextFactory.CreateHelpBox(
+                panel.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.objects.empty"),
-                    HelpBoxMessageType.Info));
+                    MessageSeverity.Info));
                 return panel;
             }
 

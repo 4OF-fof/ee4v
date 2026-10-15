@@ -132,7 +132,7 @@ namespace Ee4v.ExpressionMenu
             catch (Exception exception)
             {
                 controls.SetEnabled(false);
-                Add(UiTextFactory.CreateHelpBox(exception.GetBaseException().Message, HelpBoxMessageType.Error));
+                Add(UiTextFactory.CreateMessagePanel(exception.GetBaseException().Message, MessageSeverity.Error));
             }
             _changedAt = EditorApplication.timeSinceStartup;
             _preview.SetPrefab(context.Root);

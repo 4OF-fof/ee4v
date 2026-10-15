@@ -67,9 +67,9 @@ namespace Ee4v.AvatarParts
 
             if (!_context.Edits.CanEditPrefab())
             {
-                content.Add(UiTextFactory.CreateHelpBox(
+                content.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.appearance.sizeProtected"),
-                    HelpBoxMessageType.Warning));
+                    MessageSeverity.Warning));
                 return content;
             }
 
@@ -123,11 +123,11 @@ namespace Ee4v.AvatarParts
                 .ToArray();
             if (bodyShapes.Length == 0)
             {
-                content.Add(UiTextFactory.CreateHelpBox(
+                content.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get(_context.SelectedBodyPart.HasValue
                         ? "workflow.appearance.bodyShapePartEmpty"
                         : "workflow.appearance.bodyShapeEmpty"),
-                    HelpBoxMessageType.Info));
+                    MessageSeverity.Info));
             }
             else
             {

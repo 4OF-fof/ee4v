@@ -50,9 +50,9 @@ namespace Ee4v.AssetManager.UI
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                page.Add(UiTextFactory.CreateHelpBox(
+                page.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.selection.managerLoadFailed"),
-                    HelpBoxMessageType.Error));
+                    MessageSeverity.Error));
             }
             _temporaryAssetManagerPage = page;
             _editingWorkspace.AddToClassList("ee4v-modification-workflow__editing-workspace--hidden");
@@ -75,8 +75,8 @@ namespace Ee4v.AssetManager.UI
             page.AddToClassList("ee4v-modification-workflow__selection-page");
             if (!string.IsNullOrEmpty(_avatarContext.AssetFeedback))
             {
-                page.Add(UiTextFactory.CreateHelpBox(
-                    _avatarContext.AssetFeedback, HelpBoxMessageType.Error));
+                page.Add(UiTextFactory.CreateMessagePanel(
+                    _avatarContext.AssetFeedback, MessageSeverity.Error));
             }
             try
             {
@@ -94,9 +94,9 @@ namespace Ee4v.AssetManager.UI
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                page.Add(UiTextFactory.CreateHelpBox(
+                page.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.selection.managerLoadFailed"),
-                    HelpBoxMessageType.Error));
+                    MessageSeverity.Error));
             }
             return page;
         }
@@ -181,8 +181,8 @@ namespace Ee4v.AssetManager.UI
             selector.SetValueWithoutNotify(currentPrefab);
             selector.ValueChanged += prefab => ChangeFittingAvatar(prefab);
             controls.Add(new FormInput(I18N.Get("workflow.original.fittingAvatar"), selector));
-            controls.Add(UiTextFactory.CreateHelpBox(
-                I18N.Get("workflow.original.fittingDescription"), HelpBoxMessageType.Info));
+            controls.Add(UiTextFactory.CreateMessagePanel(
+                I18N.Get("workflow.original.fittingDescription"), MessageSeverity.Info));
             if (fittingAvatar != null)
             {
                 var actions = new VisualElement();
@@ -277,7 +277,7 @@ namespace Ee4v.AssetManager.UI
             {
                 SetCreationFeedback(
                     I18N.Get("notice.derivedAssetNameInvalid"),
-                    HelpBoxMessageType.Error);
+                    MessageSeverity.Error);
                 return;
             }
             if (!_creatingOriginalAsset && (string.IsNullOrEmpty(_creationItemId) ||
@@ -285,13 +285,13 @@ namespace Ee4v.AssetManager.UI
             {
                 SetCreationFeedback(
                     I18N.Get("notice.derivedAssetPrefabInvalid"),
-                    HelpBoxMessageType.Error);
+                    MessageSeverity.Error);
                 return;
             }
             if (_creatingOriginalAsset && _creationPrefab != null &&
                 !GetVariantSources().SelectMany(source => source.Prefabs).Contains(_creationPrefab))
             {
-                SetCreationFeedback(I18N.Get("notice.derivedAssetPrefabInvalid"), HelpBoxMessageType.Error);
+                SetCreationFeedback(I18N.Get("notice.derivedAssetPrefabInvalid"), MessageSeverity.Error);
                 return;
             }
             if (AssetDatabase.IsValidFolder(
@@ -299,7 +299,7 @@ namespace Ee4v.AssetManager.UI
             {
                 SetCreationFeedback(
                     I18N.Get("notice.derivedAssetAlreadyExists"),
-                    HelpBoxMessageType.Error);
+                    MessageSeverity.Error);
                 return;
             }
 
@@ -343,13 +343,13 @@ namespace Ee4v.AssetManager.UI
                 }
                 SetCreationFeedback(
                     I18N.Get("notice.derivedAssetCreateFailed"),
-                    HelpBoxMessageType.Error);
+                    MessageSeverity.Error);
             }
         }
 
         private void SetCreationFeedback(
             string message,
-            HelpBoxMessageType type)
+            MessageSeverity type)
         {
             _avatarContext.Feedback = message ?? string.Empty;
             _avatarContext.FeedbackType = type;

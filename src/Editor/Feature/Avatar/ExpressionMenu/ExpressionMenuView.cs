@@ -248,14 +248,14 @@ namespace Ee4v.ExpressionMenu
             }
             catch (Exception exception)
             {
-                Add(UiTextFactory.CreateHelpBox(exception.GetBaseException().Message, HelpBoxMessageType.Error));
+                Add(UiTextFactory.CreateMessagePanel(exception.GetBaseException().Message, MessageSeverity.Error));
             }
         }
 
         private void Build()
         {
             if (!string.IsNullOrEmpty(_error))
-                Add(UiTextFactory.CreateHelpBox(_error, HelpBoxMessageType.Error));
+                Add(UiTextFactory.CreateMessagePanel(_error, MessageSeverity.Error));
             var selectedEntry = _selected >= 0 && _selected < _page.Controls.Count ? _page.Controls[_selected] : null;
             var showsPreview = _showsActionPreview && selectedEntry != null;
             if (_showsEditSource && !showsPreview)
@@ -1602,7 +1602,7 @@ namespace Ee4v.ExpressionMenu
             var compact = simple || submenuControl && maSource != null &&
                 ExpressionMenuTemplateModel.IsOwned(maSource.gameObject) && maSource.MenuSource == SubmenuSource.Children;
             var canEdit = CanInteract(entry);
-            if (!canEdit) host.Add(UiTextFactory.CreateHelpBox(T("readOnly"), HelpBoxMessageType.Info));
+            if (!canEdit) host.Add(UiTextFactory.CreateMessagePanel(T("readOnly"), MessageSeverity.Info));
             if (!compact)
             {
                 var owner = UiTextFactory.CreateObjectField(T("source"));

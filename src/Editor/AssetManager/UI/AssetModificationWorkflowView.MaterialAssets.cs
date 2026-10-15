@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Ee4v.Core.I18n;
+using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -51,7 +52,7 @@ namespace Ee4v.AssetManager.UI
                 Debug.LogException(exception);
                 _avatarContext.Feedback = I18N.Get(
                     "workflow.appearance.materialVariantFailed");
-                _avatarContext.FeedbackType = HelpBoxMessageType.Error;
+                _avatarContext.FeedbackType = MessageSeverity.Error;
                 ShowAppearancePanel(AppearancePanel.Material);
             }
         }

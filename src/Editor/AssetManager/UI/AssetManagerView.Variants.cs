@@ -391,7 +391,7 @@ namespace Ee4v.AssetManager.UI
                     });
                 }
             }
-            catch (Exception exception) { gallery.Add(UiTextFactory.CreateHelpBox(exception.Message, HelpBoxMessageType.Error)); }
+            catch (Exception exception) { gallery.Add(UiTextFactory.CreateMessagePanel(exception.Message, MessageSeverity.Error)); }
             if (latestRevision != null) { entries.Add(automatic(latestRevision)); }
             var controls = new VisualElement { pickingMode = PickingMode.Ignore };
             controls.AddToClassList("ee4v-asset-manager__variant-gallery-controls");
@@ -902,7 +902,7 @@ namespace Ee4v.AssetManager.UI
             section.Add(scroll);
             if (!string.IsNullOrEmpty(error))
             {
-                scroll.Add(UiTextFactory.CreateHelpBox(error, HelpBoxMessageType.Error));
+                scroll.Add(UiTextFactory.CreateMessagePanel(error, MessageSeverity.Error));
             }
             else if (dependencies == null || dependencies.Count == 0)
             {

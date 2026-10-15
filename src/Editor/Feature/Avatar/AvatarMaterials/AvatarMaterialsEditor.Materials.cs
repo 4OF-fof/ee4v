@@ -129,9 +129,9 @@ namespace Ee4v.AvatarMaterials
             {
                 _materialInspector.Dispose();
                 _materialInspector = null;
-                surface.Add(UiTextFactory.CreateHelpBox(
+                surface.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.appearance.editorUnavailable"),
-                    HelpBoxMessageType.Error));
+                    MessageSeverity.Error));
                 section.Add(surface);
                 return section;
             }
@@ -613,7 +613,7 @@ namespace Ee4v.AvatarMaterials
             {
                 Debug.LogException(exception);
                 _context.Feedback = I18N.Get("workflow.appearance.materialReplacementFailed");
-                _context.FeedbackType = HelpBoxMessageType.Error;
+                _context.FeedbackType = MessageSeverity.Error;
                 _context.Host.ShowMaterials();
             }
         }

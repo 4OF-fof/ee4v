@@ -28,7 +28,7 @@ namespace Ee4v.AvatarEditing
         public HashSet<int> HiddenPrefabSiblingIndices { get; } = new HashSet<int>();
         public HashSet<string> HiddenPreviewParts { get; } = new HashSet<string>(StringComparer.Ordinal);
         public string Feedback { get; set; } = string.Empty;
-        public HelpBoxMessageType FeedbackType { get; set; } = HelpBoxMessageType.Info;
+        public MessageSeverity FeedbackType { get; set; } = MessageSeverity.Info;
         public string AssetFeedback { get; set; } = string.Empty;
 
         public AvatarEditingContext(AvatarEditingServices edits, AvatarEditingHost host)

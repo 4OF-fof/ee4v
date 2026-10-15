@@ -188,7 +188,7 @@ namespace Ee4v.AvatarParts
             if (!valid)
             {
                 _context.Feedback = I18N.Get("workflow.attachment.invalidTarget");
-                _context.FeedbackType = HelpBoxMessageType.Warning;
+                _context.FeedbackType = MessageSeverity.Warning;
                 _context.Host.Refresh();
             }
             return valid;

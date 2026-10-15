@@ -171,7 +171,7 @@ namespace Ee4v.ExpressionMenu
                 if (propertyInfo == null)
                 {
                     if (Target().Path != null && (renderer == null || !string.IsNullOrEmpty(Target().Property)))
-                        row.Add(UiTextFactory.CreateHelpBox(T("missingMaterialProperty"), HelpBoxMessageType.Error));
+                        row.Add(UiTextFactory.CreateMessagePanel(T("missingMaterialProperty"), MessageSeverity.Error));
                     continue;
                 }
                 var transition = AddTransition(row, T(radial ? "rangeStart" : "offValue"), T(radial ? "rangeEnd" : "onValue"));
@@ -287,7 +287,7 @@ namespace Ee4v.ExpressionMenu
                     }, true);
                 });
                 if (Target().Path != null && transform == null)
-                    row.Add(UiTextFactory.CreateHelpBox(T("missingTransform"), HelpBoxMessageType.Error));
+                    row.Add(UiTextFactory.CreateMessagePanel(T("missingTransform"), MessageSeverity.Error));
                 void Property(string key, bool enabled, Action<bool> setEnabled, Func<bool, Vector3> get, Action<bool, Vector3> set, Vector3 baseline)
                 {
                     var toggle = UiTextFactory.CreateToggle(T(key));
@@ -392,7 +392,7 @@ namespace Ee4v.ExpressionMenu
                 if (selected < 0)
                 {
                     if (Target().Path != null)
-                        row.Add(UiTextFactory.CreateHelpBox(T(components.Length == 0 ? "noEnabledComponent" : "missingComponent"), HelpBoxMessageType.Error));
+                        row.Add(UiTextFactory.CreateMessagePanel(T(components.Length == 0 ? "noEnabledComponent" : "missingComponent"), MessageSeverity.Error));
                     continue;
                 }
                 var transition = AddTransition(row, T("offValue"), T("onValue"));
