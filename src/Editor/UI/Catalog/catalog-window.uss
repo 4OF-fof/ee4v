@@ -122,6 +122,10 @@
     min-height: 0;
 }
 
+.ee4v-ui-input-group-story.ee4v-ui-info-card {
+    background-color: var(--ee4v-color-panel);
+}
+
 .ee4v-ui-catalog-preview-container {
     width: 240px;
     min-width: 240px;

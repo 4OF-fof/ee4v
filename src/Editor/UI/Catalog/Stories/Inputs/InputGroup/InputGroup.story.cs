@@ -63,6 +63,7 @@ namespace Ee4v.UI
                 });
 
             var preview = CreatePreviewSection(parent);
+            preview.AddToClassList("ee4v-ui-input-group-story");
             var groupHost = new VisualElement();
             preview.Body.Add(groupHost);
 
