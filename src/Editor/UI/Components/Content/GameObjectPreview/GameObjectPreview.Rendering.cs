@@ -35,12 +35,13 @@ namespace Ee4v.UI
             }
 
             ApplyPendingUpdates();
-            if (PreviewObjectClicked != null &&
+            if ((PreviewObjectClicked != null || PreviewObjectDoubleClicked != null) &&
                 current.type == EventType.MouseDown &&
                 current.button == 0 && !current.alt &&
                 rect.Contains(current.mousePosition))
             {
                 _pendingPickPosition = current.mousePosition;
+                _pendingPickClickCount = current.clickCount;
                 current.Use();
                 RequestPreviewRepaint();
                 return;

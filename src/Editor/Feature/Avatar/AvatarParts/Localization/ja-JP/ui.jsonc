@@ -68,6 +68,7 @@
     },
     "objects": {
       "backToParts": "一覧へ戻る",
+      "children": "子要素",
       "componentEnabled": "コンポーネントの有効・無効を切り替え",
       "missingScript": "Missing Scriptがあります。対応するスクリプトを復元してください。",
       "editorUnavailable": "コンポーネントの編集画面を表示できませんでした。Consoleを確認してください。",

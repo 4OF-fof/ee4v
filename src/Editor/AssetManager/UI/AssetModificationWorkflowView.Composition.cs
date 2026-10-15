@@ -24,12 +24,12 @@ namespace Ee4v.AssetManager.UI
             }
             if (_currentCategory == WorkflowCategory.Appearance && _appearancePanel == AppearancePanel.Material)
             {
-                _avatarContext.Preview.SetListSelection(null, _avatarContext.SelectedMaterial);
+                _avatarContext.Preview.SetListSelection(null, _avatarContext.HighlightedMaterial);
             }
             else if (_currentCategory == WorkflowCategory.Appearance &&
                      _appearancePanel == AppearancePanel.Parts)
             {
-                _avatarContext.Preview.SetListSelection(_avatarContext.SelectedPartKey, null);
+                _avatarContext.Preview.SetListSelection(_avatarContext.HighlightedPartKey, null);
             }
             else
             {
@@ -392,12 +392,22 @@ namespace Ee4v.AssetManager.UI
 
         private void OnPreviewObjectClicked(string partKey, Material material)
         {
+            SelectPreviewObject(partKey, material, false);
+        }
+
+        private void OnPreviewObjectDoubleClicked(string partKey, Material material)
+        {
+            SelectPreviewObject(partKey, material, true);
+        }
+
+        private void SelectPreviewObject(string partKey, Material material, bool openDetails)
+        {
             if (_currentCategory == WorkflowCategory.Overview || _avatarContext.ControlsHost == null) { return; }
             if (_currentCategory == WorkflowCategory.Appearance && _appearancePanel == AppearancePanel.Material)
             {
-                _materials.SelectPreviewMaterial(material, GetPreviewPrefabSiblingIndex(partKey));
+                _materials.SelectPreviewMaterial(material, GetPreviewPrefabSiblingIndex(partKey), openDetails);
             }
-            else { _parts.SelectPreviewPart(partKey); }
+            else { _parts.SelectPreviewPart(partKey, openDetails); }
         }
 
         private void OnPreviewSelectionCleared()
@@ -405,9 +415,7 @@ namespace Ee4v.AssetManager.UI
             if (_avatarContext.ControlsHost == null) { return; }
             if (_currentCategory == WorkflowCategory.Appearance && _appearancePanel == AppearancePanel.Material)
             {
-                _avatarContext.SelectedMaterial = null;
-                InvalidateAppearanceControls(AppearancePanel.Material);
-                ShowAppearancePanel(AppearancePanel.Material);
+                _materials.ClearPreviewSelection();
             }
             else { _parts.ClearPreviewSelection(); }
         }

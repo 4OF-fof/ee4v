@@ -17,6 +17,7 @@ namespace Ee4v.UI
                 return;
             }
             var position = _pendingPickPosition.Value;
+            var clickCount = _pendingPickClickCount;
             _pendingPickPosition = null;
             if (TryPickPreviewObject(rect, position,
                     out var renderer, out var material))
@@ -29,7 +30,7 @@ namespace Ee4v.UI
                     {
                         return;
                     }
-                    ApplyPickedSelection(renderer, material);
+                    ApplyPickedSelection(renderer, material, clickCount);
                 };
             }
             else
@@ -40,7 +41,8 @@ namespace Ee4v.UI
 
         private void ApplyPickedSelection(
             Renderer renderer,
-            Material material)
+            Material material,
+            int clickCount)
         {
             _requestedPartKey = null;
             _requestedMaterial = null;
@@ -55,6 +57,7 @@ namespace Ee4v.UI
             RequestPreviewRepaint();
             var partKey = GetPreviewPartKey(renderer.transform);
             PreviewObjectClicked?.Invoke(partKey, material);
+            if (clickCount == 2) { PreviewObjectDoubleClicked?.Invoke(partKey, material); }
         }
 
         private bool TryPickPreviewObject(

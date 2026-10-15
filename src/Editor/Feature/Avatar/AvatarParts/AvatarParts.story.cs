@@ -45,6 +45,13 @@ namespace Ee4v.AvatarParts
                 part.name = name;
                 part.hideFlags = HideFlags.HideAndDontSave;
                 part.transform.SetParent(avatar.transform, false);
+                if (name == "Head")
+                {
+                    var child = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    child.name = "Head Accessory";
+                    child.hideFlags = HideFlags.HideAndDontSave;
+                    child.transform.SetParent(part.transform, false);
+                }
             }
             var header = new VisualElement();
             var controls = new ScrollView();

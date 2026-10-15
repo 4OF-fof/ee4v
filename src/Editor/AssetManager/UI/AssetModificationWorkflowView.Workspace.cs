@@ -568,6 +568,7 @@ namespace Ee4v.AssetManager.UI
             _previewPane.Content.AddToClassList("ee4v-modification-workflow__preview-viewport");
             _avatarContext.Preview = new GameObjectPreview();
             _avatarContext.Preview.PreviewObjectClicked += OnPreviewObjectClicked;
+            _avatarContext.Preview.PreviewObjectDoubleClicked += OnPreviewObjectDoubleClicked;
             _avatarContext.Preview.PreviewSelectionCleared +=
                 OnPreviewSelectionCleared;
             _avatarContext.Preview.SetFlexibleLayout(true);

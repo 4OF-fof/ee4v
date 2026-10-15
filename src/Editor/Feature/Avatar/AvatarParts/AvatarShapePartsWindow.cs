@@ -35,7 +35,8 @@ namespace Ee4v.AvatarParts
             _editor?.CancelBodySizeChange();
             if (_editor != null) _editor.BodyScaleDirty = false;
         }
-        protected override void SelectPreview(string key, Material material) => _editor.SelectPreviewPart(key);
+        protected override void SelectPreview(string key, Material material, bool openDetails) =>
+            _editor.SelectPreviewPart(key, openDetails);
         protected override void ClearPreviewSelection() => _editor.ClearPreviewSelection();
     }
 }

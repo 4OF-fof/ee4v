@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Ee4v.AvatarEditing;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -16,7 +18,7 @@ namespace Ee4v.AvatarParts
             if (key != null && !_context.Edits.FlushChanges()) { return; }
             if (key == null && _context.SelectedPartKey == null)
             {
-                _context.Host.SyncPreviewSelection();
+                SelectPartRow(null, false);
                 return;
             }
             var controls = _context.ControlsHost;
@@ -41,7 +43,9 @@ namespace Ee4v.AvatarParts
             });
         }
 
-        private VisualElement BuildPartDetails(PrefabObjectEntry entry)
+        private VisualElement BuildPartDetails(
+            PrefabObjectEntry entry,
+            IReadOnlyList<PrefabObjectEntry> displayed)
         {
             var panel = new VisualElement();
             panel.AddToClassList("ee4v-part-details");
@@ -64,24 +68,28 @@ namespace Ee4v.AvatarParts
                     MessageSeverity.Error));
                 return panel;
             }
-            var headerState = _objectRows[entry];
-            panel.schedule.Execute(() =>
+            TrackPartDetailsRow(panel, entry, target);
+            var children = displayed.Where(child =>
+                child.PrefabSiblingIndex == entry.PrefabSiblingIndex &&
+                child.SiblingPath.Length == entry.SiblingPath.Length + 1 &&
+                IsAncestorPath(entry.SiblingPath, child.SiblingPath)).ToArray();
+            if (children.Length > 0)
             {
-                if (target == null) { return; }
-                var visible = !target.CompareTag("EditorOnly");
-                var activeSelf = target.activeSelf;
-                var parentActive = target.transform.parent == null ||
-                    target.transform.parent.gameObject.activeInHierarchy;
-                var activeInHierarchy = target.activeInHierarchy;
-                if (entry.IsVisible == visible && entry.IsActiveSelf == activeSelf &&
-                    entry.ParentActiveInHierarchy == parentActive &&
-                    entry.IsVisibleInHierarchy == activeInHierarchy) { return; }
-                entry.IsVisible = visible;
-                entry.IsActiveSelf = activeSelf;
-                entry.ParentActiveInHierarchy = parentActive;
-                entry.IsVisibleInHierarchy = activeInHierarchy;
-                UpdateObjectRow(entry, headerState);
-            }).Every(200);
+                var section = new VisualElement();
+                section.AddToClassList("ee4v-part-details__children");
+                section.Add(UiTextFactory.Create(I18N.Get("workflow.objects.children"),
+                    UiClassNames.SectionTitle, "ee4v-part-details__children-title"));
+                var list = new VisualElement();
+                list.AddToClassList("ee4v-modification-workflow__objects-list");
+                foreach (var child in children)
+                {
+                    list.Add(BuildObjectRow(child));
+                    TrackPartDetailsRow(panel, child, ResolvePartObject(_context.Root, child));
+                }
+                AvatarEditingUi.MarkLastListItem(list);
+                section.Add(list);
+                panel.Add(section);
+            }
             foreach (var component in target.GetComponents<Component>())
             {
                 if (component == null)
@@ -97,6 +105,31 @@ namespace Ee4v.AvatarParts
                     enabledOnly => PartComponentChanged(component, enabledOnly)));
             }
             return panel;
+        }
+
+        private void TrackPartDetailsRow(
+            VisualElement panel,
+            PrefabObjectEntry entry,
+            GameObject target)
+        {
+            var state = _objectRows[entry];
+            panel.schedule.Execute(() =>
+            {
+                if (target == null) { return; }
+                var visible = !target.CompareTag("EditorOnly");
+                var activeSelf = target.activeSelf;
+                var parentActive = target.transform.parent == null ||
+                    target.transform.parent.gameObject.activeInHierarchy;
+                var activeInHierarchy = target.activeInHierarchy;
+                if (entry.IsVisible == visible && entry.IsActiveSelf == activeSelf &&
+                    entry.ParentActiveInHierarchy == parentActive &&
+                    entry.IsVisibleInHierarchy == activeInHierarchy) { return; }
+                entry.IsVisible = visible;
+                entry.IsActiveSelf = activeSelf;
+                entry.ParentActiveInHierarchy = parentActive;
+                entry.IsVisibleInHierarchy = activeInHierarchy;
+                UpdateObjectRow(entry, state);
+            }).Every(200);
         }
 
         private void PartComponentChanged(Component component, bool enabledOnly)

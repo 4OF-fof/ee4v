@@ -107,6 +107,7 @@ namespace Ee4v.UI
         private bool _waistBackView;
         private int? _scopeSiblingIndex;
         private Vector2? _pendingPickPosition;
+        private int _pendingPickClickCount;
         private Renderer _pickedRenderer;
         private Material _pickedMaterial;
         private string _requestedPartKey;
@@ -116,6 +117,7 @@ namespace Ee4v.UI
         private Material _outlinedMaterial;
 
         public event Action<string, Material> PreviewObjectClicked;
+        public event Action<string, Material> PreviewObjectDoubleClicked;
         public event Action PreviewSelectionCleared;
 
         public GameObjectPreview()

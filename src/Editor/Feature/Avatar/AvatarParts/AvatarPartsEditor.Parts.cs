@@ -54,10 +54,15 @@ namespace Ee4v.AvatarParts
                     entry.SiblingPath) == _context.SelectedPartKey);
             if (selected != null)
             {
-                panel.Add(BuildPartDetails(selected));
+                panel.Add(BuildPartDetails(selected, displayed));
                 return panel;
             }
-            _context.SelectedPartKey = null;
+            if (_context.SelectedPartKey != null) { _context.SelectedPartKey = null; }
+            if (!displayed.Any(entry => GameObjectPreview.GetPartKey(
+                    entry.PrefabSiblingIndex, entry.SiblingPath) == _context.HighlightedPartKey))
+            {
+                _context.HighlightedPartKey = null;
+            }
             if (_context.SelectedPrefabSiblingIndex is int attachmentIndex && attachmentIndex >= 0 &&
                 _context.Root != null && attachmentIndex < _context.Root.transform.childCount)
             {
@@ -329,15 +334,19 @@ namespace Ee4v.AvatarParts
                 "ee4v-modification-workflow__object-row");
             var key = GameObjectPreview.GetPartKey(
                 entry.PrefabSiblingIndex, entry.SiblingPath);
+            row.userData = key;
             row.EnableInClassList(
                 "ee4v-modification-workflow__object-row--selected",
-                !isDetailsHeader && key == _context.SelectedPartKey);
+                !isDetailsHeader && key == _context.HighlightedPartKey);
             var text = new VisualElement();
             text.AddToClassList(
                 "ee4v-modification-workflow__object-text");
             if (!isDetailsHeader)
             {
-                text.RegisterCallback<ClickEvent>(_ => SelectPartRow(key));
+                text.RegisterCallback<ClickEvent>(evt =>
+                {
+                    if (evt.button == 0) { SelectPartRow(key, evt.clickCount == 2); }
+                });
             }
             var name = UiTextFactory.Create(
                 entry.Name,
@@ -415,9 +424,15 @@ namespace Ee4v.AvatarParts
             return row;
         }
 
-        private void SelectPartRow(string key)
+        private void SelectPartRow(string key, bool openDetails)
         {
-            NavigateToPart(key);
+            if (openDetails) { NavigateToPart(key); return; }
+            _context.HighlightedPartKey = key;
+            _context.ControlsHost?.Query<VisualElement>(
+                className: "ee4v-modification-workflow__object-row").ForEach(row =>
+                row.EnableInClassList("ee4v-modification-workflow__object-row--selected",
+                    !row.ClassListContains("ee4v-part-details__header") && Equals(row.userData, key)));
+            _context.Host.SyncPreviewSelection();
         }
 
         private void ShowActiveSelfContextMenu(

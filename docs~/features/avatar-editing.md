@@ -8,6 +8,8 @@ ExpressionMenuも共有AvatarEditingを使用します。統合版と単独Windo
 
 `AvatarEditingContext`は対象・共通選択・Previewとフィードバックの状態を保持し、`AvatarEditingServices`と`AvatarEditingHost`をコンストラクターで受け取ります。機能が保持する体型・パーツ・Materialのキャッシュは含めません。Windowの再構築時にはControlsHostとPreviewを差し替えます。
 
+`SelectedPartKey`と`SelectedMaterial`は詳細の編集対象、`HighlightedPartKey`と`HighlightedMaterial`は一覧の選択表示とPreviewのハイライト対象を保持します。詳細対象を設定・解除すると対応するハイライトも同じ値へ揃えます。シングルクリックはハイライトだけを変更し、詳細対象を切り替えません。統合版と単独WindowのPreview同期はハイライト対象を使用します。Previewのシングルクリックは選択、ダブルクリックは`openDetails: true`で詳細表示へ渡します。
+
 `Context.Edits`は編集可否、保留変更の確定、Asset path、Sceneの変更通知、保存可能状態の通知、失敗表示とMaterial作成を提供します。必須サービスは構築時にnullを拒否し、後から差し替えません。Material Inspectorの変更通知だけは機能の構築後に設定できます。
 
 `Context.Host`は画面更新、再構築、キャッシュ破棄、再描画とPreview選択の同期を必須として受け取ります。PartsとMaterialsの表示先は既定で画面更新と同じです。Prefabグループの装飾・更新、カテゴリの無効化、パーツ名の除外などは任意の連携です。単独Windowでは既定の動作を使用し、統合ホストは必要な連携だけを設定します。名前分類は既定で`AvatarShapeNaming.Create`を使用します。

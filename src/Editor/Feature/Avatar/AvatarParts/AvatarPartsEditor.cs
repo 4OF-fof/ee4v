@@ -14,7 +14,7 @@ namespace Ee4v.AvatarParts
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public void SelectPreviewPart(string partKey)
+        public void SelectPreviewPart(string partKey, bool openDetails = false)
         {
             var entries = ReadPrefabObjects();
             var entry = entries.FirstOrDefault(candidate =>
@@ -36,6 +36,13 @@ namespace Ee4v.AvatarParts
             {
                 return;
             }
+            var selectedKey = GameObjectPreview.GetPartKey(
+                entry.PrefabSiblingIndex, entry.SiblingPath);
+            if (!openDetails)
+            {
+                SelectPartRow(selectedKey, false);
+                return;
+            }
 
             if (_shapePartsSection == ShapePartsSection.Shape)
             {
@@ -48,21 +55,12 @@ namespace Ee4v.AvatarParts
             {
                 _context.SelectedBodyPart = null;
             }
-            var selectedKey = GameObjectPreview.GetPartKey(
-                entry.PrefabSiblingIndex, entry.SiblingPath);
-            var separatorIndex = selectedKey.IndexOf('/');
-            while (separatorIndex >= 0)
-            {
-                _expandedObjectGroups.Add(
-                    selectedKey.Substring(0, separatorIndex));
-                separatorIndex = selectedKey.IndexOf('/', separatorIndex + 1);
-            }
             NavigateToPart(selectedKey);
         }
 
         public void ClearPreviewSelection()
         {
-            NavigateToPart(null);
+            SelectPartRow(null, false);
         }
 
         public VisualElement BuildControls()

@@ -22,8 +22,20 @@ namespace Ee4v.AvatarEditing
         public int? SelectedPrefabSiblingIndex { get; set; }
         public string SelectedPrefabName { get; set; } = string.Empty;
         public IReadOnlyList<int> PrefabSiblingIndices { get; set; } = Array.Empty<int>();
-        public string SelectedPartKey { get; set; }
-        public Material SelectedMaterial { get; set; }
+        private string _selectedPartKey;
+        private Material _selectedMaterial;
+        public string SelectedPartKey
+        {
+            get => _selectedPartKey;
+            set { _selectedPartKey = value; HighlightedPartKey = value; }
+        }
+        public Material SelectedMaterial
+        {
+            get => _selectedMaterial;
+            set { _selectedMaterial = value; HighlightedMaterial = value; }
+        }
+        public string HighlightedPartKey { get; set; }
+        public Material HighlightedMaterial { get; set; }
         public bool BasePrefabHidden { get; set; }
         public HashSet<int> HiddenPrefabSiblingIndices { get; } = new HashSet<int>();
         public HashSet<string> HiddenPreviewParts { get; } = new HashSet<string>(StringComparer.Ordinal);

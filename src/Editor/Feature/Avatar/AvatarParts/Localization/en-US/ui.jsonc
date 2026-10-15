@@ -68,6 +68,7 @@
     },
     "objects": {
       "backToParts": "Back to Parts",
+      "children": "Child elements",
       "componentEnabled": "Enable or disable this component",
       "missingScript": "A script is missing. Restore the corresponding script.",
       "editorUnavailable": "The component inspector could not be displayed. Check the Console.",

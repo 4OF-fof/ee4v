@@ -38,7 +38,7 @@ namespace Ee4v.AvatarEditing
         protected virtual bool PrepareFeatureSave() => true;
         protected virtual void CancelFeatureChanges() { }
         protected virtual void CreateMaterialVariant(Material material) { }
-        protected virtual void SelectPreview(string partKey, Material material) { }
+        protected virtual void SelectPreview(string partKey, Material material, bool openDetails) { }
         protected virtual void ClearPreviewSelection() { }
 
         protected void OnEnable()
@@ -141,7 +141,8 @@ namespace Ee4v.AvatarEditing
             };
             if (preview != null)
             {
-                preview.PreviewObjectClicked += SelectPreview;
+                preview.PreviewObjectClicked += (key, material) => SelectPreview(key, material, false);
+                preview.PreviewObjectDoubleClicked += (key, material) => SelectPreview(key, material, true);
                 preview.PreviewSelectionCleared += ClearPreviewSelection;
             }
             CreateFeature();
@@ -258,7 +259,7 @@ namespace Ee4v.AvatarEditing
         }
 
         protected void SyncPreviewSelection() => Context?.Preview?.SetListSelection(
-            Context.SelectedPartKey, Context.SelectedMaterial);
+            Context.HighlightedPartKey, Context.HighlightedMaterial);
 
         private void RefreshSaveButtons()
         {

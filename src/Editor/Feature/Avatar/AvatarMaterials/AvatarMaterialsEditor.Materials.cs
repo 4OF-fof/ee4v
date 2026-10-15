@@ -21,8 +21,15 @@ namespace Ee4v.AvatarMaterials
                     material.name,
                     FormatMaterialUsageSummary(entry),
                     CreateMaterialIcon(material),
-                    material == _context.SelectedMaterial),
-                () => NavigateToMaterial(material, entry.Usages[0].PrefabSiblingIndex));
+                    material == _context.HighlightedMaterial),
+                () => SelectMaterial(material));
+            choice.RegisterCallback<ClickEvent>(evt =>
+            {
+                if (evt.button == 0 && evt.clickCount == 2)
+                {
+                    NavigateToMaterial(material, entry.Usages[0].PrefabSiblingIndex);
+                }
+            });
             choice.AddToClassList(
                 "ee4v-modification-workflow__material-item");
             choice.userData = new KeyValuePair<Material, int>(
