@@ -33,13 +33,15 @@ namespace Ee4v.AssetManager.Application
         public IReadOnlyList<AssetVariant> GetVariants()
         {
             var variants = GetStoredVariants();
+            var variantsById = variants.ToDictionary(variant => variant.Id, StringComparer.Ordinal);
             foreach (var variant in variants)
             {
-                var owner = GetStandaloneOwner(variant);
+                var owner = GetOwnedWorkOwner(variant, variantsById);
                 if (owner == null) continue;
                 variant.Name = owner.Name;
                 variant.Description = owner.Description;
-                variant.Tags = owner.Tags.Select(tag => tag.Path).ToArray();
+                variant.Tags = string.IsNullOrEmpty(variant.SourcePrefabGuid)
+                    ? owner.Tags.Select(tag => tag.Path).ToArray() : Array.Empty<string>();
                 variant.IsArchived = owner.IsArchived;
                 if (owner.UpdatedAt > variant.UpdatedAt) variant.UpdatedAt = owner.UpdatedAt;
             }
@@ -64,14 +66,23 @@ namespace Ee4v.AssetManager.Application
             return variants;
         }
 
-        private AssetItem GetStandaloneOwner(AssetVariant variant)
+        private AssetItem GetOwnedWorkOwner(AssetVariant variant,
+            IReadOnlyDictionary<string, AssetVariant> variantsById = null)
         {
-            if (!string.IsNullOrEmpty(variant.SourcePrefabGuid) || string.IsNullOrEmpty(variant.ParentItemId))
+            if (string.IsNullOrEmpty(variant.ParentItemId))
                 return null;
             try
             {
                 var owner = _manager.GetItem(variant.ParentItemId);
-                return owner?.IsOriginal == true ? owner : null;
+                if (owner?.IsOriginal != true) return null;
+                AssetVariant source = null;
+                if (!string.IsNullOrEmpty(variant.SourcePrefabGuid))
+                {
+                    if (variantsById != null) variantsById.TryGetValue(variant.SourcePrefabGuid, out source);
+                    else source = _index.GetVariants().FirstOrDefault(candidate => candidate.Id == variant.SourcePrefabGuid);
+                    source = source ?? _workspace.GetMetadata(variant.SourcePrefabGuid);
+                }
+                return source?.ParentItemId != owner.Id ? owner : null;
             }
             catch (AssetManagerException exception) when (exception.Code == AssetManagerErrorCode.NotFound)
             {
@@ -311,17 +322,20 @@ namespace Ee4v.AssetManager.Application
             var variant = GetStoredVariants().FirstOrDefault(candidate => candidate.Id == variantId)
                 ?? _workspace.GetMetadata(variantId);
             if (variant == null) throw new InvalidOperationException("The Variant was not found.");
-            var owner = GetStandaloneOwner(variant);
+            var owner = GetOwnedWorkOwner(variant);
             var updatedTags = !string.IsNullOrEmpty(variant.SourcePrefabGuid) ? Array.Empty<string>() :
                 request.Tags != null ? AssetManagerRequestValidator.NormalizeTags(request.Tags) :
                 owner == null ? variant.Tags : owner.Tags.Select(tag => tag.Path).ToArray();
+            var ownerTags = owner == null ? Array.Empty<string>() :
+                string.IsNullOrEmpty(variant.SourcePrefabGuid) ? updatedTags :
+                owner.Tags.Select(tag => tag.Path).ToArray();
             _busy = true;
             try
             {
                 if (variant.Name == name && (variant.Description ?? string.Empty) == description &&
                     variant.Tags.SequenceEqual(updatedTags) && (owner == null ||
                     (owner.Name == name && owner.Description == description &&
-                     owner.Tags.Select(tag => tag.Path).SequenceEqual(updatedTags))))
+                     owner.Tags.Select(tag => tag.Path).SequenceEqual(ownerTags))))
                 {
                     return;
                 }
@@ -333,7 +347,7 @@ namespace Ee4v.AssetManager.Application
                     if (owner != null)
                     {
                         ownerUpdated = true;
-                        UpdateStandaloneOwner(owner, name, description, updatedTags);
+                        UpdateOwnedWorkOwner(owner, name, description, ownerTags);
                     }
                     if (!string.IsNullOrEmpty(variant.HeadRevisionId))
                     {
@@ -344,16 +358,17 @@ namespace Ee4v.AssetManager.Application
                             Tags = updatedTags, CreatedAt = variant.CreatedAt,
                             RootAssetPath = _workspace.GetRootAssetPath(variantId, name),
                             HeadRevisionId = variant.HeadRevisionId, UpdatedAt = DateTime.UtcNow,
-                            IsArchived = variant.IsArchived
+                            IsArchived = variant.IsArchived, FileSizeBytes = variant.FileSizeBytes
                         };
                         await Task.Run(() => _repository.UpdateMetadata(updated));
+                        UpdateCachedMetadata(updated);
                     }
                 }
                 catch (Exception exception)
                 {
                     try
                     {
-                        if (ownerUpdated) UpdateStandaloneOwner(_manager.GetItem(owner.Id), owner.Name,
+                        if (ownerUpdated) UpdateOwnedWorkOwner(_manager.GetItem(owner.Id), owner.Name,
                             owner.Description, owner.Tags.Select(tag => tag.Path).ToArray());
                         undoLocalUpdate?.Invoke();
                     }
@@ -364,13 +379,12 @@ namespace Ee4v.AssetManager.Application
                     }
                     throw;
                 }
-                if (!string.IsNullOrEmpty(variant.HeadRevisionId)) ReplaceIndex();
                 NotifyChanged();
             }
             finally { _busy = false; }
         }
 
-        private void UpdateStandaloneOwner(AssetItem owner, string name, string description,
+        private void UpdateOwnedWorkOwner(AssetItem owner, string name, string description,
             IReadOnlyList<string> tags)
         {
             if (owner.Name != name || owner.Description != description)
@@ -392,7 +406,7 @@ namespace Ee4v.AssetManager.Application
             {
                 var variant = GetVariants().FirstOrDefault(candidate => candidate.Id == variantId)
                     ?? _workspace.GetMetadata(variantId);
-                var owner = variant == null ? null : GetStandaloneOwner(variant);
+                var owner = variant == null ? null : GetOwnedWorkOwner(variant);
                 var undo = _workspace.SetArchived(variantId, archived);
                 if (variant == null && undo == null) throw new InvalidOperationException("The Variant was not found.");
                 try
@@ -401,15 +415,17 @@ namespace Ee4v.AssetManager.Application
                         _manager.SetItemArchived(new[] { owner.Id }, archived);
                     if (variant != null && !string.IsNullOrEmpty(variant.HeadRevisionId))
                     {
-                        await Task.Run(() => _repository.UpdateMetadata(new AssetVariant
+                        var updated = new AssetVariant
                         {
                             Id = variant.Id, ParentItemId = variant.ParentItemId,
                             SourcePrefabGuid = variant.SourcePrefabGuid,
                             Name = variant.Name, Description = variant.Description,
                             Tags = variant.Tags, CreatedAt = variant.CreatedAt,
-                            RootAssetPath = variant.RootAssetPath, IsArchived = archived, UpdatedAt = DateTime.UtcNow
-                        }));
-                        ReplaceIndex();
+                            RootAssetPath = variant.RootAssetPath, IsArchived = archived, UpdatedAt = DateTime.UtcNow,
+                            HeadRevisionId = variant.HeadRevisionId, FileSizeBytes = variant.FileSizeBytes
+                        };
+                        await Task.Run(() => _repository.UpdateMetadata(updated));
+                        UpdateCachedMetadata(updated);
                     }
                 }
                 catch
@@ -441,7 +457,9 @@ namespace Ee4v.AssetManager.Application
                     throw;
                 }
                 _workspace.SetBaseRevision(variantId, null);
-                ReplaceIndex();
+                _index.DeleteVariantIndex(variantId);
+                _snapshots = _snapshots.Where(pair => pair.Key.VariantId != variantId)
+                    .ToDictionary(pair => pair.Key, pair => pair.Value);
                 NotifyChanged();
             }
             finally { _busy = false; }
@@ -463,12 +481,13 @@ namespace Ee4v.AssetManager.Application
                     ?? _workspace.GetMetadata(request.RootAssetPath);
                 if (current != null)
                 {
-                    var owner = GetStandaloneOwner(current);
+                    var owner = GetOwnedWorkOwner(current);
                     if (owner != null)
                     {
                         current.Name = owner.Name;
                         current.Description = owner.Description;
-                        current.Tags = owner.Tags.Select(tag => tag.Path).ToArray();
+                        current.Tags = string.IsNullOrEmpty(current.SourcePrefabGuid)
+                            ? owner.Tags.Select(tag => tag.Path).ToArray() : Array.Empty<string>();
                         current.IsArchived = owner.IsArchived;
                     }
                     _workspace.UpdateMetadata(current.Id, current.Name, current.Description,
@@ -482,8 +501,19 @@ namespace Ee4v.AssetManager.Application
                 capture.Snapshot.Variant.IsArchived = current?.IsArchived ?? capture.Snapshot.Variant.IsArchived;
                 var saved = await Task.Run(() =>
                     _repository.Save(capture.Snapshot, capture.StagingPath));
+                // A no-op save may return the previous manifest, before subsequent metadata edits.
+                saved.Variant.Tags = capture.Snapshot.Variant.Tags;
+                saved.Variant.CreatedAt = capture.Snapshot.Variant.CreatedAt;
+                saved.Variant.IsArchived = capture.Snapshot.Variant.IsArchived;
+                if (current != null && current.UpdatedAt > saved.Variant.UpdatedAt)
+                    saved.Variant.UpdatedAt = current.UpdatedAt;
                 _workspace.SetBaseRevision(saved.Variant.Id, saved.Revision.Id);
-                ReplaceIndex();
+                _index.UpsertVariantRevision(saved);
+                var snapshots = _snapshots.ToDictionary(pair => pair.Key, pair => pair.Value);
+                foreach (var previous in snapshots.Values.Where(snapshot => snapshot.Variant.Id == saved.Variant.Id))
+                    previous.Variant.HeadRevisionId = saved.Revision.Id;
+                snapshots[(saved.Variant.Id, saved.Revision.Id)] = saved;
+                _snapshots = snapshots;
                 NotifyChanged();
                 return saved.Revision;
             }
@@ -670,6 +700,13 @@ namespace Ee4v.AssetManager.Application
                     dependency.SourceId);
             }
             return file;
+        }
+
+        private void UpdateCachedMetadata(AssetVariant variant)
+        {
+            _index.UpdateVariantMetadata(variant);
+            if (_snapshots.TryGetValue((variant.Id, variant.HeadRevisionId), out var head))
+                head.Variant = variant;
         }
 
         private void ReplaceIndex()

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -23,22 +22,33 @@ namespace Ee4v.UI
                     BuildHeader, "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs"),
                 Story("selection-tab", "Inputs", "SelectionTab",
                     "選択状態と長い名前を持つタブです。クリックで選択状態を確認します。",
-                    BuildPrefabTab, "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs"),
-                Story("body-part-selector", "Inputs", "BodyPartSelector",
-                    "部位の選択と利用できない部位の無効表示を管理します。",
-                    BuildBodyPartSelector, "Editor/AssetManager/UI/AssetModificationWorkflowView.EditingSession.cs"),
-                Story("prefab-scene-preview", "Displays", "PrefabScenePreview",
+                    BuildSelectionTab, "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs"),
+                Story("exclusive-button-group", "Inputs", "ExclusiveButtonGroup",
+                    "選択肢のボタンから一つを選ぶ汎用入力です。無効な選択肢も表示します。",
+                    BuildExclusiveButtonGroup, "Editor/Feature/Shared/AvatarEditing/AvatarEditingUi.cs",
+                    "Editor/Feature/Avatar/AvatarParts/AvatarPartsEditor.Shape.cs",
+                    "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
+                    "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs"),
+                Story("game-object-preview", "Displays", "GameObjectPreview",
                     "共通の3Dプレビューです。独立したPreview Sceneのサンプルでカメラと選択を確認します。",
                     BuildScenePreview, "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",
                     "Editor/AssetManager/UI/VariantCreationView.cs",
                     "Editor/AssetManager/Simulation/AvatarExecutionView.cs",
                     "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuPreview.cs"),
-                Story("prefab-selector", "Inputs", "PrefabSelector",
-                    "呼び出し側が渡したPrefab候補を選択する入力です。ProjectのAssetは変更しません。",
-                    BuildPrefabSelector, "Editor/AssetManager/UI/VariantCreationView.cs"),
-                Story("prefab-thumbnail", "Displays", "PrefabThumbnail",
-                    "UnityのAssetPreviewを使うPrefabサムネイルです。",
-                    BuildPrefabPreview, "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs")
+                Story("object-selector", "Inputs", "ObjectSelector",
+                    "呼び出し側が渡したUnity Object候補を検索・選択します。",
+                    BuildObjectSelector, "Editor/AssetManager/UI/VariantCreationView.cs"),
+                Story("object-thumbnail", "Displays", "ObjectThumbnail",
+                    "UnityのAssetPreviewを使うObjectのサムネイルです。",
+                    BuildObjectThumbnail, "Editor/UI/Components/Inputs/ObjectSelector/ObjectPickerWindow.cs"),
+                Story("picker-browser", "Containers", "PickerBrowser",
+                    "所属カードと候補・プレビューの表示を切り替える共通レイアウトです。",
+                    BuildPickerBrowser, "Editor/UI/Components/Inputs/AssetPicker/AssetPickerWindow.cs",
+                    "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs"),
+                Story("picker-browser-card", "Inputs", "PickerBrowserCard",
+                    "プレビュー領域を持つ選択カードです。",
+                    BuildPickerBrowserCard, "Editor/UI/Components/Inputs/AssetPicker/AssetPickerWindow.cs",
+                    "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs")
             };
         }
 
@@ -47,6 +57,7 @@ namespace Ee4v.UI
         {
             return new UiStory(id, group, title, description, description, parent =>
             {
+                if (id == "selection-tab") { build(parent); return; }
                 var surface = new VisualElement();
                 surface.AddToClassList("ee4v-ui-editor-tools-story");
                 surface.AddToClassList("ee4v-ui-editor-tools-story--" + id);
@@ -56,6 +67,11 @@ namespace Ee4v.UI
                 enabled.SetValueWithoutNotify(true);
                 enabled.RegisterValueChangedCallback(evt => surface.SetEnabled(evt.newValue));
                 controls.Body.Add(new FormInput("有効", enabled));
+                var width = UiTextFactory.CreateSlider(lowValue: 320, highValue: 1200);
+                width.SetValueWithoutNotify(960);
+                width.showInputField = true;
+                width.RegisterValueChangedCallback(evt => surface.style.width = evt.newValue);
+                controls.Body.Add(new FormInput("表示幅", width));
                 parent.Add(controls);
                 var preview = new InfoCard(new InfoCardState("プレビュー"));
                 preview.Body.Add(surface);
@@ -90,20 +106,87 @@ namespace Ee4v.UI
             parent.Add(header);
         }
 
-        private static void BuildPrefabTab(VisualElement parent)
+        private static void BuildSelectionTab(VisualElement parent)
         {
-            var tab = new SelectionTab("Long sample prefab name");
+            var controls = new InfoCard(new InfoCardState("コントロール"));
+            var preview = new InfoCard(new InfoCardState("プレビュー"));
+            var label = new InputField(new InputFieldState("Long sample prefab name"));
+            controls.Body.Add(new FormInput("文字", label));
+            var variant = UiTextFactory.CreateEnumField(string.Empty, SelectionTabVariant.Default);
+            controls.Body.Add(new FormInput("種類", variant));
+            var toggle = UiTextFactory.CreateToggle();
+            controls.Body.Add(new FormInput("選択", toggle));
             var selected = false;
-            tab.RegisterCallback<ClickEvent>(_ => tab.SetSelected(selected = !selected));
-            parent.Add(tab);
+            void Render()
+            {
+                preview.Body.Clear();
+                var tab = new SelectionTab(label.Value, (SelectionTabVariant)variant.value);
+                tab.SetSelected(selected);
+                tab.RegisterCallback<ClickEvent>(_ =>
+                {
+                    selected = !selected;
+                    toggle.SetValueWithoutNotify(selected);
+                    tab.SetSelected(selected);
+                });
+                preview.Body.Add(tab);
+            }
+            label.ValueChanged += _ => Render();
+            variant.RegisterValueChangedCallback(_ => Render());
+            toggle.RegisterValueChangedCallback(evt => { selected = evt.newValue; Render(); });
+            parent.Add(controls);
+            parent.Add(preview);
+            Render();
         }
 
-        private static void BuildBodyPartSelector(VisualElement parent)
+        private static void BuildExclusiveButtonGroup(VisualElement parent)
         {
-            BodyPartSelector selector = null;
-            selector = new BodyPartSelector(null, part => part != BodyPartCategory.Hands,
-                part => selector.SetSelected(part));
+            var selector = new ExclusiveButtonGroup<string>(new[]
+            {
+                new ExclusiveButtonOption<string>("all", "すべて"),
+                new ExclusiveButtonOption<string>("first", "選択肢A"),
+                new ExclusiveButtonOption<string>("second", "選択肢B"),
+                new ExclusiveButtonOption<string>("disabled", "無効な選択肢")
+            }, "all", available: value => value != "disabled");
             parent.Add(selector);
+            parent.Add(new ExclusiveButtonGroup<string>(new[]
+            {
+                new ExclusiveButtonOption<string>("first", "タブA"),
+                new ExclusiveButtonOption<string>("second", "タブB")
+            }, "first", tabVariant: SelectionTabVariant.Underline));
+        }
+
+        private static void BuildPickerBrowser(VisualElement parent)
+        {
+            var browser = new PickerBrowser();
+            browser.style.height = 320;
+            var overview = new ScrollView();
+            var cards = new VisualElement();
+            cards.style.flexDirection = FlexDirection.Row;
+            cards.style.flexWrap = Wrap.Wrap;
+            overview.Add(cards);
+            var candidates = new VisualElement();
+            candidates.style.width = 240;
+            var preview = new PreviewPane("プレビュー");
+            preview.Content.Add(UiTextFactory.Create("ダミーの候補です。"));
+            candidates.Add(new NavigationItem(new NavigationItemState("サンプル候補", selected: true)));
+            candidates.Add(new UiButton("所属一覧へ戻る", () => browser.ShowDetails(false)));
+            browser.SetPanels(overview, candidates, preview, cards);
+            for (var i = 0; i < 4; i++)
+            { cards.Add(new PickerBrowserCard(new NavigationItemState("所属 " + (i + 1)), () => browser.ShowDetails(true))); }
+            cards.RegisterCallback<GeometryChangedEvent>(_ => browser.RefreshCardSizes());
+            browser.ShowDetails(false);
+            parent.Add(browser);
+        }
+
+        private static void BuildPickerBrowserCard(VisualElement parent)
+        {
+            var result = UiTextFactory.Create("選択してください。", UiClassNames.SecondaryText);
+            var card = new PickerBrowserCard(new NavigationItemState("Sample", "ダミーの所属"),
+                () => result.SetText("選択しました。"));
+            card.style.width = 224;
+            card.Preview.Placeholder.Add(new Icon(FluentUiIcons.CreateState("cube.png", UiSizeTokens.Size31)));
+            parent.Add(card);
+            parent.Add(result);
         }
 
         private static void BuildScenePreview(VisualElement parent)
@@ -117,12 +200,12 @@ namespace Ee4v.UI
                 Vector3.one * 0.45f);
             AddPrimitive(source, "Part", PrimitiveType.Cube, new Vector3(0.5f, 0.9f, 0),
                 new Vector3(0.2f, 0.8f, 0.2f));
-            var preview = new PrefabScenePreview();
+            var preview = new GameObjectPreview();
             preview.SetFlexibleLayout(true);
             preview.SetFullBodyFraming(true);
             preview.PreviewObjectClicked += (key, material) => preview.SetListSelection(key, material);
             preview.PreviewSelectionCleared += () => preview.SetListSelection(null, null);
-            preview.SetPrefab(source);
+            preview.SetTarget(source);
             parent.Add(preview);
             preview.RegisterCallback<DetachFromPanelEvent>(_ =>
             {
@@ -144,22 +227,36 @@ namespace Ee4v.UI
             UnityEngine.Object.DestroyImmediate(part.GetComponent<Collider>());
         }
 
-        private static GameObject[] GetPrefabCandidates()
+        private static GameObject[] GetObjectCandidates(VisualElement host)
         {
-            return AssetDatabase.FindAssets("t:Prefab").Take(12)
-                .Select(guid => AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid)))
-                .Where(prefab => prefab != null).ToArray();
+            var scene = EditorSceneManager.NewPreviewScene();
+            var candidates = new List<GameObject>();
+            for (var index = 0; index < 3; index++)
+            {
+                var sample = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                sample.name = "Sample Object " + (index + 1);
+                sample.hideFlags = HideFlags.HideAndDontSave;
+                SceneManager.MoveGameObjectToScene(sample, scene);
+                candidates.Add(sample);
+            }
+            host.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                if (evt.target != host) { return; }
+                foreach (var sample in candidates) { UnityEngine.Object.DestroyImmediate(sample); }
+                if (scene.IsValid()) { EditorSceneManager.ClosePreviewScene(scene); }
+            });
+            return candidates.ToArray();
         }
 
-        private static void BuildPrefabSelector(VisualElement parent)
+        private static void BuildObjectSelector(VisualElement parent)
         {
-            parent.Add(new PrefabSelector(GetPrefabCandidates()));
+            parent.Add(new ObjectSelector<GameObject>(GetObjectCandidates(parent)));
         }
 
-        private static void BuildPrefabPreview(VisualElement parent)
+        private static void BuildObjectThumbnail(VisualElement parent)
         {
-            var preview = new PrefabThumbnail(GetPrefabCandidates().FirstOrDefault());
-            preview.AddToClassList("ee4v-ui-editor-tools-story__prefab-thumbnail");
+            var preview = new ObjectThumbnail(GetObjectCandidates(parent).FirstOrDefault());
+            preview.AddToClassList("ee4v-ui-editor-tools-story__object-thumbnail");
             parent.Add(preview);
         }
 

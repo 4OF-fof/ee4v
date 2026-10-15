@@ -5,7 +5,7 @@
     },
     "enabled": {
       "label": "シーン切替",
-      "tooltip": "ヒエラルキーのシーン見出しをクリックすると Scene Switcher を開きます。"
+      "tooltip": "Hierarchyのシーン見出しをクリックしてScene Switcherを開けるようにします。"
     }
   },
   "hierarchy": {
@@ -15,13 +15,13 @@
     "title": "Scene Switcher",
     "search": {
       "placeholder": "シーン名またはフォルダーを検索",
-      "tooltip": "シーン名またはフォルダーで絞り込みます",
+      "tooltip": "シーン名またはフォルダー名で絞り込みます",
       "clearTooltip": "検索をクリア"
     },
     "empty": "Assets 配下にシーンがありません。",
     "noMatches": "検索に一致するシーンはありません。",
     "open": "OPEN",
-    "openTooltip": "現在開いているシーンです。クリックするとアクティブシーンへ切り替えます。",
+    "openTooltip": "現在開いているシーンです。クリックするとアクティブシーンに切り替えます。",
     "favorite": "お気に入りに追加",
     "unfavorite": "お気に入りから削除",
     "create": "「{0}」を作成"

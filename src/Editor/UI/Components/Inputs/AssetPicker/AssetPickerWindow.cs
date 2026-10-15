@@ -64,7 +64,7 @@ namespace Ee4v.UI
         private string _overviewQuery = string.Empty;
         private string _folder = string.Empty;
         private VisualElement _sourceHeader;
-        private VisualElement _browser;
+        private PickerBrowser _browser;
         private ScrollView _overview;
         private VisualElement _overviewPane;
         private VisualElement _cards;
@@ -181,7 +181,7 @@ namespace Ee4v.UI
             _status = UiTextFactory.Create(string.Empty);
             _status.AddToClassList("ee4v-ui-asset-picker__status--hidden");
             body.Add(_status);
-            _browser = new VisualElement();
+            _browser = new PickerBrowser();
             _browser.AddToClassList("ee4v-ui-asset-picker__split");
             _overviewPane = new VisualElement();
             _overviewPane.AddToClassList("ee4v-ui-asset-picker__overview-pane");
@@ -192,7 +192,6 @@ namespace Ee4v.UI
             _overview.Add(_cards);
             _cards.RegisterCallback<GeometryChangedEvent>(_ => UpdateCardSizes());
             _overviewPane.Add(_overview);
-            _browser.Add(_overviewPane);
             _candidatePane = new VisualElement();
             _candidatePane.AddToClassList("ee4v-ui-asset-picker__candidate-pane");
             _candidateCount = UiTextFactory.Create(string.Empty);
@@ -240,8 +239,7 @@ namespace Ee4v.UI
             };
             _list.AddToClassList("ee4v-ui-asset-picker__list");
             _candidatePane.Add(_list);
-            _browser.Add(_candidatePane);
-            _browser.Add(BuildPreview());
+            _browser.SetPanels(_overviewPane, _candidatePane, BuildPreview(), _cards);
             body.Add(_browser);
             _popup.Content.Add(body);
             var dragHint = UiTextFactory.Create(UiLocalization.Get("ui.assetPicker.dragHint"));
@@ -791,9 +789,7 @@ namespace Ee4v.UI
         private void RefreshBrowserVisibility()
         {
             var browsing = _groupKey == null;
-            _overviewPane.EnableInClassList("ee4v-ui-asset-picker__hidden", !browsing);
-            _candidatePane.EnableInClassList("ee4v-ui-asset-picker__hidden", browsing);
-            _previewPane.EnableInClassList("ee4v-ui-asset-picker__hidden", browsing);
+            _browser.ShowDetails(!browsing);
             var loadingPane = browsing ? _overviewPane : _candidatePane;
             if (_busyHost.parent != loadingPane) loadingPane.Add(_busyHost);
         }
@@ -883,7 +879,7 @@ namespace Ee4v.UI
                 existing.Fallback = fixedIcon ? null : candidates[0];
                 return;
             }
-            var card = new NavigationItem(state, () => ShowGroup(key));
+            var card = new PickerBrowserCard(state, () => ShowGroup(key));
             card.AddToClassList("ee4v-ui-asset-picker__card");
             card.RegisterCallback<KeyDownEvent>(evt =>
             {
@@ -891,8 +887,7 @@ namespace Ee4v.UI
                 ShowGroup(key);
                 evt.StopPropagation();
             });
-            card.Row.TitleText.SetWhiteSpace(WhiteSpace.Normal);
-            var frame = new PreviewContainer { pickingMode = PickingMode.Ignore };
+            var frame = card.Preview;
             frame.AddToClassList("ee4v-ui-asset-picker__card-preview");
             var fallbackAsset = fixedIcon ? null : candidates[0];
             if (fixedIcon)
@@ -924,7 +919,6 @@ namespace Ee4v.UI
                 Origin = key == RelatedGroup ? null : candidates[0].Origin,
                 Fallback = fallbackAsset, FixedIcon = fixedIcon
             };
-            card.Leading.Add(frame);
             card.tooltip = tooltip;
             _cards.Add(card);
         }
@@ -932,17 +926,7 @@ namespace Ee4v.UI
         private void UpdateCardSizes()
         {
             if (_groupKey != null) return;
-            var width = _cards.contentRect.width;
-            if (float.IsNaN(width) || width <= 0f) return;
-            const float spacing = 12f;
-            var columns = Mathf.Clamp(Mathf.FloorToInt((width + spacing) / 224f), 1, 5);
-            var cardWidth = Mathf.Max(1f, (width - columns * spacing) / columns);
-            foreach (var card in _cards.Children().OfType<NavigationItem>())
-            {
-                card.style.width = cardWidth;
-                var frame = card.Leading.Q<PreviewContainer>();
-                if (frame != null) frame.style.height = Mathf.Clamp(cardWidth - 16f, 120f, 220f);
-            }
+            _browser.RefreshCardSizes();
         }
 
         private readonly HashSet<string> _pendingSourceThumbnails = new HashSet<string>();

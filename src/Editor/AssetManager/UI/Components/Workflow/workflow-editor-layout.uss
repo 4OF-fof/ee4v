@@ -32,7 +32,7 @@
     min-height: 420px;
 }
 
-.ee4v-modification-workflow__preview.ee4v-ui-prefab-scene-preview {
+.ee4v-modification-workflow__preview.ee4v-ui-game-object-preview {
     min-width: 0;
     min-height: 0;
     width: 100%;

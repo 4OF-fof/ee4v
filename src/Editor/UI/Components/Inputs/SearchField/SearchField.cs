@@ -48,7 +48,7 @@ namespace Ee4v.UI
         public bool SearchActionEnabled { get; }
     }
 
-    public sealed class SearchField : VisualElement
+    public sealed class SearchField : InputField
     {
         private const string RootClassName = "ee4v-ui-search-field";
         private const string HasValueClassName = "ee4v-ui-search-field--has-value";
@@ -62,14 +62,10 @@ namespace Ee4v.UI
         private const string PlaceholderClassName = "ee4v-ui-search-field__placeholder";
         private const string ClearClassName = "ee4v-ui-search-field__clear";
         private readonly UiButton _searchAction;
-        private readonly VisualElement _inputHost;
-        private readonly TextField _input;
-        private readonly UiTextElement _placeholderLabel;
         private readonly UiButton _clearButton;
-        private bool _isFocused;
         private bool _searchActionEnabled;
 
-        public SearchField(SearchFieldState state = null)
+        public SearchField(SearchFieldState state = null) : base(null, true)
         {
             state = state ?? new SearchFieldState();
             AddToClassList(RootClassName);
@@ -82,33 +78,9 @@ namespace Ee4v.UI
                 UiButtonVariant.Ghost);
             _searchAction.AddToClassList(SearchActionClassName);
 
-            _inputHost = new VisualElement();
-            _inputHost.AddToClassList(InputHostClassName);
-
-            _input = UiTextFactory.CreateTextField();
-            _input.RemoveFromClassList(UiClassNames.StandardInput);
-            _input.AddToClassList(InputClassName);
-            _input.RegisterValueChangedCallback(evt =>
-            {
-                RefreshVisualState();
-                ValueChanged?.Invoke(evt.newValue ?? string.Empty);
-            });
-            _input.RegisterCallback<FocusInEvent>(_ =>
-            {
-                _isFocused = true;
-                RefreshVisualState();
-            });
-            _input.RegisterCallback<FocusOutEvent>(_ =>
-            {
-                _isFocused = false;
-                RefreshVisualState();
-            });
-
-            _placeholderLabel = UiTextFactory.Create(
-                string.Empty,
-                UiClassNames.InputPlaceholder,
-                PlaceholderClassName);
-            _placeholderLabel.pickingMode = PickingMode.Ignore;
+            FieldContainer.AddToClassList(InputHostClassName);
+            TextInput.AddToClassList(InputClassName);
+            PlaceholderLabel.AddToClassList(PlaceholderClassName);
 
             _clearButton = new UiButton(
                 string.Empty,
@@ -118,29 +90,17 @@ namespace Ee4v.UI
                 UiButtonVariant.Ghost);
             _clearButton.AddToClassList(ClearClassName);
 
-            _inputHost.Add(_input);
-            _inputHost.Add(_placeholderLabel);
-
-            Add(_searchAction);
-            Add(_inputHost);
+            Insert(0, _searchAction);
             Add(_clearButton);
 
             SetState(state);
         }
-
-        public event Action<string> ValueChanged;
 
         public event Action SearchActionRequested;
 
         public VisualElement SearchActionAnchor
         {
             get { return _searchAction; }
-        }
-
-        public string Value
-        {
-            get { return _input.value ?? string.Empty; }
-            set { _input.value = value ?? string.Empty; }
         }
 
         public void SetState(SearchFieldState state)
@@ -162,18 +122,6 @@ namespace Ee4v.UI
             SetPlaceholder(state.Placeholder);
         }
 
-        public void SetValueWithoutNotify(string value)
-        {
-            _input.SetValueWithoutNotify(value ?? string.Empty);
-            RefreshVisualState();
-        }
-
-        public void SetPlaceholder(string placeholder)
-        {
-            _placeholderLabel.SetText(placeholder ?? string.Empty);
-            RefreshVisualState();
-        }
-
         public void ClearValue()
         {
             if (string.IsNullOrEmpty(Value))
@@ -192,15 +140,17 @@ namespace Ee4v.UI
             }
         }
 
-        private void RefreshVisualState()
-        {
-            var hasValue = !string.IsNullOrWhiteSpace(Value);
-            var showPlaceholder = !hasValue && !_isFocused && !string.IsNullOrWhiteSpace(_placeholderLabel.Text);
+        protected override bool HasValue => !string.IsNullOrWhiteSpace(Value);
 
-            EnableInClassList(HasValueClassName, hasValue);
-            EnableInClassList(FocusedClassName, _isFocused);
-            _clearButton.style.display = hasValue ? DisplayStyle.Flex : DisplayStyle.None;
-            _placeholderLabel.style.display = showPlaceholder ? DisplayStyle.Flex : DisplayStyle.None;
+        protected override void RefreshVisualState()
+        {
+            base.RefreshVisualState();
+            EnableInClassList(HasValueClassName, HasValue);
+            EnableInClassList(FocusedClassName, IsInputFocused);
+            if (_clearButton != null)
+            {
+                _clearButton.style.display = HasValue ? DisplayStyle.Flex : DisplayStyle.None;
+            }
         }
     }
 }

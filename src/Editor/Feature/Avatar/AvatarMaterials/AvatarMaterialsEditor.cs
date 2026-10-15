@@ -66,17 +66,38 @@ namespace Ee4v.AvatarMaterials
             return parts.Length == 1 ? parts[0] : (BodyPartCategory?)null;
         }
 
-        public void SelectPreviewMaterial(Material material, int prefabSiblingIndex)
+        private void SelectMaterial(Material material, int? prefabSiblingIndex = null)
+        {
+            _context.HighlightedMaterial = material;
+            _context.ControlsHost?.Query<NavigationItem>(
+                className: "ee4v-modification-workflow__material-item").ForEach(choice =>
+            {
+                if (!(choice.userData is KeyValuePair<Material, int> pair)) { return; }
+                var selected = material != null && pair.Key == material;
+                choice.SetSelected(selected);
+                if (selected && (!prefabSiblingIndex.HasValue || pair.Value == prefabSiblingIndex.Value))
+                {
+                    AvatarEditingUi.RevealSelection(choice);
+                    AvatarEditingUi.ScrollSelectionIntoView(_context.ControlsHost, choice,
+                        () => _context.SelectedMaterial == null && _context.HighlightedMaterial == material);
+                }
+            });
+            _context.Host.SyncPreviewSelection();
+        }
+
+        public void SelectPreviewMaterial(Material material, int prefabSiblingIndex, bool openDetails = false)
         {
             if (material == null) { return; }
+            if (!openDetails) { SelectMaterial(material, prefabSiblingIndex); return; }
             if (_context.SelectedBodyPart.HasValue && !GetAvatarMaterials().Any(entry =>
                 entry.Material == material && entry.Usages.Any(usage =>
                     usage.PrefabSiblingIndex == prefabSiblingIndex &&
                     GetMaterialUsageCategories(usage, material).Any(_context.MatchesSelectedBodyPart))))
             { _context.SelectedBodyPart = null; }
-            if (prefabSiblingIndex >= 0) { _expandedMaterialPrefabGroups.Add(prefabSiblingIndex); }
             NavigateToMaterial(material, prefabSiblingIndex);
         }
+
+        public void ClearPreviewSelection() => SelectMaterial(null);
 
         public VisualElement BuildControls()
         {
@@ -129,6 +150,10 @@ namespace Ee4v.AvatarMaterials
                 _context.SelectedMaterial = null;
             }
             if (_context.SelectedMaterial == null) { _showOnlySelectedMaterial = false; }
+            if (!filteredMaterials.Any(entry => entry.Material == _context.HighlightedMaterial))
+            {
+                _context.HighlightedMaterial = null;
+            }
             var availableMaterials = new HashSet<Material>(
                 filteredMaterials.Select(entry => entry.Material));
             var allAvailableMaterials = new HashSet<Material>(

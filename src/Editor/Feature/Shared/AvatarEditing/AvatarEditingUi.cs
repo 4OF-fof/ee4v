@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using Ee4v.Core.EditorIntegration;
+using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEngine.UIElements;
 
@@ -6,6 +9,77 @@ namespace Ee4v.AvatarEditing
 {
     public static class AvatarEditingUi
     {
+        private sealed class SelectionRevealEvent : EventBase<SelectionRevealEvent>
+        {
+            public SelectionRevealEvent() { }
+
+            protected override void Init()
+            {
+                base.Init();
+                bubbles = true;
+            }
+        }
+
+        public static void RegisterSelectionReveal(VisualElement content, Action expand)
+        {
+            content.RegisterCallback<SelectionRevealEvent>(_ => expand());
+        }
+
+        public static void RevealSelection(VisualElement row)
+        {
+            using (var evt = SelectionRevealEvent.GetPooled())
+            {
+                evt.target = row;
+                row.SendEvent(evt);
+            }
+        }
+
+        public static void ScrollSelectionIntoView(
+            ScrollView controls, VisualElement row, Func<bool> isSelected)
+        {
+            if (controls == null) { return; }
+            row.schedule.Execute(() =>
+            {
+                if (!isSelected() || !controls.Contains(row)) { return; }
+                var bounds = row.worldBound;
+                var viewport = controls.contentViewport.worldBound;
+                if (bounds.height <= 0f || viewport.height <= 0f ||
+                    bounds.yMin >= viewport.yMin + UiSpacingTokens.Medium &&
+                    bounds.yMax <= viewport.yMax - UiSpacingTokens.Medium)
+                {
+                    return;
+                }
+                var offset = controls.scrollOffset;
+                offset.y = UnityEngine.Mathf.Clamp(offset.y + bounds.center.y - viewport.center.y,
+                    0f, UnityEngine.Mathf.Max(0f, controls.verticalScroller.highValue));
+                controls.scrollOffset = offset;
+            });
+        }
+
+        public static bool IsRowActionTarget(VisualElement row, VisualElement target)
+        {
+            for (var element = target; element != null && element != row; element = element.parent)
+            {
+                if (element is Button || element is Toggle) { return true; }
+            }
+            return false;
+        }
+
+        public static ExclusiveButtonGroup<BodyPartCategory?> CreateBodyPartSelector(
+            BodyPartCategory? selected, Func<BodyPartCategory, bool> available, Action<BodyPartCategory?> select)
+        {
+            var options = new List<ExclusiveButtonOption<BodyPartCategory?>>
+            { new ExclusiveButtonOption<BodyPartCategory?>(null, I18N.Get("avatarEditor.bodyPart.wholeBody")) };
+            foreach (var part in new[] { BodyPartCategory.Head, BodyPartCategory.Shoulders, BodyPartCategory.Hands,
+                BodyPartCategory.Chest, BodyPartCategory.Waist, BodyPartCategory.Legs, BodyPartCategory.Feet })
+            {
+                options.Add(new ExclusiveButtonOption<BodyPartCategory?>(part,
+                    I18N.Get("avatarEditor.bodyPart." + part.ToString().ToLowerInvariant())));
+            }
+            return new ExclusiveButtonGroup<BodyPartCategory?>(options, selected, select,
+                part => !part.HasValue || available == null || available(part.Value));
+        }
+
         public static IconState CreateBlendShapeFavoriteIcon(bool selected)
         {
             return FluentUiIcons.CreateState(selected ? "star_20.png" : "star_regular_20.png",
@@ -20,7 +94,7 @@ namespace Ee4v.AvatarEditing
             {
                 return;
             }
-            panel.Add(UiTextFactory.CreateHelpBox(
+            panel.Add(UiTextFactory.CreateMessagePanel(
                 context.Feedback,
                 context.FeedbackType,
                 "ee4v-modification-workflow__feedback"));

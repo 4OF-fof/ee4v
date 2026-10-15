@@ -19,8 +19,8 @@ namespace Ee4v.AssetManager.UI
             new Dictionary<AssetCollectionIcon, UiButton>();
         private AssetCollection _initialCollection;
         private AssetFilterNode _initialRoot;
-        private IReadOnlyList<AssetTagOption> _tagOptions;
-        private AssetManagerTextField _name;
+        private IReadOnlyList<TagOption> _tagOptions;
+        private FormInput<InputField> _name;
         private AssetFilterEditor _filterEditor;
         private UiTextElement _error;
 
@@ -29,7 +29,7 @@ namespace Ee4v.AssetManager.UI
             AssetCollection initialCollection,
             Func<string, AssetCollectionIcon, AssetFilterNode, bool> save,
             AssetFilterNode initialRoot = null,
-            IReadOnlyList<AssetTagOption> tagOptions = null)
+            IReadOnlyList<TagOption> tagOptions = null)
         {
             if (anchor == null || save == null)
             {
@@ -65,7 +65,7 @@ namespace Ee4v.AssetManager.UI
 
             _name = AssetManagerControls.CreateTextField(
                 I18N.Get("field.name"));
-            _name.value = _initialCollection?.Name ?? string.Empty;
+            _name.Input.Value = _initialCollection?.Name ?? string.Empty;
             form.Add(_name);
 
             form.Add(UiTextFactory.Create(
@@ -117,7 +117,7 @@ namespace Ee4v.AssetManager.UI
                 Submit,
                 "ee4v-asset-manager__primary-action"));
             SetPopup(popup);
-            root.schedule.Execute(_name.FocusInput);
+            root.schedule.Execute(_name.Input.FocusInput);
         }
 
         private void OnTagPickerClosed()
@@ -143,7 +143,7 @@ namespace Ee4v.AssetManager.UI
 
         private void Submit()
         {
-            var name = (_name.value ?? string.Empty).Trim();
+            var name = (_name.Input.Value ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(name))
             {
                 SetError(I18N.Get("notice.collectionNameRequired"));
@@ -186,14 +186,14 @@ namespace Ee4v.AssetManager.UI
 
     internal sealed class AssetSearchFilterPopup : CustomPopupWindow
     {
-        private IReadOnlyList<AssetTagOption> _options;
+        private IReadOnlyList<TagOption> _options;
         private AssetFilterNode _initialRoot;
         private Action<AssetFilterNode> _apply;
         private Action<AssetFilterNode> _save;
         private AssetFilterEditor _editor;
         private UiTextElement _error;
 
-        internal static void Show(VisualElement anchor, IReadOnlyList<AssetTagOption> options,
+        internal static void Show(VisualElement anchor, IReadOnlyList<TagOption> options,
             AssetFilterNode root,
             Action<AssetFilterNode> apply,
             Action<AssetFilterNode> save)

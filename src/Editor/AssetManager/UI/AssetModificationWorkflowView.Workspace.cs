@@ -179,9 +179,9 @@ namespace Ee4v.AssetManager.UI
                 {
                     _avatarContext.PrefabSiblingIndices = Array.Empty<int>();
                     Debug.LogException(exception);
-                    header.Add(UiTextFactory.CreateHelpBox(
+                    header.Add(UiTextFactory.CreateMessagePanel(
                         I18N.Get("workflow.assets.readFailed"),
-                        HelpBoxMessageType.Error));
+                        MessageSeverity.Error));
                 }
                 UiButton add = null;
                 add = new UiButton(
@@ -228,9 +228,9 @@ namespace Ee4v.AssetManager.UI
 
             if (!string.IsNullOrEmpty(_avatarContext.AssetFeedback))
             {
-                header.Add(UiTextFactory.CreateHelpBox(
+                header.Add(UiTextFactory.CreateMessagePanel(
                     _avatarContext.AssetFeedback,
-                    HelpBoxMessageType.Error));
+                    MessageSeverity.Error));
             }
             return header;
         }
@@ -501,6 +501,7 @@ namespace Ee4v.AssetManager.UI
 
         private void InvalidateVariantSaveStatus()
         {
+            _variantChangesSnapshot = null;
             _variantSaveStatusVersion++;
             _variantSaveStatusDirty = true;
             _variantSaveStatusDueAt = EditorApplication.timeSinceStartup +
@@ -565,12 +566,13 @@ namespace Ee4v.AssetManager.UI
             _previewPane = new PreviewPane(string.Empty);
             _previewPane.AddToClassList("ee4v-modification-workflow__preview-pane");
             _previewPane.Content.AddToClassList("ee4v-modification-workflow__preview-viewport");
-            _avatarContext.Preview = new PrefabScenePreview();
+            _avatarContext.Preview = new GameObjectPreview();
             _avatarContext.Preview.PreviewObjectClicked += OnPreviewObjectClicked;
+            _avatarContext.Preview.PreviewObjectDoubleClicked += OnPreviewObjectDoubleClicked;
             _avatarContext.Preview.PreviewSelectionCleared +=
                 OnPreviewSelectionCleared;
             _avatarContext.Preview.SetFlexibleLayout(true);
-            _avatarContext.Preview.SetFullBodyFraming(false);
+            _avatarContext.Preview.SetFullBodyFraming(_previewOnly);
             _avatarContext.Preview.AddToClassList(
                 "ee4v-modification-workflow__preview");
             _previewScopeSiblingIndex = _avatarContext.SelectedPrefabSiblingIndex;
@@ -580,7 +582,7 @@ namespace Ee4v.AssetManager.UI
                 _avatarContext.BasePrefabHidden,
                 _avatarContext.HiddenPrefabSiblingIndices);
             _avatarContext.Preview.SetHiddenParts(_avatarContext.HiddenPreviewParts);
-            _avatarContext.Preview.SetPrefab(_avatarContext.Root);
+            _avatarContext.Preview.SetTarget(_avatarContext.Root);
             _avatarContext.Preview.FocusBodyPart(_avatarContext.SelectedBodyPart, true);
             SyncPreviewSelection();
             _previewPane.Content.Add(_avatarContext.Preview);
@@ -784,8 +786,7 @@ namespace Ee4v.AssetManager.UI
                 _bodyPartSelector = BuildBodyPartSelector();
                 _appearanceHeader.Add(_bodyPartSelector);
             }
-            _bodyPartSelector.Refresh(_avatarContext.SelectedBodyPart, HasAvailableBodyPart);
-            _bodyPartSelector.RemoveFromClassList("ee4v-ui-body-part-selector--standalone");
+            _bodyPartSelector.Refresh(_avatarContext.SelectedBodyPart, part => !part.HasValue || HasAvailableBodyPart(part.Value));
             if (_appearanceTabs == null)
             {
                 _appearanceTabs = _parts.BuildShapePartsTabs(ShowAppearancePanel, _appearancePanel);

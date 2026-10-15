@@ -1,5 +1,17 @@
 {
   "ui": {
+    "tagsNew": "Add Tag",
+    "tagsRemove": "Remove \"{0}\"",
+    "tagsSourceReadOnly": "Edit this Eagle tag in Eagle",
+    "tagsPickerTitle": "Select Tag",
+    "tagsClose": "Close",
+    "tagsSearch": "Search tags",
+    "tagsCreate": "Create '{0}'",
+    "tagsWithCount": "{0} ({1})",
+    "tagsEmpty": "No tags available",
+    "tagsNoMatch": "No matching tags",
+    "decrease": "Decrease",
+    "increase": "Increase",
     "pathField": {
       "selectFolder": "Select a folder",
       "selectFile": "Select a file"
@@ -65,14 +77,14 @@
       "SameFolder": "Same folder",
       "SameOrigin": "Same Item"
     },
-    "prefabPicker": {
-      "title": "Select Prefab",
-      "select": "Select Prefab",
-      "close": "Close Prefab selection",
-      "search": "Search Prefab name or path",
-      "noMatch": "No matching Prefabs"
+    "objectPicker": {
+      "title": "Select object",
+      "select": "Select object",
+      "close": "Close object selection",
+      "search": "Search name or path",
+      "noMatch": "No matching objects"
     },
-    "prefabPreview": {
+    "gameObjectPreview": {
       "reset": "Reset preview view",
       "background": "Toggle preview background",
       "useTPose": "Switch to T-pose",
@@ -83,18 +95,6 @@
       "right": "Right",
       "front": "Front",
       "back": "Back"
-    },
-    "bodyPart": {
-      "wholeBody": "Whole body",
-      "head": "Head & neck",
-      "chest": "Chest",
-      "waist": "Waist & hips",
-      "shoulders": "Shoulders & arms",
-      "arms": "Arms",
-      "hands": "Hands",
-      "legs": "Legs",
-      "feet": "Feet",
-      "other": "Other"
     }
   },
   "catalog": {

@@ -30,9 +30,10 @@ namespace Ee4v.AvatarMaterials
         }
         protected override void ClearFeatureData() => _editor?.ClearData();
         protected override void DisposeFeature() { _editor?.Dispose(); _editor = null; }
-        protected override void SelectPreview(string key, Material material) => _editor.SelectPreviewMaterial(material, -1);
+        protected override void SelectPreview(string key, Material material, bool openDetails) =>
+            _editor.SelectPreviewMaterial(material, -1, openDetails);
         protected override void ClearPreviewSelection()
-        { Context.SelectedMaterial = null; Render(); }
+        { _editor.ClearPreviewSelection(); }
         protected override void CreateMaterialVariant(Material material)
         {
             if (!Context.Edits.CanEditPrefab() || material == null || !FlushFeatureChanges()) return;

@@ -100,6 +100,7 @@ namespace Ee4v.AssetManager.UI
             _pickerOrigins = null;
             if (_manager != null) _manager.Changed -= OnPickerMetadataChanged;
             _manager = null;
+            if (_variantManager != null) _variantManager.Changed -= AssetPrefabPickerWindow.InvalidateSourceCache;
             _variantManager = null;
             _viewState = new AssetManagerViewState();
             EditorApplication.delayCall -= InitializeProtection;
@@ -131,6 +132,7 @@ namespace Ee4v.AssetManager.UI
                 _variantManager = AssetManagerFactory.OpenVariantSession(Path.Combine(
                     Environment.ExpandEnvironmentVariables(AssetManagerSettings.Ee4vLibraryPath),
                     "asset-manager-v1.db"), manager);
+                _variantManager.Changed += AssetPrefabPickerWindow.InvalidateSourceCache;
             }
             return _variantManager;
         }

@@ -10,6 +10,13 @@ namespace Ee4v.UI
         Ghost
     }
 
+    public enum UiButtonTone
+    {
+        Default,
+        Primary,
+        Danger
+    }
+
     public sealed class UiButton : Button
     {
         private const string RootClassName = "ee4v-ui-button";
@@ -85,8 +92,14 @@ namespace Ee4v.UI
         public void SetPrimaryActionEnabled(bool enabled)
         {
             SetEnabled(enabled);
-            EnableInClassList("ee4v-ui-button--primary-action", enabled);
-            SetLabelColor(enabled ? UiColorTokens.TextOnState : UiColorTokens.TextPrimary);
+            SetTone(enabled ? UiButtonTone.Primary : UiButtonTone.Default);
+        }
+
+        public void SetTone(UiButtonTone tone)
+        {
+            EnableInClassList("ee4v-ui-button--primary-action", tone == UiButtonTone.Primary);
+            EnableInClassList("ee4v-ui-button--danger", tone == UiButtonTone.Danger);
+            SetLabelColor(tone == UiButtonTone.Default ? UiColorTokens.TextPrimary : UiColorTokens.TextOnState);
         }
 
         public VisualElement Content

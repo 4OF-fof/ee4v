@@ -60,6 +60,16 @@ namespace Ee4v.FaceExpression
 
     public static class BlendShapePresetApi
     {
+        public static IReadOnlyList<BlendShapePresetData> EnsurePresets(GameObject avatar)
+        {
+            if (avatar == null) throw new ArgumentNullException(nameof(avatar));
+            var meshes = avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(renderer => renderer.sharedMesh).Where(mesh => mesh != null).ToArray();
+            FaceExpressionSettings.EnsureNamePresets(avatar, meshes, null, BlendShapePresetStorage.Shared);
+            FaceExpressionSettings.EnsureNamePreset(avatar, null, BlendShapePresetStorage.Shared);
+            var guids = new HashSet<string>(meshes.Select(mesh => UnityEditor.AssetDatabase.AssetPathToGUID(UnityEditor.AssetDatabase.GetAssetPath(mesh))), StringComparer.Ordinal);
+            return ListPresets().Where(preset => guids.Contains(preset.AssetGuid)).Select(preset => GetPreset(preset.AssetGuid)).ToArray();
+        }
+
         private static readonly HashSet<string> AppearanceParts =
             new HashSet<string>(StringComparer.Ordinal)
             {

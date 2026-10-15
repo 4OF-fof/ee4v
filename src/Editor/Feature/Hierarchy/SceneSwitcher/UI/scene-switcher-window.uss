@@ -80,7 +80,8 @@
     background-color: var(--ee4v-color-surface-hover);
 }
 
-.ee4v-scene-switcher-row--open {
+.ee4v-scene-switcher-row--open,
+.ee4v-scene-switcher-row--open:hover {
     border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
 }

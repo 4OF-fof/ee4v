@@ -245,10 +245,11 @@ namespace Ee4v.FaceExpression
 
         public static FaceExpressionShapeNamingSnapshot Create(
             GameObject avatar,
-            IEnumerable<Mesh> meshes)
+            IEnumerable<Mesh> meshes,
+            bool ensurePresets = true)
         {
             var presetStore = BlendShapePresetStorage.Shared;
-            FaceExpressionSettings.EnsureNamePresets(
+            if (ensurePresets) FaceExpressionSettings.EnsureNamePresets(
                 avatar,
                 meshes,
                 null,

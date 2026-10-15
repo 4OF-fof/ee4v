@@ -1,5 +1,9 @@
 # Face Expression
 
+ライブラリと割り当て一覧、および割り当て編集と設定の切り替えには共通`ExclusiveButtonGroup`の下線型タブを使用します。選択表示と排他制御は共通UIが担当し、表示する内容と選択可能な状態はFaceExpressionが決定します。
+
+Catalogの表情変換Storyは専用Preview SceneのMesh・Clipを使います。`ExpressionConversionView`の`previewOnly`では通常と同じ変換・検証を実行し、結果通知後に一時Clipを破棄します。保存ダイアログとAsset作成は行いません。BlendShapeの数値行は共通`ScalarInput`を使い、Storyのお気に入り状態もメモリ内に保持します。
+
 `FaceExpressionEmbeddedView.IsAssignmentView`は現在のViewが割当画面を表示しているかを返します。判定はClip選択の有無と割当paneの存在による実際の表示条件を共有し、View未生成・破棄済みの場合はfalseです。統合ee4vは表情タブでこの値がtrueのとき、「アセットを探す」をAnimationClipの「表情」絞り込みで開きます。FaceExpressionからAssetManagerへは依存しません。
 
 `ee4v/Window/Avatar/Face Expression/Editor`と統合ee4vウィンドウの表情タブは、同じ表情画面を使用します。初期画面は左ペイン全体に表情ライブラリ、右に割り当て先と既存設定を配置します。表情カードの単クリック、Enter／Space、右のClip入力で対象の表情を選びます。「表情」タブの条件で左右両方を選ぶと即時に割り当て、「メニュー」を押すと即時にメニュー項目へ登録します。「条件を追加」で同じ表情に複数の組み合わせを指定できます。ライブラリと確認一覧からの表情選択、条件の追加、片手だけを選んだ新しい条件では割り当て・Undo・未保存状態を変更しません。確認一覧のジェスチャーセルの右クリックから、その組のClipだけを解除します。左ペイン上部の「割り当て」タブは右ペインを維持し、左ペインのライブラリを左右64通りと登録メニュー表情の確認Gridへ切り替えます。「ライブラリ」と「割り当て」のタブで表示を切り替えます。確認一覧には戻るボタンと独立したナビバーを配置しません。確認セルのClip入力とDrag & Drop、追加操作は無効です。ライブラリ検索は現在のフォルダー内の表情・フォルダー名を大文字小文字を区別せず絞り込みます。割り当てとまばたき・口固定・メニュー名を自動反映し、生成assetの保存とメニュー画像の生成を後続のEditor更新へ分散します。上部通知の「保存」は未保存Clipの確定と反映失敗時の再試行に使用し、失敗時は通知を維持します。DescriptorまたはModular Avatar不足はエラーにします。`Gesture Assignment/Assignments`は同じ表情Windowを開き、独立設定Windowは`Gesture Assignment/Settings`から開きます。共有ライブラリの同期、保存先やrepo外のデータ契約は変更しません。
@@ -48,11 +52,15 @@ Expression Menu、表情ロック、トリガー量による変化は対象外�
 
 ## 公開APIとMCP
 
+`BlendShapePresetApi.EnsurePresets`はAvatarが使用するFBXの未作成分類を既存のUI初期化処理で作り、既存Mappingを保持します。`SetAnimationChannelEnabled`は静止／animation Clipの曲線全体を有効化または除去し、必須revisionとdryRunを使用します。有効化はUIのWritePoseと同じポーズ時刻・既定値を使い、既に存在する曲線は変更しません。除去は全ポーズへ及び、最後の曲線の場合はポーズ時刻も失われ得ます。ポーズ単位の値の更新とは別の破壊的操作としてMCPに公開します。
+
 `FaceExpressionApi`はUIと同じdomain処理を外部integrationから利用する公開境界です。AvatarとRenderer pathを基準にBlendShape channelを列挙し、静止表情Clipの作成・部分更新・完全置換、表情アニメーションのポーズ調査・追加・更新・並び替え・削除・Loop設定、revision取得、validation、時刻指定preview PNG、完全一致とpreset roleによるremap、FacialSet設定の読込・plan・適用を提供します。MCPではClip指定時の調査をBlendShape調査へ統合し、他の割り当てを維持したまま左右Gestureの1組だけを更新する操作も提供します。AnimationClipの一般検索とProject内Prefab検索は汎用Unity MCPへ任せます。
 
 `Ee4v.Mcp.Editor`はこのAPIを静止表情、表情アニメーション、preview、remap、FacialSetの用途別toolとして公開します。Clip調査とvalidationは`ee4v_inspect_expression_clip`、ポーズ追加・更新・移動・Loop変更は`ee4v_edit_expression_animation`のaction、削除は`ee4v_remove_expression_pose`を使用します。Gesture単独更新も`ee4v_apply_facial_set`の`mode: patch`へ統合し、全置換は`mode: replace`で行います。保存済みFBX別BlendShapeプリセットは`BlendShapePresetApi`を通して一覧・詳細取得・Mappingの部分更新を公開し、revision照合とdryRunで共同編集を扱います。MCP固有のJSON変換とObject参照はMCP assemblyに閉じ、Face Expression moduleはMCPへ依存しません。詳細は[`../mcp.md`](../mcp.md)を参照します。
 
 Clip更新は`expectedRevision`が現在値と一致しない場合に拒否します。同じ値、使用状態、単一frame curveを再指定した場合は変更なしとしてAssetを書き直しません。静止表情toolは複数ポーズClipの更新を拒否し、curveの一部だけを誤って単一frameへ戻しません。表情アニメーションtoolはUIと同じポーズindex、遷移時間、任意名、参照Clipを使用し、参照Clipと明示的なchannel値の同時指定を拒否します。各書き込みの`dryRun`はAssetを書きません。FacialSet適用も`dryRun`で設定内のGesture名とClip参照、Avatar Descriptor、Modular Avatarの前提条件を検証できます。実適用は既存UIと同じ生成先、Modular Avatar installer、Blinkと口固定の契約を使用します。
+
+FacialSetの`PlanApply`は任意の適用予定設定を受け取り、`ApplyConfiguration`と同じGesture名・重複・Clip参照を検証します。MCPのplanとapplyは同じpatch／replace後の設定を使用し、前提不足や適用失敗をMCP errorとして返します。MCPからのAvatar設定変更にはScene上のinstanceを使用し、Prefab Modeと永続Prefabを直接変更しません。remapは静止Clip専用で、複数ポーズ入力を拒否します。
 
 ## 編集画面のライフサイクル
 

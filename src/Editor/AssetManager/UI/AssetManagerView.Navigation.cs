@@ -29,7 +29,7 @@ namespace Ee4v.AssetManager.UI
                 "arrow_right.png",
                 _viewState.GoForward,
                 "ee4v-asset-manager__history-button");
-            _breadcrumbs = new AssetManagerBreadcrumb();
+            _breadcrumbs = new Breadcrumb();
             history.Add(_backButton);
             history.Add(_forwardButton);
             history.Add(_breadcrumbs);
@@ -49,7 +49,7 @@ namespace Ee4v.AssetManager.UI
             _gridSizeSlider = AssetManagerControls.CreateGridSizeSlider(
                 _itemGrid.ItemsPerRow,
                 _itemGrid.RecommendedMinimumItemsPerRow,
-                AssetItemGridView.MaximumItemsPerRow,
+                ImageGridView.MaximumItemsPerRow,
                 "ee4v-asset-manager__grid-size-slider");
             _gridSizeSlider.tooltip = I18N.Get("toolbar.gridColumns");
             _gridSizeSlider.ValueChanged += SetGridSize;
@@ -226,8 +226,8 @@ namespace Ee4v.AssetManager.UI
                     candidate.VariantId == _viewState.DetailVariantId);
                 _breadcrumbs.SetItems(new[]
                 {
-                    new AssetManagerBreadcrumbItem(pageTitle, _viewState.ShowPageRoot),
-                    new AssetManagerBreadcrumbItem(variant?.Name ?? I18N.Get("navigation.variants"))
+                    new BreadcrumbItem(pageTitle, _viewState.ShowPageRoot),
+                    new BreadcrumbItem(variant?.Name ?? I18N.Get("navigation.variants"))
                 });
                 return;
             }
@@ -235,7 +235,7 @@ namespace Ee4v.AssetManager.UI
             {
                 _breadcrumbs.SetItems(new[]
                 {
-                    new AssetManagerBreadcrumbItem(pageTitle)
+                    new BreadcrumbItem(pageTitle)
                 });
                 return;
             }
@@ -245,10 +245,10 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("common.item");
             _breadcrumbs.SetItems(new[]
             {
-                new AssetManagerBreadcrumbItem(
+                new BreadcrumbItem(
                     pageTitle,
                     _viewState.ShowPageRoot),
-                new AssetManagerBreadcrumbItem(itemName)
+                new BreadcrumbItem(itemName)
             });
         }
 

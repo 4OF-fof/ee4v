@@ -26,8 +26,8 @@ namespace Ee4v.UI
                         window.BuildCachedImageStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/Components/AssetItemGridCard.cs",
-                        "Editor/AssetManager/UI/Components/AssetThumbnailStack.cs",
+                        "Editor/UI/Components/Collections/ImageGridView/ImageGridCard.cs",
+                        "Editor/UI/Components/Content/ThumbnailStack/ThumbnailStack.cs",
                         "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs"
                     }));
             }

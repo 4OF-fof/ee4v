@@ -24,11 +24,11 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs",
-                        "Editor/AssetManager/UI/AssetItemGridView.cs",
+                        "Editor/UI/Components/Collections/ImageGridView/ImageGridView.cs",
                         "Editor/AssetManager/UI/AssetManagerView.cs",
-                        "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/UI/Components/Inputs/TagField/TagField.cs",
                         "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs",
-                        "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs",
+                        "Editor/UI/Components/Inputs/ObjectSelector/ObjectPickerWindow.cs",
                         "Editor/Core/Presentation/Settings/SettingsUiRenderer.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",

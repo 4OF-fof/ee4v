@@ -1,0 +1,7 @@
+{
+  "name": "Ee4v.Core.Images.Editor",
+  "rootNamespace": "Ee4v.Core.Images",
+  "references": [],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

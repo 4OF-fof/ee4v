@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Ee4v.AvatarEditing;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -16,7 +18,7 @@ namespace Ee4v.AvatarParts
             if (key != null && !_context.Edits.FlushChanges()) { return; }
             if (key == null && _context.SelectedPartKey == null)
             {
-                _context.Host.SyncPreviewSelection();
+                SelectPartRow(null, false);
                 return;
             }
             var controls = _context.ControlsHost;
@@ -41,36 +43,59 @@ namespace Ee4v.AvatarParts
             });
         }
 
-        private VisualElement BuildPartDetails(PrefabObjectEntry entry)
+        private VisualElement BuildPartDetails(
+            PrefabObjectEntry entry,
+            IReadOnlyList<PrefabObjectEntry> displayed)
         {
             var panel = new VisualElement();
             panel.AddToClassList("ee4v-part-details");
-            var back = new UiButton(I18N.Get("workflow.objects.backToParts"),
+            var header = BuildObjectRow(entry, isDetailsHeader: true);
+            header.AddToClassList("ee4v-part-details__header");
+            var back = new UiButton(string.Empty,
                 () => NavigateToPart(null),
+                tooltip: I18N.Get("workflow.objects.backToParts"),
                 icon: FluentUiIcons.CreateState("arrow_left.png", UiSizeTokens.Size18),
                 variant: UiButtonVariant.Ghost);
             back.AddToClassList("ee4v-part-details__back");
-            panel.Add(back);
-            panel.Add(UiTextFactory.Create(entry.Name, UiClassNames.SectionTitle));
-            var path = UiTextFactory.Create(entry.Path, UiClassNames.SecondaryText,
-                "ee4v-part-details__path");
-            path.SetWhiteSpace(WhiteSpace.Normal);
-            panel.Add(path);
+            header.Insert(0, back);
+            panel.Add(header);
             GameObject target;
             try { target = ResolvePartObject(_context.Root, entry); }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                panel.Add(UiTextFactory.CreateHelpBox(I18N.Get("workflow.assets.readFailed"),
-                    HelpBoxMessageType.Error));
+                panel.Add(UiTextFactory.CreateMessagePanel(I18N.Get("workflow.assets.readFailed"),
+                    MessageSeverity.Error));
                 return panel;
+            }
+            TrackPartDetailsRow(panel, entry, target);
+            var children = displayed.Where(child =>
+                child.PrefabSiblingIndex == entry.PrefabSiblingIndex &&
+                child.SiblingPath.Length == entry.SiblingPath.Length + 1 &&
+                IsAncestorPath(entry.SiblingPath, child.SiblingPath)).ToArray();
+            if (children.Length > 0)
+            {
+                var section = new VisualElement();
+                section.AddToClassList("ee4v-part-details__children");
+                section.Add(UiTextFactory.Create(I18N.Get("workflow.objects.children"),
+                    UiClassNames.SectionTitle, "ee4v-part-details__children-title"));
+                var list = new VisualElement();
+                list.AddToClassList("ee4v-modification-workflow__objects-list");
+                foreach (var child in children)
+                {
+                    list.Add(BuildObjectRow(child));
+                    TrackPartDetailsRow(panel, child, ResolvePartObject(_context.Root, child));
+                }
+                AvatarEditingUi.MarkLastListItem(list);
+                section.Add(list);
+                panel.Add(section);
             }
             foreach (var component in target.GetComponents<Component>())
             {
                 if (component == null)
                 {
-                    panel.Add(UiTextFactory.CreateHelpBox(I18N.Get("workflow.objects.missingScript"),
-                        HelpBoxMessageType.Warning));
+                    panel.Add(UiTextFactory.CreateMessagePanel(I18N.Get("workflow.objects.missingScript"),
+                        MessageSeverity.Warning));
                     continue;
                 }
                 panel.Add(new PartComponentInspector(component,
@@ -80,6 +105,31 @@ namespace Ee4v.AvatarParts
                     enabledOnly => PartComponentChanged(component, enabledOnly)));
             }
             return panel;
+        }
+
+        private void TrackPartDetailsRow(
+            VisualElement panel,
+            PrefabObjectEntry entry,
+            GameObject target)
+        {
+            var state = _objectRows[entry];
+            panel.schedule.Execute(() =>
+            {
+                if (target == null) { return; }
+                var visible = !target.CompareTag("EditorOnly");
+                var activeSelf = target.activeSelf;
+                var parentActive = target.transform.parent == null ||
+                    target.transform.parent.gameObject.activeInHierarchy;
+                var activeInHierarchy = target.activeInHierarchy;
+                if (entry.IsVisible == visible && entry.IsActiveSelf == activeSelf &&
+                    entry.ParentActiveInHierarchy == parentActive &&
+                    entry.IsVisibleInHierarchy == activeInHierarchy) { return; }
+                entry.IsVisible = visible;
+                entry.IsActiveSelf = activeSelf;
+                entry.ParentActiveInHierarchy = parentActive;
+                entry.IsVisibleInHierarchy = activeInHierarchy;
+                UpdateObjectRow(entry, state);
+            }).Every(200);
         }
 
         private void PartComponentChanged(Component component, bool enabledOnly)
@@ -92,7 +142,7 @@ namespace Ee4v.AvatarParts
             _context.Host.InvalidateControls(AvatarEditorPanel.Shape);
             _context.Edits.Changed();
             if (enabledOnly) { _context.Preview?.RefreshPreview(); }
-            else { _context.Preview?.ReloadPrefabPreservingView(_context.Root); }
+            else { _context.Preview?.ReloadTargetPreservingView(_context.Root); }
             _context.Host.SyncPreviewSelection();
         }
 
@@ -147,14 +197,8 @@ namespace Ee4v.AvatarParts
                     var enabledProperty = _editor.serializedObject.FindProperty("m_Enabled");
                     if (enabledProperty != null && enabledProperty.propertyType == SerializedPropertyType.Boolean)
                     {
-                        _enabled = UiTextFactory.CreateToggle(string.Empty, "ee4v-part-component__enabled");
+                        _enabled = UiTextFactory.CreateSwitch();
                         _enabled.tooltip = I18N.Get("workflow.objects.componentEnabled");
-                        var track = new VisualElement { pickingMode = PickingMode.Ignore };
-                        track.AddToClassList("ee4v-part-component__switch-track");
-                        var thumb = new VisualElement { pickingMode = PickingMode.Ignore };
-                        thumb.AddToClassList("ee4v-part-component__switch-thumb");
-                        track.Add(thumb);
-                        _enabled.Q<VisualElement>(className: "unity-toggle__input").Add(track);
                         _enabled.RegisterValueChangedCallback(evt => UpdateHeader(evt.newValue));
                         _enabled.SetValueWithoutNotify(enabledProperty.boolValue);
                         _enabled.BindProperty(enabledProperty);
@@ -171,8 +215,8 @@ namespace Ee4v.AvatarParts
                 {
                     Debug.LogException(exception);
                     ReleaseInspector();
-                    _body.Add(UiTextFactory.CreateHelpBox(I18N.Get("workflow.objects.editorUnavailable"),
-                        HelpBoxMessageType.Error));
+                    _body.Add(UiTextFactory.CreateMessagePanel(I18N.Get("workflow.objects.editorUnavailable"),
+                        MessageSeverity.Error));
                 }
             }
 

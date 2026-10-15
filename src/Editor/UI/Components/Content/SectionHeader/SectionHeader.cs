@@ -7,24 +7,32 @@ namespace Ee4v.UI
         public SectionHeader(
             string title = null,
             string description = null)
+            : this(title, description, UiClassNames.SectionTitle, UiClassNames.SecondaryText, true) { }
+
+        internal SectionHeader(string title, string description, string titleTypography,
+            string descriptionTypography, bool defaultStyle)
         {
-            AddToClassList("ee4v-ui-section-header");
+            if (defaultStyle) { AddToClassList("ee4v-ui-section-header"); }
             var text = new VisualElement();
-            text.AddToClassList("ee4v-ui-section-header__text");
+            TextContent = text;
+            if (defaultStyle) { text.AddToClassList("ee4v-ui-section-header__text"); }
             TitleText = UiTextFactory.Create(
                 string.Empty,
-                UiClassNames.SectionTitle,
-                "ee4v-ui-section-header__title");
+                titleTypography);
             DescriptionText = UiTextFactory.Create(
                 string.Empty,
-                UiClassNames.SecondaryText,
-                "ee4v-ui-section-header__description");
+                descriptionTypography);
             DescriptionText.SetWhiteSpace(WhiteSpace.Normal);
             text.Add(TitleText);
             text.Add(DescriptionText);
 
             Actions = new VisualElement();
-            Actions.AddToClassList("ee4v-ui-section-header__actions");
+            if (defaultStyle)
+            {
+                TitleText.AddToClassList("ee4v-ui-section-header__title");
+                DescriptionText.AddToClassList("ee4v-ui-section-header__description");
+                Actions.AddToClassList("ee4v-ui-section-header__actions");
+            }
             Add(text);
             Add(Actions);
             SetTitle(title);
@@ -34,6 +42,7 @@ namespace Ee4v.UI
         public UiTextElement TitleText { get; }
         public UiTextElement DescriptionText { get; }
         public VisualElement Actions { get; }
+        internal VisualElement TextContent { get; }
 
         public void SetTitle(string title)
         {

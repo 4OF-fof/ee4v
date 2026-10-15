@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -94,16 +95,16 @@ namespace Ee4v.AssetManager.UI.Tests
             }
         }
 
-        private static AssetItemGridView CreateSelectionGrid()
+        private static ImageGridView CreateSelectionGrid()
         {
-            var grid = new AssetItemGridView();
+            var grid = new ImageGridView();
             grid.SetItems(new[]
             {
-                new AssetItemGridEntry("a", "A"),
-                new AssetItemGridEntry("b", "B"),
-                new AssetItemGridEntry("c", "C"),
-                new AssetItemGridEntry("d", "D"),
-                new AssetItemGridEntry("e", "E")
+                new ImageGridEntry("a", "A"),
+                new ImageGridEntry("b", "B"),
+                new ImageGridEntry("c", "C"),
+                new ImageGridEntry("d", "D"),
+                new ImageGridEntry("e", "E")
             });
             return grid;
         }

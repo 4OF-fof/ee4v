@@ -25,11 +25,13 @@ namespace Ee4v.AssetManager.Simulation
         private Camera _camera;
         private readonly RenderTexture[] _textures = new RenderTexture[MaxPreviewCount];
         private bool _disposed;
+        private readonly bool _editModePreview;
         protected int ActivePreview { get; private set; }
         protected int PreviewCount => _viewports.Count;
 
-        protected AvatarInspectionView(GameObject avatar, Action repaint, string title)
+        protected AvatarInspectionView(GameObject avatar, Action repaint, string title, bool editModePreview = false)
         {
+            _editModePreview = editModePreview;
             Avatar = avatar;
             _repaint = repaint;
             AddToClassList("ee4v-execution");
@@ -48,11 +50,12 @@ namespace Ee4v.AssetManager.Simulation
             Status = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
             Controls.Add(Status);
             Add(Controls);
-            if (avatar != null && avatar.scene.IsValid() && EditorApplication.isPlaying)
+            if (avatar != null && avatar.scene.IsValid() && (EditorApplication.isPlaying || editModePreview))
             {
                 var go = new GameObject("ee4v Inspection Camera") { hideFlags = HideFlags.HideAndDontSave };
                 SceneManager.MoveGameObjectToScene(go, avatar.scene);
                 _camera = go.AddComponent<Camera>();
+                if (editModePreview) { _camera.scene = avatar.scene; }
                 _camera.enabled = false;
                 _camera.clearFlags = CameraClearFlags.SolidColor;
                 _camera.backgroundColor = new Color(0.18f, 0.18f, 0.18f, 0);
@@ -67,7 +70,7 @@ namespace Ee4v.AssetManager.Simulation
             schedule.Execute(() =>
             {
                 if (_disposed || panel == null) { return; }
-                if (!EditorApplication.isPlaying || Avatar == null) { Dispose(); return; }
+                if ((!EditorApplication.isPlaying && !_editModePreview) || Avatar == null) { Dispose(); return; }
                 Tick();
                 Repaint();
             }).Every(33);

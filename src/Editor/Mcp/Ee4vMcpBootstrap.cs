@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -50,10 +51,11 @@ namespace Ee4v.Mcp
         private static void LogConnectionInformation()
         {
             var port = EditorPrefs.GetInt(PortKey, DefaultPort);
+            var endpoint = _server != null && _server.IsRunning ? _server.Endpoint : "http://127.0.0.1:" + port + "/mcp";
             Debug.Log(
-                "ee4v MCP endpoint: http://127.0.0.1:" + port + "/mcp\n" +
-                "Codex config.toml:\n[mcp_servers.ee4v]\nurl = \"http://127.0.0.1:" +
-                port + "/mcp\"");
+                "ee4v MCP endpoint: " + endpoint + "\n" +
+                "ee4v CLI: ee4v-cli projects (select with --project)\n" +
+                "Codex config.toml:\n[mcp_servers.ee4v]\nurl = \"" + endpoint + "\"");
         }
 
         private static void StartAutomatically()
@@ -75,9 +77,20 @@ namespace Ee4v.Mcp
 
             try
             {
-                _server = new Ee4vMcpHttpServer(
-                    EditorPrefs.GetInt(PortKey, DefaultPort));
-                _server.Start();
+                var preferredPort = EditorPrefs.GetInt(PortKey, DefaultPort);
+                for (var attempt = 0; attempt < 32; attempt++)
+                {
+                    var cli = new Ee4vCliBridge(Path.GetFullPath("."), Application.productName, Application.unityVersion);
+                    _server = new Ee4vMcpHttpServer(1024 + (preferredPort - 1024 + attempt) % (65536 - 1024), cli);
+                    try
+                    {
+                        _server.Start();
+                        cli.Publish(_server.Endpoint.Substring(0, _server.Endpoint.Length - "/mcp".Length));
+                        break;
+                    }
+                    catch (System.Net.HttpListenerException) when (attempt < 31)
+                    { _server.Dispose(); _server = null; }
+                }
                 Debug.Log("ee4v MCP server listening at " + _server.Endpoint);
             }
             catch (Exception exception)
@@ -104,6 +117,7 @@ namespace Ee4v.Mcp
             _toolsRegistered = true;
             McpStatusTools.Register();
             AvatarMcpTools.Register();
+            AvatarAuthoringMcpTools.Register();
             FaceExpressionMcpTools.Register();
             AssetManagerMcpTools.Register();
             AvatarSimulationMcpTools.Register();

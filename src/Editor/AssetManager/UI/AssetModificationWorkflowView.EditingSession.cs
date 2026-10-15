@@ -18,9 +18,9 @@ namespace Ee4v.AssetManager.UI
             if (session?.Root != null) EditorSceneApi.SaveAfterEdit(session.Root.scene);
         }
 
-        private BodyPartSelector BuildBodyPartSelector()
+        private ExclusiveButtonGroup<BodyPartCategory?> BuildBodyPartSelector()
         {
-            return new BodyPartSelector(_avatarContext.SelectedBodyPart, HasAvailableBodyPart, part =>
+            return Ee4v.AvatarEditing.AvatarEditingUi.CreateBodyPartSelector(_avatarContext.SelectedBodyPart, HasAvailableBodyPart, part =>
             {
                 if (_avatarContext.SelectedBodyPart == part)
                 {
@@ -42,7 +42,7 @@ namespace Ee4v.AssetManager.UI
             {
                 return available;
             }
-            available = PrefabScenePreview.HasFocusBone(
+            available = GameObjectPreview.HasFocusBone(
                 _avatarContext.Root, part, IsInSelectedPrefabScope);
             if (available)
             {
@@ -104,6 +104,7 @@ namespace Ee4v.AssetManager.UI
 
         private string GetWorkingAssetPath()
         {
+            if (_previewOnly) { return "Preview"; }
             return _avatarContext.PrefabAsset == null
                 ? string.Empty
                 : AssetDatabase.GetAssetPath(_avatarContext.PrefabAsset);

@@ -23,7 +23,7 @@ namespace Ee4v.UI
                         window.BuildScenePreviewViewportStory(parent),
                     new[]
                     {
-                        "Editor/UI/Components/Content/PrefabScenePreview/PrefabScenePreview.cs",
+                        "Editor/UI/Components/Content/GameObjectPreview/GameObjectPreview.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs"
                     }));
             }

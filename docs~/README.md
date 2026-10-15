@@ -20,6 +20,7 @@ Unity 2022.3向けの配布設定は[`src/package.json`](../src/package.json)を
 | アバター改変用Sceneと照明 | [avatar-editing-scene.md](./avatar-editing-scene.md) |
 | Asset Protection | [asset-protection.md](./asset-protection.md) |
 | ee4v MCP | [mcp.md](./mcp.md) |
+| ee4v CLIとskill | [cli.md](./cli.md) |
 | Unity 6 移行時の確認 | [unity6.md](./unity6.md) |
 | 既存テストの保証範囲 | [test.md](./test.md) |
 

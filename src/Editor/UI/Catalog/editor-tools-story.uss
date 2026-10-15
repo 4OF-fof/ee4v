@@ -13,26 +13,26 @@
     align-items: flex-start;
 }
 
-.ee4v-ui-editor-tools-story--body-part-selector {
+.ee4v-ui-editor-tools-story--exclusive-button-group {
     min-height: 60px;
 }
 
-.ee4v-ui-editor-tools-story--prefab-scene-preview {
+.ee4v-ui-editor-tools-story--game-object-preview {
     height: 440px;
     min-height: 440px;
 }
 
-.ee4v-ui-editor-tools-story--prefab-selector {
+.ee4v-ui-editor-tools-story--object-selector {
     min-height: 64px;
 }
 
-.ee4v-ui-editor-tools-story--prefab-thumbnail {
+.ee4v-ui-editor-tools-story--object-thumbnail {
     height: 240px;
     min-height: 240px;
     align-items: center;
 }
 
-.ee4v-ui-editor-tools-story__prefab-thumbnail.ee4v-ui-prefab-thumbnail {
+.ee4v-ui-editor-tools-story__object-thumbnail.ee4v-ui-object-thumbnail {
     width: 320px;
     min-width: 320px;
     height: 220px;

@@ -160,6 +160,32 @@ namespace Ee4v.FaceExpression
 
     public static class FaceExpressionApi
     {
+        public static FaceExpressionAnimationEditResult SetAnimationChannelEnabled(GameObject avatar, AnimationClip clip,
+            string rendererPath, string shapeName, bool enabled, int poseIndex = 0, float? value = null,
+            bool dryRun = false, string expectedRevision = null)
+        {
+            ValidateAnimationEditTarget(avatar, clip, expectedRevision);
+            ValidateClipPath(AssetDatabase.GetAssetPath(clip));
+            if (string.IsNullOrWhiteSpace(expectedRevision)) throw new ArgumentException("expectedRevision is required for channel changes.");
+            if (value.HasValue && (float.IsNaN(value.Value) || float.IsInfinity(value.Value))) throw new ArgumentException("Channel value must be finite.");
+            var times = FaceExpressionClipEditor.GetPoseTimes(clip);
+            if (times.Count == 0) times = new[] { 0f };
+            if (poseIndex < 0 || poseIndex >= times.Count) throw new ArgumentOutOfRangeException(nameof(poseIndex));
+            var channel = ReadEditableChannels(avatar, clip, times[poseIndex]).SingleOrDefault(candidate =>
+                candidate.RendererPath == (rendererPath ?? string.Empty) && candidate.Name == shapeName);
+            if (channel == null) throw new ArgumentException("The editable BlendShape channel was not found.");
+            var changed = channel.Animated != enabled;
+            if (changed && !dryRun)
+            {
+                channel.Animated = enabled;
+                if (value.HasValue) channel.Value = value.Value;
+                FaceExpressionClipEditor.WritePose(clip, channel, times[poseIndex], times);
+                AssetDatabase.SaveAssetIfDirty(clip);
+            }
+            return AnimationEditResult(clip, changed, dryRun,
+                dryRun ? times.Count : FaceExpressionClipEditor.GetPoseTimes(clip).Count, poseIndex, times[poseIndex]);
+        }
+
         public static IReadOnlyList<FaceExpressionChannelData> Inspect(
             GameObject avatar,
             AnimationClip clip = null,
@@ -925,6 +951,9 @@ namespace Ee4v.FaceExpression
                             : nameof(sourceClip));
             }
 
+            if (FaceExpressionClipEditor.GetPoseTimes(sourceClip).Count > 1)
+                throw new InvalidOperationException("Expression remapping accepts static, single-pose clips only. Animated clips must not be flattened into a static expression.");
+
             var rule = FaceExpressionSettings.GetNameRule(
                 BlendShapePresetStorage.Shared);
             var source = FaceExpressionClipEditor.Read(
@@ -1067,8 +1096,10 @@ namespace Ee4v.FaceExpression
             };
         }
 
-        public static FaceExpressionApplyPlan PlanApply(GameObject avatar)
+        public static FaceExpressionApplyPlan PlanApply(GameObject avatar, FaceExpressionConfigurationData data = null)
         {
+            if (avatar == null) throw new ArgumentNullException(nameof(avatar));
+            if (data != null) CreateConfiguration(data);
             var gateway = new VrchatFaceExpressionGateway();
             var hasDescriptor = gateway.TryRead(avatar, out _);
             var paths = FaceExpressionGenerationPaths.Create(avatar);
@@ -1108,36 +1139,7 @@ namespace Ee4v.FaceExpression
                 throw new ArgumentNullException(nameof(avatar));
             }
 
-            data = data ?? new FaceExpressionConfigurationData();
-            var assignments = new Dictionary<GestureCombination, FaceExpressionAssignment>();
-            foreach (var item in data.Assignments ??
-                         Array.Empty<FaceExpressionGestureAssignmentData>())
-            {
-                if (!Enum.TryParse(item.Left, true, out FaceGesture left) ||
-                    !Enum.TryParse(item.Right, true, out FaceGesture right))
-                {
-                    throw new ArgumentException(
-                        "Gesture names must be Neutral, Fist, Open, Point, Victory, RockNRoll, HandGun, or ThumbsUp.");
-                }
-
-                assignments[new GestureCombination(left, right)] =
-                    new FaceExpressionAssignment(
-                        LoadClip(item.ClipPath),
-                        item.EnableBlink,
-                        item.FixMouth,
-                        item.MenuName);
-            }
-
-            var entries = (data.MenuEntries ?? Array.Empty<FaceExpressionMenuEntryData>())
-                .Select(item => new FaceExpressionMenuEntry(
-                    item.Name,
-                    new FaceExpressionAssignment(
-                        LoadClip(item.ClipPath),
-                        item.EnableBlink,
-                        item.FixMouth,
-                        item.Name)))
-                .ToArray();
-            var configuration = new FaceExpressionConfiguration(assignments, entries);
+            var configuration = CreateConfiguration(data);
             var plan = PlanApply(avatar);
             if (dryRun)
             {
@@ -1169,6 +1171,45 @@ namespace Ee4v.FaceExpression
                 ControllerPath = AssetDatabase.GetAssetPath(controller),
                 Plan = plan
             };
+        }
+
+        private static FaceExpressionConfiguration CreateConfiguration(FaceExpressionConfigurationData data)
+        {
+            data = data ?? new FaceExpressionConfigurationData();
+            var assignments = new Dictionary<GestureCombination, FaceExpressionAssignment>();
+            foreach (var item in data.Assignments ??
+                         Array.Empty<FaceExpressionGestureAssignmentData>())
+            {
+                if (item == null || !Enum.TryParse(item.Left, true, out FaceGesture left) ||
+                    !Enum.TryParse(item.Right, true, out FaceGesture right) ||
+                    !Enum.IsDefined(typeof(FaceGesture), left) || !Enum.IsDefined(typeof(FaceGesture), right))
+                {
+                    throw new ArgumentException(
+                        "Gesture names must be Neutral, Fist, Open, Point, Victory, RockNRoll, HandGun, or ThumbsUp.");
+                }
+
+                var combination = new GestureCombination(left, right);
+                if (assignments.ContainsKey(combination)) throw new ArgumentException("Gesture assignments must be unique.");
+                assignments[combination] =
+                    new FaceExpressionAssignment(
+                        LoadClip(item.ClipPath),
+                        item.EnableBlink,
+                        item.FixMouth,
+                        item.MenuName);
+            }
+
+            var menuData = data.MenuEntries ?? Array.Empty<FaceExpressionMenuEntryData>();
+            if (menuData.Any(item => item == null)) throw new ArgumentException("Menu entries must be non-null.");
+            var entries = menuData
+                .Select(item => new FaceExpressionMenuEntry(
+                    item.Name,
+                    new FaceExpressionAssignment(
+                        LoadClip(item.ClipPath),
+                        item.EnableBlink,
+                        item.FixMouth,
+                        item.Name)))
+                .ToArray();
+            return new FaceExpressionConfiguration(assignments, entries);
         }
 
         public static string Revision(AnimationClip clip)

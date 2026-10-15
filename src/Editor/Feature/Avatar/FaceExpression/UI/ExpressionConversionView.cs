@@ -20,12 +20,15 @@ namespace Ee4v.FaceExpression
         private readonly int[] _mapping;
         private readonly Action<AnimationClip> _saved;
         private readonly MessagePanel _feedback;
+        private readonly bool _previewOnly;
         private readonly UiButton _saveButton;
         private readonly List<VisualElement> _rows = new List<VisualElement>();
         private ExpressionTargetPickerWindow _targetPicker;
 
-        internal ExpressionConversionView(GameObject avatar, AnimationClip source, Action back, Action<AnimationClip> saved)
+        internal ExpressionConversionView(GameObject avatar, AnimationClip source, Action back, Action<AnimationClip> saved,
+            bool previewOnly = false)
         {
+            _previewOnly = previewOnly;
             _avatar = avatar;
             _source = source;
             _saved = saved;
@@ -144,11 +147,11 @@ namespace Ee4v.FaceExpression
                 ShowError(I18N.Get("conversion.invalidMapping"));
                 return;
             }
-            var path = EditorUtility.SaveFilePanelInProject(I18N.Get("conversion.title"),
+            var path = _previewOnly ? null : EditorUtility.SaveFilePanelInProject(I18N.Get("conversion.title"),
                 _source.name + "_" + _avatar.name, "anim", I18N.Get("conversion.save"),
                 Path.GetDirectoryName(AssetDatabase.GetAssetPath(_source))?.Replace('\\', '/') ?? "Assets");
-            if (string.IsNullOrEmpty(path)) { return; }
-            if (File.Exists(path) || AssetDatabase.LoadMainAssetAtPath(path) != null)
+            if (!_previewOnly && string.IsNullOrEmpty(path)) { return; }
+            if (!_previewOnly && (File.Exists(path) || AssetDatabase.LoadMainAssetAtPath(path) != null))
             {
                 ShowError(I18N.Get("conversion.newPathRequired"));
                 return;
@@ -157,7 +160,7 @@ namespace Ee4v.FaceExpression
             try
             {
                 converted = UnityEngine.Object.Instantiate(_source);
-                converted.name = Path.GetFileNameWithoutExtension(path);
+                converted.name = _previewOnly ? _source.name + " Preview" : Path.GetFileNameWithoutExtension(path);
                 foreach (var binding in AnimationUtility.GetCurveBindings(converted))
                 { AnimationUtility.SetEditorCurve(converted, binding, null); }
                 foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(converted))
@@ -175,9 +178,13 @@ namespace Ee4v.FaceExpression
                     AnimationUtility.SetEditorCurve(converted, target.Binding,
                         AnimationUtility.GetEditorCurve(_source, _bindings[index]));
                 }
-                AssetDatabase.CreateAsset(converted, path);
-                AssetDatabase.SaveAssets();
+                if (!_previewOnly)
+                {
+                    AssetDatabase.CreateAsset(converted, path);
+                    AssetDatabase.SaveAssets();
+                }
                 _saved?.Invoke(converted);
+                if (_previewOnly) { UnityEngine.Object.DestroyImmediate(converted); }
             }
             catch (Exception exception)
             {

@@ -36,13 +36,22 @@ namespace Ee4v.AvatarParts
 
         private static void BuildSample(VisualElement parent, bool showDetails)
         {
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
             var avatar = new GameObject("Sample Avatar") { hideFlags = HideFlags.HideAndDontSave };
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(avatar, scene);
             foreach (var name in new[] { "Head", "Gloves", "Boots" })
             {
                 var part = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 part.name = name;
                 part.hideFlags = HideFlags.HideAndDontSave;
                 part.transform.SetParent(avatar.transform, false);
+                if (name == "Head")
+                {
+                    var child = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    child.name = "Head Accessory";
+                    child.hideFlags = HideFlags.HideAndDontSave;
+                    child.transform.SetParent(part.transform, false);
+                }
             }
             var header = new VisualElement();
             var controls = new ScrollView();
@@ -54,7 +63,7 @@ namespace Ee4v.AvatarParts
                 new AvatarEditingHost(Render, Render, () => { }, parent.MarkDirtyRepaint, () => { }))
             {
                 Root = avatar, UiRoot = parent, ControlsHost = controls,
-                SelectedPartKey = showDetails ? PrefabScenePreview.GetPartKey(-1, new[] { 0 }) : null
+                SelectedPartKey = showDetails ? GameObjectPreview.GetPartKey(-1, new[] { 0 }) : null
             };
             editor = new AvatarPartsEditor(context);
             void Render()
@@ -67,7 +76,12 @@ namespace Ee4v.AvatarParts
             }
             parent.Add(header);
             parent.Add(controls);
-            parent.RegisterCallback<DetachFromPanelEvent>(_ => UnityEngine.Object.DestroyImmediate(avatar));
+            parent.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                if (evt.target != parent) { return; }
+                UnityEngine.Object.DestroyImmediate(avatar);
+                if (scene.IsValid()) { UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(scene); }
+            });
             Render();
         }
     }

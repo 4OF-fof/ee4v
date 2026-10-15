@@ -20,8 +20,8 @@ namespace Ee4v.UI
                         window.BuildPreviewContainerStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/Components/AssetItemGridCard.cs",
-                        "Editor/AssetManager/UI/Components/AssetThumbnailStack.cs",
+                        "Editor/UI/Components/Collections/ImageGridView/ImageGridCard.cs",
+                        "Editor/UI/Components/Content/ThumbnailStack/ThumbnailStack.cs",
                         "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs",
                         "Editor/UI/Components/Inputs/AssetPicker/AssetPickerWindow.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/Components/GestureAssignmentCell.cs"

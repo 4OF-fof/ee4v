@@ -107,7 +107,7 @@ namespace Ee4v.Core.Settings
             ISettingsService settings,
             SettingDefinitionBase definition,
             string searchContext,
-            out HelpBox errorBox)
+            out MessagePanel errorBox)
         {
             var tooltip = string.Empty;
             if (I18N.TryGetForScope(
@@ -118,9 +118,9 @@ namespace Ee4v.Core.Settings
                 tooltip = translatedTooltip;
             }
 
-            var validationBox = UiTextFactory.CreateHelpBox(
+            var validationBox = UiTextFactory.CreateMessagePanel(
                 string.Empty,
-                HelpBoxMessageType.Error);
+                MessageSeverity.Error);
             validationBox.AddToClassList(ErrorClassName);
             errorBox = validationBox;
 
@@ -160,7 +160,7 @@ namespace Ee4v.Core.Settings
             ISettingsService settings,
             SettingDefinitionBase definition,
             object value,
-            HelpBox errorBox)
+            MessagePanel errorBox)
         {
             var validation = definition.Validate(value);
             if (!validation.IsValid)
@@ -175,15 +175,15 @@ namespace Ee4v.Core.Settings
             settings.Set(definition, value);
         }
 
-        private static void ShowError(HelpBox errorBox, string error)
+        private static void ShowError(MessagePanel errorBox, string error)
         {
-            UiTextFactory.SetText(errorBox, error);
+            errorBox.SetState(new MessagePanelState(string.Empty, error, MessageSeverity.Error));
             errorBox.style.display = DisplayStyle.Flex;
         }
 
-        private static void HideError(HelpBox errorBox)
+        private static void HideError(MessagePanel errorBox)
         {
-            UiTextFactory.SetText(errorBox, string.Empty);
+            errorBox.SetState(null);
             errorBox.style.display = DisplayStyle.None;
         }
 

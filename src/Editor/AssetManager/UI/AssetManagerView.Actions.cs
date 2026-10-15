@@ -17,7 +17,7 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyList<string> itemIds,
             bool archived)
         {
-            if (_variantManager != null && itemIds.Any(id => FindStandaloneAsset(id) != null))
+            if (_variantManager != null && itemIds.Any(id => FindOwnedWork(id) != null))
             {
                 ChangeVariantLifecycle(Array.Empty<string>(), archived, itemIds);
                 return;
@@ -34,7 +34,7 @@ namespace Ee4v.AssetManager.UI
 
         private void DeleteItems(IReadOnlyList<string> itemIds)
         {
-            if (_variantManager != null && itemIds.Any(id => FindStandaloneAsset(id) != null))
+            if (_variantManager != null && itemIds.Any(id => FindOwnedWork(id) != null))
             {
                 ChangeVariantLifecycle(Array.Empty<string>(), null, itemIds);
                 return;

@@ -24,7 +24,7 @@ namespace Ee4v.UI
         public string Placeholder { get; }
     }
 
-    public sealed class InputField : VisualElement
+    public class InputField : VisualElement
     {
         private const string RootClassName = "ee4v-ui-input-field";
         private const string MultilineClassName = "ee4v-ui-input-field--multiline";
@@ -39,7 +39,9 @@ namespace Ee4v.UI
         private bool _multiline;
         private float _maxHeight;
 
-        public InputField(InputFieldState state = null)
+        public InputField(InputFieldState state = null) : this(state, false) { }
+
+        protected InputField(InputFieldState state, bool deferInitialization)
         {
             AddToClassList(RootClassName);
 
@@ -84,8 +86,14 @@ namespace Ee4v.UI
             });
             RegisterCallback<AttachToPanelEvent>(_ => ScheduleScrollViewRefresh());
 
-            SetState(state ?? new InputFieldState());
+            if (!deferInitialization) { SetState(state ?? new InputFieldState()); }
         }
+
+        protected VisualElement FieldContainer => _fieldContainer;
+        protected TextField TextInput => _textField;
+        protected UiTextElement PlaceholderLabel => _placeholderLabel;
+        protected bool IsInputFocused => _isFocused;
+        protected virtual bool HasValue => !string.IsNullOrEmpty(Value);
 
         public event Action<string> ValueChanged;
 
@@ -199,10 +207,9 @@ namespace Ee4v.UI
                 contentMaxHeight);
         }
 
-        private void RefreshVisualState()
+        protected virtual void RefreshVisualState()
         {
-            var hasValue = !string.IsNullOrEmpty(Value);
-            _placeholderLabel.style.display = !hasValue && !_isFocused && !string.IsNullOrWhiteSpace(_placeholderLabel.Text)
+            _placeholderLabel.style.display = !HasValue && !_isFocused && !string.IsNullOrWhiteSpace(_placeholderLabel.Text)
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             _fieldContainer.EnableInClassList(FieldContainerFocusedClassName, _isFocused);

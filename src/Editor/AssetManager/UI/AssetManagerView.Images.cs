@@ -43,6 +43,8 @@ namespace Ee4v.AssetManager.UI
             var savedVariants = _variantManager != null
                 ? _variantManager.GetVariants().ToDictionary(variant => variant.Id, StringComparer.Ordinal)
                 : null;
+            var ownedWorks = GetVariants().Where(variant => variant.IsOwnedWork)
+                .ToLookup(variant => variant.ParentItemId, StringComparer.Ordinal);
             try
             {
                 await Task.Yield();
@@ -67,11 +69,10 @@ namespace Ee4v.AssetManager.UI
                             }
                             else
                             {
-                                var standalone = savedVariants?.Values.FirstOrDefault(variant =>
-                                    string.IsNullOrEmpty(variant.SourcePrefabGuid) && variant.ParentItemId == itemId &&
-                                    FindVariantItem(itemId)?.IsOriginal == true);
-                                thumbnail = standalone != null
-                                    ? await _variantManager.GetRevisionThumbnail(standalone.Id, standalone.HeadRevisionId, cancellation.Token)
+                                var work = ownedWorks[itemId].FirstOrDefault();
+                                thumbnail = work != null && savedVariants != null &&
+                                    savedVariants.TryGetValue(work.VariantId, out var savedWork)
+                                    ? await _variantManager.GetRevisionThumbnail(savedWork.Id, savedWork.HeadRevisionId, cancellation.Token)
                                     : await _manager.GetThumbnail(itemId, cancellation.Token);
                             }
                             if (!ReferenceEquals(
@@ -173,7 +174,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             _importedItemIdsInProject = itemIds;
-            foreach (var asset in DerivedAssetCreator.FindAll().Where(asset => asset.IsOriginal))
+            foreach (var asset in GetVariants().Where(asset => asset.IsOwnedWork && asset.Prefab != null))
             {
                 if (FindVariantItem(asset.ParentItemId)?.IsOriginal == true) itemIds.Add(asset.ParentItemId);
             }
@@ -222,17 +223,17 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private AssetThumbnailStack CreateDetailThumbnailStack(
+        private ThumbnailStack CreateDetailThumbnailStack(
             IReadOnlyList<string> itemIds)
         {
-            var stack = new AssetThumbnailStack(_imageCache, itemIds);
+            var stack = new ThumbnailStack(_imageCache, itemIds);
             _detailThumbnailStack = stack;
             return stack;
         }
 
         private async Task LoadDetailThumbnailsAsync(
             IReadOnlyList<AssetItem> items,
-            AssetThumbnailStack thumbnailStack)
+            ThumbnailStack thumbnailStack)
         {
             var firstIndex = Math.Max(0, items.Count - 3);
             var cancellation = new CancellationTokenSource();
@@ -284,7 +285,7 @@ namespace Ee4v.AssetManager.UI
 
         private async Task LoadItemOverviewThumbnailAsync(
             AssetItem item,
-            AssetThumbnailStack thumbnailStack)
+            ThumbnailStack thumbnailStack)
         {
             var cancellation = new CancellationTokenSource();
             _itemOverviewThumbnailCancellation = cancellation;
@@ -399,7 +400,7 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private async Task LoadDerivedVariantThumbnailAsync(AssetItemGridCard card, DerivedAssetInfo variant)
+        private async Task LoadDerivedVariantThumbnailAsync(ImageGridCard card, DerivedAssetInfo variant)
         {
             var saved = _variantManager?.GetVariants().FirstOrDefault(candidate => candidate.Id == variant.VariantId);
             if (saved == null) { return; }
@@ -415,7 +416,7 @@ namespace Ee4v.AssetManager.UI
                 var thumbnail = await pending;
                 if (_disposed || cancellation.IsCancellationRequested) { return; }
                 _imageCache.SetSource(variant.AssetPath, thumbnail.Data);
-                card.SetState(new AssetItemGridEntry(variant.AssetPath, variant.Name), selected: false);
+                card.SetState(new ImageGridEntry(variant.AssetPath, variant.Name), selected: false);
             }
             catch (OperationCanceledException) { }
             catch (Exception exception)

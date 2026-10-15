@@ -37,16 +37,16 @@
     },
     "blendShapeSeparators": {
       "label": "BlendShapeの区切り文字",
-      "tooltip": "グループ境界に使う区切り文字を複数登録できます。例: -、=、_"
+      "tooltip": "BlendShape名のグループ分け（見出し判定）に使う区切り文字を複数登録できます（例: -、=、_）。"
     },
     "blendShapePresets": {
       "label": "FBX別BlendShapeプリセット",
-      "tooltip": "ベースFBXごとのBlendShapeプリセットの保存フォルダーを開きます。",
+      "tooltip": "ベースFBXごとのBlendShape分類プリセットが保存されているフォルダーを開きます。",
       "openFolder": "保存先をエクスプローラーで開く"
     },
     "menuIconsDisabled": {
       "label": "表情メニューのプレビューアイコンを無効化",
-      "tooltip": "有効にすると、FacialSetメニューへ表情のプレビューアイコンを設定しません。"
+      "tooltip": "有効にすると、生成する表情メニュー（FacialSet）にプレビューアイコンを設定しません。"
     }
   },
   "presetWindow": {
@@ -101,14 +101,14 @@
   },
   "search": {
     "libraryPlaceholder": "表情ライブラリを検索",
-    "libraryTooltip": "現在のフォルダー内の表情・フォルダー名で絞り込みます",
+    "libraryTooltip": "現在のフォルダー内にある表情やフォルダーを名前で絞り込みます",
     "placeholder": "BlendShape を検索",
-    "tooltip": "BlendShape 名で絞り込みます",
+    "tooltip": "BlendShape名で絞り込みます",
     "clearTooltip": "検索をクリア"
   },
   "filter": {
     "clipOnly": "クリップ内のみ",
-    "clipOnlyTooltip": "表情クリップに含まれるBlendShapeだけを表示します"
+    "clipOnlyTooltip": "現在の表情クリップに含まれるBlendShapeだけを表示します"
   },
   "animation": {
     "play": "表情アニメーションを再生",
@@ -117,19 +117,19 @@
     "sequence": "表情シーケンス",
     "pose": "ポーズ {0}",
     "addPose": "+ ポーズ",
-    "addPoseTooltip": "選択中の表情を複製して、その直後へポーズを追加します。",
+    "addPoseTooltip": "選択中のポーズを複製して、その直後に新しいポーズを追加します。",
     "addPoseUnavailable": "先にBlendShapeを編集してポーズを作成してください。",
     "insertPose": "+",
-    "insertPoseTooltip": "左側の表情を複製して、この位置へポーズを挿入します。",
+    "insertPoseTooltip": "左隣のポーズを複製して、この位置に新しいポーズを挿入します。",
     "movePoseEarlier": "このポーズを1つ前へ移動",
     "movePoseLater": "このポーズを1つ後ろへ移動",
     "renamePose": "ポーズ名を変更…",
     "resetPoseName": "ポーズ名を既定に戻す",
     "addClip": "参照Clip",
-    "addClipTooltip": "既存の表情Clipをこのポーズへ割り当てます。割り当て中のポーズはBlendShapeを編集できません。",
+    "addClipTooltip": "既存の表情Clipをこのポーズに割り当てます。Clipを割り当てている間はBlendShapeを直接編集できません。",
     "removePose": "このポーズを削除",
     "transition": "遷移",
-    "timelineTooltip": "表情シーケンスの再生位置を確認または移動します。ここを動かしてもポーズは追加されません。"
+    "timelineTooltip": "表情シーケンスの再生位置を確認・移動します。スライダーを動かしてもポーズは追加されません。"
   },
   "assignments": {
     "target": "表情の割り当て先",
@@ -174,7 +174,7 @@
     "fixMouth": "口の動きを固定",
     "unassigned": "未割り当て",
     "menuOnly": "メニュー",
-    "menuOnlyHint": "メニューに登録した表情です。選択すると割り当てと設定を編集できます。",
+    "menuOnlyHint": "メニューに登録された表情です。選択すると割り当てや設定を編集できます。",
     "menuName": "メニュー名",
     "enableMenuIcons": "サムネイルを生成"
   },
@@ -183,7 +183,7 @@
   },
   "action": {
     "resetBlendShape": "リセット",
-    "resetBlendShapeTooltip": "アバターの初期値（{0}%）へ戻す",
+    "resetBlendShapeTooltip": "アバターの初期値（{0}%）に戻す",
     "newClip": "新規表情",
     "copyAndEdit": "コピーして編集",
     "edit": "編集",

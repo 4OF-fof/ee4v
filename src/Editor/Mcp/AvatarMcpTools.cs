@@ -8,6 +8,7 @@ using Ee4v.AvatarInfo;
 using Ee4v.Core.AvatarEvaluation;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -82,10 +83,7 @@ namespace Ee4v.Mcp
             var avatars = Resources.FindObjectsOfTypeAll(descriptorType)
                 .Cast<Component>()
                 .Select(component => component.gameObject)
-                .Where(gameObject =>
-                    !EditorUtility.IsPersistent(gameObject) &&
-                    gameObject.scene.IsValid() && gameObject.scene.isLoaded &&
-                    !EditorSceneManager.IsPreviewScene(gameObject.scene));
+                .Where(UnityObjectReference.IsLoadedAvatarScene);
 
             var values = avatars
                 .Distinct()
@@ -112,7 +110,7 @@ namespace Ee4v.Mcp
                     : "scene";
             return new JObject
             {
-                ["avatarRef"] = UnityObjectReference.Create(avatar),
+                ["avatarRef"] = UnityObjectReference.CreateAvatar(avatar),
                 ["name"] = avatar.name,
                 ["kind"] = kind,
                 ["isPlaying"] = EditorApplication.isPlaying,
@@ -167,7 +165,9 @@ namespace Ee4v.Mcp
                     ["uniqueMeshCount"] = meshes.Length,
                     ["triangleCount"] = skinned.Select(renderer => renderer.sharedMesh)
                         .Concat(meshRenderers.Select(renderer => renderer.GetComponent<MeshFilter>()?.sharedMesh))
-                        .Where(mesh => mesh != null).Sum(mesh => (long)mesh.triangles.Length / 3L),
+                        .Where(mesh => mesh != null).Sum(mesh => Enumerable.Range(0, mesh.subMeshCount)
+                            .Where(index => mesh.GetTopology(index) == MeshTopology.Triangles)
+                            .Sum(index => (long)mesh.GetIndexCount(index) / 3L)),
                     ["blendShapeCount"] = meshes.Sum(mesh => mesh.blendShapeCount),
                     ["materialSlotCount"] = avatar.GetComponentsInChildren<Renderer>(true)
                         .Sum(renderer => renderer.sharedMaterials.Length),
@@ -524,13 +524,39 @@ namespace Ee4v.Mcp
 
         private static int CountReferencedAnimationClips(GameObject avatar)
         {
-            return avatar.GetComponentsInChildren<Animator>(true)
+            var controllers = avatar.GetComponentsInChildren<Animator>(true)
                 .Select(animator => animator.runtimeAnimatorController)
-                .Where(controller => controller != null)
-                .SelectMany(controller => controller.animationClips)
-                .Where(clip => clip != null)
-                .Distinct()
-                .Count();
+                .ToList();
+            var descriptor = GetComponent(avatar, DescriptorTypeName);
+            foreach (var field in new[] { "baseAnimationLayers", "specialAnimationLayers" })
+                if (GetMemberValue(descriptor, field) is IEnumerable layers)
+                    foreach (var layer in layers)
+                        controllers.Add(GetMemberValue(layer, "animatorController") as RuntimeAnimatorController);
+            foreach (var component in avatar.GetComponentsInChildren<Component>(true))
+                if (component != null && component.GetType().FullName == "nadena.dev.modular_avatar.core.ModularAvatarMergeAnimator")
+                    controllers.Add(GetMemberValue(component, "animator") as RuntimeAnimatorController);
+            // animationClips builds/validates native controllers. MA sources can deliberately
+            // reference parameters supplied by another source, so inventory must only read refs.
+            var pending = new Queue<UnityEngine.Object>(controllers.Where(controller => controller != null).Distinct());
+            var visited = new HashSet<UnityEngine.Object>();
+            var clips = new HashSet<AnimationClip>();
+            while (pending.Count > 0)
+            {
+                var current = pending.Dequeue();
+                if (current == null || !visited.Add(current)) continue;
+                if (current is AnimationClip clip) { clips.Add(clip); continue; }
+                using (var serialized = new SerializedObject(current))
+                using (var property = serialized.GetIterator())
+                    while (property.Next(true))
+                    {
+                        if (property.propertyType != SerializedPropertyType.ObjectReference) continue;
+                        var reference = property.objectReferenceValue;
+                        if (reference is RuntimeAnimatorController || reference is AnimatorStateMachine ||
+                            reference is AnimatorState || reference is BlendTree || reference is AnimationClip)
+                            pending.Enqueue(reference);
+                    }
+            }
+            return clips.Count;
         }
 
         private static int CountComponents(GameObject avatar, string fullName)

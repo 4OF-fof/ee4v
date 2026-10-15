@@ -559,24 +559,23 @@ namespace Ee4v.AvatarParts
                     animator.isHuman);
         }
 
-        private Dictionary<Transform, Vector3> ResolveAddedPrefabBodyScales(
-            GameObject added)
+        private static Dictionary<Transform, Vector3> ResolveAddedPrefabBodyScales(
+            GameObject avatar, GameObject added, GameObject prefabAsset, IReadOnlyCollection<int> prefabSiblingIndices)
         {
             var result = new Dictionary<Transform, Vector3>();
-            var avatar = _context.Root;
             var animator = avatar.GetComponentsInChildren<Animator>(true)
                 .FirstOrDefault(candidate => candidate.avatar != null &&
                     candidate.avatar.isHuman && candidate.isHuman &&
                     !candidate.transform.IsChildOf(added.transform) &&
                     PrefabHierarchyUtility.IsInScope(candidate.transform,
-                        avatar.transform, -1, _context.PrefabSiblingIndices));
+                        avatar.transform, -1, prefabSiblingIndices));
             if (animator == null)
             {
                 return result;
             }
 
-            var prefab = _context.PrefabAsset != null
-                ? _context.PrefabAsset
+            var prefab = prefabAsset != null
+                ? prefabAsset
                 : PrefabUtility.GetCorrespondingObjectFromSource(avatar);
             var basePrefab = prefab != null
                 ? PrefabUtility.GetCorrespondingObjectFromSource(prefab)

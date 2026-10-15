@@ -14,11 +14,11 @@ namespace Ee4v.AvatarParts
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public void SelectPreviewPart(string partKey)
+        public void SelectPreviewPart(string partKey, bool openDetails = false)
         {
             var entries = ReadPrefabObjects();
             var entry = entries.FirstOrDefault(candidate =>
-                PrefabScenePreview.GetPartKey(
+                GameObjectPreview.GetPartKey(
                     candidate.PrefabSiblingIndex,
                     candidate.SiblingPath) == partKey);
             while (entry == null && !string.IsNullOrEmpty(partKey))
@@ -28,12 +28,19 @@ namespace Ee4v.AvatarParts
                     ? string.Empty
                     : partKey.Substring(0, separator);
                 entry = entries.FirstOrDefault(candidate =>
-                    PrefabScenePreview.GetPartKey(
+                    GameObjectPreview.GetPartKey(
                         candidate.PrefabSiblingIndex,
                         candidate.SiblingPath) == partKey);
             }
             if (entry == null)
             {
+                return;
+            }
+            var selectedKey = GameObjectPreview.GetPartKey(
+                entry.PrefabSiblingIndex, entry.SiblingPath);
+            if (!openDetails)
+            {
+                SelectPartRow(selectedKey, false);
                 return;
             }
 
@@ -48,21 +55,12 @@ namespace Ee4v.AvatarParts
             {
                 _context.SelectedBodyPart = null;
             }
-            var selectedKey = PrefabScenePreview.GetPartKey(
-                entry.PrefabSiblingIndex, entry.SiblingPath);
-            var separatorIndex = selectedKey.IndexOf('/');
-            while (separatorIndex >= 0)
-            {
-                _expandedObjectGroups.Add(
-                    selectedKey.Substring(0, separatorIndex));
-                separatorIndex = selectedKey.IndexOf('/', separatorIndex + 1);
-            }
             NavigateToPart(selectedKey);
         }
 
         public void ClearPreviewSelection()
         {
-            NavigateToPart(null);
+            SelectPartRow(null, false);
         }
 
         public VisualElement BuildControls()

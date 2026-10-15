@@ -87,7 +87,7 @@ namespace Ee4v.AssetManager.UI
                 error.Clear();
                 if (_variantState.VariantMetadataSaveCount == 1)
                 {
-                    error.parent?.Q<AssetTagField>()?.SetValues(GetAvailableTagOptions(), variant.Tags);
+                    error.parent?.Q<TagField>()?.SetValues(GetAvailableTagOptions(), variant.Tags);
                 }
                 if (!_disposed && ShowsInformation && InformationVariantId == variant.VariantId)
                 {
@@ -98,7 +98,7 @@ namespace Ee4v.AssetManager.UI
             catch (Exception exception)
             {
                 error.Clear();
-                error.Add(UiTextFactory.CreateHelpBox(exception.Message, HelpBoxMessageType.Error));
+                error.Add(UiTextFactory.CreateMessagePanel(exception.Message, MessageSeverity.Error));
                 Debug.LogException(exception);
             }
             finally
@@ -183,7 +183,7 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private IReadOnlyList<AssetTagOption> GetAvailableTagOptions()
+        private IReadOnlyList<TagOption> GetAvailableTagOptions()
         {
             var usageCounts = new Dictionary<string, int>(
                 StringComparer.OrdinalIgnoreCase);
@@ -207,7 +207,7 @@ namespace Ee4v.AssetManager.UI
                     !string.IsNullOrWhiteSpace(tag.Path))
                 .Select(tag => tag.Path)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(path => new AssetTagOption(
+                .Select(path => new TagOption(
                     path,
                     usageCounts.TryGetValue(path, out var count)
                         ? count

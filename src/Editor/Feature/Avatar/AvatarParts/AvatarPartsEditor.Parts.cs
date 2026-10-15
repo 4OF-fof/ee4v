@@ -23,9 +23,9 @@ namespace Ee4v.AvatarParts
                 "ee4v-modification-workflow__objects-content");
             if (!_context.Edits.CanEditPrefab())
             {
-                panel.Add(UiTextFactory.CreateHelpBox(
+                panel.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.assets.protected"),
-                    HelpBoxMessageType.Warning));
+                    MessageSeverity.Warning));
                 return panel;
             }
 
@@ -37,9 +37,9 @@ namespace Ee4v.AvatarParts
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                panel.Add(UiTextFactory.CreateHelpBox(
+                panel.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.assets.readFailed"),
-                    HelpBoxMessageType.Error));
+                    MessageSeverity.Error));
                 return panel;
             }
 
@@ -50,14 +50,19 @@ namespace Ee4v.AvatarParts
                     entries, _context.SelectedBodyPart.Value);
             }
             var selected = displayed.FirstOrDefault(entry =>
-                PrefabScenePreview.GetPartKey(entry.PrefabSiblingIndex,
+                GameObjectPreview.GetPartKey(entry.PrefabSiblingIndex,
                     entry.SiblingPath) == _context.SelectedPartKey);
             if (selected != null)
             {
-                panel.Add(BuildPartDetails(selected));
+                panel.Add(BuildPartDetails(selected, displayed));
                 return panel;
             }
-            _context.SelectedPartKey = null;
+            if (_context.SelectedPartKey != null) { _context.SelectedPartKey = null; }
+            if (!displayed.Any(entry => GameObjectPreview.GetPartKey(
+                    entry.PrefabSiblingIndex, entry.SiblingPath) == _context.HighlightedPartKey))
+            {
+                _context.HighlightedPartKey = null;
+            }
             if (_context.SelectedPrefabSiblingIndex is int attachmentIndex && attachmentIndex >= 0 &&
                 _context.Root != null && attachmentIndex < _context.Root.transform.childCount)
             {
@@ -70,9 +75,9 @@ namespace Ee4v.AvatarParts
             }
             if (displayed.Count == 0)
             {
-                panel.Add(UiTextFactory.CreateHelpBox(
+                panel.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.objects.empty"),
-                    HelpBoxMessageType.Info));
+                    MessageSeverity.Info));
                 return panel;
             }
 
@@ -221,7 +226,7 @@ namespace Ee4v.AvatarParts
                 content.Add(BuildObjectNode(child, depth + 1));
             }
 
-            var key = PrefabScenePreview.GetPartKey(
+            var key = GameObjectPreview.GetPartKey(
                 node.Entry.PrefabSiblingIndex,
                 node.Entry.SiblingPath);
             UiButton toggle = null;
@@ -251,10 +256,13 @@ namespace Ee4v.AvatarParts
                 variant: UiButtonVariant.Ghost);
             toggle.AddToClassList(
                 "ee4v-modification-workflow__object-disclosure");
-            row[0].RegisterCallback<ClickEvent>(_ => ToggleFoldout());
             row.Insert(0, toggle);
             group.Add(row);
             group.Add(content);
+            AvatarEditingUi.RegisterSelectionReveal(content, () =>
+            {
+                if (_expandedObjectGroups.Add(key)) { UpdateFoldout(); }
+            });
             UpdateFoldout();
             return group;
         }
@@ -321,24 +329,40 @@ namespace Ee4v.AvatarParts
             _context.Host.RefreshPrefabPreviewVisibilityControls(prefabSiblingIndex);
         }
 
-        private VisualElement BuildObjectRow(PrefabObjectEntry entry)
+        private VisualElement BuildObjectRow(
+            PrefabObjectEntry entry,
+            bool isDetailsHeader = false)
         {
             var row = new VisualElement();
             row.AddToClassList(
                 "ee4v-modification-workflow__object-row");
-            var key = PrefabScenePreview.GetPartKey(
+            var key = GameObjectPreview.GetPartKey(
                 entry.PrefabSiblingIndex, entry.SiblingPath);
+            row.userData = key;
             row.EnableInClassList(
                 "ee4v-modification-workflow__object-row--selected",
-                key == _context.SelectedPartKey);
+                !isDetailsHeader && key == _context.HighlightedPartKey);
             var text = new VisualElement();
             text.AddToClassList(
                 "ee4v-modification-workflow__object-text");
-            text.RegisterCallback<ClickEvent>(_ => SelectPartRow(key));
+            if (!isDetailsHeader)
+            {
+                row.RegisterCallback<PointerDownEvent>(evt =>
+                {
+                    if (evt.button != 0 ||
+                        AvatarEditingUi.IsRowActionTarget(row, evt.target as VisualElement)) { return; }
+                    SelectPartRow(key, evt.clickCount == 2);
+                    evt.StopPropagation();
+                }, TrickleDown.TrickleDown);
+            }
             var name = UiTextFactory.Create(
                 entry.Name,
                 "ee4v-modification-workflow__object-name");
             name.tooltip = entry.Path;
+            if (isDetailsHeader)
+            {
+                name.AddToClassList(UiClassNames.SectionTitle);
+            }
             if (entry.IsPrefabRoot)
             {
                 var nameLine = new VisualElement();
@@ -355,11 +379,22 @@ namespace Ee4v.AvatarParts
                 UiClassNames.SecondaryText,
                 "ee4v-modification-workflow__object-path");
             path.tooltip = entry.Path;
+            if (isDetailsHeader)
+            {
+                path.AddToClassList("ee4v-part-details__path");
+                path.SetWhiteSpace(WhiteSpace.Normal);
+            }
             if (!entry.IsPrefabRoot || !string.Equals(entry.Name, entry.Path, StringComparison.Ordinal))
             {
                 text.Add(path);
             }
             row.Add(text);
+            var state = new PrefabObjectRowState
+            {
+                Row = row,
+                Name = name,
+                Path = path
+            };
             var actions = new VisualElement();
             actions.AddToClassList(
                 "ee4v-modification-workflow__object-actions");
@@ -369,7 +404,11 @@ namespace Ee4v.AvatarParts
                 previewVisibility = AvatarEditingUi.CreatePrefabVisibilityButton(
                     true,
                     string.Empty,
-                    () => TogglePartPreviewVisibility(entry),
+                    () =>
+                    {
+                        TogglePartPreviewVisibility(entry);
+                        UpdateObjectRow(entry, state);
+                    },
                     "ee4v-modification-workflow__object-preview-visibility");
                 actions.Add(previewVisibility);
             }
@@ -377,27 +416,40 @@ namespace Ee4v.AvatarParts
             visibility.AddToClassList(
                 "ee4v-modification-workflow__object-visibility");
             visibility.RegisterValueChangedCallback(evt =>
-                ChangePrefabObject(entry, evt.newValue));
+            {
+                ChangePrefabObject(entry, evt.newValue);
+                UpdateObjectRow(entry, state);
+            });
             actions.Add(visibility);
             row.Add(actions);
             row.RegisterCallback<ContextClickEvent>(evt =>
                 ShowActiveSelfContextMenu(evt, entry));
-            var state = new PrefabObjectRowState
-            {
-                Row = row,
-                Name = name,
-                Path = path,
-                Visibility = visibility,
-                PreviewVisibility = previewVisibility
-            };
+            state.Visibility = visibility;
+            state.PreviewVisibility = previewVisibility;
             _objectRows[entry] = state;
             UpdateObjectRow(entry, state);
             return row;
         }
 
-        private void SelectPartRow(string key)
+        private void SelectPartRow(string key, bool openDetails)
         {
-            NavigateToPart(key);
+            if (openDetails) { NavigateToPart(key); return; }
+            _context.HighlightedPartKey = key;
+            _context.ControlsHost?.Query<VisualElement>(
+                className: "ee4v-modification-workflow__object-row").ForEach(row =>
+            {
+                var selected = key != null &&
+                    !row.ClassListContains("ee4v-part-details__header") && Equals(row.userData, key);
+                row.EnableInClassList("ee4v-modification-workflow__object-row--selected",
+                    selected);
+                if (selected)
+                {
+                    AvatarEditingUi.RevealSelection(row);
+                    AvatarEditingUi.ScrollSelectionIntoView(_context.ControlsHost, row,
+                        () => _context.SelectedPartKey == null && _context.HighlightedPartKey == key);
+                }
+            });
+            _context.Host.SyncPreviewSelection();
         }
 
         private void ShowActiveSelfContextMenu(
@@ -452,7 +504,7 @@ namespace Ee4v.AvatarParts
             }
             var previewVisible = entry.IsVisibleInHierarchy &&
                 !_context.HiddenPreviewParts.Contains(
-                    PrefabScenePreview.GetPartKey(
+                    GameObjectPreview.GetPartKey(
                         entry.PrefabSiblingIndex, entry.SiblingPath));
             var previewTooltip = entry.IsVisibleInHierarchy
                 ? I18N.Get(previewVisible
@@ -473,7 +525,7 @@ namespace Ee4v.AvatarParts
             {
                 return;
             }
-            var key = PrefabScenePreview.GetPartKey(
+            var key = GameObjectPreview.GetPartKey(
                 entry.PrefabSiblingIndex, entry.SiblingPath);
             if (!_context.HiddenPreviewParts.Add(key))
             {
@@ -693,7 +745,7 @@ namespace Ee4v.AvatarParts
                             .GetChild(entry.PrefabSiblingIndex)
                             .gameObject.activeSelf);
                 }
-                _context.Preview?.ReloadPrefabPreservingView(_context.Root);
+                _context.Preview?.ReloadTargetPreservingView(_context.Root);
                 _context.AssetFeedback = string.Empty;
                 _context.Host.ClearCaches();
                 _context.Edits.Changed();

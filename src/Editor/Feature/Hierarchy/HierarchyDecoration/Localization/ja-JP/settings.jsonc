@@ -5,7 +5,7 @@
     },
     "enabled": {
       "label": "ヒエラルキーの装飾を表示",
-      "tooltip": "Create Empty で作成した、名前が「---」で始まり親と子を持たない GameObject をヒエラルキーの区切り線として描画します。"
+      "tooltip": "「Create Empty」で作成した、名前が「---」で始まり親子を持たない空のGameObjectを、Hierarchy上の区切り線（見出し）として描画します。"
     }
   },
   "undo": {

@@ -18,6 +18,33 @@ namespace Ee4v.AssetManager.UI
         private VisualElement _variantChangesHover;
         private IVisualElementScheduledItem _variantChangesPendingShow;
         private IVisualElementScheduledItem _variantChangesPendingHide;
+        private VariantChangesSnapshot _variantChangesSnapshot;
+
+        private sealed class VariantChangesSnapshot
+        {
+            internal long Version;
+            internal string Path;
+            internal GameObject Root;
+            internal AssetVariantChangeDetails Details;
+            internal IReadOnlyList<(AssetVariantChangeKind Kind, string Content)> Pending;
+        }
+
+        private VariantChangesSnapshot ReadVariantChanges()
+        {
+            var path = GetWorkingAssetPath();
+            var cached = _variantChangesSnapshot;
+            if (cached != null && cached.Version == _variantSaveStatusVersion &&
+                cached.Path == path && cached.Root == _avatarContext.Root) return cached;
+            _manager = _manager ?? AssetManagerWindowSession.GetManager();
+            var variants = AssetManagerWindowSession.TryGetVariantManager(_manager);
+            var snapshot = new VariantChangesSnapshot
+            {
+                Version = _variantSaveStatusVersion, Path = path, Root = _avatarContext.Root,
+                Details = variants.GetChangeDetails(path), Pending = DescribeSceneChanges()
+            };
+            if (snapshot.Version == _variantSaveStatusVersion) _variantChangesSnapshot = snapshot;
+            return snapshot;
+        }
 
         private void AttachVariantChangesHover(UiButton anchor, bool discard)
         {
@@ -63,10 +90,9 @@ namespace Ee4v.AssetManager.UI
             popup.Add(scroll);
             try
             {
-                _manager = _manager ?? AssetManagerWindowSession.GetManager();
-                var variants = AssetManagerWindowSession.TryGetVariantManager(_manager);
-                var details = variants.GetChangeDetails(GetWorkingAssetPath());
-                var pending = DescribeSceneChanges();
+                var snapshot = ReadVariantChanges();
+                var details = snapshot.Details;
+                var pending = snapshot.Pending;
                 AddChangeGroups(scroll, discard ? details.DiscardChanges : details.SaveChanges,
                     !discard || details.CurrentRevisionNumber.HasValue
                         ? pending : Array.Empty<(AssetVariantChangeKind Kind, string Content)>());

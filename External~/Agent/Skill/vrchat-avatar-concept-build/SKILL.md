@@ -5,10 +5,12 @@ description: Unity と ee4v で VRChat アバターを改変する。素材の P
 
 # Prefab を確認して ee4v Variant に改変する
 
+ee4v-cliはee4v-cli skillのbin/win-x64/ee4v-cli.exeを絶対pathで起動する。以下のコマンド名は同梱exeを指し、PATH登録を前提にしない。
+
 ## 素材と実物を確認する
 
 1. 接続中の Unity Project、ベースアバター、既存の派生アバターを確認する。利用者の Scene と元 Prefab を変更しない。
-2. ee4v MCP で AssetManager を検索し、候補の File、依存素材、対象アバター用 Prefab を特定する。対応タグだけを根拠にしない。Unitypackage の名前で判別できない場合は取り込み前に内部の Prefab path を確認する。
+2. ee4v-cli projectsで対象Projectを確認し、asset-searchとasset-get-itemで候補のFile、依存素材、対象アバター用Prefabを特定する。対応タグだけを根拠にしない。Unitypackageの名前で判別できない場合は取り込み前に内部のPrefab pathを確認する。以後のCLIには--projectを付ける。
 3. 必要な素材を**画像生成より前に** import する。既に Project にある素材は再 import しない。Prefab の Renderer、Material、Shader、欠落参照、装着方法を調べる。
 4. ベースと追加素材の Prefab を正面・背面・必要な側面から撮影する。撮影が失敗した場合は Unity の隔離 Preview で描画し、問題を記録する。画像生成への入力を禁じる利用条件が明記された素材画像は送信しない。
 
@@ -20,9 +22,9 @@ description: Unity と ee4v で VRChat アバターを改変する。素材の P
 
 ## 承認された案を制作する
 
-1. **最初に ee4v の Variant 作成処理を実行する。** `ee4v_asset_get_item`でベースItemへ取り込み済みのPrefab GUIDを確認し、`ee4v_asset_create_variant`へItem ID・元Prefab GUID・名前を渡す。UIを使う場合はAssetManagerの「派生アセットを追加」から同じ処理を実行する。既存Variantの改変を再開する場合は、`ee4v_asset_list_variants`で登録を確認して再利用する。
+1. **最初にee4vのVariant作成処理を実行する。** ee4v-cli asset-get-itemでベースItemへ取り込み済みのPrefab GUIDを確認し、asset-create-variantへItem ID・元Prefab GUID・名前を渡す。UIを使う場合はAssetManagerの「派生アセットを追加」から同じ処理を実行する。既存Variantの改変を再開する場合はasset-list-variantsで登録を確認して再利用する。
 2. 作成直後、Prefab が指定したベースの Variant であり、ee4v の派生アセット一覧で正しい親 Item に表示されることを確認する。`DerivedAssetCatalog.Read` と `FindByParentItem`、または ee4v の Item 取得結果で親 Item ID、元 Prefab GUID、派生 Prefab の GUID と path を照合する。ベース Prefab に Material 依存がある場合は、ee4v が作成した Material Variant も確認する。確認できるまでパーツ編集を始めない。作成処理を実行できなければ、その理由を報告して制作を止める。
-3. ee4v が作成した派生 Prefab に、`ee4v_asset_add_prefab_to_variant`で対応素材を接続を保った nested Prefab として追加する。元の衣装など必要なパーツだけを派生側で切り替え、体型 BlendShape と Material を調整する。元の素材は直接編集しない。
-4. Material の値を変える場合は派生フォルダー内の Material Variant を編集し、import した元 Material は編集しない。ee4v が生成した Material Variant を優先し、追加素材の Material に変更が必要なら`ee4v_asset_create_material_variant`で派生フォルダーに作る。改変後は`ee4v_asset_save_variant`で履歴を保存する。
+3. ee4vが作成した派生Prefabに、ee4v-cli asset-add-prefab-to-variantで対応素材を接続を保ったnested Prefabとして追加する。体型・MA装着はinspect-avatar-authoringとedit-avatar-shape / edit-avatar-attachmentを使う。元の素材は直接編集しない。
+4. Materialの値を変える場合は派生フォルダー内のMaterial Variantを汎用Unity CLIで編集し、importした元Materialは編集しない。ee4vが生成したMaterial Variantを優先し、必要ならee4v-cli asset-create-material-variantで作る。改変後はasset-save-variantで履歴を保存する。
 5. 必要なら承認済み画像を Unity Project と派生アバターのギャラリーに登録する。
-6. 正面・背面・斜めの実物 Preview、欠落参照、Console と AssetManager での表示を確認する。コンセプトとの差と作業中に見つけた不足機能を、再現条件とともに報告する。
+6. 正面・背面・斜めの実物Preview、欠落参照、ConsoleとAssetManagerでの表示を確認する。preview画像はCLIの--outputで保存し、結果のimages[].pathを使用する。timeoutは失敗と見なして書き込みを繰り返さず、返されたjob IDをwaitで取得する。コンセプトとの差と作業中に見つけた不足機能を、再現条件とともに報告する。

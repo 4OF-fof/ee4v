@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -12,14 +15,17 @@ namespace Ee4v.Mcp
     internal sealed class Ee4vMcpHttpServer : IDisposable
     {
         private const string ServerName = "ee4v";
-        private const string ServerVersion = "0.1.0";
+        private const string ServerVersion = "0.2.0";
         private const long MaximumRequestBytes = 8L * 1024L * 1024L;
+        private static readonly string[] ProtocolVersions = { "2025-11-25", "2025-06-18", "2025-03-26" };
+        private readonly ConcurrentDictionary<string, RequestSession> _sessions = new ConcurrentDictionary<string, RequestSession>();
         private readonly int _port;
         private HttpListener _listener;
         private CancellationTokenSource _cancellation;
         private Task _listenTask;
+        private readonly Ee4vCliBridge _cli;
 
-        internal Ee4vMcpHttpServer(int port)
+        internal Ee4vMcpHttpServer(int port, Ee4vCliBridge cli = null)
         {
             if (port < 1024 || port > 65535)
             {
@@ -27,6 +33,7 @@ namespace Ee4v.Mcp
             }
 
             _port = port;
+            _cli = cli;
         }
 
         internal bool IsRunning => _listener != null && _listener.IsListening;
@@ -66,6 +73,9 @@ namespace Ee4v.Mcp
             _listenTask = null;
 
             cancellation?.Cancel();
+            foreach (var session in _sessions.Values) session.Close();
+            _sessions.Clear();
+            _cli?.Dispose();
             try
             {
                 listener?.Stop();
@@ -88,7 +98,7 @@ namespace Ee4v.Mcp
                 HttpListenerContext context;
                 try
                 {
-                    context = await listener.GetContextAsync();
+                    context = await listener.GetContextAsync().ConfigureAwait(false);
                 }
                 catch (Exception exception) when (
                     cancellationToken.IsCancellationRequested ||
@@ -102,7 +112,7 @@ namespace Ee4v.Mcp
             }
         }
 
-        private static async Task Process(
+        private async Task Process(
             HttpListenerContext context,
             CancellationToken cancellationToken)
         {
@@ -133,6 +143,38 @@ namespace Ee4v.Mcp
                     return;
                 }
 
+                if (context.Request.Url.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal))
+                {
+                    await ProcessCli(context, cancellationToken);
+                    return;
+                }
+
+                var versionHeader = context.Request.Headers["MCP-Protocol-Version"];
+                if (versionHeader != null && !ProtocolVersions.Contains(versionHeader, StringComparer.Ordinal))
+                {
+                    await WriteStatus(context.Response, 400, "Unsupported MCP-Protocol-Version.");
+                    return;
+                }
+
+                if (context.Request.HttpMethod == "DELETE" && context.Request.Url.AbsolutePath == "/mcp")
+                {
+                    var closingId = context.Request.Headers["MCP-Session-Id"];
+                    if (closingId == null)
+                        await WriteStatus(context.Response, 400, "MCP-Session-Id is required.");
+                    else if (!_sessions.TryGetValue(closingId, out var closingSession))
+                        await WriteStatus(context.Response, 404, "MCP session has ended.");
+                    else if (versionHeader != null && versionHeader != closingSession.ProtocolVersion)
+                        await WriteStatus(context.Response, 400, "MCP-Protocol-Version must match the initialized session.");
+                    else if (_sessions.TryRemove(closingId, out _))
+                    {
+                        closingSession.Close();
+                        context.Response.StatusCode = 204;
+                        context.Response.Close();
+                    }
+                    else await WriteStatus(context.Response, 404, "MCP session has ended.");
+                    return;
+                }
+
                 if (context.Request.HttpMethod != "POST" ||
                     !string.Equals(context.Request.Url.AbsolutePath, "/mcp", StringComparison.Ordinal))
                 {
@@ -147,32 +189,99 @@ namespace Ee4v.Mcp
                 }
 
                 JObject request;
-                request = JObject.Parse(await ReadRequestBody(context.Request));
+                request = JObject.Parse(await ReadRequestBody(context.Request, cancellationToken));
+
+                if (request["jsonrpc"]?.Type != JTokenType.String || (string)request["jsonrpc"] != "2.0" || request["method"]?.Type != JTokenType.String ||
+                    request["params"] != null && !(request["params"] is JObject) ||
+                    request["id"] != null && request["id"].Type != JTokenType.String && request["id"].Type != JTokenType.Integer)
+                {
+                    await WriteJson(context.Response, 400, Error(null, -32600, "Invalid request", "A JSON-RPC 2.0 method, object params and string/integer request ID are required."));
+                    return;
+                }
 
                 var method = (string)request["method"];
-                if (method != null && method.StartsWith("notifications/", StringComparison.Ordinal))
+                var sessionId = context.Request.Headers["MCP-Session-Id"];
+                RequestSession session = null;
+                if (sessionId != null && !_sessions.TryGetValue(sessionId, out session))
                 {
+                    await WriteStatus(context.Response, 404, "MCP session has ended. Initialize again.");
+                    return;
+                }
+                if (session != null && versionHeader != null && versionHeader != session.ProtocolVersion)
+                {
+                    await WriteStatus(context.Response, 400, "MCP-Protocol-Version must match the initialized session.");
+                    return;
+                }
+                if (method != "initialize" && method != "ping" && method != "server/discover" && session == null)
+                {
+                    await WriteStatus(context.Response, 400, "MCP-Session-Id is required. Initialize first.");
+                    return;
+                }
+                if (request["id"] == null)
+                {
+                    if (method == "notifications/cancelled") session?.Cancel((request["params"] as JObject)?["requestId"]);
                     context.Response.StatusCode = 202;
                     context.Response.Close();
                     return;
                 }
 
-                var response = await HandleRequest(request, cancellationToken);
+                JObject response;
+                if (method == "initialize")
+                {
+                    var requestedVersion = (request["params"] as JObject)?["protocolVersion"];
+                    if (requestedVersion?.Type != JTokenType.String)
+                    {
+                        await WriteJson(context.Response, 200, Error(request["id"], -32602, "Invalid params", "protocolVersion is required."));
+                        return;
+                    }
+                    var version = ProtocolVersions.Contains((string)requestedVersion, StringComparer.Ordinal)
+                        ? (string)requestedVersion : ProtocolVersions[0];
+                    sessionId = Guid.NewGuid().ToString("N");
+                    _sessions[sessionId] = new RequestSession(version);
+                    context.Response.Headers["MCP-Session-Id"] = sessionId;
+                    var result = ServerCapabilities();
+                    result["protocolVersion"] = version;
+                    response = Result(request["id"], result);
+                }
+                else if (session != null)
+                {
+                    using (var operation = session.Begin(request["id"], cancellationToken))
+                    {
+                        try { response = await HandleRequest(request, operation.Token); }
+                        finally { session.End(request["id"]); }
+                    }
+                }
+                else response = await HandleRequest(request, cancellationToken);
                 await WriteJson(context.Response, 200, response);
+            }
+            catch (OperationCanceledException)
+            {
+                context.Response.Abort();
+            }
+            catch (McpToolException exception)
+            {
+                await TryWriteJson(context.Response, 400,
+                    context.Request.Url.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal)
+                        ? McpToolResult.Error(exception.Code, exception.Message, exception.Details).StructuredContent
+                        : Error(null, -32600, "Invalid request", exception.Message));
             }
             catch (RequestTooLargeException exception)
             {
                 await TryWriteJson(
                     context.Response,
                     413,
-                    Error(null, -32600, "Request too large", exception.Message));
+                    context.Request.Url.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal)
+                        ? McpToolResult.Error("request_too_large", exception.Message).StructuredContent
+                        : Error(null, -32600, "Request too large", exception.Message));
             }
             catch (JsonException exception)
             {
                 await TryWriteJson(
                     context.Response,
                     400,
-                    Error(null, -32700, "Parse error", exception.Message));
+                    context.Request.Url.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal)
+                        ? McpToolResult.Error("invalid_json", exception.Message).StructuredContent
+                        : Error(null, -32700, "Parse error", exception.Message));
             }
             catch (Exception exception)
             {
@@ -184,7 +293,8 @@ namespace Ee4v.Mcp
         }
 
         private static async Task<string> ReadRequestBody(
-            HttpListenerRequest request)
+            HttpListenerRequest request,
+            CancellationToken cancellationToken)
         {
             var buffer = new byte[81920];
             using (var content = new MemoryStream())
@@ -194,7 +304,7 @@ namespace Ee4v.Mcp
                     var read = await request.InputStream.ReadAsync(
                         buffer,
                         0,
-                        buffer.Length);
+                        buffer.Length, cancellationToken);
                     if (read == 0)
                     {
                         break;
@@ -221,6 +331,38 @@ namespace Ee4v.Mcp
             }
         }
 
+        private async Task ProcessCli(HttpListenerContext context, CancellationToken cancellationToken)
+        {
+            if (_cli == null) { await WriteStatus(context.Response, 404, "CLI transport is unavailable."); return; }
+            if (!_cli.Authorize(context.Request.Headers["Authorization"]))
+            { await WriteStatus(context.Response, 401, "The Editor connection token is missing or expired."); return; }
+            var path = context.Request.Url.AbsolutePath;
+            var method = context.Request.HttpMethod;
+            if (method == "GET" && path == "/api/health")
+                await WriteJson(context.Response, 200, _cli.Health());
+            else if (method == "GET" && path == "/api/operations")
+                await WriteJson(context.Response, 200, new JObject { ["apiVersion"] = Ee4vCliBridge.ApiVersion, ["operations"] = McpToolRegistry.List() });
+            else if (method == "POST" && path == "/api/invoke")
+            {
+                var request = JObject.Parse(await ReadRequestBody(context.Request, cancellationToken));
+                await WriteJson(context.Response, 202, _cli.Submit(request));
+            }
+            else if (method == "GET" && path == "/api/jobs")
+                await WriteJson(context.Response, 200, _cli.ListJobs());
+            else if (path.StartsWith("/api/jobs/", StringComparison.Ordinal))
+            {
+                var parts = path.Substring("/api/jobs/".Length).Split('/');
+                var action = parts.Length == 1 && method == "GET" ? "get" :
+                    parts.Length == 1 && method == "DELETE" ? "release" :
+                    parts.Length == 2 && parts[1] == "cancel" && method == "POST" ? "cancel" : null;
+                if (action == null) { await WriteStatus(context.Response, 405, "Invalid job operation."); return; }
+                try { await WriteJson(context.Response, 200, _cli.GetJob(Uri.UnescapeDataString(parts[0]), action)); }
+                catch (McpToolException exception)
+                { await WriteJson(context.Response, exception.Code == "job_not_found" ? 404 : 409, McpToolResult.Error(exception.Code, exception.Message).StructuredContent); }
+            }
+            else await WriteStatus(context.Response, 404, "Unknown CLI endpoint.");
+        }
+
         private static async Task<JObject> HandleRequest(
             JObject request,
             CancellationToken cancellationToken)
@@ -232,24 +374,19 @@ namespace Ee4v.Mcp
             {
                 case "server/discover":
                     return Result(id, ServerCapabilities());
-                case "initialize":
-                {
-                    var protocolVersion = (string)parameters["protocolVersion"] ??
-                                          "2025-11-25";
-                    var result = ServerCapabilities();
-                    result["protocolVersion"] = protocolVersion;
-                    return Result(id, result);
-                }
                 case "ping":
                     return Result(id, new JObject());
                 case "tools/list":
                     return Result(id, new JObject { ["tools"] = McpToolRegistry.List() });
                 case "tools/call":
                 {
+                    if (parameters["name"]?.Type != JTokenType.String ||
+                        parameters["arguments"] != null && !(parameters["arguments"] is JObject))
+                        return Error(id, -32602, "Invalid params", "name must be a string and arguments must be an object.");
                     var name = (string)parameters["name"];
                     var arguments = parameters["arguments"] as JObject ?? new JObject();
                     var toolResult = await UnityMainThreadDispatcher.Run(
-                        () => McpToolRegistry.Invoke(name, arguments));
+                        () => McpToolRegistry.Invoke(name, arguments, cancellationToken), cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
                     return Result(id, toolResult.ToProtocolValue());
                 }
@@ -405,6 +542,42 @@ namespace Ee4v.Mcp
             internal RequestTooLargeException(string message)
                 : base(message)
             {
+            }
+        }
+
+        private sealed class RequestSession
+        {
+            private readonly Dictionary<string, CancellationTokenSource> _requests = new Dictionary<string, CancellationTokenSource>();
+            private bool _closed;
+            internal RequestSession(string version) { ProtocolVersion = version; }
+            internal string ProtocolVersion { get; }
+            private static string Key(JToken id) => id?.ToString(Formatting.None);
+            internal CancellationTokenSource Begin(JToken id, CancellationToken serverToken)
+            {
+                lock (_requests)
+                {
+                    serverToken.ThrowIfCancellationRequested();
+                    if (_closed) throw new OperationCanceledException();
+                    var key = Key(id);
+                    if (_requests.ContainsKey(key)) throw new McpToolException("invalid_request", "A request with this ID is already running in this session.");
+                    var operation = CancellationTokenSource.CreateLinkedTokenSource(serverToken);
+                    _requests.Add(key, operation);
+                    return operation;
+                }
+            }
+            internal void End(JToken id) { lock (_requests) _requests.Remove(Key(id)); }
+            internal void Cancel(JToken id)
+            {
+                if (id == null || id.Type != JTokenType.String && id.Type != JTokenType.Integer) return;
+                lock (_requests) if (_requests.TryGetValue(Key(id), out var operation)) operation.Cancel();
+            }
+            internal void Close()
+            {
+                lock (_requests)
+                {
+                    _closed = true;
+                    foreach (var operation in _requests.Values) operation.Cancel();
+                }
             }
         }
     }

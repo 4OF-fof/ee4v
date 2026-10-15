@@ -12,7 +12,7 @@ namespace Ee4v.UI
             public void Register(CatalogRegistry registry)
             {
                 registry.RegisterStory(new StoryRegistration(
-                    "asset-picker", "Overlays", "AssetPicker",
+                    "asset-picker", "Inputs", "AssetPicker",
                     "Material・Textureは参照MaterialのUV使用先などで整理し、AnimationClipは表情の分類で絞り込むブラウザーPopupです。",
                     "種類「すべて」ではPrefab・Mesh・Shader・Scriptなども含めてItem内の取り込み済みアセットを確認できます。候補へ型名を表示し、同じPopupの位置・サイズ・Item・検索を維持したまま種類を切り替えられます。種類・参照元・分類には共通の標準Fieldスタイルを使います。候補metadataとUV解析はLibraryへ永続化し、Editor再起動後も変更のないファイルの結果を再利用します。検索・分類では実assetを読み込まず、表示・操作時に解決します。" +
                     "詳細画面の最上部に戻るボタンと所属名を置き、その下に種類と検索を配置します。AnimationClipの右ペインは表情・その他で共通し、再生時間・Loop・全カーブのキーフレーム数を上に固定し、対象パスとコンポーネントごとのプロパティ一覧をスクロールして確認します。" +

@@ -30,6 +30,7 @@ namespace Ee4v.AssetManager.UI
             internal CancellationTokenSource VariantRevisionHoverCancellation;
             internal FileTreeImageTooltipWindow VariantRevisionTooltip;
             internal bool VariantBusy;
+            internal bool DefersLifecycleRefresh;
             internal Task VariantMetadataSaveTask = Task.CompletedTask;
             internal int VariantMetadataSaveCount;
             internal CancellationTokenSource VariantPreviewCancellation;
@@ -43,19 +44,19 @@ namespace Ee4v.AssetManager.UI
             (_viewState.Page == AssetManagerPage.Archived &&
              TryGetArchiveVariantId(_viewState.SelectedArchiveEntryId, out var archiveVariantId)
                 ? archiveVariantId : ShowsVariants ? _viewState.SelectedVariantId : null) ??
-            (ShowsVariants ? null : FindStandaloneAsset(_viewState.DetailItemId ??
+            (ShowsVariants ? null : FindOwnedWork(_viewState.DetailItemId ??
                 (_viewState.Page == AssetManagerPage.Archived ? _viewState.SelectedArchiveEntryId : _viewState.SelectedItemId)))?.VariantId;
 
-        private DerivedAssetInfo FindStandaloneAsset(string itemId)
+        private DerivedAssetInfo FindOwnedWork(string itemId)
         {
             if (string.IsNullOrEmpty(itemId)) return null;
             var item = FindVariantItem(itemId);
             return item?.IsOriginal == true ? GetVariants().FirstOrDefault(variant =>
-                variant.IsOriginal && variant.ParentItemId == itemId) : null;
+                variant.IsOwnedWork && variant.ParentItemId == itemId) : null;
         }
 
         private bool IsStandaloneAsset(DerivedAssetInfo variant) =>
-            variant.IsOriginal && FindVariantItem(variant.ParentItemId)?.IsOriginal == true;
+            variant.IsOriginal && variant.IsOwnedWork;
 
         private void ShowVariantDetail(string variantId = null)
         {
@@ -101,7 +102,7 @@ namespace Ee4v.AssetManager.UI
             detail.Add(thumbnail);
             var name = AssetManagerControls.CreateTextField(I18N.Get("field.name"),
                 "ee4v-asset-manager__item-metadata-field", "ee4v-asset-manager__variant-name-field");
-            name.value = variant.Name;
+            name.Input.Value = variant.Name;
             var descriptionContainer = new VisualElement();
             descriptionContainer.AddToClassList("ee4v-asset-manager-control-field");
             descriptionContainer.AddToClassList("ee4v-asset-manager__item-metadata-field");
@@ -113,10 +114,10 @@ namespace Ee4v.AssetManager.UI
             description.AddToClassList("ee4v-asset-manager__variant-description-field");
             descriptionContainer.Add(description);
             var standalone = IsStandaloneAsset(variant);
-            name.isReadOnly = description.IsReadOnly = _variantManager == null || _variantState.VariantBusy ||
-                (standalone && variant.IsArchived);
+            name.Input.IsReadOnly = description.IsReadOnly = _variantManager == null || _variantState.VariantBusy ||
+                (variant.IsOwnedWork && variant.IsArchived);
             VisualElement tagsContainer = null;
-            AssetTagField tags = null;
+            TagField tags = null;
             if (standalone)
             {
                 tagsContainer = new VisualElement();
@@ -124,7 +125,7 @@ namespace Ee4v.AssetManager.UI
                 tagsContainer.AddToClassList("ee4v-asset-manager__item-metadata-field");
                 tagsContainer.Add(UiTextFactory.Create(I18N.Get("field.tags"),
                     UiClassNames.FormLabel, "ee4v-asset-manager-control-field__label"));
-                tags = new AssetTagField(_viewState.SelectTag,
+                tags = new TagField(_viewState.SelectTag,
                     isReadOnly: variant.IsArchived ||
                     _variantManager == null || _variantState.VariantBusy);
                 tags.SetValues(GetAvailableTagOptions(), variant.Tags);
@@ -133,13 +134,13 @@ namespace Ee4v.AssetManager.UI
             var metadataError = new VisualElement();
             Action saveMetadata = () =>
             {
-                var normalizedName = name.value.Trim();
+                var normalizedName = name.Input.Value.Trim();
                 if (normalizedName.Length == 0)
                 {
-                    ((InputField)name.Input).SetValueWithoutNotify(variant.Name);
+                    name.Input.SetValueWithoutNotify(variant.Name);
                     return;
                 }
-                ((InputField)name.Input).SetValueWithoutNotify(normalizedName);
+                name.Input.SetValueWithoutNotify(normalizedName);
                 SaveVariantMetadataAutomatically(variant, normalizedName, description.Value,
                     tags?.Values ?? Array.Empty<string>(), metadataError);
             };
@@ -154,7 +155,7 @@ namespace Ee4v.AssetManager.UI
 
         private static void AddVariantInformation(VisualElement detail, DerivedAssetInfo variant)
         {
-            var information = new AssetDetailSection(I18N.Get("detail.information"));
+            var information = new DetailSection(I18N.Get("detail.information"));
             information.AddToClassList("ee4v-asset-manager__variant-information");
             var updatedAt = variant.UpdatedAt;
             var size = variant.FileSizeBytes;
@@ -163,11 +164,11 @@ namespace Ee4v.AssetManager.UI
                 size = DerivedAssetCreator.GetVariantFileSize(variant.AssetPath, out var filesUpdatedAt);
                 if (filesUpdatedAt > updatedAt) updatedAt = filesUpdatedAt;
             }
-            information.Add(new AssetDetailKeyValueRow(I18N.Get("field.totalFileSize"),
+            information.Add(new ValueDisplay(I18N.Get("field.totalFileSize"),
                 size.HasValue ? AssetFileTreeBuilder.FormatSize(size.Value) : I18N.Get("common.unknown")));
-            information.Add(new AssetDetailKeyValueRow(I18N.Get("field.createdAt"),
+            information.Add(new ValueDisplay(I18N.Get("field.createdAt"),
                 FormatTimestamp(variant.CreatedAt)));
-            information.Add(new AssetDetailKeyValueRow(I18N.Get("field.updatedAt"),
+            information.Add(new ValueDisplay(I18N.Get("field.updatedAt"),
                 FormatTimestamp(updatedAt)));
             detail.Add(information);
         }
@@ -320,14 +321,14 @@ namespace Ee4v.AssetManager.UI
             };
             refreshAction();
             if (_variantState.VariantGalleryView != null) { _variantState.VariantGalleryView.RefreshControls += refreshAction; }
-            if (IsStandaloneAsset(variant))
+            if (variant.IsOwnedWork)
             {
                 var createDerived = AssetManagerControls.CreateButton(I18N.Get("detail.derivedAssetsAdd"), () =>
                 {
                     if (_createDerivedAsset != null) _createDerivedAsset(variant.ParentItemId);
                     else _viewState.OpenDerivedAssetsPage(variant.ParentItemId);
                 });
-                createDerived.SetEnabled(!variant.IsArchived && !_variantState.VariantBusy);
+                createDerived.SetEnabled(!variant.IsArchived && !_variantState.VariantBusy && variant.Prefab != null);
                 detail.Add(createDerived);
             }
             action = operation;
@@ -391,7 +392,7 @@ namespace Ee4v.AssetManager.UI
                     });
                 }
             }
-            catch (Exception exception) { gallery.Add(UiTextFactory.CreateHelpBox(exception.Message, HelpBoxMessageType.Error)); }
+            catch (Exception exception) { gallery.Add(UiTextFactory.CreateMessagePanel(exception.Message, MessageSeverity.Error)); }
             if (latestRevision != null) { entries.Add(automatic(latestRevision)); }
             var controls = new VisualElement { pickingMode = PickingMode.Ignore };
             controls.AddToClassList("ee4v-asset-manager__variant-gallery-controls");
@@ -731,7 +732,7 @@ namespace Ee4v.AssetManager.UI
         private void AddVariantHistory(VisualElement detail, DerivedAssetInfo variant,
             IReadOnlyList<AssetVariantRevision> revisions, Action<AssetVariantRevision> selectRevision, UiButton action)
         {
-            var section = new AssetDetailSection(I18N.Get("variant.history"));
+            var section = new DetailSection(I18N.Get("variant.history"));
             section.AddToClassList("ee4v-asset-manager__variant-history");
             section.Q<SectionHeader>().Actions.Add(action);
             var scroll = new ScrollView(ScrollViewMode.Vertical)
@@ -892,7 +893,7 @@ namespace Ee4v.AssetManager.UI
         private void AddVariantDependencies(VisualElement detail,
             IReadOnlyList<AssetVariantFileDependency> dependencies, string error)
         {
-            var section = new AssetDetailSection(I18N.Get("variant.dependencies"));
+            var section = new DetailSection(I18N.Get("variant.dependencies"));
             section.AddToClassList("ee4v-asset-manager__variant-dependencies");
             var scroll = new ScrollView(ScrollViewMode.Vertical)
             {
@@ -902,7 +903,7 @@ namespace Ee4v.AssetManager.UI
             section.Add(scroll);
             if (!string.IsNullOrEmpty(error))
             {
-                scroll.Add(UiTextFactory.CreateHelpBox(error, HelpBoxMessageType.Error));
+                scroll.Add(UiTextFactory.CreateMessagePanel(error, MessageSeverity.Error));
             }
             else if (dependencies == null || dependencies.Count == 0)
             {
@@ -1032,6 +1033,7 @@ namespace Ee4v.AssetManager.UI
                             VariantId = saved.Id, Name = saved.Name, Description = saved.Description,
                             Tags = saved.Tags, CreatedAt = saved.CreatedAt, FileSizeBytes = saved.FileSizeBytes,
                             ParentItemId = saved.ParentItemId, AssetPath = saved.RootAssetPath,
+                            SourcePrefabGuid = saved.SourcePrefabGuid,
                             IsOriginal = string.IsNullOrEmpty(saved.SourcePrefabGuid),
                             UpdatedAt = saved.UpdatedAt, IsArchived = saved.IsArchived
                         });
@@ -1042,11 +1044,14 @@ namespace Ee4v.AssetManager.UI
                 .Items.ToDictionary(item => item.Id, StringComparer.Ordinal);
             foreach (var variant in project.Values)
             {
-                if (!variant.IsOriginal || !visibleItems.TryGetValue(variant.ParentItemId, out var owner) ||
+                if (!visibleItems.TryGetValue(variant.ParentItemId, out var owner) ||
                     !owner.IsOriginal) continue;
+                variant.IsOwnedWork = !project.TryGetValue(variant.SourcePrefabGuid ?? string.Empty, out var source) ||
+                    source.ParentItemId != owner.Id;
+                if (!variant.IsOwnedWork) continue;
                 variant.Name = owner.Name;
                 variant.Description = owner.Description;
-                variant.Tags = GetTagPaths(owner);
+                variant.Tags = variant.IsOriginal ? GetTagPaths(owner) : Array.Empty<string>();
                 variant.IsArchived = owner.IsArchived;
                 if (owner.UpdatedAt > variant.UpdatedAt) variant.UpdatedAt = owner.UpdatedAt;
             }
@@ -1082,15 +1087,15 @@ namespace Ee4v.AssetManager.UI
             if (_disposed || _variantManager == null || _variantState.VariantBusy) return;
             var selectedCount = ids.Count + (itemIds?.Count ?? 0);
             var variants = GetVariants();
-            var standaloneOwnerIds = new HashSet<string>(variants.Where(IsStandaloneAsset)
+            var ownedWorkItemIds = new HashSet<string>(variants.Where(variant => variant.IsOwnedWork)
                 .Select(variant => variant.ParentItemId), StringComparer.Ordinal);
             var ownerIds = (itemIds ?? Array.Empty<string>()).Concat(variants
-                    .Where(variant => ids.Contains(variant.VariantId) && IsStandaloneAsset(variant))
+                    .Where(variant => ids.Contains(variant.VariantId) && variant.IsOwnedWork)
                     .Select(variant => variant.ParentItemId))
                 .Distinct(StringComparer.Ordinal).ToArray();
             ids = ids.Concat(variants.Where(variant => ownerIds.Contains(variant.ParentItemId) &&
-                    standaloneOwnerIds.Contains(variant.ParentItemId) &&
-                    (!archived.HasValue || variant.IsOriginal)).Select(variant => variant.VariantId))
+                    ownedWorkItemIds.Contains(variant.ParentItemId) &&
+                    (!archived.HasValue || variant.IsOwnedWork)).Select(variant => variant.VariantId))
                 .Distinct(StringComparer.Ordinal).ToArray();
             itemIds = ownerIds;
             var deleteMessageKey = itemIds.Count == 0 ? "variant.deleteConfirm" :
@@ -1099,6 +1104,7 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get(deleteMessageKey, selectedCount))) return;
             _variantState.VariantBusy = true;
             Refresh();
+            _variantState.DefersLifecycleRefresh = true;
             try
             {
                 foreach (var id in ids.Distinct(StringComparer.Ordinal))
@@ -1112,10 +1118,15 @@ namespace Ee4v.AssetManager.UI
                     {
                         _viewState.SelectArchiveEntries(Array.Empty<string>(), null);
                     }
-                    if (archived.HasValue) _manager.SetItemArchived(itemIds, archived.Value);
+                    if (archived.HasValue)
+                    {
+                        var changed = itemIds.Where(id => _manager.GetItem(id).IsArchived != archived.Value).ToArray();
+                        if (changed.Length > 0) _manager.SetItemArchived(changed, archived.Value);
+                    }
                     else
                     {
-                        _manager.SetItemArchived(itemIds, true);
+                        var unarchived = itemIds.Where(id => !_manager.GetItem(id).IsArchived).ToArray();
+                        if (unarchived.Length > 0) _manager.SetItemArchived(unarchived, true);
                         _manager.DeleteItem(itemIds);
                     }
                 }
@@ -1136,8 +1147,10 @@ namespace Ee4v.AssetManager.UI
             }
             finally
             {
+                _variantState.DefersLifecycleRefresh = false;
                 _variantState.VariantBusy = false;
-                if (!_disposed) Refresh();
+                _managerRefreshPending = false;
+                if (!_disposed) RefreshAfterManagerChange();
             }
         }
 
@@ -1176,6 +1189,7 @@ namespace Ee4v.AssetManager.UI
             if (_variantState.VariantGalleryOperationId != null) { return; }
             _variantState.VariantRevisionDetails.Clear();
             _itemGrid?.ClearThumbnails();
+            if (_variantState.DefersLifecycleRefresh) { return; }
             if (_variantState.VariantMetadataSaveCount > 0) { return; }
             if (!_disposed && (ShowsMain || ShowsVariants || InformationVariantId != null ||
                 _viewState.Page == AssetManagerPage.Archived || !string.IsNullOrEmpty(_viewState.DetailVariantId) ||

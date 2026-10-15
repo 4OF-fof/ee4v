@@ -79,9 +79,9 @@ namespace Ee4v.Core.Settings
                 return field;
             }
 
-            var helpBox = UiTextFactory.CreateHelpBox(
+            var helpBox = UiTextFactory.CreateMessagePanel(
                 I18N.Get("settings.unsupportedType", new object[] { valueType.Name }),
-                HelpBoxMessageType.Warning);
+                MessageSeverity.Warning);
             helpBox.tooltip = tooltip;
             return helpBox;
         }

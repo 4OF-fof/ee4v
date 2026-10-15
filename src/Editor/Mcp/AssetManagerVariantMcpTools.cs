@@ -21,10 +21,10 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_asset_list_variants",
-                "Lists Project works, including compositions without a base, with their working Scene, source Prefab, root path, and editable Material Variants.",
-                McpSchemas.Object(new JObject { ["itemId"] = McpSchemas.String() }, "itemId"),
+                "Lists Project works belonging to itemId with their Scene/source/Material Variants. Omit itemId to list all Project and saved works, including works absent from this Project; use variantId for history and metadata operations.",
+                McpSchemas.Object(new JObject { ["itemId"] = McpSchemas.String() }),
                 arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
-                    ListVariants(McpJson.RequireString(arguments, "itemId"))))),
+                    arguments["itemId"] == null ? AssetManagerWorkMcpTools.List() : ListVariants(McpJson.RequireString(arguments, "itemId"))))),
                 readOnly: true));
 
             McpToolRegistry.Register(new McpToolDefinition(
@@ -150,16 +150,7 @@ namespace Ee4v.Mcp
             }
 
             var root = DerivedAssetCreator.OpenWorkingScene(variant.AssetPath);
-            var added = PrefabUtility.InstantiatePrefab(
-                source.Asset, root.scene) as GameObject;
-            if (added == null)
-            {
-                throw new McpToolException("prefab_instantiate_failed",
-                    "The source Prefab could not be instantiated.");
-            }
-            added.transform.SetParent(root.transform, false);
-            Undo.RegisterCreatedObjectUndo(added, "Add Variant Prefab");
-            EditorSceneManager.MarkSceneDirty(root.scene);
+            var added = DerivedAssetCreator.AddPrefabToWorkingRoot(root, source.Asset);
             return new
             {
                 VariantGuid = AssetDatabase.AssetPathToGUID(variant.AssetPath),

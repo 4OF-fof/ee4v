@@ -25,7 +25,7 @@ namespace Ee4v.UI
             var content = Notification.TitleText.parent;
             var heading = new VisualElement();
             heading.AddToClassList("ee4v-ui-confirmation-overlay__heading");
-            heading.Add(Notification.Children().OfType<Icon>().Single());
+            Notification.Children().OfType<Icon>().Single().RemoveFromHierarchy();
             heading.Add(Notification.TitleText);
             content.Insert(0, heading);
             Notification.Add(Notification.Actions);
@@ -57,7 +57,7 @@ namespace Ee4v.UI
         {
             var button = new UiButton(label, action);
             button.AddToClassList("ee4v-ui-confirmation-overlay__discard");
-            button.SetLabelColor(UiColorTokens.TextOnState);
+            button.SetTone(UiButtonTone.Danger);
             Notification.Actions.Add(button);
             return button;
         }

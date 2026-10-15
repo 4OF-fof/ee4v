@@ -17,6 +17,39 @@ namespace Ee4v.AssetManager.UI
         {
             return new[]
             {
+                new UiStory("asset-modification-workflow", "Domain/AssetManager", "AssetModificationWorkflowView",
+                    "ダミーアバターで統合編集画面のカテゴリと外見タブを確認します。",
+                    "保存・SDK操作を無効にし、専用Preview Sceneとメモリ上のManagerだけを使用します。",
+                    BuildWorkflow,
+                    usageLocations: new[] { "Editor/AssetManager/UI/AssetModificationWorkflowWindow.cs" },
+                    styleSheetPaths: new[] {
+                        "Editor/AssetManager/UI/asset-manager.uss",
+                        "Editor/AssetManager/UI/asset-detail.uss",
+                        "Editor/AssetManager/UI/asset-modification-workflow.uss" }),
+                new UiStory("variant-save-overlay", "Domain/AssetManager/Inputs", "AssetVariantSaveOverlay",
+                    "保存メッセージ、キャンセル、背景操作の抑止を確認します。",
+                    "入力値を画面へ表示するだけで、Variantやライブラリを保存しません。",
+                    BuildSaveOverlay,
+                    usageLocations: new[] { "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs" },
+                    styleSheetPaths: new[] { "Editor/AssetManager/UI/asset-manager.uss" }),
+                new UiStory("asset-prefab-picker", "Domain/AssetManager", "AssetPrefabPickerWindow",
+                    "ダミーPrefab候補と大きなプレビューを確認します。", "選択結果は画面内にだけ反映します。",
+                    BuildPrefabPicker,
+                    usageLocations: new[] { "Editor/AssetManager/UI/AssetModificationWorkflowView.Selection.cs",
+                        "Editor/AssetManager/UI/AssetModificationWorkflowView.Composition.cs" },
+                    styleSheetPaths: new[] { "Editor/AssetManager/UI/asset-modification-workflow.uss" }),
+                new UiStory("asset-search-filter-popup", "Domain/AssetManager", "AssetSearchFilterPopup",
+                    "検索条件の編集と確定を確認します。", "ダミー条件とタグ候補だけを使用します。",
+                    BuildSearchFilter,
+                    usageLocations: new[] { "Editor/AssetManager/UI/AssetManagerView.Navigation.cs" }),
+                new UiStory("target-import-popup", "Domain/AssetManager", "TargetImportPopup",
+                    "グループ別の取り込み候補選択を確認します。", "確定結果を表示するだけでファイルを取り込みません。",
+                    AssetManagerView.BuildTargetImportSample,
+                    usageLocations: new[] { "Editor/AssetManager/UI/AssetManagerView.Actions.cs" }),
+                new UiStory("target-editor-popup", "Domain/AssetManager", "TargetEditorPopup",
+                    "ダミーファイルのTarget編集を確認します。", "メモリ上のManagerだけを使用します。",
+                    AssetManagerView.BuildTargetEditorSample,
+                    usageLocations: new[] { "Editor/AssetManager/UI/AssetManagerView.Actions.cs" }),
                 new UiStory(
                     "variant-creation",
                     "Domain/AssetManager",
@@ -26,7 +59,7 @@ namespace Ee4v.AssetManager.UI
                     BuildVariantCreation,
                     dependencies: new[]
                     {
-                        "SectionHeader", "FormInput", "InputField", "PrefabSelector", "AssetPrefabPickerWindow", "PrefabScenePreview", "UiButton"
+                        "SectionHeader", "FormInput", "InputField", "ObjectSelector", "AssetPrefabPickerWindow", "GameObjectPreview", "UiButton"
                     },
                     usageLocations: new[]
                     {
@@ -102,38 +135,7 @@ namespace Ee4v.AssetManager.UI
                     {
                         "Editor/AssetManager/UI/asset-manager.uss"
                     }),
-                new UiStory(
-                    "asset-manager-grid",
-                    "Domain/AssetManager/Collections",
-                    "AssetItemGridView",
-                    "Item一覧の可変列Gridと複数選択を確認するStoryです。",
-                    "現行AssetItem向けの行仮想化Gridを、サムネイル有無を含むサンプルデータで表示します。スライダーで1〜12列へ変更し、Ctrl追加選択、Shift範囲選択、Escapeと空白クリックによる選択解除を確認できます。",
-                    BuildGrid,
-                    dependencies: new[] { "UiTextFactory", "ListView" },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
-                new UiStory(
-                    "asset-manager-breadcrumb",
-                    "Domain/AssetManager/Inputs",
-                    "AssetManagerBreadcrumb",
-                    "現在位置の末尾と、ホバー中のフルパスを確認するStoryです。",
-                    "通常時は末尾のItem名だけを表示します。ホバーすると親階層を選択できるフルパスを表示します。",
-                    BuildBreadcrumb,
-                    dependencies: new[] { "UiTextFactory" },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Navigation.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
+
                 new UiStory(
                     "asset-manager-separated-windows",
                     "Domain/AssetManager",
@@ -178,33 +180,11 @@ namespace Ee4v.AssetManager.UI
                         "Editor/AssetManager/UI/asset-manager.uss"
                     }),
                 new UiStory(
-                    "asset-manager-tag-field",
-                    "Domain/AssetManager/Inputs",
-                    "AssetTagField",
-                    "ItemのTagをチップと検索ポップアップで編集するコンポーネントです。",
-                    "Tagチップのクリック、選択済みTagの削除、Eagle由来Tagの削除不可、既存Tagの検索と選択、新しいTagの作成を確認できます。",
-                    BuildTagField,
-                    dependencies: new[]
-                    {
-                        "UiButton",
-                        "SearchField",
-                        "TagPill"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
-                        "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
-                new UiStory(
                     "asset-manager-file-tree",
                     "Domain/AssetManager/Collections",
                     "SearchableFileTree",
                     "Item詳細で使用する検索付きFile Treeです。",
-                    "FileをルートにしてZIPやUnityPackageの内容を階層表示し、選択した要素を右ペインへ渡します。",
+                    "FileをルートにしてZIPやUnityPackageの内容を階層表示します。解析を1.5秒遅延し、一時的に隠す／戻す操作で、展開状態を保った再接続と解析の再開を確認できます。",
                     BuildFileTree,
                     dependencies: new[]
                     {
@@ -221,115 +201,7 @@ namespace Ee4v.AssetManager.UI
                         "Editor/AssetManager/UI/asset-manager.uss",
                         "Editor/AssetManager/UI/searchable-file-tree.uss"
                     }),
-                new UiStory(
-                    "asset-manager-text-field",
-                    "Domain/AssetManager/Inputs",
-                    "AssetManagerTextField",
-                    "AssetManagerで使用するラベル付きの文字入力です。",
-                    "単行と複数行の入力を、共通のFormInputとInputFieldを使って表示します。",
-                    BuildTextField,
-                    dependencies: new[]
-                    {
-                        "FormInput",
-                        "InputField"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Files.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Variants.cs",
-                        "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs",
-                        "Editor/AssetManager/UI/Components/AssetFilterEditor.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
-                new UiStory(
-                    "asset-manager-grid-size-slider",
-                    "Domain/AssetManager/Inputs",
-                    "AssetManagerGridSizeSlider",
-                    "Gridの列数を増減する入力です。",
-                    "スライダーと両端の増減操作を一つの値入力として公開します。",
-                    BuildGridSizeSlider,
-                    dependencies: new[]
-                    {
-                        "UiButton",
-                        "UiTextFactory"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Navigation.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
-                new UiStory(
-                    "asset-manager-enum-field",
-                    "Domain/AssetManager/Inputs",
-                    "AssetManagerEnumField",
-                    "Collection条件などの列挙値を選択する入力です。",
-                    "ラベルと列挙値の選択欄をFormInputとして表示し、任意の表示名へ変換できます。",
-                    BuildEnumField,
-                    dependencies: new[]
-                    {
-                        "FormInput",
-                        "UiTextFactory"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/Components/AssetFilterEditor.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
-                new UiStory(
-                    "asset-manager-notice",
-                    "Domain/AssetManager/Displays",
-                    "AssetManagerNotice",
-                    "補足や空状態の理由を表示する通知です。",
-                    "情報アイコンと折り返し可能な本文をAssetManagerの画面内へ表示します。",
-                    BuildNotice,
-                    dependencies: new[]
-                    {
-                        "Icon",
-                        "UiTextFactory"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Catalog.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Files.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Variants.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
-                new UiStory(
-                    "asset-manager-grid-card",
-                    "Domain/AssetManager/Inputs",
-                    "AssetItemGridCard",
-                    "Assetのサムネイル、名前、選択状態をまとめるCardです。",
-                    "サムネイルの有無、選択状態、名前を一枚のCardとして表示し、クリック操作を通知します。",
-                    BuildGridCard,
-                    dependencies: new[]
-                    {
-                        "PreviewContainer",
-                        "CachedImage",
-                        "UiTextFactory"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetItemGridView.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
+
                 new UiStory(
                     "asset-manager-filter-editor",
                     "Domain/AssetManager/Inputs",
@@ -351,181 +223,86 @@ namespace Ee4v.AssetManager.UI
                     {
                         "Editor/AssetManager/UI/asset-manager.uss"
                     }),
-                new UiStory(
-                    "asset-manager-thumbnail-stack",
-                    "Domain/AssetManager/Displays",
-                    "AssetThumbnailStack",
-                    "最大3枚のAsset画像を重ねるPreviewパーツです。",
-                    "最大3件のサムネイルをずらして重ね、複数Itemの概要を視覚的に表します。",
-                    BuildThumbnailStack,
-                    dependencies: new[]
-                    {
-                        "PreviewContainer",
-                        "CachedImage"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Images.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss"
-                    }),
-                new UiStory(
-                    "asset-detail-header",
-                    "Domain/AssetManager/Containers",
-                    "AssetDetailHeader",
-                    "Assetの概要と操作をまとめる詳細ヘッダーです。",
-                    "種別、名称、補足、状態に加えて呼び出し側の操作を配置します。",
-                    BuildDetailHeader,
-                    dependencies: new[]
-                    {
-                        "Badge",
-                        "InfoCard"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Files.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss",
-                        "Editor/AssetManager/UI/asset-detail.uss"
-                    }),
-                new UiStory(
-                    "asset-detail-section",
-                    "Domain/AssetManager/Containers",
-                    "AssetDetailSection",
-                    "詳細画面の内容を見出し付きでまとめる領域です。",
-                    "見出しと任意の注記の下へ、呼び出し側が詳細要素を追加します。",
-                    BuildDetailSection,
-                    dependencies: new[] { "SectionHeader" },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Files.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Variants.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss",
-                        "Editor/AssetManager/UI/asset-detail.uss"
-                    }),
-                new UiStory(
-                    "asset-detail-fact",
-                    "Domain/AssetManager/Displays",
-                    "AssetDetailFact",
-                    "短いラベルと値を強調して表示する概要値です。",
-                    "ファイル数やタグ数など、Assetの要点を一組ずつ表示します。",
-                    BuildDetailFact,
-                    dependencies: new[] { "UiTextFactory" },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss",
-                        "Editor/AssetManager/UI/asset-detail.uss"
-                    }),
-                new UiStory(
-                    "asset-detail-setting-list",
-                    "Domain/AssetManager/Containers",
-                    "AssetDetailSettingList",
-                    "複数の設定行を縦に配置する詳細領域です。",
-                    "設定行とキー・値行を同じ間隔でまとめます。値の保持や編集は各行が担当します。",
-                    BuildDetailSettingList,
-                    dependencies: new[]
-                    {
-                        "AssetDetailSettingRow",
-                        "AssetDetailKeyValueRow"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Files.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss",
-                        "Editor/AssetManager/UI/asset-detail.uss"
-                    }),
-                new UiStory(
-                    "asset-detail-setting-row",
-                    "Domain/AssetManager/Inputs",
-                    "AssetDetailSettingRow",
-                    "ラベル、値、任意操作を横に配置する設定行です。",
-                    "表示だけの値と、編集表示へ切り替わる値の両方を構成できます。",
-                    BuildDetailSettingRow,
-                    dependencies: new[]
-                    {
-                        "AssetManagerTextField",
-                        "UiButton"
-                    },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs",
-                        "Editor/AssetManager/UI/AssetManagerView.Files.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss",
-                        "Editor/AssetManager/UI/asset-detail.uss"
-                    }),
-                new UiStory(
-                    "asset-detail-key-value-row",
-                    "Domain/AssetManager/Displays",
-                    "AssetDetailKeyValueRow",
-                    "詳細情報のキーと値を一行で表示します。",
-                    "Sourceや識別子などの補足情報を、折り返し可能な値として表示します。",
-                    BuildDetailKeyValueRow,
-                    dependencies: new[] { "UiTextFactory" },
-                    usageLocations: new[]
-                    {
-                        "Editor/AssetManager/UI/AssetManagerView.Items.cs"
-                    },
-                    styleSheetPaths: new[]
-                    {
-                        "Editor/AssetManager/UI/asset-manager.uss",
-                        "Editor/AssetManager/UI/asset-detail.uss"
-                    })
-            };
+
+                };
         }
 
-        private static void BuildGridCard(VisualElement parent)
+        private static void BuildWorkflow(VisualElement parent)
         {
-            var cache = new CachedImageCache();
-            cache.SetSource(
-                "story-grid-card",
-                CreateSampleThumbnail());
-            var card = new AssetItemGridCard(cache);
-            card.SetWidth(180f);
-            card.SetState(
-                new AssetItemGridEntry(
-                    "story-grid-card",
-                    "Summer Costume"),
-                true);
-            var createCard = new AssetItemGridCard(cache);
-            createCard.SetWidth(180f);
-            createCard.SetPlaceholderIcon(AssetManagerControls.LoadFluentIconState(
-                "add.png", UiSizeTokens.Size24, I18N.Get("workflow.original.create"), UiColorTokens.TextMuted));
-            createCard.SetState(new AssetItemGridEntry("story-create-card", I18N.Get("workflow.original.createCard"))
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
+            var avatar = new GameObject("Sample Work") { hideFlags = HideFlags.HideAndDontSave };
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(avatar, scene);
+            var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            body.name = "Body";
+            body.hideFlags = HideFlags.HideAndDontSave;
+            body.transform.SetParent(avatar.transform, false);
+            var material = new Material(Shader.Find("Standard")) { hideFlags = HideFlags.HideAndDontSave,
+                color = new Color(0.2f, 0.5f, 0.65f) };
+            body.GetComponent<Renderer>().sharedMaterial = material;
+            var view = new AssetModificationWorkflowView(parent.MarkDirtyRepaint,
+                new AssetManagerStoryManager(), avatar);
+            view.style.width = 1360;
+            view.style.height = 740;
+            view.RegisterCallback<DetachFromPanelEvent>(evt =>
             {
-                Activate = () => { }
-            }, selected: false);
-            var row = new VisualElement();
-            row.style.flexDirection = FlexDirection.Row;
-            createCard.style.marginRight = UiSpacingTokens.Medium;
-            row.Add(createCard);
-            row.Add(card);
-            row.RegisterCallback<DetachFromPanelEvent>(_ =>
-            {
-                card.Dispose();
-                createCard.Dispose();
-                cache.Dispose();
+                if (evt.target != view) { return; }
+                view.Dispose();
+                UnityEngine.Object.DestroyImmediate(avatar);
+                UnityEngine.Object.DestroyImmediate(material);
+                if (scene.IsValid()) { UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(scene); }
             });
-            parent.Add(row);
+            parent.Add(view);
+        }
+
+        private static void BuildSaveOverlay(VisualElement parent)
+        {
+            var host = new VisualElement();
+            host.style.height = 420;
+            host.style.width = 900;
+            var result = UiTextFactory.Create("保存操作はメモリ内だけで確認します。", UiClassNames.SecondaryText);
+            host.Add(result);
+            host.Add(new UiButton("保存フォームを開く", () =>
+                AssetVariantSaveOverlay.Show(host, message => result.SetText("入力: " + message))));
+            parent.Add(host);
+        }
+
+        private static void BuildPrefabPicker(VisualElement parent)
+        {
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
+            var prefab = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            prefab.name = "Sample Prefab";
+            prefab.hideFlags = HideFlags.HideAndDontSave;
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(prefab, scene);
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
+            UiButton open = null;
+            open = new UiButton("Prefab候補を開く", () => AssetPrefabPickerWindow.ShowForSource(open,
+                new AssetModificationWorkflowView.VariantSourceOption
+                {
+                    Item = new AssetItem { Id = "story-prefab", Name = "Sample Item" },
+                    Prefabs = new[] { prefab }
+                }, prefab, selected => result.SetText("選択: " + selected.name)));
+            open.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                if (evt.target != open) { return; }
+                foreach (var popup in Resources.FindObjectsOfTypeAll<AssetPrefabPickerWindow>()) { popup.Close(); }
+                UnityEngine.Object.DestroyImmediate(prefab);
+                if (scene.IsValid()) { UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(scene); }
+            });
+            parent.Add(open);
+            parent.Add(result);
+        }
+
+        private static void BuildSearchFilter(VisualElement parent)
+        {
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
+            UiButton open = null;
+            open = new UiButton("検索条件を開く", () => AssetSearchFilterPopup.Show(open,
+                new[] { new TagOption("Avatar", 12), new TagOption("Costume", 5) },
+                AssetFilterNode.Condition(AssetFilterConditionType.NameContains, "Sample"),
+                filter => result.SetText("検索条件を確定しました"),
+                filter => result.SetText("検索条件をメモリ上で保存しました")));
+            parent.Add(open);
+            parent.Add(result);
         }
 
         private static void BuildFilterEditor(VisualElement parent)
@@ -540,128 +317,16 @@ namespace Ee4v.AssetManager.UI
                         AssetFilterConditionType.HasFileExtension,
                         "zip")))), tagOptions: new[]
                 {
-                    new AssetTagOption("Avatar", 12),
-                    new AssetTagOption("Cloth", 8)
+                    new TagOption("Avatar", 12),
+                    new TagOption("Cloth", 8)
                 });
             editor.style.width = 620f;
             parent.Add(editor);
         }
 
-        private static void BuildThumbnailStack(VisualElement parent)
-        {
-            var cache = new CachedImageCache();
-            var ids = new[] { "story-a", "story-b", "story-c" };
-            for (var index = 0; index < ids.Length; index++)
-            {
-                cache.SetSource(ids[index], CreateSampleThumbnail());
-            }
-
-            var stack = new AssetThumbnailStack(cache, ids);
-            stack.style.width = 240f;
-            stack.RegisterCallback<DetachFromPanelEvent>(_ =>
-            {
-                stack.Dispose();
-                cache.Dispose();
-            });
-            parent.Add(stack);
-        }
-
-        private static void BuildDetailHeader(VisualElement parent)
-        {
-            var surface = CreateDetailStorySurface();
-            var header = new AssetDetailHeader(
-                "Summer Costume",
-                "Asset",
-                "Assets/Avatar/Summer Costume",
-                new BadgeState("Imported", UiStatusTone.Passed));
-            header.AddAction(AssetManagerControls.CreateButton(
-                "Open",
-                () => { }));
-            header.AddHeaderAction(AssetManagerControls.CreateDangerButton(
-                "Archive",
-                () => { }));
-            surface.Add(header);
-            parent.Add(surface);
-        }
-
-        private static void BuildDetailSection(VisualElement parent)
-        {
-            var surface = CreateDetailStorySurface();
-            var overview = new AssetDetailSection(
-                "Overview",
-                "Updated just now");
-            var facts = new VisualElement();
-            facts.style.flexDirection = FlexDirection.Row;
-            facts.Add(new AssetDetailFact("Files", "12"));
-            facts.Add(new AssetDetailFact("Tags", "3"));
-            overview.Add(facts);
-            surface.Add(overview);
-            parent.Add(surface);
-        }
-
-        private static void BuildDetailFact(VisualElement parent)
-        {
-            var surface = CreateDetailStorySurface();
-            surface.Add(new AssetDetailFact("Files", "12"));
-            parent.Add(surface);
-        }
-
-        private static void BuildDetailSettingList(VisualElement parent)
-        {
-            var surface = CreateDetailStorySurface();
-            var list = new AssetDetailSettingList();
-            list.AddRow(new AssetDetailSettingRow(
-                "Target",
-                UiTextFactory.Create("Avatar")));
-            list.AddRow(new AssetDetailSettingRow(
-                "Source",
-                UiTextFactory.Create("Eagle / Summer Costume")));
-            surface.Add(list);
-            parent.Add(surface);
-        }
-
-        private static void BuildDetailSettingRow(VisualElement parent)
-        {
-            var surface = CreateDetailStorySurface();
-            var list = new AssetDetailSettingList();
-            list.AddRow(new AssetDetailSettingRow(
-                "Target",
-                UiTextFactory.Create("Avatar")));
-
-            var editor = AssetManagerControls.CreateTextField(string.Empty);
-            editor.value = "Summer Costume";
-            var save = AssetManagerControls.CreateButton("Save");
-            save.clicked += () => save.SetLabel("Saved");
-            list.AddRow(AssetDetailSettingRow.Editable(
-                "Name",
-                "Summer Costume",
-                editor,
-                save,
-                "Edit"));
-            surface.Add(list);
-            parent.Add(surface);
-        }
-
-        private static void BuildDetailKeyValueRow(VisualElement parent)
-        {
-            var surface = CreateDetailStorySurface();
-            surface.Add(new AssetDetailKeyValueRow(
-                "Source",
-                "Eagle / Summer Costume"));
-            parent.Add(surface);
-        }
-
-        private static VisualElement CreateDetailStorySurface()
-        {
-            var surface = new VisualElement();
-            surface.AddToClassList("ee4v-asset-manager");
-            surface.style.width = 620f;
-            return surface;
-        }
-
         private static void BuildFileTree(VisualElement parent)
         {
-            var manager = new AssetManagerStoryManager();
+            var manager = new AssetManagerStoryManager(analysisDelayMilliseconds: 1500);
             var surface = new VisualElement();
             surface.AddToClassList("ee4v-asset-manager");
             surface.style.width = 360f;
@@ -670,30 +335,16 @@ namespace Ee4v.AssetManager.UI
             tree.SetItem(
                 "item-avatar",
                 manager.GetFiles("item-avatar"));
-            surface.RegisterCallback<DetachFromPanelEvent>(_ => tree.Dispose());
+            parent.Add(AssetManagerControls.CreateButton("File一覧を一時的に隠す／戻す", () =>
+            {
+                if (tree.parent != null) { tree.RemoveFromHierarchy(); }
+                else { surface.Add(tree); }
+            }));
+            surface.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                if (ReferenceEquals(evt.target, surface)) { tree.Dispose(); }
+            });
             surface.Add(tree);
-            parent.Add(surface);
-        }
-
-        private static void BuildTagField(VisualElement parent)
-        {
-            var surface = new VisualElement();
-            surface.style.width = 300f;
-            var selected = UiTextFactory.Create("Select a tag.");
-            var field = new AssetTagField(path => selected.SetText(path));
-            field.SetValues(
-                new[]
-                {
-                    new AssetTagOption("avatar", 12),
-                    new AssetTagOption("costume", 8),
-                    new AssetTagOption("free", 5),
-                    new AssetTagOption("gimmick", 3),
-                    new AssetTagOption("world", 2)
-                },
-                new[] { "avatar", "costume" },
-                new[] { "avatar" });
-            surface.Add(field);
-            surface.Add(selected);
             parent.Add(surface);
         }
 
@@ -819,78 +470,6 @@ namespace Ee4v.AssetManager.UI
             parent.Add(surface);
         }
 
-        private static void BuildGrid(VisualElement parent)
-        {
-            var thumbnail = CreateSampleThumbnail();
-            var surface = new VisualElement();
-            surface.style.minWidth = 760f;
-            var grid = new AssetItemGridView();
-            grid.style.height = 500f;
-            grid.SetItems(new[]
-            {
-                new AssetItemGridEntry(
-                    "avatar-base",
-                    "Avatar Base",
-                    thumbnail),
-                new AssetItemGridEntry(
-                    "summer-costume",
-                    "Summer Costume",
-                    thumbnail),
-                new AssetItemGridEntry(
-                    "city-stage",
-                    "City Stage"),
-                new AssetItemGridEntry(
-                    "gesture-pack",
-                    "Gesture Pack"),
-                new AssetItemGridEntry(
-                    "shader-library",
-                    "Shader Library"),
-                new AssetItemGridEntry(
-                    "sound-effects",
-                    "Sound Effects")
-            });
-            grid.SetSelectedItemIds(
-                new[] { "summer-costume", "gesture-pack" },
-                "gesture-pack");
-            var slider = AssetManagerControls.CreateGridSizeSlider(
-                grid.ItemsPerRow,
-                grid.RecommendedMinimumItemsPerRow,
-                AssetItemGridView.MaximumItemsPerRow);
-            slider.tooltip = "Grid columns";
-            slider.ValueChanged += grid.SetItemsPerRow;
-            grid.RecommendedMinimumItemsPerRowChanged += value =>
-            {
-                slider.SetRangeWithoutNotify(
-                    value,
-                    AssetItemGridView.MaximumItemsPerRow);
-                slider.SetValueWithoutNotify(grid.ItemsPerRow);
-            };
-            grid.RegisterCallback<DetachFromPanelEvent>(_ => grid.Dispose());
-            surface.Add(slider);
-            surface.Add(grid);
-            parent.Add(surface);
-        }
-
-        private static void BuildBreadcrumb(VisualElement parent)
-        {
-            var surface = new VisualElement();
-            surface.AddToClassList("ee4v-asset-manager");
-            surface.style.height = 120f;
-            surface.style.paddingLeft = 12f;
-            surface.style.paddingTop = 12f;
-
-            var breadcrumb = new AssetManagerBreadcrumb();
-            breadcrumb.SetItems(new[]
-            {
-                new AssetManagerBreadcrumbItem("Library", () => { }),
-                new AssetManagerBreadcrumbItem("Summer Costume")
-            });
-            surface.RegisterCallback<DetachFromPanelEvent>(_ =>
-                breadcrumb.Dispose());
-            surface.Add(breadcrumb);
-            parent.Add(surface);
-        }
-
         private static void BuildSeparatedWindows(VisualElement parent)
         {
             var surface = new VisualElement();
@@ -935,20 +514,20 @@ namespace Ee4v.AssetManager.UI
         private static void BuildCollectionPopup(VisualElement parent)
         {
             var surface = new VisualElement();
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
             surface.style.width = 420f;
             surface.AddToClassList("ee4v-asset-manager-controls-story");
             surface.Add(AssetManagerControls.CreateNotice(
                 "各ボタンの直下にコレクション編集ポップアップを表示します。"));
 
             var createButton = AssetManagerControls.CreateButton(
-                "新規コレクションを開く",
-                () => { });
+                "新規コレクションを開く");
             createButton.clicked += () =>
                 AssetCollectionCreationPopup.Show(
                     createButton,
                     null,
-                    (_, __, ___) => true,
-                    tagOptions: new[] { new AssetTagOption("Avatar", 12), new AssetTagOption("Cloth", 8) });
+                    (name, icon, root) => { result.SetText("作成: " + name); return true; },
+                    tagOptions: new[] { new TagOption("Avatar", 12), new TagOption("Cloth", 8) });
             surface.Add(createButton);
 
             var sample = new AssetCollection
@@ -972,8 +551,7 @@ namespace Ee4v.AssetManager.UI
                         "zip")))
             };
             var editButton = AssetManagerControls.CreateButton(
-                "既存コレクションを編集",
-                () => { });
+                "既存コレクションを編集");
             editButton.clicked += () =>
                 AssetCollectionCreationPopup.Show(
                     editButton,
@@ -983,70 +561,45 @@ namespace Ee4v.AssetManager.UI
                         sample.Name = name;
                         sample.Icon = icon;
                         sample.Root = root;
+                        result.SetText("更新: " + name);
                         return true;
                     },
-                    tagOptions: new[] { new AssetTagOption("Avatar", 12), new AssetTagOption("Cloth", 8) });
+                    tagOptions: new[] { new TagOption("Avatar", 12), new TagOption("Cloth", 8) });
             surface.Add(editButton);
+            surface.Add(result);
             parent.Add(surface);
         }
 
-        private static void BuildTextField(VisualElement parent)
+    }
+
+    internal sealed partial class AssetManagerView
+    {
+        internal static void BuildTargetImportSample(VisualElement parent)
         {
-            var surface = new VisualElement();
-            surface.style.width = 520f;
-            surface.AddToClassList("ee4v-asset-manager-controls-story");
-            var name = AssetManagerControls.CreateTextField("Name");
-            name.value = "Summer Costume";
-            surface.Add(name);
-            var notes = AssetManagerControls.CreateTextField("Notes");
-            notes.multiline = true;
-            notes.value = "Preview the component states here.";
-            surface.Add(notes);
-            parent.Add(surface);
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
+            UiButton open = null;
+            open = new UiButton("取り込み候補を開く", () => TargetImportPopup.Show(open,
+                new[] { new TargetImportGroup { Name = "Sample Avatar", Choices = new[]
+                {
+                    new TargetImportChoice { Label = "Avatar.unitypackage", Target = new AssetFileTarget
+                        { FileId = "story-file", TargetPath = "Avatar.unitypackage" } },
+                    new TargetImportChoice { Label = "Costume.unitypackage", Target = new AssetFileTarget
+                        { FileId = "story-file", TargetPath = "Costume.unitypackage" } }
+                } } }, selected => result.SetText("選択した候補数: " + selected.Count)));
+            parent.Add(open);
+            parent.Add(result);
         }
 
-        private static void BuildGridSizeSlider(VisualElement parent)
+        internal static void BuildTargetEditorSample(VisualElement parent)
         {
-            var slider = AssetManagerControls.CreateGridSizeSlider(
-                6,
-                AssetItemGridView.MinimumItemsPerRow,
-                AssetItemGridView.MaximumItemsPerRow);
-            slider.style.width = 320f;
-            parent.Add(slider);
-        }
-
-        private static void BuildEnumField(VisualElement parent)
-        {
-            var field = AssetManagerControls.CreateEnumField(
-                "Condition",
-                AssetFilterConditionType.HasTag,
-                AssetManagerControls.FormatFilterCondition);
-            field.style.width = 420f;
-            parent.Add(field);
-        }
-
-        private static void BuildNotice(VisualElement parent)
-        {
-            var notice = AssetManagerControls.CreateNotice(
-                "No matching assets were found. Change the search or collection filters.");
-            notice.style.width = 520f;
-            parent.Add(notice);
-        }
-
-        private static byte[] CreateSampleThumbnail()
-        {
-            var texture = new Texture2D(2, 2);
-            texture.SetPixels(new[]
-            {
-                new Color(0.16f, 0.38f, 0.62f),
-                new Color(0.22f, 0.54f, 0.72f),
-                new Color(0.42f, 0.26f, 0.58f),
-                new Color(0.64f, 0.38f, 0.68f)
-            });
-            texture.Apply();
-            var data = texture.EncodeToPNG();
-            Object.DestroyImmediate(texture);
-            return data;
+            var manager = new AssetManagerStoryManager();
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
+            UiButton open = null;
+            open = new UiButton("Target編集を開く", () => TargetEditorPopup.Show(open,
+                manager, "item-avatar", manager.GetFiles("item-avatar"), manager.GetItemTargets("item-avatar"),
+                "Sample Targets", "確定", selected => result.SetText("設定したTarget数: " + selected.Count)));
+            parent.Add(open);
+            parent.Add(result);
         }
     }
 }

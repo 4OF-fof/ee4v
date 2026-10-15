@@ -17,18 +17,30 @@ namespace Ee4v.AvatarEditing
         public GameObject PrefabAsset { get; set; }
         public VisualElement UiRoot { get; set; }
         public ScrollView ControlsHost { get; set; }
-        public PrefabScenePreview Preview { get; set; }
+        public GameObjectPreview Preview { get; set; }
         public BodyPartCategory? SelectedBodyPart { get; set; }
         public int? SelectedPrefabSiblingIndex { get; set; }
         public string SelectedPrefabName { get; set; } = string.Empty;
         public IReadOnlyList<int> PrefabSiblingIndices { get; set; } = Array.Empty<int>();
-        public string SelectedPartKey { get; set; }
-        public Material SelectedMaterial { get; set; }
+        private string _selectedPartKey;
+        private Material _selectedMaterial;
+        public string SelectedPartKey
+        {
+            get => _selectedPartKey;
+            set { _selectedPartKey = value; HighlightedPartKey = value; }
+        }
+        public Material SelectedMaterial
+        {
+            get => _selectedMaterial;
+            set { _selectedMaterial = value; HighlightedMaterial = value; }
+        }
+        public string HighlightedPartKey { get; set; }
+        public Material HighlightedMaterial { get; set; }
         public bool BasePrefabHidden { get; set; }
         public HashSet<int> HiddenPrefabSiblingIndices { get; } = new HashSet<int>();
         public HashSet<string> HiddenPreviewParts { get; } = new HashSet<string>(StringComparer.Ordinal);
         public string Feedback { get; set; } = string.Empty;
-        public HelpBoxMessageType FeedbackType { get; set; } = HelpBoxMessageType.Info;
+        public MessageSeverity FeedbackType { get; set; } = MessageSeverity.Info;
         public string AssetFeedback { get; set; } = string.Empty;
 
         public AvatarEditingContext(AvatarEditingServices edits, AvatarEditingHost host)

@@ -12,15 +12,17 @@ namespace Ee4v.AssetManager.UI
     {
         private const string SampleGuid =
             "0123456789abcdef0123456789abcdef";
+        private readonly int _analysisDelayMilliseconds;
 
-        private readonly IReadOnlyList<AssetFile> _files;
-        private readonly IReadOnlyList<AssetItem> _items;
+        private IReadOnlyList<AssetFile> _files;
+        private IReadOnlyList<AssetItem> _items;
         private IReadOnlyList<AssetCollection> _collections;
         private readonly Dictionary<string, IReadOnlyList<AssetFileTarget>>
             _itemTargets;
 
-        public AssetManagerStoryManager()
+        public AssetManagerStoryManager(int analysisDelayMilliseconds = 0)
         {
+            _analysisDelayMilliseconds = Math.Max(0, analysisDelayMilliseconds);
             _files = CreateFiles();
             _items = CreateItems(_files);
             _itemTargets = _items.ToDictionary(
@@ -141,25 +143,42 @@ namespace Ee4v.AssetManager.UI
 
         public AssetItem CreateItem(CreateAssetItemRequest request)
         {
-            return _items[0];
+            var item = new AssetItem { Id = "story-" + Guid.NewGuid().ToString("N"), Name = request.Name,
+                Description = request.Description, IsOriginal = request.IsOriginal,
+                Tags = Array.Empty<AssetTag>(), Files = Array.Empty<AssetFile>(),
+                CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+            _items = _items.Concat(new[] { item }).ToArray();
+            Changed?.Invoke(new AssetManagerChange(AssetManagerChangeKind.ItemCreated, new[] { item.Id }));
+            return item;
         }
 
         public AssetItem UpdateItem(
             string itemId,
             UpdateAssetItemRequest request)
         {
-            return GetItem(itemId);
+            var item = GetItem(itemId);
+            if (request.Name != null) { item.Name = request.Name; }
+            if (request.Description != null) { item.Description = request.Description; }
+            item.UpdatedAt = DateTime.UtcNow;
+            Changed?.Invoke(new AssetManagerChange(AssetManagerChangeKind.ItemUpdated, new[] { itemId }));
+            return item;
         }
 
         public IReadOnlyList<AssetItem> SetItemArchived(
             IReadOnlyList<string> itemIds,
             bool archived)
         {
-            return SelectItems(itemIds);
+            var items = SelectItems(itemIds);
+            foreach (var item in items) { item.IsArchived = archived; }
+            Changed?.Invoke(new AssetManagerChange(AssetManagerChangeKind.ItemArchiveChanged, itemIds));
+            return items;
         }
 
         public void DeleteItem(IReadOnlyList<string> itemIds)
         {
+            _items = _items.Where(item => !itemIds.Contains(item.Id)).ToArray();
+            _files = _files.Where(file => !itemIds.Contains(file.ItemId)).ToArray();
+            Changed?.Invoke(new AssetManagerChange(AssetManagerChangeKind.ItemDeleted, itemIds));
         }
 
         public AssetFile GetFile(string fileId)
@@ -190,25 +209,47 @@ namespace Ee4v.AssetManager.UI
             string itemId,
             RegisterFileRequest request)
         {
-            return _files[0];
+            var file = new AssetFile { Id = "story-" + Guid.NewGuid().ToString("N"), ItemId = itemId,
+                FileName = request.FileName ?? Path.GetFileName(request.FilePath),
+                Extension = Path.GetExtension(request.FileName ?? request.FilePath),
+                SourcePath = request.FilePath, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+            _files = _files.Concat(new[] { file }).ToArray();
+            RefreshItemFiles();
+            Changed?.Invoke(new AssetManagerChange(AssetManagerChangeKind.FileCreated, new[] { file.Id }));
+            return file;
         }
 
         public IReadOnlyList<AssetFile> SetFileItem(
             IReadOnlyList<string> fileIds,
             string itemId)
         {
-            return SelectFiles(fileIds);
+            var files = SelectFiles(fileIds);
+            foreach (var file in files) { file.ItemId = itemId; }
+            RefreshItemFiles();
+            Changed?.Invoke(new AssetManagerChange(AssetManagerChangeKind.FilePlacementChanged, fileIds));
+            return files;
         }
 
         public IReadOnlyList<AssetFile> SetFileArchived(
             IReadOnlyList<string> fileIds,
             bool archived)
         {
-            return SelectFiles(fileIds);
+            var files = SelectFiles(fileIds);
+            foreach (var file in files) { file.IsArchived = archived; }
+            Changed?.Invoke(new AssetManagerChange(AssetManagerChangeKind.FileArchiveChanged, fileIds));
+            return files;
         }
 
         public void DeleteFile(IReadOnlyList<string> fileIds)
         {
+            _files = _files.Where(file => !fileIds.Contains(file.Id)).ToArray();
+            RefreshItemFiles();
+            Changed?.Invoke(new AssetManagerChange(AssetManagerChangeKind.FileDeleted, fileIds));
+        }
+
+        private void RefreshItemFiles()
+        {
+            foreach (var item in _items) { item.Files = _files.Where(file => file.ItemId == item.Id).ToArray(); }
         }
 
         public IReadOnlyList<AssetFileTarget> GetItemTargets(string itemId)
@@ -348,12 +389,17 @@ namespace Ee4v.AssetManager.UI
             };
         }
 
-        public Task<AssetFileAnalysis> AnalyzeFileAsync(
+        public async Task<AssetFileAnalysis> AnalyzeFileAsync(
             string fileId,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(AnalyzeFile(fileId));
+            if (_analysisDelayMilliseconds > 0)
+            {
+                await Task.Delay(_analysisDelayMilliseconds, cancellationToken);
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return AnalyzeFile(fileId);
         }
 
         public IReadOnlyList<string> GetFileImportedAssetGuids(string fileId)
@@ -393,7 +439,13 @@ namespace Ee4v.AssetManager.UI
             IReadOnlyList<string> itemIds,
             IReadOnlyList<string> tagPaths)
         {
-            return SelectItems(itemIds);
+            var items = SelectItems(itemIds);
+            foreach (var item in items)
+            {
+                item.Tags = tagPaths.Select(path => new AssetTag { Id = path, Path = path }).ToArray();
+            }
+            Changed?.Invoke(new AssetManagerChange(AssetManagerChangeKind.ItemTagsChanged, itemIds));
+            return items;
         }
 
         public IReadOnlyList<AssetCollection> GetCollections()
@@ -442,6 +494,8 @@ namespace Ee4v.AssetManager.UI
 
         public void DeleteCollection(string collectionId)
         {
+            _collections = _collections.Where(collection => collection.Id != collectionId).ToArray();
+            Changed?.Invoke(new AssetManagerChange(AssetManagerChangeKind.CollectionDeleted, new[] { collectionId }));
         }
 
         public void ReorderCollections(IReadOnlyList<string> collectionIds)

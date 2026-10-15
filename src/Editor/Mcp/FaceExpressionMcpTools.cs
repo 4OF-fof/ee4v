@@ -13,6 +13,19 @@ namespace Ee4v.Mcp
     {
         internal static void Register()
         {
+            McpToolRegistry.Register(new McpToolDefinition("ee4v_ensure_blendshape_presets",
+                "Creates missing FBX classifications for an Avatar using the UI preset initializer; preserves existing presets and mappings.",
+                McpSchemas.Object(new JObject { ["avatarRef"] = McpSchemas.String() }, "avatarRef"),
+                args => Task.FromResult(McpToolResult.Success(McpJson.From(BlendShapePresetApi.EnsurePresets(Avatar(args))))), false));
+            McpToolRegistry.Register(new McpToolDefinition("ee4v_set_expression_channel_enabled",
+                "Enables a BlendShape curve across the existing pose times, or removes that entire curve from a static/animated expression using UI channel editing. Existing enabled curves are retained. value affects only newly enabled curves at poseIndex; dryRun and expectedRevision protect writes.",
+                McpSchemas.Object(new JObject { ["avatarRef"] = McpSchemas.String(), ["clipPath"] = McpSchemas.String(),
+                    ["rendererPath"] = McpSchemas.String(), ["shapeName"] = McpSchemas.String(), ["enabled"] = McpSchemas.Boolean(),
+                    ["poseIndex"] = McpSchemas.Integer(), ["value"] = McpSchemas.Number(), ["expectedRevision"] = McpSchemas.String(), ["dryRun"] = McpSchemas.Boolean() },
+                    "avatarRef", "clipPath", "rendererPath", "shapeName", "enabled", "expectedRevision"),
+                args => Task.FromResult(McpToolResult.Success(McpJson.From(FaceExpressionApi.SetAnimationChannelEnabled(Avatar(args), RequiredClip(args),
+                    (string)args["rendererPath"], McpJson.RequireString(args, "shapeName"), (bool)args["enabled"], (int?)args["poseIndex"] ?? 0,
+                    (float?)args["value"], (bool?)args["dryRun"] ?? false, McpJson.RequireString(args, "expectedRevision"))))), false, destructive: true));
             RegisterListBlendShapePresets();
             RegisterGetBlendShapePreset();
             RegisterUpdateBlendShapePreset();
@@ -173,7 +186,7 @@ namespace Ee4v.Mcp
                         (bool?)arguments["dryRun"] ?? false,
                         (string)arguments["expectedRevision"])))),
                 readOnly: false,
-                destructive: false,
+                destructive: true,
                 idempotent: true));
         }
 
@@ -373,7 +386,7 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_remap_expression_clip",
-                "Copies a face clip between avatars. Exact renderer-path and BlendShape-name matches are preferred, then ee4v preset role and side are used. Ambiguous or unresolved channels are reported instead of guessed.",
+                "Copies a static, single-pose face clip between avatars; animated source clips are rejected. An existing static destination is replaced. Exact renderer-path and BlendShape-name matches are preferred, then ee4v preset role and side are used. Ambiguous or unresolved channels are reported instead of guessed.",
                 McpSchemas.Object(new JObject
                 {
                     ["sourceAvatarRef"] = McpSchemas.String(),
@@ -392,7 +405,7 @@ namespace Ee4v.Mcp
                         (string)arguments["targetAssetPath"],
                         (bool?)arguments["dryRun"] ?? false)))),
                 readOnly: false,
-                destructive: false,
+                destructive: true,
                 idempotent: true));
         }
 
@@ -417,17 +430,24 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_plan_facial_set_apply",
-                "Checks FacialSet prerequisites and reports the ee4v-owned prefab, controller, and menu assets that apply would create or update.",
+                "Checks FacialSet prerequisites and reports generated asset paths. Optional configuration and mode use the same patch/replace preparation and gesture/clip validation as apply, without writing assets.",
                 McpSchemas.Object(new JObject
                 {
-                    ["avatarRef"] = McpSchemas.String()
+                    ["avatarRef"] = McpSchemas.String(),
+                    ["configuration"] = ConfigurationSchema(),
+                    ["mode"] = McpSchemas.Enum("patch", "replace")
                 }, "avatarRef"),
-                arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
-                    FaceExpressionApi.PlanApply(Avatar(arguments))))),
+                arguments =>
+                {
+                    var avatar = UnityObjectReference.ResolveWritableAvatar((string)arguments["avatarRef"]);
+                    var plan = FaceExpressionApi.PlanApply(avatar, arguments["configuration"] == null ? null : PrepareConfiguration(avatar, arguments));
+                    return Task.FromResult(plan.CanApply ? McpToolResult.Success(McpJson.From(plan)) :
+                        McpToolResult.Error("facial_set_unavailable", "FacialSet prerequisites are not available.", McpJson.From(plan)));
+                },
                 readOnly: true));
         }
 
-        private static void RegisterApply()
+        private static JObject ConfigurationSchema()
         {
             var assignment = McpSchemas.Object(new JObject
             {
@@ -437,7 +457,7 @@ namespace Ee4v.Mcp
                 ["enableBlink"] = McpSchemas.Boolean(),
                 ["fixMouth"] = McpSchemas.Boolean(),
                 ["menuName"] = McpSchemas.String()
-            }, "left", "right");
+            }, "left", "right", "clipPath");
             var menuEntry = McpSchemas.Object(new JObject
             {
                 ["name"] = McpSchemas.String(),
@@ -445,6 +465,15 @@ namespace Ee4v.Mcp
                 ["enableBlink"] = McpSchemas.Boolean(),
                 ["fixMouth"] = McpSchemas.Boolean()
             }, "name", "clipPath");
+            return McpSchemas.Object(new JObject
+            {
+                ["assignments"] = McpSchemas.Array(assignment),
+                ["menuEntries"] = McpSchemas.Array(menuEntry)
+            });
+        }
+
+        private static void RegisterApply()
+        {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_apply_facial_set",
                 "Generates or updates the ee4v-owned FX controller, Expressions Menu, icons, and Modular Avatar FacialSet prefab. mode=patch (default) merges supplied gesture combinations and menu names into current assignments; mode=replace uses the complete configuration. A one-entry patch edits one gesture without touching others. dryRun validates without writing assets. Run ee4v_plan_facial_set_apply first.",
@@ -452,16 +481,12 @@ namespace Ee4v.Mcp
                 {
                     ["avatarRef"] = McpSchemas.String(),
                     ["mode"] = McpSchemas.Enum("patch", "replace"),
-                    ["configuration"] = McpSchemas.Object(new JObject
-                    {
-                        ["assignments"] = McpSchemas.Array(assignment),
-                        ["menuEntries"] = McpSchemas.Array(menuEntry)
-                    }),
+                    ["configuration"] = ConfigurationSchema(),
                     ["dryRun"] = McpSchemas.Boolean()
                 }, "avatarRef", "configuration"),
                 arguments => Task.FromResult(ApplyFacialSet(arguments)),
                 readOnly: false,
-                destructive: false,
+                destructive: true,
                 idempotent: true));
         }
 
@@ -543,11 +568,20 @@ namespace Ee4v.Mcp
 
         private static McpToolResult ApplyFacialSet(JObject arguments)
         {
+            var avatar = UnityObjectReference.ResolveWritableAvatar((string)arguments["avatarRef"]);
+            var result = FaceExpressionApi.ApplyConfiguration(avatar, PrepareConfiguration(avatar, arguments),
+                (bool?)arguments["dryRun"] ?? false);
+            return result.Succeeded ? McpToolResult.Success(McpJson.From(result)) :
+                McpToolResult.Error("facial_set_" + (string.IsNullOrEmpty(result.ErrorCode) ? "apply_failed" : result.ErrorCode),
+                    "FacialSet could not be applied.", McpJson.From(result));
+        }
+
+        private static FaceExpressionConfigurationData PrepareConfiguration(GameObject avatar, JObject arguments)
+        {
             if (!(arguments["configuration"] is JObject))
             {
                 throw new McpToolException("invalid_request", "configuration must be an object.");
             }
-            var avatar = Avatar(arguments);
             var configuration = McpJson.To<FaceExpressionConfigurationData>(arguments["configuration"]);
             var mode = (string)arguments["mode"] ?? "patch";
             if (mode == "patch")
@@ -585,8 +619,7 @@ namespace Ee4v.Mcp
             {
                 throw new McpToolException("invalid_request", "mode must be patch or replace.");
             }
-            return McpToolResult.Success(McpJson.From(FaceExpressionApi.ApplyConfiguration(
-                avatar, configuration, (bool?)arguments["dryRun"] ?? false)));
+            return configuration;
         }
 
         private static AnimationClip OptionalClip(JObject arguments)

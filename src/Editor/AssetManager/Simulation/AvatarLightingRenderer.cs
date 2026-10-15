@@ -12,13 +12,22 @@ namespace Ee4v.AssetManager.Simulation
     public sealed partial class AvatarLightingRenderer : IDisposable
     {
         private readonly GameObject _avatar;
+        private readonly bool _previewScene;
         private Light _light;
 
         public AvatarLightingRenderer(GameObject avatar)
+            : this(avatar, false)
         {
-            if (!EditorApplication.isPlaying || !EditorApplication.isPlayingOrWillChangePlaymode || avatar == null || !avatar.scene.IsValid() ||
+        }
+
+        internal AvatarLightingRenderer(GameObject avatar, bool allowPreviewScene)
+        {
+            var preview = allowPreviewScene && avatar != null &&
+                UnityEditor.SceneManagement.EditorSceneManager.IsPreviewScene(avatar.scene);
+            if ((!preview && (!EditorApplication.isPlaying || !EditorApplication.isPlayingOrWillChangePlaymode)) || avatar == null || !avatar.scene.IsValid() ||
                 EditorUtility.IsPersistent(avatar)) throw new InvalidOperationException("A live Play Mode avatar is required.");
             _avatar = avatar;
+            _previewScene = preview;
             var obj = new GameObject("ee4v Preview Light") { hideFlags = HideFlags.HideAndDontSave };
             SceneManager.MoveGameObjectToScene(obj, avatar.scene);
             _light = obj.AddComponent<Light>();
@@ -33,7 +42,8 @@ namespace Ee4v.AssetManager.Simulation
             if (camera == null || settings == null || !settings.ValidSettings) throw new ArgumentException("Invalid lighting settings.");
             if (settings.Pattern == 6 && !LightingPresetStore.VolumesAvailable) throw new InvalidOperationException("VRC Light Volumes is unavailable.");
             var previousScene = SceneManager.GetActiveScene();
-            SceneManager.SetActiveScene(_avatar.scene);
+            if (_previewScene) { Unsupported.SetOverrideLightingSettings(_avatar.scene); }
+            else { SceneManager.SetActiveScene(_avatar.scene); }
             var lights = _avatar.scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<Light>(true))
                 .Where(light => light != _light).ToArray();
             var enabled = lights.Select(light => light.enabled).ToArray();
@@ -76,7 +86,11 @@ namespace Ee4v.AssetManager.Simulation
                     }
                 }
             }
-            finally { if (previousScene.IsValid() && previousScene.isLoaded) SceneManager.SetActiveScene(previousScene); }
+            finally
+            {
+                if (_previewScene) { Unsupported.RestoreOverrideLightingSettings(); }
+                else if (previousScene.IsValid() && previousScene.isLoaded) { SceneManager.SetActiveScene(previousScene); }
+            }
         }
 
         public static IReadOnlyList<byte[]> Capture(GameObject avatar, IReadOnlyList<LightingPreset> settings,

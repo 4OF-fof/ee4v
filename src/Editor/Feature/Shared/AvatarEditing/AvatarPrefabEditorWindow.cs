@@ -19,9 +19,9 @@ namespace Ee4v.AvatarEditing
         private ObjectField _prefabField;
         private UiButton _save;
         private UiButton _revert;
-        private HelpBox _feedback;
+        private MessagePanel _feedback;
         private VisualElement _body;
-        private BodyPartSelector _bodyPartSelector;
+        private ExclusiveButtonGroup<BodyPartCategory?> _bodyPartSelector;
         protected AvatarEditingContext Context { get; private set; }
         protected VisualElement FeatureHeader { get; private set; }
         protected abstract string TitleKey { get; }
@@ -38,7 +38,7 @@ namespace Ee4v.AvatarEditing
         protected virtual bool PrepareFeatureSave() => true;
         protected virtual void CancelFeatureChanges() { }
         protected virtual void CreateMaterialVariant(Material material) { }
-        protected virtual void SelectPreview(string partKey, Material material) { }
+        protected virtual void SelectPreview(string partKey, Material material, bool openDetails) { }
         protected virtual void ClearPreviewSelection() { }
 
         protected void OnEnable()
@@ -94,18 +94,18 @@ namespace Ee4v.AvatarEditing
                 toolbar.Add(_save);
             }
             rootVisualElement.Add(toolbar);
-            _feedback = UiTextFactory.CreateHelpBox(string.Empty, HelpBoxMessageType.Info);
+            _feedback = UiTextFactory.CreateMessagePanel(string.Empty, MessageSeverity.Info);
             _feedback.style.display = DisplayStyle.None;
             rootVisualElement.Add(_feedback);
             _body = new VisualElement();
             _body.AddToClassList("ee4v-avatar-prefab-editor__body");
             rootVisualElement.Add(_body);
-            PrefabScenePreview preview = null;
+            GameObjectPreview preview = null;
             if (ShowsPreview)
             {
                 var pane = new PreviewPane(I18N.Get("avatarEditor.preview"));
                 pane.AddToClassList("ee4v-avatar-prefab-editor__preview");
-                preview = new PrefabScenePreview();
+                preview = new GameObjectPreview();
                 preview.SetFlexibleLayout(true);
                 preview.SetFullBodyFraming(true);
                 pane.Content.Add(preview);
@@ -141,11 +141,12 @@ namespace Ee4v.AvatarEditing
             };
             if (preview != null)
             {
-                preview.PreviewObjectClicked += SelectPreview;
+                preview.PreviewObjectClicked += (key, material) => SelectPreview(key, material, false);
+                preview.PreviewObjectDoubleClicked += (key, material) => SelectPreview(key, material, true);
                 preview.PreviewSelectionCleared += ClearPreviewSelection;
             }
             CreateFeature();
-            preview?.SetPrefab(_instance);
+            preview?.SetTarget(_instance);
             Render();
             toolbar.schedule.Execute(RefreshSaveButtons).Every(500);
         }
@@ -208,14 +209,14 @@ namespace Ee4v.AvatarEditing
             RefreshSaveButtons();
             if (Context.Root == null)
             {
-                if (_prefab == null) ShowMessage(I18N.Get("avatarEditor.selectPrefab"), HelpBoxMessageType.Info);
+                if (_prefab == null) ShowMessage(I18N.Get("avatarEditor.selectPrefab"), MessageSeverity.Info);
                 return;
             }
             if (UsesBodyPartSelector)
             {
                 var meshParts = AvatarBodyAnalysis.GetMeshBodyPartCategories(Context.Root, _ => true);
                 bool IsAvailable(BodyPartCategory part) =>
-                    PrefabScenePreview.HasFocusBone(Context.Root, part, _ => true) &&
+                    GameObjectPreview.HasFocusBone(Context.Root, part, _ => true) &&
                     meshParts.Any(category => AvatarBodyAnalysis.MatchesBodyPartGroup(part, category));
                 if (Context.SelectedBodyPart.HasValue && !IsAvailable(Context.SelectedBodyPart.Value))
                 {
@@ -226,10 +227,14 @@ namespace Ee4v.AvatarEditing
                 }
                 if (_bodyPartSelector == null)
                 {
-                    _bodyPartSelector = new BodyPartSelector(Context.SelectedBodyPart,
+                    _bodyPartSelector = Ee4v.AvatarEditing.AvatarEditingUi.CreateBodyPartSelector(Context.SelectedBodyPart,
                         IsAvailable, part =>
                         {
-                            if (!FlushFeatureChanges()) return;
+                            if (!FlushFeatureChanges())
+                            {
+                                _bodyPartSelector.SetSelected(Context.SelectedBodyPart);
+                                return;
+                            }
                             Context.SelectedBodyPart = part;
                             ClearFeatureData();
                             Context.Preview?.FocusBodyPart(part);
@@ -238,9 +243,9 @@ namespace Ee4v.AvatarEditing
                     FeatureHeader.Add(_bodyPartSelector);
                     Context.Preview.FocusBodyPart(Context.SelectedBodyPart, true);
                 }
-                _bodyPartSelector.Refresh(Context.SelectedBodyPart, IsAvailable);
+                _bodyPartSelector.Refresh(Context.SelectedBodyPart, part => !part.HasValue || IsAvailable(part.Value));
             }
-            if (ShowsSaveButton && !CanEditPrefab()) ShowMessage(I18N.Get("avatarEditor.readOnly"), HelpBoxMessageType.Info);
+            if (ShowsSaveButton && !CanEditPrefab()) ShowMessage(I18N.Get("avatarEditor.readOnly"), MessageSeverity.Info);
             else _feedback.style.display = DisplayStyle.None;
             RenderFeature();
             SyncPreviewSelection();
@@ -249,12 +254,12 @@ namespace Ee4v.AvatarEditing
         protected void RefreshTarget()
         {
             ClearFeatureData();
-            Context.Preview?.ReloadPrefabPreservingView(Context.Root);
+            Context.Preview?.ReloadTargetPreservingView(Context.Root);
             Render();
         }
 
         protected void SyncPreviewSelection() => Context?.Preview?.SetListSelection(
-            Context.SelectedPartKey, Context.SelectedMaterial);
+            Context.HighlightedPartKey, Context.HighlightedMaterial);
 
         private void RefreshSaveButtons()
         {
@@ -304,12 +309,11 @@ namespace Ee4v.AvatarEditing
             catch (Exception exception) { ShowError(exception.Message); }
         }
 
-        protected void ShowError(string message) => ShowMessage(message, HelpBoxMessageType.Error);
-        private void ShowMessage(string message, HelpBoxMessageType type)
+        protected void ShowError(string message) => ShowMessage(message, MessageSeverity.Error);
+        private void ShowMessage(string message, MessageSeverity type)
         {
             if (_feedback == null) return;
-            UiTextFactory.SetText(_feedback, message);
-            _feedback.messageType = type;
+            _feedback.SetState(new MessagePanelState(string.Empty, message, type));
             _feedback.style.display = DisplayStyle.Flex;
         }
 

@@ -63,7 +63,7 @@ namespace Ee4v.AssetManager.UI
             pane.AddToClassList("ee4v-modification-workflow__preview-pane");
             pane.Content.Add(new EmptyState(new EmptyStateState("プレビュー領域", "描画する部品を配置します。")));
             layout = new WorkflowEditorLayout(rail, pane);
-            layout.AppearanceHeader.Add(new BodyPartSelector(null, _ => true, _ => { }));
+            layout.AppearanceHeader.Add(Ee4v.AvatarEditing.AvatarEditingUi.CreateBodyPartSelector(null, _ => true, _ => { }));
             layout.Controls.Add(UiTextFactory.Create("編集コントロール領域"));
             layout.FaceExpressionHost.Add(new EmptyState(new EmptyStateState("表情・アニメーション", "専用Viewの領域です。")));
             layout.ExpressionMenuHost.Add(new EmptyState(new EmptyStateState("Expression Menu", "全体画面は左に円形メニューとツリー、右に項目カードを配置します。詳細画面は左にアバタープレビュー、右に編集フォームを配置します。")));

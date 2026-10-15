@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -23,6 +24,7 @@ namespace Ee4v.AssetManager.UI
     internal sealed partial class AssetModificationWorkflowView : VisualElement, IDisposable
     {
         private readonly AvatarEditingContext _avatarContext;
+        private readonly bool _previewOnly;
         private readonly AvatarPartsEditor _parts;
         private readonly AvatarMaterialsEditor _materials;
 
@@ -36,13 +38,22 @@ namespace Ee4v.AssetManager.UI
             internal BodyPartCategory? BodyPart { get; set; }
             internal Material Material { get; set; }
             internal string Feedback { get; set; }
-            internal HelpBoxMessageType FeedbackType { get; set; }
+            internal MessageSeverity FeedbackType { get; set; }
         }
 
         internal sealed class VariantSourceOption
         {
+            private IReadOnlyList<GameObject> _prefabs;
             internal AssetItem Item { get; set; }
-            internal IReadOnlyList<GameObject> Prefabs { get; set; }
+            internal IReadOnlyList<string> PrefabPaths { get; set; }
+            internal int PrefabCount => PrefabPaths?.Count ?? Prefabs?.Count ?? 0;
+            internal IReadOnlyList<GameObject> Prefabs
+            {
+                get => _prefabs ?? (_prefabs = (PrefabPaths ?? Array.Empty<string>())
+                    .Select(AssetDatabase.LoadAssetAtPath<GameObject>).Where(prefab => prefab != null)
+                    .OrderBy(prefab => prefab.name, StringComparer.OrdinalIgnoreCase).ToArray());
+                set => _prefabs = value;
+            }
         }
 
         private sealed class AssetChildEntry
@@ -128,7 +139,7 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement _appearanceHeader;
 
-        private BodyPartSelector _bodyPartSelector;
+        private ExclusiveButtonGroup<BodyPartCategory?> _bodyPartSelector;
 
         private VisualElement _appearanceTabs;
 
@@ -216,8 +227,11 @@ namespace Ee4v.AssetManager.UI
 
         internal event Action<DerivedAssetInfo> DerivedAssetChanged;
 
-        internal AssetModificationWorkflowView(Action repaint)
+        internal AssetModificationWorkflowView(Action repaint, IAssetManager previewManager = null,
+            GameObject previewAvatar = null)
         {
+            _previewOnly = previewManager != null && previewAvatar != null;
+            _manager = previewManager;
             RegisterCallback<KeyDownEvent>(evt =>
             {
                 if (evt.keyCode == KeyCode.Escape) { HideVariantChangesHover(); }
@@ -252,13 +266,14 @@ namespace Ee4v.AssetManager.UI
                     BuildPrefabGroup = BuildCollapsiblePrefabGroup
                 })
             {
-                UiRoot = this
+                UiRoot = this,
+                Root = previewAvatar
             };
             _parts = new AvatarPartsEditor(_avatarContext);
             _materials = new AvatarMaterialsEditor(_avatarContext);
             _repaint = repaint;
             ApplyEditorMode();
-            OnEnable();
+            if (!_previewOnly) { OnEnable(); }
             try
             {
                 BuildWindow();
@@ -289,6 +304,13 @@ namespace Ee4v.AssetManager.UI
 
         private void RequestRepaint()
         {
+            if (_previewOnly)
+            {
+                foreach (var button in this.Query<UiButton>().ToList()) { button.SetEnabled(false); }
+                _avatarContext.ControlsHost?.SetEnabled(false);
+                _faceExpressionHost?.SetEnabled(false);
+                _editorLayout?.ExpressionMenuHost.SetEnabled(false);
+            }
             MarkDirtyRepaint();
             _repaint?.Invoke();
         }
@@ -329,6 +351,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             _disposed = true;
+            _variantChangesSnapshot = null;
             HideVariantChangesHover();
             _parts.EndBodyScaleDrag(false);
             _parts.SaveBodyScalePrefab(false);

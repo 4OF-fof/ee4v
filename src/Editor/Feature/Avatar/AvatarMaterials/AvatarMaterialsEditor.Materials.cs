@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.AvatarEditing;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -21,8 +22,29 @@ namespace Ee4v.AvatarMaterials
                     material.name,
                     FormatMaterialUsageSummary(entry),
                     CreateMaterialIcon(material),
-                    material == _context.SelectedMaterial),
-                () => NavigateToMaterial(material, entry.Usages[0].PrefabSiblingIndex));
+                    material == _context.HighlightedMaterial),
+                () =>
+                {
+                    if (_context.HighlightedMaterial != material)
+                    {
+                        SelectMaterial(material, entry.Usages[0].PrefabSiblingIndex);
+                    }
+                });
+            choice.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0) { return; }
+                if (AvatarEditingUi.IsRowActionTarget(choice, evt.target as VisualElement))
+                {
+                    return;
+                }
+                choice.Focus();
+                SelectMaterial(material, entry.Usages[0].PrefabSiblingIndex);
+                if (evt.clickCount == 2)
+                {
+                    NavigateToMaterial(material, entry.Usages[0].PrefabSiblingIndex);
+                }
+                evt.StopPropagation();
+            }, TrickleDown.TrickleDown);
             choice.AddToClassList(
                 "ee4v-modification-workflow__material-item");
             choice.userData = new KeyValuePair<Material, int>(
@@ -129,9 +151,9 @@ namespace Ee4v.AvatarMaterials
             {
                 _materialInspector.Dispose();
                 _materialInspector = null;
-                surface.Add(UiTextFactory.CreateHelpBox(
+                surface.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.appearance.editorUnavailable"),
-                    HelpBoxMessageType.Error));
+                    MessageSeverity.Error));
                 section.Add(surface);
                 return section;
             }
@@ -613,7 +635,7 @@ namespace Ee4v.AvatarMaterials
             {
                 Debug.LogException(exception);
                 _context.Feedback = I18N.Get("workflow.appearance.materialReplacementFailed");
-                _context.FeedbackType = HelpBoxMessageType.Error;
+                _context.FeedbackType = MessageSeverity.Error;
                 _context.Host.ShowMaterials();
             }
         }
@@ -693,7 +715,7 @@ namespace Ee4v.AvatarMaterials
             _context.Host.ClearCaches();
             _context.Edits.Changed();
             RefreshMaterialVisibility();
-            _context.Preview?.ReloadPrefabPreservingView(_context.Root);
+            _context.Preview?.ReloadTargetPreservingView(_context.Root);
             _context.Host.ShowMaterials();
         }
 

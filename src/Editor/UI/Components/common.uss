@@ -548,7 +548,9 @@
     min-width: 0;
     margin: 0;
     padding: var(--ee4v-space-sm) var(--ee4v-space-md);
-    border-width: 0;
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-lg);
     background-color: var(--ee4v-color-transparent);
 }
 
@@ -556,8 +558,14 @@
     background-color: var(--ee4v-color-surface-hover);
 }
 
-.ee4v-ui-navigation-item--selected {
+.ee4v-ui-navigation-item--selected,
+.ee4v-ui-navigation-item--selected:hover {
+    border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
+}
+
+.ee4v-ui Button.ee4v-ui-navigation-item:focus {
+    border-color: var(--ee4v-color-focus);
 }
 
 .ee4v-ui-navigation-item__row {

@@ -3,6 +3,16 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
+    public sealed class FormInput<TInput> : FormInput where TInput : VisualElement
+    {
+        public FormInput(string label, TInput input, Button button = null)
+            : base(label, input, button)
+        {
+        }
+
+        public new TInput Input => (TInput)base.Input;
+    }
+
     public class FormInput : VisualElement
     {
         public FormInput(
@@ -16,19 +26,26 @@ namespace Ee4v.UI
             string label,
             VisualElement input,
             Button button = null)
+            : this(label, input, button, UiClassNames.FormLabel, true) { }
+
+        protected FormInput(string label, VisualElement input, Button button,
+            string labelTypography, bool defaultStyle)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
 
-            AddToClassList("ee4v-ui-form-input");
+            if (defaultStyle) { AddToClassList("ee4v-ui-form-input"); }
             LabelText = UiTextFactory.Create(
                 string.Empty,
-                UiClassNames.FormLabel,
-                "ee4v-ui-form-input__label");
+                labelTypography);
             Input = input;
-            Input.AddToClassList("ee4v-ui-form-input__input");
+            if (defaultStyle)
+            {
+                LabelText.AddToClassList("ee4v-ui-form-input__label");
+                Input.AddToClassList("ee4v-ui-form-input__input");
+            }
             Button = button;
             Add(LabelText);
             Add(Input);

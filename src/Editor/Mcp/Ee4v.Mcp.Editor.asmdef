@@ -13,6 +13,7 @@
     "Ee4v.ExpressionMenu.Editor",
     "Ee4v.AssetManager.Simulation.Editor",
     "Ee4v.PlayModeComponentSuppression.Editor",
+    "Ee4v.AvatarParts.Editor",
     "nadena.dev.modular-avatar.core"
   ],
   "includePlatforms": [

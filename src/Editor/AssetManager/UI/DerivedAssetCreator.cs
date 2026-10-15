@@ -29,6 +29,7 @@ namespace Ee4v.AssetManager.UI
     {
         public string VariantId { get; set; }
         public string ParentItemId { get; set; }
+        public string SourcePrefabGuid { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public string AssetPath { get; set; }
@@ -39,11 +40,40 @@ namespace Ee4v.AssetManager.UI
         public DateTime UpdatedAt { get; set; }
         public bool IsArchived { get; set; }
         public bool IsOriginal { get; set; }
+        public bool IsOwnedWork { get; set; }
         public GameObject Prefab { get; set; }
     }
 
     public static class DerivedAssetCreator
     {
+        public static GameObject AddPrefabToWorkingRoot(GameObject root, GameObject source)
+        {
+            if (root == null || source == null || EditorUtility.IsPersistent(root) ||
+                !root.scene.IsValid() || !root.scene.isLoaded || EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("A writable working Scene root and a source Prefab are required.");
+            var sourcePath = AssetDatabase.GetAssetPath(source);
+            var rootPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root);
+            if (PrefabUtility.GetPrefabAssetType(source) == PrefabAssetType.NotAPrefab ||
+                string.Equals(sourcePath, rootPath, StringComparison.OrdinalIgnoreCase) ||
+                AssetDatabase.GetDependencies(sourcePath, true).Contains(rootPath, StringComparer.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The source must be a Prefab without a dependency cycle.");
+            var added = PrefabUtility.InstantiatePrefab(source, root.scene) as GameObject;
+            if (added == null) throw new InvalidOperationException("The child Prefab could not be instantiated.");
+            try
+            {
+                added.transform.SetParent(root.transform, false);
+                Undo.RegisterCreatedObjectUndo(added, "Add Variant Prefab");
+                Ee4v.AvatarParts.AvatarPartsEditor.MatchAddedPrefabBodyScale(root, added);
+                EditorSceneManager.MarkSceneDirty(root.scene);
+                return added;
+            }
+            catch
+            {
+                Object.DestroyImmediate(added);
+                throw;
+            }
+        }
+
         internal const string VariantRoot = DerivedAssetCatalog.VariantRoot;
         private const string MaterialsFolderName = "Materials";
         private const string FittingEnvironmentName = "__ee4vFittingEnvironment";
@@ -225,6 +255,25 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
+        public static DerivedAssetInfo CreateOwnedWork(IAssetManager manager, string name, string description, GameObject source = null)
+        {
+            if (manager == null) throw new ArgumentNullException(nameof(manager));
+            if (!IsValidName(name) || AssetDatabase.IsValidFolder(GetVariantFolder(name)))
+                throw new InvalidOperationException("The work name is invalid or already exists.");
+            var owner = manager.CreateItem(new CreateAssetItemRequest { Name = name.Trim(), Description = description ?? string.Empty, IsOriginal = true });
+            try
+            {
+                return Create(new DerivedAssetCreationRequest { ParentItemId = owner.Id, Name = name, Description = description,
+                    Prefab = source, CreateOriginal = source == null });
+            }
+            catch
+            {
+                manager.SetItemArchived(new[] { owner.Id }, true);
+                manager.DeleteItem(new[] { owner.Id });
+                throw;
+            }
+        }
+
         public static IReadOnlyList<GameObject> FindPrefabCandidates(IAssetManager manager, AssetItem item)
         {
             if (item == null) { return Array.Empty<GameObject>(); }
@@ -232,6 +281,20 @@ namespace Ee4v.AssetManager.UI
             if (!item.IsOriginal) { return prefabs; }
             return prefabs.Concat(FindByParentItem(item.Id)
                     .Where(asset => !asset.IsArchived).Select(asset => asset.Prefab))
+                .Where(prefab => prefab != null).Distinct()
+                .OrderBy(prefab => prefab.name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(AssetDatabase.GetAssetPath, StringComparer.OrdinalIgnoreCase).ToArray();
+        }
+
+        internal static IReadOnlyList<GameObject> FindDerivedPrefabCandidates(IAssetManager manager, AssetItem item)
+        {
+            if (item == null || item.IsArchived) { return Array.Empty<GameObject>(); }
+            if (!item.IsOriginal) { return FindPrefabCandidates(manager, item); }
+            return FindByParentItem(item.Id)
+                .Where(asset => !asset.IsArchived &&
+                    DerivedAssetCatalog.Read(AssetDatabase.GUIDToAssetPath(asset.SourcePrefabGuid ?? string.Empty))
+                        ?.ParentItemId != item.Id)
+                .Select(asset => asset.Prefab)
                 .Where(prefab => prefab != null).Distinct()
                 .OrderBy(prefab => prefab.name, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(AssetDatabase.GetAssetPath, StringComparer.OrdinalIgnoreCase).ToArray();
@@ -360,6 +423,7 @@ namespace Ee4v.AssetManager.UI
             {
                 VariantId = AssetDatabase.AssetPathToGUID(record.AssetPath),
                 ParentItemId = record.ParentItemId,
+                SourcePrefabGuid = record.SourceGuid,
                 Name = record.Name,
                 Description = record.Description,
                 Tags = record.Tags,
@@ -538,6 +602,7 @@ namespace Ee4v.AssetManager.UI
         public static GameObject ApplyWorkingScene(string prefabPath)
         {
             var root = OpenWorkingScene(prefabPath);
+            Ee4v.AvatarParts.AvatarPartsEditor.PrepareAuthoringForSave(root);
             if (!IsAvatarPrefab(root))
             {
                 ValidateCompositionReferences(root);
@@ -602,7 +667,7 @@ namespace Ee4v.AssetManager.UI
                 "VRC.SDK3.Avatars.Components.VRCAvatarDescriptor");
         }
 
-        internal static GameObject GetFittingAvatar(GameObject root)
+        public static GameObject GetFittingAvatar(GameObject root)
         {
             var avatar = root != null ? root.transform.parent : null;
             var environment = avatar != null ? avatar.parent : null;
@@ -612,7 +677,7 @@ namespace Ee4v.AssetManager.UI
                 ? avatar.gameObject : null;
         }
 
-        internal static void SetFittingAvatar(GameObject root, GameObject prefab)
+        public static void SetFittingAvatar(GameObject root, GameObject prefab)
         {
             var record = root != null ? DerivedAssetCatalog.Read(
                 PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root)) : null;

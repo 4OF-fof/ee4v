@@ -22,7 +22,7 @@ namespace Ee4v.ExpressionMenu
         private readonly AvatarEditingContext _context;
         private readonly ModularAvatarMenuItem _item;
         private readonly VisualElement _fields;
-        private readonly HelpBox _feedback;
+        private readonly MessagePanel _feedback;
         private readonly Action _typeChanged;
         private readonly Action _initialStateChanged;
         private ConfirmationOverlay _modeOverlay;
@@ -37,7 +37,7 @@ namespace Ee4v.ExpressionMenu
             _initialStateChanged = initialStateChanged;
             RegisterCallback<DetachFromPanelEvent>(evt => { if (evt.target == this) _modeOverlay?.Close(); });
             AddToClassList("ee4v-menu-template");
-            _feedback = UiTextFactory.CreateHelpBox("", HelpBoxMessageType.Error);
+            _feedback = UiTextFactory.CreateMessagePanel("", MessageSeverity.Error);
             _feedback.AddToClassList("ee4v-menu-template__hidden");
             Add(_feedback);
             _fields = new VisualElement();
@@ -688,7 +688,7 @@ namespace Ee4v.ExpressionMenu
             }));
             row.Add(selection);
             if (hasTarget && (renderer == null || !string.IsNullOrEmpty(shape) && !shapes.Contains(shape)))
-                row.Add(UiTextFactory.CreateHelpBox(T("missingShape"), HelpBoxMessageType.Error));
+                row.Add(UiTextFactory.CreateMessagePanel(T("missingShape"), MessageSeverity.Error));
         }
 
         private static (VisualElement Before, VisualElement After) AddTransition(VisualElement parent, string before, string after)
@@ -726,7 +726,7 @@ namespace Ee4v.ExpressionMenu
         private void Missing(VisualElement parent, AvatarObjectReference reference, Component effect)
         {
             if (reference != null && !string.IsNullOrEmpty(reference.referencePath) && reference.Get(effect) == null)
-                parent.Add(UiTextFactory.CreateHelpBox(T("missingTarget") + " " + reference.referencePath, HelpBoxMessageType.Error));
+                parent.Add(UiTextFactory.CreateMessagePanel(T("missingTarget") + " " + reference.referencePath, MessageSeverity.Error));
         }
 
         private UiButton RemoveActionButton(SectionHeader header, Action remove)
@@ -777,7 +777,7 @@ namespace Ee4v.ExpressionMenu
             try { _feedback.AddToClassList("ee4v-menu-template__hidden"); action(); }
             catch (Exception exception)
             {
-                UiTextFactory.SetText(_feedback, exception.GetBaseException().Message);
+                _feedback.SetState(new MessagePanelState(string.Empty, exception.GetBaseException().Message, MessageSeverity.Error));
                 _feedback.RemoveFromClassList("ee4v-menu-template__hidden");
             }
         }

@@ -31,7 +31,7 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildBadgeStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/AssetDetailComponents.cs",
+                        "Editor/UI/Components/Content/Details/Details.cs",
                         "Editor/Feature/Avatar/AvatarMaterials/AvatarMaterialsEditor.Materials.cs",
                         "Editor/Feature/Avatar/ExpressionMenu/ExpressionMenuView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",

@@ -67,9 +67,9 @@ namespace Ee4v.AvatarParts
 
             if (!_context.Edits.CanEditPrefab())
             {
-                content.Add(UiTextFactory.CreateHelpBox(
+                content.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get("workflow.appearance.sizeProtected"),
-                    HelpBoxMessageType.Warning));
+                    MessageSeverity.Warning));
                 return content;
             }
 
@@ -123,11 +123,11 @@ namespace Ee4v.AvatarParts
                 .ToArray();
             if (bodyShapes.Length == 0)
             {
-                content.Add(UiTextFactory.CreateHelpBox(
+                content.Add(UiTextFactory.CreateMessagePanel(
                     I18N.Get(_context.SelectedBodyPart.HasValue
                         ? "workflow.appearance.bodyShapePartEmpty"
                         : "workflow.appearance.bodyShapeEmpty"),
-                    HelpBoxMessageType.Info));
+                    MessageSeverity.Info));
             }
             else
             {
@@ -398,22 +398,17 @@ namespace Ee4v.AvatarParts
             var row = CreateSizeControlRow(
                 I18N.Get(definition.LocalizationKey),
                 out var controls);
-            var slider = new Slider(minimumHeight, maximumHeight);
-            slider.AddToClassList(
-                "ee4v-modification-workflow__size-slider");
+            var scalar = new ScalarInput(minimumHeight, maximumHeight,
+                I18N.Get("workflow.appearance.sizeReset"), null, "m");
+            controls.Add(scalar);
+            var slider = scalar.Slider;
             slider.tooltip = I18N.Get(
                 "workflow.appearance.heightSliderTooltip",
                 FormatBodyHeight(minimumHeight),
                 FormatBodyHeight(maximumHeight));
-            controls.Add(slider);
-            var value = UiTextFactory.CreateFloatField();
-            value.AddToClassList(
-                "ee4v-modification-workflow__size-value");
-            controls.Add(value);
-            controls.Add(CreateSizeUnit("m"));
-            var reset = CreateSizeResetButton(() =>
-                slider.value = baseHeightMeters);
-            controls.Add(reset);
+            var value = scalar.ValueField;
+            var reset = scalar.ResetButton;
+            reset.clicked += () => slider.value = baseHeightMeters;
 
             var rendering = false;
             var appliedHeight = Mathf.Clamp(
@@ -600,20 +595,14 @@ namespace Ee4v.AvatarParts
                 isChild,
                 leading,
                 labelClicked);
-            var slider = new Slider(
-                MinimumBodyScale * 100f,
-                MaximumBodyScale * 100f);
-            slider.AddToClassList(
-                "ee4v-modification-workflow__size-slider");
+            var scalar = new ScalarInput(MinimumBodyScale * 100f, MaximumBodyScale * 100f,
+                I18N.Get("workflow.appearance.sizeReset"), null, "%");
+            controls.Add(scalar);
+            var slider = scalar.Slider;
             slider.tooltip = tooltip;
-            controls.Add(slider);
-            var value = UiTextFactory.CreateFloatField();
-            value.AddToClassList(
-                "ee4v-modification-workflow__size-value");
-            controls.Add(value);
-            controls.Add(CreateSizeUnit("%"));
-            var reset = CreateSizeResetButton(() => slider.value = 100f);
-            controls.Add(reset);
+            var value = scalar.ValueField;
+            var reset = scalar.ResetButton;
+            reset.clicked += () => slider.value = 100f;
 
             var rendering = false;
             var renderedPercent = Mathf.Round(initialPercent);
@@ -842,24 +831,18 @@ namespace Ee4v.AvatarParts
             favorite.AddToClassList("ee4v-body-shape-favorite");
             favorite.style.display = isChild ? DisplayStyle.None : DisplayStyle.Flex;
             row.Insert(0, favorite);
-            var slider = new Slider(
-                MinimumBodyBlendShapeWeight,
-                MaximumBodyBlendShapeWeight);
-            slider.AddToClassList(
-                "ee4v-modification-workflow__size-slider");
+            var scalar = new ScalarInput(MinimumBodyBlendShapeWeight, MaximumBodyBlendShapeWeight,
+                I18N.Get("workflow.appearance.sizeReset"), null);
+            controls.Add(scalar);
+            var slider = scalar.Slider;
             slider.tooltip = I18N.Get(
                 "workflow.appearance.bodyShapeSliderTooltip",
                 label) + (showRenderer
                     ? $"\n{definition.RendererDisplayPath}\n{definition.ShapeName}"
                     : string.Empty);
-            controls.Add(slider);
-            var value = UiTextFactory.CreateFloatField();
-            value.AddToClassList(
-                "ee4v-modification-workflow__size-value");
-            controls.Add(value);
-            var reset = CreateSizeResetButton(() =>
-                slider.value = definition.BaseValue);
-            controls.Add(reset);
+            var value = scalar.ValueField;
+            var reset = scalar.ResetButton;
+            reset.clicked += () => slider.value = definition.BaseValue;
 
             var rendering = false;
             var appliedWeight = Mathf.Clamp(
@@ -997,27 +980,6 @@ namespace Ee4v.AvatarParts
             return row;
         }
 
-        private UiTextElement CreateSizeUnit(string unit)
-        {
-            var label = UiTextFactory.Create(
-                unit,
-                UiClassNames.SecondaryText,
-                "ee4v-modification-workflow__size-unit");
-            label.SetTextAlign(TextAnchor.MiddleLeft);
-            return label;
-        }
-
-        private UiButton CreateSizeResetButton(Action reset)
-        {
-            var button = new UiButton(
-                I18N.Get("workflow.appearance.sizeReset"),
-                reset,
-                variant: UiButtonVariant.Ghost);
-            button.AddToClassList(
-                "ee4v-modification-workflow__size-reset");
-            return button;
-        }
-
         private void RegisterBodySizeSliderDrag(Slider slider)
         {
             var dragContainer = slider.Q<VisualElement>(
@@ -1044,25 +1006,39 @@ namespace Ee4v.AvatarParts
             Action<AvatarEditorPanel> selectPanel = null,
             AvatarEditorPanel? selectedPanel = null)
         {
-            var tabs = new VisualElement();
+            var current = selectedPanel ?? (_shapePartsSection == ShapePartsSection.Shape
+                ? AvatarEditorPanel.Shape : AvatarEditorPanel.Parts);
+            var options = new List<ExclusiveButtonOption<AvatarEditorPanel>>
+            {
+                new ExclusiveButtonOption<AvatarEditorPanel>(AvatarEditorPanel.Parts, I18N.Get("workflow.shapeParts.parts")),
+                new ExclusiveButtonOption<AvatarEditorPanel>(AvatarEditorPanel.Shape, I18N.Get("workflow.shapeParts.shape"))
+            };
+            if (selectPanel != null)
+            { options.Add(new ExclusiveButtonOption<AvatarEditorPanel>(AvatarEditorPanel.Material, I18N.Get("workflow.shapeParts.material"))); }
+            ExclusiveButtonGroup<AvatarEditorPanel> tabs = null;
+            tabs = new ExclusiveButtonGroup<AvatarEditorPanel>(options, current, panel =>
+            {
+                var previous = (AvatarEditorPanel)tabs.userData;
+                if (previous == panel) { return; }
+                tabs.SetSelected(previous);
+                if (selectPanel != null) { selectPanel(panel); return; }
+                if (_shapePartsSection == ShapePartsSection.Shape)
+                {
+                    EndBodyScaleDrag();
+                    SaveBodyScalePrefab();
+                    if (_bodyScaleDirty) { return; }
+                }
+                _shapePartsSection = panel == AvatarEditorPanel.Shape
+                    ? ShapePartsSection.Shape : ShapePartsSection.Parts;
+                RefreshShapePartsTabs(tabs, panel);
+                _context.Host.ShowParts();
+                _context.ControlsHost.scrollOffset = Vector2.zero;
+            }, tabVariant: SelectionTabVariant.Underline);
             UiComposition.Prepare(tabs,
                 "Editor/Feature/Shared/AvatarEditing/avatar-editing.uss",
                 "Editor/Feature/Avatar/AvatarParts/avatar-parts.uss");
-            tabs.AddToClassList(
-                "ee4v-modification-workflow__shape-parts-tabs");
-            AddShapePartsButton(
-                tabs,
-                AvatarEditorPanel.Parts,
-                "workflow.shapeParts.parts", selectPanel);
-            AddShapePartsButton(
-                tabs,
-                AvatarEditorPanel.Shape,
-                "workflow.shapeParts.shape", selectPanel);
-            if (selectPanel != null)
-            {
-                AddShapePartsButton(tabs, AvatarEditorPanel.Material,
-                    "workflow.shapeParts.material", selectPanel);
-            }
+            tabs.AddToClassList("ee4v-modification-workflow__shape-parts-tabs");
+            foreach (var tab in tabs.Children()) { tab.AddToClassList("ee4v-modification-workflow__shape-parts-tab"); }
             RefreshShapePartsTabs(tabs, selectedPanel);
             return tabs;
         }
@@ -1072,55 +1048,7 @@ namespace Ee4v.AvatarParts
             var current = selectedPanel ?? (_shapePartsSection == ShapePartsSection.Shape
                 ? AvatarEditorPanel.Shape : AvatarEditorPanel.Parts);
             tabs.userData = current;
-            foreach (var child in tabs.Children())
-            {
-                if (child.userData is AvatarEditorPanel panel)
-                {
-                    child.EnableInClassList("ee4v-modification-workflow__shape-parts-tab--active",
-                        panel == current);
-                    if (child is UiButton button)
-                    {
-                        button.SetLabelColor(panel == current ? UiColorTokens.TextPrimary : UiColorTokens.TextMuted);
-                    }
-                }
-            }
-        }
-
-        private void AddShapePartsButton(
-            VisualElement tabs,
-            AvatarEditorPanel panel,
-            string labelKey,
-            Action<AvatarEditorPanel> selectPanel)
-        {
-            var button = new UiButton(
-                I18N.Get(labelKey),
-                () =>
-                {
-                    if (tabs.userData is AvatarEditorPanel current && current == panel)
-                    {
-                        return;
-                    }
-                    if (selectPanel != null)
-                    {
-                        selectPanel(panel);
-                        return;
-                    }
-                    if (_shapePartsSection == ShapePartsSection.Shape)
-                    {
-                        EndBodyScaleDrag();
-                        SaveBodyScalePrefab();
-                        if (_bodyScaleDirty) { return; }
-                    }
-                    _shapePartsSection = panel == AvatarEditorPanel.Shape
-                        ? ShapePartsSection.Shape : ShapePartsSection.Parts;
-                    _context.Host.ShowParts();
-                    _context.ControlsHost.scrollOffset = Vector2.zero;
-                },
-                variant: UiButtonVariant.Ghost);
-            button.AddToClassList(
-                "ee4v-modification-workflow__shape-parts-tab");
-            button.userData = panel;
-            tabs.Add(button);
+            ((ExclusiveButtonGroup<AvatarEditorPanel>)tabs).SetSelected(current);
         }
     }
 }

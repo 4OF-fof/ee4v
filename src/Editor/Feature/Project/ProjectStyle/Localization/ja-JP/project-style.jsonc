@@ -5,7 +5,7 @@
     },
     "enabled": {
       "label": "フォルダースタイルを有効化",
-      "tooltip": "プロジェクトウィンドウでフォルダーの色とアイコンを変更します。フォルダー上でAltキーを押すと編集画面を開きます。"
+      "tooltip": "Projectウィンドウ内のフォルダーの色とアイコンを変更できるようにします。フォルダーにカーソルを合わせてAltキーを押すと編集画面が開きます。"
     }
   },
   "window": {
@@ -18,14 +18,14 @@
   "editor": {
     "color": {
       "label": "色",
-      "tooltip": "フォルダーアイコンへ適用する色です。",
+      "tooltip": "フォルダーアイコンに適用する色です。",
       "customLabel": "色を選択",
       "clearLabel": "色を解除",
       "presetTooltip": "プリセット {0}"
     },
     "icon": {
       "label": "アイコン",
-      "tooltip": "フォルダーアイコンの代わりに表示するTextureです。",
+      "tooltip": "フォルダーアイコンの代わりに表示するTexture画像です。",
       "recentLabel": "最近使ったアイコン",
       "chooseLabel": "アイコンを選択",
       "clearLabel": "アイコンを解除"
