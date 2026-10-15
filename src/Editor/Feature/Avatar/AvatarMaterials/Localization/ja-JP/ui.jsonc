@@ -26,8 +26,8 @@
       "makeEditable": "Material Variantを作成して編集",
       "materialReplacementFailed": "Materialを差し替えられませんでした。Consoleを確認してください。",
       "emptyTitle": "Materialが見つかりません",
-      "emptyPartDescription": "この部位に分類されたMaterialはありません。「全身」も確認してください。",
-      "emptyDescription": "選択した派生アセットにMaterialが設定されているか確認してください。"
+      "emptyPartDescription": "この部位に割り当てられたMaterialはありません。「全身」タブも確認してください。",
+      "emptyDescription": "選択中の派生アセットにMaterialが設定されているか確認してください。"
     }
   }
 }

@@ -5,7 +5,7 @@
     },
     "enabled": {
       "label": "ヒエラルキースタイルを有効化",
-      "tooltip": "GameObjectの背景色とアイコンの変更、ヒエラルキーからの非表示を行います。項目上でAltキーを押すと編集画面を開きます。"
+      "tooltip": "Hierarchy上のGameObjectの背景色やアイコンの変更、および非表示化を有効にします。項目にカーソルを合わせてAltキーを押すと編集画面が開きます。"
     }
   },
   "window": {
@@ -16,14 +16,14 @@
   "editor": {
     "color": {
       "label": "背景色",
-      "tooltip": "子へ継承される背景色です。子に背景色が設定されている場合は子の設定を優先します。",
+      "tooltip": "子階層にも引き継がれる背景色です。子オブジェクトに個別の背景色が設定されている場合は、子の設定が優先されます。",
       "customLabel": "色を選択",
       "clearLabel": "背景色を解除",
       "presetTooltip": "プリセット {0}"
     },
     "icon": {
       "label": "アイコン",
-      "tooltip": "このGameObjectのヒエラルキーアイコンとして使うTexture2Dです。アイコンは子へ継承されません。",
+      "tooltip": "このGameObjectのHierarchyアイコンとして表示するTexture2Dです。アイコンは子階層には引き継がれません。",
       "recentLabel": "最近使ったアイコン",
       "chooseLabel": "アイコンを選択",
       "clearLabel": "アイコンを解除"
@@ -31,7 +31,7 @@
     "hide": {
       "singleLabel": "ヒエラルキーから非表示",
       "multipleLabel": "{0}個のオブジェクトをヒエラルキーから非表示",
-      "tooltip": "非表示にして非アクティブ化し、tagを一時的にEditorOnlyへ変更します。Hidden Objectsから再表示すると元のactive状態とtagへ戻ります。",
+      "tooltip": "Hierarchyから隠し、オブジェクトを非アクティブ化してTagを一時的に「EditorOnly」へ変更します。「非表示オブジェクト」画面から再表示すると、元のアクティブ状態とTagに戻ります。",
       "undo": "GameObjectをヒエラルキーから非表示"
     }
   }

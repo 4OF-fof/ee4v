@@ -5,7 +5,7 @@
     },
     "enabled": {
       "label": "Project タブ",
-      "tooltip": "Project ウィンドウに、履歴を個別に保持するタブを表示します。"
+      "tooltip": "Projectウィンドウに、移動履歴を個別に保持できるタブバーを表示します。"
     }
   },
   "toolbar": {
@@ -16,7 +16,7 @@
       "tooltip": "タブを閉じる"
     },
     "pin": {
-      "tooltip": "ピン止めされたタブ"
+      "tooltip": "ピン留めされたタブ"
     }
   }
 }

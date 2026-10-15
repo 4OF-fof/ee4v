@@ -7,23 +7,23 @@
     },
     "language": {
       "label": "言語",
-      "tooltip": "優先して使うUI言語です。"
+      "tooltip": "優先して表示するUIの言語です。"
     },
     "fallbackLanguage": {
       "label": "フォールバック言語",
-      "tooltip": "en-US に落ちる前に参照する第2言語です。"
+      "tooltip": "優先言語に翻訳がない場合、英語（en-US）より先に参照する第2言語です。"
     },
     "assetRootFolderName": {
       "label": "生成アセットのルートフォルダー名",
-      "tooltip": "すべてのプロジェクトで使う、Assets直下の生成アセット用フォルダー名です。"
+      "tooltip": "すべてのプロジェクトで共通して使う、Assets直下の生成アセット保存用フォルダー名です。"
     },
     "useProjectAssetRootFolderName": {
       "label": "このプロジェクトで上書き",
-      "tooltip": "グローバルなルートフォルダー名をこのプロジェクト専用の値で上書きします。"
+      "tooltip": "共通のルートフォルダー名を、このプロジェクト専用のフォルダー名で上書きします。"
     },
     "projectAssetRootFolderName": {
       "label": "プロジェクトのルートフォルダー名",
-      "tooltip": "上書きが有効な場合に使う、Assets直下の生成アセット用フォルダー名です。"
+      "tooltip": "上書き有効時に使う、このプロジェクト専用の生成アセット保存用フォルダー名（Assets直下）です。"
     },
     "previewMotion": {
       "Other": "全身",
@@ -34,9 +34,9 @@
       "Waist": "腰・胴",
       "Legs": "脚",
       "Feet": "足",
-      "tooltip": "この部位を選択したときに再生するAnimationClipです。NoneならAポーズを使用します。Humanoid Clip、またはアバターと骨のパスが一致するGeneric Clipを指定してください。",
+      "tooltip": "この部位を選択したときに再生するAnimationClipです。未指定（None）の場合はAポーズになります。Humanoid Clip、またはアバターとボーン階層が一致するGeneric Clipを指定してください。",
       "loop": "ループ",
-      "loopTooltip": "Clipのインポート設定より優先します。OFFでは一度再生し、最後の姿勢を保持します。"
+      "loopTooltip": "AnimationClipのインポート設定より優先してループ再生します。OFFの場合は1回だけ再生し、最後のポーズで停止します。"
     },
     "listInput": {
       "itemPlaceholder": "項目を入力",
