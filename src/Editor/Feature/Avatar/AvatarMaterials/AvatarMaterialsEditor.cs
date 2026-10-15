@@ -78,6 +78,8 @@ namespace Ee4v.AvatarMaterials
                 if (selected && (!prefabSiblingIndex.HasValue || pair.Value == prefabSiblingIndex.Value))
                 {
                     AvatarEditingUi.RevealSelection(choice);
+                    AvatarEditingUi.ScrollSelectionIntoView(_context.ControlsHost, choice,
+                        () => _context.SelectedMaterial == null && _context.HighlightedMaterial == material);
                 }
             });
             _context.Host.SyncPreviewSelection();

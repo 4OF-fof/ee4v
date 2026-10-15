@@ -442,7 +442,12 @@ namespace Ee4v.AvatarParts
                     !row.ClassListContains("ee4v-part-details__header") && Equals(row.userData, key);
                 row.EnableInClassList("ee4v-modification-workflow__object-row--selected",
                     selected);
-                if (selected) { AvatarEditingUi.RevealSelection(row); }
+                if (selected)
+                {
+                    AvatarEditingUi.RevealSelection(row);
+                    AvatarEditingUi.ScrollSelectionIntoView(_context.ControlsHost, row,
+                        () => _context.SelectedPartKey == null && _context.HighlightedPartKey == key);
+                }
             });
             _context.Host.SyncPreviewSelection();
         }

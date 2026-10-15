@@ -34,6 +34,28 @@ namespace Ee4v.AvatarEditing
             }
         }
 
+        public static void ScrollSelectionIntoView(
+            ScrollView controls, VisualElement row, Func<bool> isSelected)
+        {
+            if (controls == null) { return; }
+            row.schedule.Execute(() =>
+            {
+                if (!isSelected() || !controls.Contains(row)) { return; }
+                var bounds = row.worldBound;
+                var viewport = controls.contentViewport.worldBound;
+                if (bounds.height <= 0f || viewport.height <= 0f ||
+                    bounds.yMin >= viewport.yMin + UiSpacingTokens.Medium &&
+                    bounds.yMax <= viewport.yMax - UiSpacingTokens.Medium)
+                {
+                    return;
+                }
+                var offset = controls.scrollOffset;
+                offset.y = UnityEngine.Mathf.Clamp(offset.y + bounds.center.y - viewport.center.y,
+                    0f, UnityEngine.Mathf.Max(0f, controls.verticalScroller.highValue));
+                controls.scrollOffset = offset;
+            });
+        }
+
         public static bool IsRowActionTarget(VisualElement row, VisualElement target)
         {
             for (var element = target; element != null && element != row; element = element.parent)
