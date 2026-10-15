@@ -101,6 +101,7 @@
     border-bottom-color: var(--ee4v-color-transparent);
     border-radius: 0;
     background-color: var(--ee4v-color-transparent);
+    transition-property: none;
 }
 
 .ee4v-ui-selection-tab--underline .ee4v-ui-selection-tab-name {
@@ -112,7 +113,6 @@
     background-color: var(--ee4v-color-surface-hover);
 }
 
-.ee4v-ui-selection-tab.ee4v-ui-selection-tab--underline:focus,
 .ee4v-ui-selection-tab.ee4v-ui-selection-tab--underline.ee4v-ui-selection-tab--selected,
 .ee4v-ui-selection-tab.ee4v-ui-selection-tab--underline.ee4v-ui-selection-tab--selected:hover {
     border-bottom-color: var(--ee4v-color-focus);
