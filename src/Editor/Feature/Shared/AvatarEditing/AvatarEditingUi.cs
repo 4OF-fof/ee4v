@@ -9,6 +9,15 @@ namespace Ee4v.AvatarEditing
 {
     public static class AvatarEditingUi
     {
+        public static bool IsRowActionTarget(VisualElement row, VisualElement target)
+        {
+            for (var element = target; element != null && element != row; element = element.parent)
+            {
+                if (element is Button || element is Toggle) { return true; }
+            }
+            return false;
+        }
+
         public static ExclusiveButtonGroup<BodyPartCategory?> CreateBodyPartSelector(
             BodyPartCategory? selected, Func<BodyPartCategory, bool> available, Action<BodyPartCategory?> select)
         {

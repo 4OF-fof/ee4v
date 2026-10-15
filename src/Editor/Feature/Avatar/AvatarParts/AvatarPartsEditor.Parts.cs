@@ -343,10 +343,13 @@ namespace Ee4v.AvatarParts
                 "ee4v-modification-workflow__object-text");
             if (!isDetailsHeader)
             {
-                text.RegisterCallback<ClickEvent>(evt =>
+                row.RegisterCallback<PointerDownEvent>(evt =>
                 {
-                    if (evt.button == 0) { SelectPartRow(key, evt.clickCount == 2); }
-                });
+                    if (evt.button != 0 ||
+                        AvatarEditingUi.IsRowActionTarget(row, evt.target as VisualElement)) { return; }
+                    SelectPartRow(key, evt.clickCount == 2);
+                    evt.StopPropagation();
+                }, TrickleDown.TrickleDown);
             }
             var name = UiTextFactory.Create(
                 entry.Name,

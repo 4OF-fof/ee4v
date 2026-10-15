@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.AvatarEditing;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -22,14 +23,25 @@ namespace Ee4v.AvatarMaterials
                     FormatMaterialUsageSummary(entry),
                     CreateMaterialIcon(material),
                     material == _context.HighlightedMaterial),
-                () => SelectMaterial(material));
-            choice.RegisterCallback<ClickEvent>(evt =>
+                () =>
+                {
+                    if (_context.HighlightedMaterial != material) { SelectMaterial(material); }
+                });
+            choice.RegisterCallback<PointerDownEvent>(evt =>
             {
-                if (evt.button == 0 && evt.clickCount == 2)
+                if (evt.button != 0) { return; }
+                if (AvatarEditingUi.IsRowActionTarget(choice, evt.target as VisualElement))
+                {
+                    return;
+                }
+                choice.Focus();
+                SelectMaterial(material);
+                if (evt.clickCount == 2)
                 {
                     NavigateToMaterial(material, entry.Usages[0].PrefabSiblingIndex);
                 }
-            });
+                evt.StopPropagation();
+            }, TrickleDown.TrickleDown);
             choice.AddToClassList(
                 "ee4v-modification-workflow__material-item");
             choice.userData = new KeyValuePair<Material, int>(
