@@ -9,6 +9,31 @@ namespace Ee4v.AvatarEditing
 {
     public static class AvatarEditingUi
     {
+        private sealed class SelectionRevealEvent : EventBase<SelectionRevealEvent>
+        {
+            public SelectionRevealEvent() { }
+
+            protected override void Init()
+            {
+                base.Init();
+                bubbles = true;
+            }
+        }
+
+        public static void RegisterSelectionReveal(VisualElement content, Action expand)
+        {
+            content.RegisterCallback<SelectionRevealEvent>(_ => expand());
+        }
+
+        public static void RevealSelection(VisualElement row)
+        {
+            using (var evt = SelectionRevealEvent.GetPooled())
+            {
+                evt.target = row;
+                row.SendEvent(evt);
+            }
+        }
+
         public static bool IsRowActionTarget(VisualElement row, VisualElement target)
         {
             for (var element = target; element != null && element != row; element = element.parent)

@@ -25,7 +25,10 @@ namespace Ee4v.AvatarMaterials
                     material == _context.HighlightedMaterial),
                 () =>
                 {
-                    if (_context.HighlightedMaterial != material) { SelectMaterial(material); }
+                    if (_context.HighlightedMaterial != material)
+                    {
+                        SelectMaterial(material, entry.Usages[0].PrefabSiblingIndex);
+                    }
                 });
             choice.RegisterCallback<PointerDownEvent>(evt =>
             {
@@ -35,7 +38,7 @@ namespace Ee4v.AvatarMaterials
                     return;
                 }
                 choice.Focus();
-                SelectMaterial(material);
+                SelectMaterial(material, entry.Usages[0].PrefabSiblingIndex);
                 if (evt.clickCount == 2)
                 {
                     NavigateToMaterial(material, entry.Usages[0].PrefabSiblingIndex);

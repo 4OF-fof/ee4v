@@ -346,6 +346,10 @@ namespace Ee4v.AssetManager.UI
                 _parts.ShowPrefabContextMenu(evt, prefabSiblingIndex));
             group.Add(header);
             group.Add(content);
+            RegisterSelectionReveal(content, () =>
+            {
+                if (expandedGroups.Add(prefabSiblingIndex)) { UpdateFoldout(); }
+            });
             UpdateFoldout();
             return group;
         }

@@ -66,20 +66,27 @@ namespace Ee4v.AvatarMaterials
             return parts.Length == 1 ? parts[0] : (BodyPartCategory?)null;
         }
 
-        private void SelectMaterial(Material material)
+        private void SelectMaterial(Material material, int? prefabSiblingIndex = null)
         {
             _context.HighlightedMaterial = material;
             _context.ControlsHost?.Query<NavigationItem>(
                 className: "ee4v-modification-workflow__material-item").ForEach(choice =>
-                choice.SetSelected(choice.userData is KeyValuePair<Material, int> pair &&
-                    pair.Key == material));
+            {
+                if (!(choice.userData is KeyValuePair<Material, int> pair)) { return; }
+                var selected = material != null && pair.Key == material;
+                choice.SetSelected(selected);
+                if (selected && (!prefabSiblingIndex.HasValue || pair.Value == prefabSiblingIndex.Value))
+                {
+                    AvatarEditingUi.RevealSelection(choice);
+                }
+            });
             _context.Host.SyncPreviewSelection();
         }
 
         public void SelectPreviewMaterial(Material material, int prefabSiblingIndex, bool openDetails = false)
         {
             if (material == null) { return; }
-            if (!openDetails) { SelectMaterial(material); return; }
+            if (!openDetails) { SelectMaterial(material, prefabSiblingIndex); return; }
             if (_context.SelectedBodyPart.HasValue && !GetAvatarMaterials().Any(entry =>
                 entry.Material == material && entry.Usages.Any(usage =>
                     usage.PrefabSiblingIndex == prefabSiblingIndex &&

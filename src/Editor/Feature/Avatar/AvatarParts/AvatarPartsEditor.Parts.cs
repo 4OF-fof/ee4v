@@ -259,6 +259,10 @@ namespace Ee4v.AvatarParts
             row.Insert(0, toggle);
             group.Add(row);
             group.Add(content);
+            AvatarEditingUi.RegisterSelectionReveal(content, () =>
+            {
+                if (_expandedObjectGroups.Add(key)) { UpdateFoldout(); }
+            });
             UpdateFoldout();
             return group;
         }
@@ -433,8 +437,13 @@ namespace Ee4v.AvatarParts
             _context.HighlightedPartKey = key;
             _context.ControlsHost?.Query<VisualElement>(
                 className: "ee4v-modification-workflow__object-row").ForEach(row =>
+            {
+                var selected = key != null &&
+                    !row.ClassListContains("ee4v-part-details__header") && Equals(row.userData, key);
                 row.EnableInClassList("ee4v-modification-workflow__object-row--selected",
-                    !row.ClassListContains("ee4v-part-details__header") && Equals(row.userData, key)));
+                    selected);
+                if (selected) { AvatarEditingUi.RevealSelection(row); }
+            });
             _context.Host.SyncPreviewSelection();
         }
 
