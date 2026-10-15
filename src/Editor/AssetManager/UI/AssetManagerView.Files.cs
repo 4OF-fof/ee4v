@@ -6,6 +6,7 @@ using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.UI
@@ -26,15 +27,16 @@ namespace Ee4v.AssetManager.UI
                               : " · " + extension.ToUpperInvariant()) +
                           " · " +
                           file.SourceType.ToString().ToUpperInvariant();
-            var header = new DetailHeader(
+            var header = CreateFileDetailHeader(host,
                 file.FileName,
                 eyebrow,
                 file.SourcePath,
+                AssetFileTreeBuilder.CanAnalyze(file) ? "folder_zip.png" : "document.png",
                 CreateAssetStatusState(file.IsArchived));
             if (SearchableFileTree.CanImport(
                     new FileTreeSelection(file, null)))
             {
-                header.AddAction(AssetManagerControls.CreateButton(
+                header.AddHeaderAction(AssetManagerControls.CreateButton(
                     I18N.Get("action.import"),
                     () => ImportFileTreeEntry(
                         new FileTreeSelection(file, null)),
@@ -53,8 +55,13 @@ namespace Ee4v.AssetManager.UI
                     I18N.Get("action.delete"),
                     () => DeleteFile(file.Id)));
             }
-            host.Add(header);
-
+            AddFileDetailFacts(host,
+                new ValueDisplay(I18N.Get("field.size"), FormatTotalFileSize(new[] { file }), ValueDisplayLayout.Stacked),
+                new ValueDisplay(I18N.Get("field.fileTypes"), string.IsNullOrEmpty(extension)
+                    ? I18N.Get("common.none") : extension.ToUpperInvariant(), ValueDisplayLayout.Stacked),
+                new ValueDisplay(I18N.Get("field.imported"), I18N.Get(
+                    _manager.GetFileImportedAssetGuids(file.Id).Count > 0 ? "common.yes" : "common.no"),
+                    ValueDisplayLayout.Stacked));
             BuildFileSettings(
                 host,
                 new[] { file },
@@ -65,18 +72,50 @@ namespace Ee4v.AssetManager.UI
                         FileId = file.Id,
                         TargetPath = string.Empty
                     } }
-                    : Array.Empty<AssetFileTarget>(),
-                showFileId: true);
+                    : Array.Empty<AssetFileTarget>());
+            var information = new DetailSection(I18N.Get("detail.information"));
+            information.Add(new ValueDisplay(I18N.Get("field.createdAt"), FormatTimestamp(file.CreatedAt)));
+            information.Add(new ValueDisplay(I18N.Get("field.updatedAt"), FormatTimestamp(file.UpdatedAt)));
+            information.Add(new ValueDisplay(I18N.Get("field.fileId"), CreateMonoValue(file.Id)));
+            host.Add(information);
+        }
+
+        private static DetailHeader CreateFileDetailHeader(VisualElement host, string title,
+            string eyebrow, string path, string iconName, BadgeState status = null)
+        {
+            var hero = new VisualElement();
+            hero.AddToClassList("ee4v-asset-manager__file-detail-hero");
+            var icon = new Icon(AssetManagerControls.LoadFluentIconState(iconName,
+                UiSizeTokens.Size24, tintColor: UiColorTokens.TextMuted));
+            icon.AddToClassList("ee4v-asset-manager__file-detail-icon");
+            hero.Add(icon);
+            var header = new DetailHeader(title, eyebrow, path, status);
+            header.AddToClassList("ee4v-asset-manager__file-detail-header");
+            header.TitleText.SetWhiteSpace(WhiteSpace.Normal);
+            hero.Add(header);
+            hero.RegisterCallback<GeometryChangedEvent>(evt =>
+                hero.EnableInClassList("ee4v-asset-manager__file-detail-hero--compact", evt.newRect.width < 520f));
+            host.Add(hero);
+            return header;
+        }
+
+        private static void AddFileDetailFacts(VisualElement host, params ValueDisplay[] values)
+        {
+            var facts = new VisualElement();
+            facts.AddToClassList("ee4v-asset-manager__file-detail-facts");
+            foreach (var value in values) { facts.Add(value); }
+            host.Add(facts);
         }
 
         private void BuildFileSettings(
             VisualElement host,
             IReadOnlyList<AssetFile> files,
-            IReadOnlyList<AssetFileTarget> dependencySources,
-            bool showFileId)
+            IReadOnlyList<AssetFileTarget> dependencySources)
         {
+            AddFileDependencySettings(host, dependencySources);
             var fileIds = files.Select(file => file.Id).ToArray();
             var assignedItemId = files[0].ItemId;
+            var assignedItem = string.IsNullOrEmpty(assignedItemId) ? null : FindVariantItem(assignedItemId);
             var settings = new DetailSection(
                 I18N.Get("detail.settings"));
             var settingList = new PropertyList();
@@ -84,26 +123,30 @@ namespace Ee4v.AssetManager.UI
                 string.Empty,
                 "ee4v-asset-manager__setting-input");
             itemId.Input.Value = assignedItemId ?? string.Empty;
-            settingList.AddRow(PropertyRow.Editable(
+            var assignment = PropertyRow.Editable(
                 I18N.Get("field.assignedItem"),
                 string.IsNullOrWhiteSpace(assignedItemId)
                     ? I18N.Get("common.none")
-                    : assignedItemId,
+                    : assignedItem?.Name ?? assignedItemId,
                 itemId,
                 AssetManagerControls.CreateButton(
                     I18N.Get("action.moveFile"),
                     () => MoveFiles(fileIds, itemId.Input.Value)),
-                I18N.Get("action.move")));
-
-            AddDependencySetting(settingList, dependencySources);
-            if (showFileId)
-            {
-                settingList.AddRow(new PropertyRow(
-                    I18N.Get("field.fileId"),
-                    CreateMonoValue(fileIds[0])));
-            }
+                I18N.Get("action.move"));
+            assignment.tooltip = assignedItemId ?? string.Empty;
+            settingList.AddRow(assignment);
             settings.Add(settingList);
             host.Add(settings);
+        }
+
+        private void AddFileDependencySettings(VisualElement host, IReadOnlyList<AssetFileTarget> sources)
+        {
+            if (sources == null || sources.Count == 0) { return; }
+            var section = new DetailSection(I18N.Get("detail.importSettings"));
+            var list = new PropertyList();
+            AddDependencySetting(list, sources);
+            section.Add(list);
+            host.Add(section);
         }
 
         private void AddDependencySetting(
@@ -126,7 +169,8 @@ namespace Ee4v.AssetManager.UI
                 () => ShowDependencyEditor(
                     editDependencies,
                     sources,
-                    dependencyTargets));
+                    dependencyTargets),
+                "ee4v-ui-details__inline-action");
             if (sources.Count > 1)
             {
                 editDependencies.tooltip = I18N.Get(
@@ -153,43 +197,30 @@ namespace Ee4v.AssetManager.UI
             AssetFile file,
             AssetFileContentEntry entry)
         {
-            var header = new DetailHeader(
+            var header = CreateFileDetailHeader(detail,
                 Path.GetFileName(entry.Path),
                 I18N.Get("detail.file.entryEyebrow") + " · " +
                 I18N.Get(entry.Kind == AssetFileContentEntryKind.Directory
                     ? "detail.file.directory"
                     : "detail.file.file"),
                 (file?.FileName ?? I18N.Get("common.none")) + " / " +
-                entry.Path);
-            detail.Add(header);
-
-            var information = new DetailSection(
-                I18N.Get("detail.entryInformation"));
-            var settingList = new PropertyList();
-            settingList.AddRow(new PropertyRow(
-                I18N.Get("field.file"),
-                UiTextFactory.Create(
-                    file?.FileName ?? I18N.Get("common.none"))));
-            settingList.AddRow(new PropertyRow(
-                I18N.Get("field.kind"),
-                UiTextFactory.Create(I18N.Get(
+                entry.Path,
+                entry.Kind == AssetFileContentEntryKind.Directory ? "folder.png" : "document.png");
+            AddFileDetailFacts(detail,
+                new ValueDisplay(I18N.Get("field.size"), AssetFileTreeBuilder.FormatSize(entry.SizeBytes),
+                    ValueDisplayLayout.Stacked),
+                new ValueDisplay(I18N.Get("field.kind"), I18N.Get(
                     entry.Kind == AssetFileContentEntryKind.Directory
                         ? "detail.file.directory"
-                        : "detail.file.file"))));
-            settingList.AddRow(new PropertyRow(
-                I18N.Get("field.size"),
-                UiTextFactory.Create(
-                    entry.SizeBytes.ToString("N0") + " B")));
-            settingList.AddRow(new PropertyRow(
-                I18N.Get("field.imported"),
-                UiTextFactory.Create(I18N.Get(
+                        : "detail.file.file"), ValueDisplayLayout.Stacked),
+                new ValueDisplay(I18N.Get("field.imported"), I18N.Get(
                     IsEntryImported(file, entry)
                         ? "common.yes"
-                        : "common.no"))));
+                        : "common.no"), ValueDisplayLayout.Stacked));
             if (SearchableFileTree.CanImport(
                     new FileTreeSelection(file, entry)))
             {
-                AddDependencySetting(settingList, new[]
+                AddFileDependencySettings(detail, new[]
                 {
                     new AssetFileTarget
                     {
@@ -197,16 +228,14 @@ namespace Ee4v.AssetManager.UI
                         TargetPath = entry.Path
                     }
                 });
-            }
-            information.Add(settingList);
-            if (SearchableFileTree.CanImport(
-                    new FileTreeSelection(file, entry)))
-            {
-                information.Add(AssetManagerControls.CreateButton(
+                header.AddHeaderAction(AssetManagerControls.CreateButton(
                     I18N.Get("action.importEntry"),
                     () => ImportEntries(file.Id, entry.Path),
                     "ee4v-asset-manager__primary-action"));
             }
+            var information = new DetailSection(I18N.Get("detail.entryInformation"));
+            information.Add(new ValueDisplay(I18N.Get("field.file"), file?.FileName ?? I18N.Get("common.none")));
+            information.Add(new ValueDisplay(I18N.Get("field.path"), entry.Path));
             detail.Add(information);
         }
 
@@ -248,18 +277,16 @@ namespace Ee4v.AssetManager.UI
                               : string.Empty);
             var allArchived = files.All(file => file.IsArchived);
             var fileIds = files.Select(file => file.Id).ToArray();
-            var header = new DetailHeader(
-                files.Length == 1
-                    ? firstFile.FileName
-                    : string.Format(
+            var header = CreateFileDetailHeader(detail,
+                string.Format(
                         I18N.Get("detail.fileTreeSelectedCount"),
                         selections.Count),
                 eyebrow,
-                files.Length == 1 ? firstFile.SourcePath : null,
+                files.Length == 1 ? firstFile.SourcePath : null, "document.png",
                 CreateAssetStatusState(allArchived));
             if (importable.Length > 0)
             {
-                header.AddAction(AssetManagerControls.CreateButton(
+                header.AddHeaderAction(AssetManagerControls.CreateButton(
                     I18N.Get("action.import"),
                     () => _ = ImportFileTreeEntriesAsync(importable),
                     "ee4v-asset-manager__primary-action"));
@@ -277,7 +304,8 @@ namespace Ee4v.AssetManager.UI
                     I18N.Get("action.delete"),
                     () => DeleteFiles(fileIds)));
             }
-            detail.Add(header);
+            AddFileDetailFacts(detail,
+                new ValueDisplay(I18N.Get("field.fileCount"), files.Length.ToString(), ValueDisplayLayout.Stacked));
             BuildFileSettings(
                 detail,
                 files,
@@ -289,8 +317,7 @@ namespace Ee4v.AssetManager.UI
                         target.FileId + "\n" + target.TargetPath,
                         StringComparer.OrdinalIgnoreCase)
                     .Select(group => group.First())
-                    .ToArray(),
-                showFileId: false);
+                    .ToArray());
         }
 
         private void OnFileTreeSelectionChanged(

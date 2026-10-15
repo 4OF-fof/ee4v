@@ -184,7 +184,7 @@ namespace Ee4v.AssetManager.UI
                     "Domain/AssetManager/Collections",
                     "SearchableFileTree",
                     "Item詳細で使用する検索付きFile Treeです。",
-                    "FileをルートにしてZIPやUnityPackageの内容を階層表示し、選択した要素を右ペインへ渡します。",
+                    "FileをルートにしてZIPやUnityPackageの内容を階層表示します。解析を1.5秒遅延し、一時的に隠す／戻す操作で、展開状態を保った再接続と解析の再開を確認できます。",
                     BuildFileTree,
                     dependencies: new[]
                     {
@@ -326,7 +326,7 @@ namespace Ee4v.AssetManager.UI
 
         private static void BuildFileTree(VisualElement parent)
         {
-            var manager = new AssetManagerStoryManager();
+            var manager = new AssetManagerStoryManager(analysisDelayMilliseconds: 1500);
             var surface = new VisualElement();
             surface.AddToClassList("ee4v-asset-manager");
             surface.style.width = 360f;
@@ -335,7 +335,15 @@ namespace Ee4v.AssetManager.UI
             tree.SetItem(
                 "item-avatar",
                 manager.GetFiles("item-avatar"));
-            surface.RegisterCallback<DetachFromPanelEvent>(_ => tree.Dispose());
+            parent.Add(AssetManagerControls.CreateButton("File一覧を一時的に隠す／戻す", () =>
+            {
+                if (tree.parent != null) { tree.RemoveFromHierarchy(); }
+                else { surface.Add(tree); }
+            }));
+            surface.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                if (ReferenceEquals(evt.target, surface)) { tree.Dispose(); }
+            });
             surface.Add(tree);
             parent.Add(surface);
         }

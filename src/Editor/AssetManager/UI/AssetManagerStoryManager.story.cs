@@ -12,6 +12,7 @@ namespace Ee4v.AssetManager.UI
     {
         private const string SampleGuid =
             "0123456789abcdef0123456789abcdef";
+        private readonly int _analysisDelayMilliseconds;
 
         private IReadOnlyList<AssetFile> _files;
         private IReadOnlyList<AssetItem> _items;
@@ -19,8 +20,9 @@ namespace Ee4v.AssetManager.UI
         private readonly Dictionary<string, IReadOnlyList<AssetFileTarget>>
             _itemTargets;
 
-        public AssetManagerStoryManager()
+        public AssetManagerStoryManager(int analysisDelayMilliseconds = 0)
         {
+            _analysisDelayMilliseconds = Math.Max(0, analysisDelayMilliseconds);
             _files = CreateFiles();
             _items = CreateItems(_files);
             _itemTargets = _items.ToDictionary(
@@ -387,12 +389,17 @@ namespace Ee4v.AssetManager.UI
             };
         }
 
-        public Task<AssetFileAnalysis> AnalyzeFileAsync(
+        public async Task<AssetFileAnalysis> AnalyzeFileAsync(
             string fileId,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(AnalyzeFile(fileId));
+            if (_analysisDelayMilliseconds > 0)
+            {
+                await Task.Delay(_analysisDelayMilliseconds, cancellationToken);
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return AnalyzeFile(fileId);
         }
 
         public IReadOnlyList<string> GetFileImportedAssetGuids(string fileId)

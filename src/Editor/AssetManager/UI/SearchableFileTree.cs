@@ -51,6 +51,7 @@ namespace Ee4v.AssetManager.UI
         private readonly Dictionary<string, Texture2D> _imagePreviewCache =
             new Dictionary<string, Texture2D>(StringComparer.OrdinalIgnoreCase);
         private CancellationTokenSource _reloadCancellation;
+        private IVisualElementScheduledItem _analysisResume;
         private CancellationTokenSource _imagePreviewCancellation;
         private FileTreeImageTooltipWindow _imageTooltipWindow;
         private VisualElement _hoveredImageRow;
@@ -71,6 +72,8 @@ namespace Ee4v.AssetManager.UI
         private bool _isPointerPressedOnTree;
         private bool _isSearching;
         private bool _suppressSelectionChanged;
+        private bool _refreshOnAttach;
+        private bool _disposed;
 
         internal SearchableFileTree(
             IAssetManager manager,
@@ -149,10 +152,14 @@ namespace Ee4v.AssetManager.UI
                 _isPointerPressedOnTree = false;
                 ApplyPendingTreeItems();
             });
+            RegisterCallback<AttachToPanelEvent>(_ => ScheduleAnalysisResume());
+            RegisterCallback<GeometryChangedEvent>(_ => QueueExpandedAnalyses());
             RegisterCallback<DetachFromPanelEvent>(_ =>
             {
                 HideImageTooltip();
                 ClearImagePreviewCache();
+                _isPointerPressedOnTree = false;
+                _refreshOnAttach = true;
                 _pendingTreeItems = null;
                 CancelReload();
             });
@@ -205,6 +212,7 @@ namespace Ee4v.AssetManager.UI
                 initialAnalyses = null,
             IReadOnlyList<FileTreeGroup> groups = null)
         {
+            if (_disposed) { return; }
             HideImageTooltip();
             ClearImagePreviewCache();
             CancelReload();
@@ -261,21 +269,34 @@ namespace Ee4v.AssetManager.UI
                 includeOverview: !_showsTargetToggles,
                 groups: _groups);
             ApplyTreeItems(items, preserveSelection);
-
-            if (!_isSearching)
-            {
-                return;
-            }
-            QueueAllAnalyses();
+            _refreshOnAttach = false;
+            ScheduleAnalysisResume();
         }
 
         protected override void OnSearchValueChanged(string value)
         {
             _isSearching = !string.IsNullOrWhiteSpace(value);
-            if (_isSearching)
+            ScheduleAnalysisResume();
+        }
+
+        private void ScheduleAnalysisResume()
+        {
+            _analysisResume?.Pause();
+            if (_disposed) { return; }
+            _analysisResume = schedule.Execute(ResumeAnalyses).StartingIn(1);
+        }
+
+        private void ResumeAnalyses()
+        {
+            _analysisResume = null;
+            if (_disposed || panel == null) { return; }
+            if (_refreshOnAttach)
             {
-                QueueAllAnalyses();
+                SetItem(_itemId, _files, GetTargetSelection(), groups: _groups);
+                return;
             }
+            if (_isSearching) { QueueAllAnalyses(); }
+            else { QueueExpandedAnalyses(); }
         }
 
         private void QueueAllAnalyses()
@@ -289,7 +310,7 @@ namespace Ee4v.AssetManager.UI
 
         private void QueueExpandedAnalyses()
         {
-            if (panel == null || _isSearching)
+            if (_disposed || panel == null || _isSearching || _refreshOnAttach)
             {
                 return;
             }
@@ -332,7 +353,7 @@ namespace Ee4v.AssetManager.UI
 
         private void StartQueuedAnalyses()
         {
-            if (_reloadCancellation != null ||
+            if (_disposed || panel == null || _reloadCancellation != null ||
                 _pendingAnalyses.Count == 0)
             {
                 return;
@@ -350,6 +371,7 @@ namespace Ee4v.AssetManager.UI
 
         public void Dispose()
         {
+            _disposed = true;
             HideImageTooltip();
             ClearImagePreviewCache();
             CancelReload();
@@ -422,7 +444,7 @@ namespace Ee4v.AssetManager.UI
                     {
                         return;
                     }
-                    if (result.Error is OperationCanceledException)
+                    if (result.Error is OperationCanceledException && cancellation.IsCancellationRequested)
                     {
                         throw result.Error;
                     }
@@ -475,7 +497,7 @@ namespace Ee4v.AssetManager.UI
                         analyses);
                 }
 
-                if (failures.Count > 0)
+                if (IsCurrentReload(version, cancellation) && failures.Count > 0)
                 {
                     SetFeedback(string.Format(
                         I18N.Get("fileTree.analysisFailed"),
@@ -604,7 +626,7 @@ namespace Ee4v.AssetManager.UI
             int version,
             CancellationTokenSource cancellation)
         {
-            return version == _reloadVersion &&
+            return !_disposed && panel != null && version == _reloadVersion &&
                    ReferenceEquals(_reloadCancellation, cancellation) &&
                    !cancellation.IsCancellationRequested;
         }
@@ -1304,6 +1326,8 @@ namespace Ee4v.AssetManager.UI
 
         private void CancelReload()
         {
+            _analysisResume?.Pause();
+            _analysisResume = null;
             _reloadVersion++;
             _pendingAnalyses = new Queue<AssetFile>();
             _requestedAnalysisIds =
