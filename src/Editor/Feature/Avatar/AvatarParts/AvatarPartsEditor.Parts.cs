@@ -251,7 +251,6 @@ namespace Ee4v.AvatarParts
                 variant: UiButtonVariant.Ghost);
             toggle.AddToClassList(
                 "ee4v-modification-workflow__object-disclosure");
-            row[0].RegisterCallback<ClickEvent>(_ => ToggleFoldout());
             row.Insert(0, toggle);
             group.Add(row);
             group.Add(content);
