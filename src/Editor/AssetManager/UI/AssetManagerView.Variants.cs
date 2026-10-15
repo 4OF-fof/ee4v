@@ -101,7 +101,7 @@ namespace Ee4v.AssetManager.UI
             detail.Add(thumbnail);
             var name = AssetManagerControls.CreateTextField(I18N.Get("field.name"),
                 "ee4v-asset-manager__item-metadata-field", "ee4v-asset-manager__variant-name-field");
-            name.value = variant.Name;
+            name.Input.Value = variant.Name;
             var descriptionContainer = new VisualElement();
             descriptionContainer.AddToClassList("ee4v-asset-manager-control-field");
             descriptionContainer.AddToClassList("ee4v-asset-manager__item-metadata-field");
@@ -113,10 +113,10 @@ namespace Ee4v.AssetManager.UI
             description.AddToClassList("ee4v-asset-manager__variant-description-field");
             descriptionContainer.Add(description);
             var standalone = IsStandaloneAsset(variant);
-            name.isReadOnly = description.IsReadOnly = _variantManager == null || _variantState.VariantBusy ||
+            name.Input.IsReadOnly = description.IsReadOnly = _variantManager == null || _variantState.VariantBusy ||
                 (standalone && variant.IsArchived);
             VisualElement tagsContainer = null;
-            AssetTagField tags = null;
+            TagField tags = null;
             if (standalone)
             {
                 tagsContainer = new VisualElement();
@@ -124,7 +124,7 @@ namespace Ee4v.AssetManager.UI
                 tagsContainer.AddToClassList("ee4v-asset-manager__item-metadata-field");
                 tagsContainer.Add(UiTextFactory.Create(I18N.Get("field.tags"),
                     UiClassNames.FormLabel, "ee4v-asset-manager-control-field__label"));
-                tags = new AssetTagField(_viewState.SelectTag,
+                tags = new TagField(_viewState.SelectTag,
                     isReadOnly: variant.IsArchived ||
                     _variantManager == null || _variantState.VariantBusy);
                 tags.SetValues(GetAvailableTagOptions(), variant.Tags);
@@ -133,13 +133,13 @@ namespace Ee4v.AssetManager.UI
             var metadataError = new VisualElement();
             Action saveMetadata = () =>
             {
-                var normalizedName = name.value.Trim();
+                var normalizedName = name.Input.Value.Trim();
                 if (normalizedName.Length == 0)
                 {
-                    ((InputField)name.Input).SetValueWithoutNotify(variant.Name);
+                    name.Input.SetValueWithoutNotify(variant.Name);
                     return;
                 }
-                ((InputField)name.Input).SetValueWithoutNotify(normalizedName);
+                name.Input.SetValueWithoutNotify(normalizedName);
                 SaveVariantMetadataAutomatically(variant, normalizedName, description.Value,
                     tags?.Values ?? Array.Empty<string>(), metadataError);
             };
@@ -154,7 +154,7 @@ namespace Ee4v.AssetManager.UI
 
         private static void AddVariantInformation(VisualElement detail, DerivedAssetInfo variant)
         {
-            var information = new AssetDetailSection(I18N.Get("detail.information"));
+            var information = new DetailSection(I18N.Get("detail.information"));
             information.AddToClassList("ee4v-asset-manager__variant-information");
             var updatedAt = variant.UpdatedAt;
             var size = variant.FileSizeBytes;
@@ -163,11 +163,11 @@ namespace Ee4v.AssetManager.UI
                 size = DerivedAssetCreator.GetVariantFileSize(variant.AssetPath, out var filesUpdatedAt);
                 if (filesUpdatedAt > updatedAt) updatedAt = filesUpdatedAt;
             }
-            information.Add(new AssetDetailKeyValueRow(I18N.Get("field.totalFileSize"),
+            information.Add(new KeyValueRow(I18N.Get("field.totalFileSize"),
                 size.HasValue ? AssetFileTreeBuilder.FormatSize(size.Value) : I18N.Get("common.unknown")));
-            information.Add(new AssetDetailKeyValueRow(I18N.Get("field.createdAt"),
+            information.Add(new KeyValueRow(I18N.Get("field.createdAt"),
                 FormatTimestamp(variant.CreatedAt)));
-            information.Add(new AssetDetailKeyValueRow(I18N.Get("field.updatedAt"),
+            information.Add(new KeyValueRow(I18N.Get("field.updatedAt"),
                 FormatTimestamp(updatedAt)));
             detail.Add(information);
         }
@@ -731,7 +731,7 @@ namespace Ee4v.AssetManager.UI
         private void AddVariantHistory(VisualElement detail, DerivedAssetInfo variant,
             IReadOnlyList<AssetVariantRevision> revisions, Action<AssetVariantRevision> selectRevision, UiButton action)
         {
-            var section = new AssetDetailSection(I18N.Get("variant.history"));
+            var section = new DetailSection(I18N.Get("variant.history"));
             section.AddToClassList("ee4v-asset-manager__variant-history");
             section.Q<SectionHeader>().Actions.Add(action);
             var scroll = new ScrollView(ScrollViewMode.Vertical)
@@ -892,7 +892,7 @@ namespace Ee4v.AssetManager.UI
         private void AddVariantDependencies(VisualElement detail,
             IReadOnlyList<AssetVariantFileDependency> dependencies, string error)
         {
-            var section = new AssetDetailSection(I18N.Get("variant.dependencies"));
+            var section = new DetailSection(I18N.Get("variant.dependencies"));
             section.AddToClassList("ee4v-asset-manager__variant-dependencies");
             var scroll = new ScrollView(ScrollViewMode.Vertical)
             {

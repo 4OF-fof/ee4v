@@ -33,7 +33,7 @@ namespace Ee4v.UI
                         "Editor/UI/Components/Collections/SearchableTreeView/SearchableTreeView.cs",
                         "Editor/AssetManager/UI/AssetManagerControls.cs",
                         "Editor/AssetManager/UI/AssetManagerView.Navigation.cs",
-                        "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/UI/Components/Inputs/TagField/TagField.cs",
                         "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs",
                         "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",

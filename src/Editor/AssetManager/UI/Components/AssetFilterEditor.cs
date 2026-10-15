@@ -10,14 +10,14 @@ namespace Ee4v.AssetManager.UI
     internal sealed class AssetFilterEditor : VisualElement
     {
         private readonly FilterGroupEditor _rootGroup;
-        private readonly IReadOnlyList<AssetTagOption> _tagOptions;
-        private AssetTagPickerWindow _tagPicker;
+        private readonly IReadOnlyList<TagOption> _tagOptions;
+        private TagPickerWindow _tagPicker;
         private VisualElement _tagPickerAnchor;
 
         internal AssetFilterEditor(AssetFilterNode root, bool allowEmptyRoot = false,
-            IReadOnlyList<AssetTagOption> tagOptions = null)
+            IReadOnlyList<TagOption> tagOptions = null)
         {
-            _tagOptions = tagOptions ?? Array.Empty<AssetTagOption>();
+            _tagOptions = tagOptions ?? Array.Empty<TagOption>();
             AddToClassList("ee4v-asset-manager-filter-editor");
             _rootGroup = CreateRootEditor(root, allowEmptyRoot);
             Add(_rootGroup.Root);
@@ -40,7 +40,7 @@ namespace Ee4v.AssetManager.UI
             // Set before Show transfers focus away from the containing popup.
             IsTagPickerOpen = true;
             _tagPickerAnchor = anchor;
-            _tagPicker = AssetTagPickerWindow.Show(anchor, null, _tagOptions,
+            _tagPicker = TagPickerWindow.Show(anchor, null, _tagOptions,
                 string.IsNullOrWhiteSpace(value) ? Array.Empty<string>() : new[] { value },
                 values => selected(values[0]),
                 () =>
@@ -385,8 +385,8 @@ namespace Ee4v.AssetManager.UI
         private sealed class ConditionRow : IFilterNodeEditor
         {
             private readonly AssetFilterEditor _owner;
-            private readonly AssetManagerEnumField _condition;
-            private readonly AssetManagerTextField _value;
+            private readonly EnumFormInput _condition;
+            private readonly FormInput<InputField> _value;
             private readonly Toggle _inverted;
             private readonly UiButton _tag;
 
@@ -432,7 +432,7 @@ namespace Ee4v.AssetManager.UI
                 _value = AssetManagerControls.CreateTextField(
                     string.Empty,
                     "ee4v-asset-manager__collection-popup-condition-value");
-                _value.value = initialCondition?.Value ?? string.Empty;
+                _value.Input.Value = initialCondition?.Value ?? string.Empty;
                 valueContainer.Add(_value);
                 _tag = AssetManagerControls.CreateIconTextButton(
                     string.Empty, "tag.png", OpenTagPicker,
@@ -460,15 +460,15 @@ namespace Ee4v.AssetManager.UI
                     {
                         _tag.Focus();
                     }
-                    else { _value.FocusInput(); }
+                    else { _value.Input.FocusInput(); }
                 });
             }
 
             private void OpenTagPicker()
             {
-                _owner.OpenTagPicker(_tag, _value.value, value =>
+                _owner.OpenTagPicker(_tag, _value.Input.Value, value =>
                 {
-                    _value.value = value;
+                    _value.Input.Value = value;
                     RefreshValueInput();
                 });
             }
@@ -476,13 +476,13 @@ namespace Ee4v.AssetManager.UI
             private void RefreshValueInput()
             {
                 var isTag = (AssetFilterConditionType)_condition.value == AssetFilterConditionType.HasTag;
-                ((InputField)_value.Input).SetPlaceholder(I18N.Get(
+                _value.Input.SetPlaceholder(I18N.Get(
                     (AssetFilterConditionType)_condition.value == AssetFilterConditionType.HasFileExtension
                         ? "filterEditor.extensionValue" : "filterEditor.textValue"));
                 if (!isTag) { _owner.CloseTagPicker(_tag); }
                 _value.style.display = isTag ? DisplayStyle.None : DisplayStyle.Flex;
                 _tag.style.display = isTag ? DisplayStyle.Flex : DisplayStyle.None;
-                var value = (_value.value ?? string.Empty).Trim();
+                var value = (_value.Input.Value ?? string.Empty).Trim();
                 _tag.SetLabel(value.Length == 0 ? I18N.Get("filterEditor.selectTag") : value);
                 _tag.tooltip = value.Length == 0 ? I18N.Get("filterEditor.selectTag") : value;
             }
@@ -491,7 +491,7 @@ namespace Ee4v.AssetManager.UI
                 out AssetFilterNode node,
                 out string errorKey)
             {
-                var value = (_value.value ?? string.Empty).Trim();
+                var value = (_value.Input.Value ?? string.Empty).Trim();
                 if (string.IsNullOrEmpty(value))
                 {
                     node = null;

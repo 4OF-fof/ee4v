@@ -25,7 +25,7 @@ namespace Ee4v.UI
                         window.BuildCustomPopupStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/UI/Components/Inputs/TagField/TagField.cs",
                         "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs",
                         "Editor/AssetManager/UI/AssetCollectionCreationPopup.cs",
                         "Editor/AssetManager/UI/AssetManagerView.cs",

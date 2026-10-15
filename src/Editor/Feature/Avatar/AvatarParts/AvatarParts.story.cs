@@ -36,7 +36,9 @@ namespace Ee4v.AvatarParts
 
         private static void BuildSample(VisualElement parent, bool showDetails)
         {
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
             var avatar = new GameObject("Sample Avatar") { hideFlags = HideFlags.HideAndDontSave };
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(avatar, scene);
             foreach (var name in new[] { "Head", "Gloves", "Boots" })
             {
                 var part = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -67,7 +69,12 @@ namespace Ee4v.AvatarParts
             }
             parent.Add(header);
             parent.Add(controls);
-            parent.RegisterCallback<DetachFromPanelEvent>(_ => UnityEngine.Object.DestroyImmediate(avatar));
+            parent.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                if (evt.target != parent) { return; }
+                UnityEngine.Object.DestroyImmediate(avatar);
+                if (scene.IsValid()) { UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(scene); }
+            });
             Render();
         }
     }

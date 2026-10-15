@@ -63,20 +63,7 @@
     margin-left: var(--ee4v-space-sm);
 }
 
-.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__actions > .ee4v-ui-confirmation-overlay__discard {
+.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__actions > .ee4v-ui-confirmation-overlay__discard  {
     margin-left: 0;
     margin-right: auto;
-    background-color: var(--ee4v-color-danger-action);
-    border-color: var(--ee4v-color-danger-action);
-}
-
-.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__actions > .ee4v-ui-confirmation-overlay__discard:enabled:hover,
-.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__actions > .ee4v-ui-confirmation-overlay__discard:enabled:focus {
-    background-color: var(--ee4v-color-danger-action-hover);
-    border-color: var(--ee4v-color-danger-action-hover);
-}
-
-.ee4v-ui-confirmation-overlay__card .ee4v-ui-message-panel__actions > .ee4v-ui-confirmation-overlay__discard:enabled:active {
-    background-color: var(--ee4v-color-danger-action-pressed);
-    border-color: var(--ee4v-color-danger-action-pressed);
 }

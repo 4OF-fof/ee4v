@@ -12,6 +12,7 @@ namespace Ee4v.UI
             SingleLineText,
             MultilineText,
             Toggle,
+            Switch,
             Object,
             Dropdown
         }
@@ -144,9 +145,11 @@ namespace Ee4v.UI
                         fieldHost.Add(field);
                         break;
                     }
+                    case InputFieldStoryInputKind.Switch:
                     case InputFieldStoryInputKind.Toggle:
                     {
-                        var field = UiTextFactory.CreateToggle();
+                        var field = inputKind == InputFieldStoryInputKind.Switch
+                            ? UiTextFactory.CreateSwitch() : UiTextFactory.CreateToggle();
                         field.SetValueWithoutNotify(toggleValue);
                         field.RegisterValueChangedCallback(evt =>
                         {

@@ -53,6 +53,19 @@ namespace Ee4v.UI
             return ConfigureNativeInput(new TextField(label), classNames);
         }
 
+        public static Toggle CreateSwitch(params string[] classNames)
+        {
+            var toggle = CreateToggle(string.Empty, classNames);
+            toggle.AddToClassList("ee4v-ui-switch");
+            var track = new VisualElement { pickingMode = PickingMode.Ignore };
+            track.AddToClassList("ee4v-ui-switch__track");
+            var thumb = new VisualElement { pickingMode = PickingMode.Ignore };
+            thumb.AddToClassList("ee4v-ui-switch__thumb");
+            track.Add(thumb);
+            toggle.Q<VisualElement>(className: "unity-toggle__input").Add(track);
+            return toggle;
+        }
+
         public static Slider CreateSlider(string label = "", float lowValue = 0f, float highValue = 100f,
             params string[] classNames)
         {

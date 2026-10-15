@@ -14,13 +14,16 @@ namespace Ee4v.AssetManager.Simulation
         private AvatarLightingRenderer _renderer;
         private UiTextElement _selection;
         private bool _volumesAvailable;
+        private readonly bool _previewOnly;
+        private readonly List<LightingPreset> _previewPresets = new List<LightingPreset>();
         private readonly string[] _patternNames = { "day", "night", "warm", "cold", "backlight", "lv" };
 
-        protected override GameObject VisibleAvatar => GestureManagerIntegration.VisibleAvatar(Avatar);
+        protected override GameObject VisibleAvatar => _previewOnly ? Avatar : GestureManagerIntegration.VisibleAvatar(Avatar);
 
-        public AvatarLightingView(GameObject avatar, Action repaint)
-            : base(avatar, repaint, Text("title"))
+        public AvatarLightingView(GameObject avatar, Action repaint, bool previewOnly = false)
+            : base(avatar, repaint, Text("title"), previewOnly)
         {
+            _previewOnly = previewOnly;
             _volumesAvailable = LightingPresetStore.VolumesAvailable;
             _previews.Add(CreateBuiltin(1));
             _addPreview = new UiButton(Text("addPreview"), AddPreview,
@@ -34,9 +37,9 @@ namespace Ee4v.AssetManager.Simulation
             Controls.Add(UiTextFactory.Create(Text("compareHint"), UiClassNames.SecondaryText));
             SetPreviewCount(_previews.Count);
             RefreshSelection();
-            if (avatar == null || !EditorApplication.isPlaying || !EditorApplication.isPlayingOrWillChangePlaymode)
+            if (avatar == null || (!previewOnly && (!EditorApplication.isPlaying || !EditorApplication.isPlayingOrWillChangePlaymode)))
             { Status.SetText(Text("ready")); Controls.SetEnabled(false); return; }
-            _renderer = new AvatarLightingRenderer(avatar);
+            _renderer = new AvatarLightingRenderer(avatar, previewOnly);
         }
 
         protected override void ActivePreviewChanged()

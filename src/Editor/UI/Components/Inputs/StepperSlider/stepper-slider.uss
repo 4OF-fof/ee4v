@@ -1,0 +1,87 @@
+.ee4v-ui-stepper-slider {
+    flex-direction: row;
+    align-items: center;
+    width: 162px;
+    min-width: 72px;
+    height: var(--ee4v-control-height-default);
+    min-height: var(--ee4v-control-height-default);
+    max-height: var(--ee4v-control-height-default);
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
+}
+
+.ee4v-ui-stepper-slider__endpoint {
+    width: var(--ee4v-size-20);
+    min-width: var(--ee4v-size-20);
+    max-width: var(--ee4v-size-20);
+    height: var(--ee4v-size-20);
+    min-height: var(--ee4v-size-20);
+    max-height: var(--ee4v-size-20);
+    margin: var(--ee4v-space-none);
+    padding: var(--ee4v-space-none);
+    border-color: var(--ee4v-color-transparent);
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-transparent);
+    justify-content: center;
+    align-items: center;
+    -unity-text-align: middle-center;
+}
+
+.ee4v-ui-stepper-slider__endpoint:hover {
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-ui-stepper-slider__endpoint:active {
+    background-color: var(--ee4v-color-surface-pressed);
+}
+
+.ee4v-ui-stepper-slider__slider {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: var(--ee4v-size-24);
+    height: var(--ee4v-size-20);
+    margin-left: var(--ee4v-space-md);
+    margin-right: var(--ee4v-space-md);
+}
+
+.ee4v-ui-stepper-slider__slider .unity-base-field__label {
+    display: none;
+}
+
+.ee4v-ui-stepper-slider__slider .unity-base-slider__input {
+    min-width: 0;
+    margin: var(--ee4v-space-none);
+}
+
+.ee4v-ui-stepper-slider__slider .unity-base-slider__tracker {
+    height: var(--ee4v-size-2);
+    min-height: var(--ee4v-size-2);
+    max-height: var(--ee4v-size-2);
+    border-width: 0;
+    background-color: var(--ee4v-color-slider-track);
+}
+
+.ee4v-ui-stepper-slider__slider .unity-base-slider__dragger-border {
+    display: none;
+}
+
+.ee4v-ui-stepper-slider__slider .unity-base-slider__dragger {
+    width: var(--ee4v-size-11);
+    min-width: var(--ee4v-size-11);
+    max-width: var(--ee4v-size-11);
+    height: var(--ee4v-size-11);
+    min-height: var(--ee4v-size-11);
+    max-height: var(--ee4v-size-11);
+    border-width: 0;
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-control-highlight);
+}
+
+.ee4v-ui-stepper-slider:hover .unity-base-slider__tracker {
+    background-color: var(--ee4v-color-slider-track-hover);
+}
+
+.ee4v-ui-stepper-slider:hover .unity-base-slider__dragger {
+    background-color: var(--ee4v-color-slider-knob-hover);
+}

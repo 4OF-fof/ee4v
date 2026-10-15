@@ -30,12 +30,14 @@
     background-color: var(--ee4v-color-surface-hover);
 }
 
-.ee4v-modification-workflow__category-button--active.ee4v-ui-button,
-.ee4v-modification-workflow__category-button--active.ee4v-ui-button:hover {
-    border-color: var(--ee4v-color-focus);
-    background-color: var(--ee4v-color-selection-soft);
-}
-
 .ee4v-modification-workflow__category-button .ee4v-ui-button__content {
     justify-content: flex-start;
+}
+
+.ee4v-modification-workflow__category-button.ee4v-ui-navigation-item {
+    width: 100%;
+    min-height: 34px;
+    margin-bottom: var(--ee4v-space-xxs);
+    padding-left: var(--ee4v-space-md);
+    padding-right: var(--ee4v-space-md);
 }

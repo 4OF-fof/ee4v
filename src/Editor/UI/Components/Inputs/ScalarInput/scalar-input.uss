@@ -1,0 +1,35 @@
+.ee4v-ui-scalar-input {
+    min-width: 0;
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-ui-scalar-input__slider {
+    min-width: 70px;
+    width: auto;
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-shrink: 1;
+    margin-left: var(--ee4v-space-sm);
+    margin-right: var(--ee4v-space-sm);
+}
+
+.ee4v-ui-scalar-input__value {
+    width: 52px;
+    min-width: 44px;
+    flex-shrink: 0;
+}
+
+.ee4v-ui-scalar-input__unit {
+    min-width: 16px;
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-xs);
+}
+
+.ee4v-ui-scalar-input__reset.ee4v-ui-button {
+    min-width: 68px;
+    min-height: var(--ee4v-size-24);
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-xs);
+}

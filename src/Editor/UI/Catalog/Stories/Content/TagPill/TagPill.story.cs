@@ -24,7 +24,7 @@ namespace Ee4v.UI
                     (window, parent) => window.BuildTagPillStory(parent),
                     new[]
                     {
-                        "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/UI/Components/Inputs/TagField/TagField.cs",
                         "Editor/AssetManager/UI/AssetTagListView.cs"
                     }));
             }

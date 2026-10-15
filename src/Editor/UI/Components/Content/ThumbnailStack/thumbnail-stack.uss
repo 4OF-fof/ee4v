@@ -1,0 +1,34 @@
+.ee4v-ui-thumbnail-stack {
+    width: 80%;
+    min-width: 48px;
+    max-width: 288px;
+    align-self: center;
+}
+
+.ee4v-ui-thumbnail-stack {
+    position: relative;
+    overflow: visible;
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-thumbnail-stack-image {
+    position: absolute;
+    overflow: hidden;
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-2xl);
+    background-color: var(--ee4v-color-surface-subtle);
+}
+
+.ee4v-ui-thumbnail-image,
+.ee4v-ui-thumbnail-placeholder {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.ee4v-ui-thumbnail-placeholder {
+    background-color: var(--ee4v-color-surface-soft);
+}

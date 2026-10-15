@@ -27,12 +27,16 @@ namespace Ee4v.AssetManager.Simulation
         private UnityEditor.Editor _editor;
         private bool _failed;
         private bool _disposed;
+        private readonly bool _previewOnly;
+        private readonly int[] _previewGestures = new int[2];
+        private readonly float[] _previewWeights = new float[2];
 
-        public AvatarExecutionView(GameObject avatar, Action repaint)
+        public AvatarExecutionView(GameObject avatar, Action repaint, bool previewOnly = false)
         {
+            _previewOnly = previewOnly;
             _avatar = avatar;
             _repaint = repaint;
-            _manager = GestureManagerIntegration.FindManager(avatar);
+            _manager = previewOnly ? null : GestureManagerIntegration.FindManager(avatar);
             AddToClassList("ee4v-execution");
             var preview = new PreviewPane(Text("title"));
             preview.AddToClassList("ee4v-modification-workflow__preview-pane");
@@ -40,7 +44,7 @@ namespace Ee4v.AssetManager.Simulation
             _viewport.AddToClassList("ee4v-modification-workflow__preview");
             _viewport.SetFlexibleLayout(true);
             _viewport.SetViewToggleVisible(false);
-            _viewport.SetFullBodyFraming(false);
+            _viewport.SetFullBodyFraming(previewOnly);
             _viewport.SetPrefab(avatar);
             preview.Content.Add(_viewport);
             Add(preview);
@@ -97,6 +101,23 @@ namespace Ee4v.AssetManager.Simulation
         private void Refresh()
         {
             if (_disposed) { return; }
+            if (_previewOnly)
+            {
+                _status.SetText("ダミーアバター / パラメーターはメモリ内だけで変更します。");
+                _inputs.style.display = DisplayStyle.Flex;
+                _radialHost.style.display = DisplayStyle.None;
+                var names = new[] { "Neutral", "Fist", "Open", "Point", "Peace", "Rock", "Gun", "Thumbs Up" };
+                for (var hand = 0; hand < 2; hand++)
+                {
+                    for (var index = 0; index < 8; index++)
+                    {
+                        _gestures[hand, index].SetLabel(names[index]);
+                        _gestures[hand, index].EnableInClassList("ee4v-execution__gesture--selected", _previewGestures[hand] == index);
+                    }
+                    _weights[hand].SetValueWithoutNotify(_previewWeights[hand]);
+                }
+                return;
+            }
             if (_manager == null)
             {
                 _status.SetText(Text("missing"));
@@ -155,6 +176,13 @@ namespace Ee4v.AssetManager.Simulation
 
         private void SetParameter(string name, float value)
         {
+            if (_previewOnly)
+            {
+                var hand = name.Contains("Left") ? 0 : 1;
+                if (name.EndsWith("Weight", StringComparison.Ordinal)) { _previewWeights[hand] = value; }
+                else { _previewGestures[hand] = Mathf.RoundToInt(value); }
+                return;
+            }
             if (EditorApplication.isPlaying && _module != null && _module.Active)
             {
                 _module.GetParam(name)?.Set(_module, value);

@@ -594,7 +594,7 @@ namespace Ee4v.FaceExpression
         private readonly VisualElement _expressionPanel;
         private readonly VisualElement _settingsPanel;
         private readonly GestureAssignmentSettingsView _settingsView;
-        private readonly List<UiButton> _tabs = new List<UiButton>();
+        private readonly List<SelectionTab> _tabs = new List<SelectionTab>();
         private readonly List<Condition> _conditions = new List<Condition>();
         private HashSet<GestureCombination> _observedCombinations;
         private FaceExpressionMenuEntry[] _observedMenuEntries = Array.Empty<FaceExpressionMenuEntry>();
@@ -644,14 +644,14 @@ namespace Ee4v.FaceExpression
             inputs.Add(menuName);
             Header.Add(inputs);
 
-            var tabs = new VisualElement();
+            var tabs = SelectionTab.CreateStrip();
             tabs.AddToClassList("ee4v-gesture-picker__tabs");
             var tabKeys = new[] { "assignments.expressionTab", "assignments.settingsTab" };
             for (var index = 0; index < tabKeys.Length; index++)
             {
                 var tabIndex = index;
-                var button = new UiButton(I18N.Get(tabKeys[index]), () => SelectTab(tabIndex),
-                    variant: UiButtonVariant.Ghost);
+                var button = new SelectionTab(I18N.Get(tabKeys[index]), SelectionTabVariant.Underline,
+                    () => SelectTab(tabIndex));
                 button.AddToClassList("ee4v-gesture-picker__tab");
                 _tabs.Add(button);
                 tabs.Add(button);
@@ -1008,8 +1008,7 @@ namespace Ee4v.FaceExpression
                 RefreshConditionButtons();
                 for (var index = 0; index < _tabs.Count; index++)
                 {
-                    _tabs[index].EnableInClassList("ee4v-gesture-picker__tab--selected", index == _selectedTab);
-                    _tabs[index].SetLabelColor(index == _selectedTab ? UiColorTokens.TextPrimary : UiColorTokens.TextMuted);
+                    _tabs[index].SetSelected(index == _selectedTab);
                 }
                 _expressionPanel.style.display = _selectedTab == ExpressionTab ? DisplayStyle.Flex : DisplayStyle.None;
                 _settingsPanel.style.display = _selectedTab == SettingsTab ? DisplayStyle.Flex : DisplayStyle.None;

@@ -84,8 +84,11 @@ namespace Ee4v.AssetManager.Simulation
             actions.Add(_deletePreset);
             Controls.Add(actions);
             ReloadPresets();
-            LightingPresetStore.Changed += ReloadPresets;
-            GlobalDataSettings.PathChanged += ReloadPresets;
+            if (!_previewOnly)
+            {
+                LightingPresetStore.Changed += ReloadPresets;
+                GlobalDataSettings.PathChanged += ReloadPresets;
+            }
         }
 
         private void ReloadPresets()
@@ -94,7 +97,7 @@ namespace Ee4v.AssetManager.Simulation
             _presetReadFailed = false;
             try
             {
-                _savedPresets.AddRange(LightingPresetStore.Read());
+                _savedPresets.AddRange(_previewOnly ? _previewPresets.Select(preset => preset.Copy()) : LightingPresetStore.Read());
             }
             catch (Exception exception) { _presetReadFailed = true; ShowPresetError(exception); }
             RefreshPresetControls();
@@ -132,7 +135,17 @@ namespace Ee4v.AssetManager.Simulation
             preset.BuiltinKey = null;
             preset.Modified = false;
             if (!preset.IsValid) { return; }
-            try { LightingPresetStore.Upsert(preset); Status.SetText(string.Empty); }
+            try
+            {
+                if (_previewOnly)
+                {
+                    _previewPresets.RemoveAll(value => value.Name == preset.Name);
+                    _previewPresets.Add(preset.Copy());
+                    ReloadPresets();
+                }
+                else { LightingPresetStore.Upsert(preset); }
+                Status.SetText(string.Empty);
+            }
             catch (Exception exception) { ShowPresetError(exception); return; }
             _previews[ActivePreview] = preset;
             RefreshSelection();
@@ -141,7 +154,12 @@ namespace Ee4v.AssetManager.Simulation
         private void DeletePreset()
         {
             var name = _previews[ActivePreview].Name;
-            try { LightingPresetStore.Delete(name); Status.SetText(string.Empty); }
+            try
+            {
+                if (_previewOnly) { _previewPresets.RemoveAll(value => value.Name == name); ReloadPresets(); }
+                else { LightingPresetStore.Delete(name); }
+                Status.SetText(string.Empty);
+            }
             catch (Exception exception) { ShowPresetError(exception); return; }
             foreach (var preview in _previews.Where(preview => preview.Name == name && string.IsNullOrEmpty(preview.BuiltinKey)))
             { preview.Name = string.Empty; preview.Modified = true; }

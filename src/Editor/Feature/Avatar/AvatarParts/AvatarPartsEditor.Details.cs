@@ -147,14 +147,8 @@ namespace Ee4v.AvatarParts
                     var enabledProperty = _editor.serializedObject.FindProperty("m_Enabled");
                     if (enabledProperty != null && enabledProperty.propertyType == SerializedPropertyType.Boolean)
                     {
-                        _enabled = UiTextFactory.CreateToggle(string.Empty, "ee4v-part-component__enabled");
+                        _enabled = UiTextFactory.CreateSwitch();
                         _enabled.tooltip = I18N.Get("workflow.objects.componentEnabled");
-                        var track = new VisualElement { pickingMode = PickingMode.Ignore };
-                        track.AddToClassList("ee4v-part-component__switch-track");
-                        var thumb = new VisualElement { pickingMode = PickingMode.Ignore };
-                        thumb.AddToClassList("ee4v-part-component__switch-thumb");
-                        track.Add(thumb);
-                        _enabled.Q<VisualElement>(className: "unity-toggle__input").Add(track);
                         _enabled.RegisterValueChangedCallback(evt => UpdateHeader(evt.newValue));
                         _enabled.SetValueWithoutNotify(enabledProperty.boolValue);
                         _enabled.BindProperty(enabledProperty);

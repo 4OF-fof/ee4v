@@ -88,3 +88,9 @@
     flex-shrink: 0;
     align-self: center;
 }
+
+.ee4v-ui-message-panel--compact {
+    margin-bottom: var(--ee4v-space-md);
+    padding: var(--ee4v-space-md);
+    border-left-width: var(--ee4v-border-emphasis);
+}

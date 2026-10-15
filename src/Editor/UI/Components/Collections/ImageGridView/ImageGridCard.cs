@@ -4,9 +4,9 @@ using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ee4v.AssetManager.UI
+namespace Ee4v.UI
 {
-    internal sealed class AssetItemGridCard : VisualElement, IDisposable
+    public sealed class ImageGridCard : VisualElement, IDisposable
     {
         private readonly PreviewContainer _imageFrame;
         private readonly CachedImage _image;
@@ -17,40 +17,40 @@ namespace Ee4v.AssetManager.UI
         private readonly UiTextElement _actionTitle;
         private string _itemId = string.Empty;
 
-        public AssetItemGridCard(CachedImageCache imageCache)
+        public ImageGridCard(CachedImageCache imageCache)
         {
-            AddToClassList("ee4v-asset-grid-card");
+            AddToClassList("ee4v-ui-image-grid-card");
             focusable = true;
 
             _imageFrame = new PreviewContainer();
-            _imageFrame.AddToClassList("ee4v-asset-grid-card__image-frame");
+            _imageFrame.AddToClassList("ee4v-ui-image-grid-card__image-frame");
             _image = new CachedImage(imageCache)
             {
                 scaleMode = ScaleMode.ScaleAndCrop,
                 pickingMode = PickingMode.Ignore
             };
-            _image.AddToClassList("ee4v-asset-grid-card__image");
+            _image.AddToClassList("ee4v-ui-image-grid-card__image");
             _placeholder = new VisualElement();
             _placeholder.AddToClassList(
-                "ee4v-asset-grid-card__placeholder");
+                "ee4v-ui-image-grid-card__placeholder");
             _placeholder.pickingMode = PickingMode.Ignore;
             _imageFrame.Placeholder.Add(_placeholder);
             _imageFrame.Content.Add(_image);
 
             _name = UiTextFactory.Create(
                 string.Empty,
-                "ee4v-asset-grid-card__name");
+                "ee4v-ui-image-grid-card__name");
             _name.SetWhiteSpace(WhiteSpace.NoWrap);
             _name.SetTextAlign(TextAnchor.MiddleCenter);
 
             Add(_imageFrame);
             Add(_name);
             _actionContent = new VisualElement { pickingMode = PickingMode.Ignore };
-            _actionContent.AddToClassList("ee4v-asset-grid-card__action-content");
+            _actionContent.AddToClassList("ee4v-ui-image-grid-card__action-content");
             _actionContent.style.display = DisplayStyle.None;
             _actionIcon = new VisualElement { pickingMode = PickingMode.Ignore };
-            _actionIcon.AddToClassList("ee4v-asset-grid-card__action-icon");
-            _actionTitle = UiTextFactory.Create(string.Empty, "ee4v-asset-grid-card__action-title");
+            _actionIcon.AddToClassList("ee4v-ui-image-grid-card__action-icon");
+            _actionTitle = UiTextFactory.Create(string.Empty, "ee4v-ui-image-grid-card__action-title");
             _actionTitle.SetFontSize(UiTypographyTokens.BodyFontSize);
             _actionTitle.SetTextAlign(TextAnchor.MiddleCenter);
             _actionTitle.SetWhiteSpace(WhiteSpace.NoWrap);
@@ -67,18 +67,18 @@ namespace Ee4v.AssetManager.UI
         public event Action<string> DoubleClicked;
         public event Action<string, VisualElement> ContextClicked;
 
-        public void SetState(AssetItemGridEntry state, bool selected)
+        public void SetState(ImageGridEntry state, bool selected)
         {
             _itemId = state.Id;
             _name.SetText(state.Name);
             tooltip = state.Name;
             var isAction = state.Activate != null;
-            EnableInClassList("ee4v-asset-grid-card--action", isAction);
+            EnableInClassList("ee4v-ui-image-grid-card--action", isAction);
             _imageFrame.style.visibility = _name.style.visibility = isAction ? Visibility.Hidden : Visibility.Visible;
             _actionContent.style.display = isAction ? DisplayStyle.Flex : DisplayStyle.None;
             _actionTitle.SetText(state.Name);
             EnableInClassList(
-                "ee4v-asset-grid-card--selected",
+                "ee4v-ui-image-grid-card--selected",
                 selected);
             if (isAction) { _image.ClearSource(); }
             else { _image.SetSource(state.Id); }
@@ -103,7 +103,7 @@ namespace Ee4v.AssetManager.UI
             _placeholder.Clear();
             _actionIcon.Clear();
             _placeholder.EnableInClassList(
-                "ee4v-asset-grid-card__placeholder--icon",
+                "ee4v-ui-image-grid-card__placeholder--icon",
                 state != null);
             if (state != null)
             {

@@ -6,11 +6,11 @@ using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ee4v.AssetManager.UI
+namespace Ee4v.UI
 {
-    internal sealed class AssetItemGridEntry
+    public sealed class ImageGridEntry
     {
-        public AssetItemGridEntry(
+        public ImageGridEntry(
             string id,
             string name,
             byte[] thumbnailData = null)
@@ -27,10 +27,10 @@ namespace Ee4v.AssetManager.UI
         public Action Activate { get; set; }
     }
 
-    internal sealed class AssetItemGridView : VisualElement, IDisposable
+    public sealed class ImageGridView : VisualElement, IDisposable
     {
-        internal const int MinimumItemsPerRow = 1;
-        internal const int MaximumItemsPerRow = 12;
+        public const int MinimumItemsPerRow = 1;
+        public const int MaximumItemsPerRow = 12;
         private const float PreferredGap = UiSpacingTokens.Xxl;
         private const float PreferredMinimumCardWidth = 48f;
         private const float MinimumCardWidth = UiSizeTokens.Size1;
@@ -49,8 +49,8 @@ namespace Ee4v.AssetManager.UI
             new Dictionary<string, int>(StringComparer.Ordinal);
         private readonly HashSet<string> _selectedItemIds =
             new HashSet<string>(StringComparer.Ordinal);
-        private IReadOnlyList<AssetItemGridEntry> _items =
-            Array.Empty<AssetItemGridEntry>();
+        private IReadOnlyList<ImageGridEntry> _items =
+            Array.Empty<ImageGridEntry>();
         private int _itemsPerRow = 6;
         private float _cardWidth = 132f;
         private float _columnGap = PreferredGap;
@@ -67,12 +67,12 @@ namespace Ee4v.AssetManager.UI
         private IReadOnlyList<string> _notifiedVisibleItemIds =
             Array.Empty<string>();
 
-        public AssetItemGridView()
+        public ImageGridView()
             : this(new CachedImageCache(), true)
         {
         }
 
-        public AssetItemGridView(CachedImageCache imageCache)
+        public ImageGridView(CachedImageCache imageCache)
             : this(
                 imageCache ?? throw new ArgumentNullException(
                     nameof(imageCache)),
@@ -80,13 +80,13 @@ namespace Ee4v.AssetManager.UI
         {
         }
 
-        private AssetItemGridView(
+        private ImageGridView(
             CachedImageCache imageCache,
             bool ownsImageCache)
         {
             _ownsImageCache = ownsImageCache;
             _imageCache = imageCache;
-            AddToClassList("ee4v-asset-grid");
+            AddToClassList("ee4v-ui-image-grid");
             focusable = true;
 
             _scroll = new ScrollView(ScrollViewMode.Vertical)
@@ -94,7 +94,7 @@ namespace Ee4v.AssetManager.UI
                 verticalScrollerVisibility = ScrollerVisibility.Hidden,
                 horizontalScrollerVisibility = ScrollerVisibility.Hidden
             };
-            _scroll.AddToClassList("ee4v-asset-grid__list");
+            _scroll.AddToClassList("ee4v-ui-image-grid__list");
             _scroll.contentContainer.style.position = Position.Relative;
             _scroll.RegisterCallback<GeometryChangedEvent>(
                 OnGeometryChanged);
@@ -115,13 +115,13 @@ namespace Ee4v.AssetManager.UI
         public int ItemsPerRow => _itemsPerRow;
         public int RecommendedMinimumItemsPerRow =>
             _recommendedMinimumItemsPerRow;
-        internal IReadOnlyList<string> SelectedItemIds =>
+        public IReadOnlyList<string> SelectedItemIds =>
             CreateSelectionSnapshot();
-        internal string PrimarySelectedItemId => _primarySelectedItemId;
+        public string PrimarySelectedItemId => _primarySelectedItemId;
 
-        public void SetItems(IReadOnlyList<AssetItemGridEntry> items)
+        public void SetItems(IReadOnlyList<ImageGridEntry> items)
         {
-            _items = items ?? Array.Empty<AssetItemGridEntry>();
+            _items = items ?? Array.Empty<ImageGridEntry>();
             _itemIndices.Clear();
             for (var i = 0; i < _items.Count; i++)
             {
@@ -260,7 +260,7 @@ namespace Ee4v.AssetManager.UI
                      column++)
                 {
                     (row.ElementAt(column).ElementAt(0) as
-                        AssetItemGridCard)?.Dispose();
+                        ImageGridCard)?.Dispose();
                 }
             }
 
@@ -273,7 +273,7 @@ namespace Ee4v.AssetManager.UI
         private VisualElement CreateRow()
         {
             var row = new VisualElement();
-            row.AddToClassList("ee4v-asset-grid__row");
+            row.AddToClassList("ee4v-ui-image-grid__row");
             row.style.position = Position.Absolute;
             row.style.left = 0f;
             row.style.right = 0f;
@@ -293,7 +293,7 @@ namespace Ee4v.AssetManager.UI
             for (var column = 0; column < _itemsPerRow; column++)
             {
                 var slot = row.ElementAt(column);
-                var card = slot.ElementAt(0) as AssetItemGridCard;
+                var card = slot.ElementAt(0) as ImageGridCard;
                 var itemIndex = (rowIndex * _itemsPerRow) + column;
                 var item = itemIndex < _items.Count
                     ? _items[itemIndex]
@@ -330,12 +330,12 @@ namespace Ee4v.AssetManager.UI
         {
             while (row.childCount < _itemsPerRow)
             {
-                var card = new AssetItemGridCard(_imageCache);
+                var card = new ImageGridCard(_imageCache);
                 card.Clicked += SelectItem;
                 card.DoubleClicked += OpenItem;
                 card.ContextClicked += OpenContextMenu;
                 var slot = new VisualElement();
-                slot.AddToClassList("ee4v-asset-grid__slot");
+                slot.AddToClassList("ee4v-ui-image-grid__slot");
                 slot.Add(card);
                 row.Add(slot);
             }
@@ -343,12 +343,12 @@ namespace Ee4v.AssetManager.UI
             while (row.childCount > _itemsPerRow)
             {
                 var slot = row.ElementAt(row.childCount - 1);
-                (slot.ElementAt(0) as AssetItemGridCard)?.Dispose();
+                (slot.ElementAt(0) as ImageGridCard)?.Dispose();
                 row.RemoveAt(row.childCount - 1);
             }
         }
 
-        internal void SelectItem(
+        public void SelectItem(
             string itemId,
             bool toggle,
             bool range)
@@ -394,7 +394,7 @@ namespace Ee4v.AssetManager.UI
                 _primarySelectedItemId);
         }
 
-        internal void ClearSelection()
+        public void ClearSelection()
         {
             var hadSelection = _selectedItemIds.Count > 0 ||
                 !string.IsNullOrEmpty(_primarySelectedItemId);
@@ -517,7 +517,7 @@ namespace Ee4v.AssetManager.UI
             evt.StopPropagation();
         }
 
-        internal void OnGridKeyDown(KeyDownEvent evt)
+        public void OnGridKeyDown(KeyDownEvent evt)
         {
             if (evt.keyCode != KeyCode.Escape)
             {
@@ -848,7 +848,7 @@ namespace Ee4v.AssetManager.UI
 
                 var column = itemIndex % _itemsPerRow;
                 var card = row.ElementAt(column).ElementAt(0) as
-                    AssetItemGridCard;
+                    ImageGridCard;
                 card?.SetState(
                     _items[itemIndex],
                     _selectedItemIds.Contains(itemId));
@@ -871,7 +871,7 @@ namespace Ee4v.AssetManager.UI
             for (var column = 0; column < row.childCount; column++)
             {
                 (row.ElementAt(column).ElementAt(0) as
-                    AssetItemGridCard)?.Dispose();
+                    ImageGridCard)?.Dispose();
             }
         }
     }

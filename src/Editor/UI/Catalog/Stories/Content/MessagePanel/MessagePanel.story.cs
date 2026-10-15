@@ -34,12 +34,14 @@ namespace Ee4v.UI
             var manyDetails = false;
             var visible = true;
             var showAction = true;
+            var density = MessagePanelDensity.Default;
             Action refresh = null;
             var controls = CreatePlainControlsSection(parent,
                 "種類、文章、対象件数と空状態を切り替えて表示を確認します。");
             AddTextField(controls.Content, "見出し", title, value => { title = value; refresh(); });
             AddTextField(controls.Content, "説明", message, value => { message = value; refresh(); });
             AddEnumField(controls.Content, "種類", severity, value => { severity = value; refresh(); });
+            AddEnumField(controls.Content, "密度", density, value => { density = value; refresh(); });
             AddToggle(controls.Content, "対象一覧を表示", showDetails,
                 value => { showDetails = value; refresh(); });
             AddToggle(controls.Content, "多数の対象", manyDetails,
@@ -48,10 +50,12 @@ namespace Ee4v.UI
             AddToggle(controls.Content, "操作ボタン", showAction, value => { showAction = value; refresh(); });
             var preview = CreatePreviewSection(parent);
             var panel = new MessagePanel();
-            var action = new UiButton("対応付けを設定");
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
+            var action = new UiButton("対応付けを設定", () => result.SetText("対応付けを設定しました"));
             action.style.marginLeft = UiSpacingTokens.Large;
             panel.DetailsActions.Add(action);
             preview.Body.Add(panel);
+            preview.Body.Add(result);
             var targets = new[]
             {
                 "Body / eye_joy", "Body / eyebrow_joy", "Body / mouth_a1",
@@ -59,6 +63,7 @@ namespace Ee4v.UI
             };
             refresh = () =>
             {
+                panel.SetDensity(density);
                 action.style.display = showAction ? DisplayStyle.Flex : DisplayStyle.None;
                 panel.DetailsActions.style.display = showAction ? DisplayStyle.Flex : DisplayStyle.None;
                 panel.SetState(visible ? new MessagePanelState(title, message, severity,

@@ -570,7 +570,7 @@ namespace Ee4v.AssetManager.UI
             _avatarContext.Preview.PreviewSelectionCleared +=
                 OnPreviewSelectionCleared;
             _avatarContext.Preview.SetFlexibleLayout(true);
-            _avatarContext.Preview.SetFullBodyFraming(false);
+            _avatarContext.Preview.SetFullBodyFraming(_previewOnly);
             _avatarContext.Preview.AddToClassList(
                 "ee4v-modification-workflow__preview");
             _previewScopeSiblingIndex = _avatarContext.SelectedPrefabSiblingIndex;

@@ -1,5 +1,17 @@
 {
   "ui": {
+    "tagsNew": "Add Tag",
+    "tagsRemove": "Remove \"{0}\"",
+    "tagsSourceReadOnly": "Edit this Eagle tag in Eagle",
+    "tagsPickerTitle": "Select Tag",
+    "tagsClose": "Close",
+    "tagsSearch": "Search tags",
+    "tagsCreate": "Create '{0}'",
+    "tagsWithCount": "{0} ({1})",
+    "tagsEmpty": "No tags available",
+    "tagsNoMatch": "No matching tags",
+    "decrease": "Decrease",
+    "increase": "Increase",
     "pathField": {
       "selectFolder": "Select a folder",
       "selectFile": "Select a file"

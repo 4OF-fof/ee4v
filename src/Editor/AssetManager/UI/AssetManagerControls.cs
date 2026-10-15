@@ -37,7 +37,7 @@ namespace Ee4v.AssetManager.UI
             AddClasses(button, classNames);
             if (button.ClassListContains(PrimaryActionClassName))
             {
-                button.SetLabelColor(UiColorTokens.TextOnState);
+                button.SetTone(UiButtonTone.Primary);
             }
             return button;
         }
@@ -49,7 +49,7 @@ namespace Ee4v.AssetManager.UI
         {
             var button = CreateButton(text, onClick, classNames);
             button.AddToClassList(DangerActionClassName);
-            button.SetLabelColor(UiColorTokens.StatusFailedText);
+            button.SetTone(UiButtonTone.Danger);
             return button;
         }
 
@@ -157,12 +157,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            button.EnableInClassList(
-                "ee4v-asset-manager__nav-button--selected",
-                selected);
             button.SetSelected(selected);
-            button.Row.TitleText.SetColor(selected
-                ? UiColorTokens.TextPrimary : UiColorTokens.TextSecondary);
         }
 
         public static Icon CreateIcon(
@@ -229,11 +224,14 @@ namespace Ee4v.AssetManager.UI
                 tintColor);
         }
 
-        public static AssetManagerTextField CreateTextField(
+        public static FormInput<InputField> CreateTextField(
             string label = "",
             params string[] classNames)
         {
-            return new AssetManagerTextField(label, classNames);
+            var field = new FormInput<InputField>(label, new InputField());
+            field.AddToClassList("ee4v-asset-manager-control-field");
+            AddClasses(field, classNames);
+            return field;
         }
 
         public static SearchField CreateSearchField(
@@ -256,26 +254,26 @@ namespace Ee4v.AssetManager.UI
             return field;
         }
 
-        public static AssetManagerGridSizeSlider CreateGridSizeSlider(
+        public static StepperSlider CreateGridSizeSlider(
             int value,
             int minimum = 1,
             int maximum = 12,
             params string[] classNames)
         {
-            return new AssetManagerGridSizeSlider(
+            return new StepperSlider(
                 value,
                 minimum,
                 maximum,
                 classNames);
         }
 
-        public static AssetManagerEnumField CreateEnumField(
+        public static EnumFormInput CreateEnumField(
             string label,
             Enum value,
             Func<Enum, string> formatter = null,
             params string[] classNames)
         {
-            return new AssetManagerEnumField(
+            return new EnumFormInput(
                 label,
                 value,
                 formatter,
@@ -313,11 +311,14 @@ namespace Ee4v.AssetManager.UI
             return I18N.Get("filterCondition." + key + (inverted ? "Inverted" : string.Empty));
         }
 
-        public static AssetManagerNotice CreateNotice(
+        public static MessagePanel CreateNotice(
             string text,
             params string[] classNames)
         {
-            return new AssetManagerNotice(text, classNames);
+            var panel = new MessagePanel(new MessagePanelState(string.Empty, text, MessageSeverity.Info),
+                MessagePanelDensity.Compact);
+            AddClasses(panel, classNames);
+            return panel;
         }
 
         internal static void AddClasses(
@@ -338,258 +339,6 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-    }
-
-    internal sealed class AssetManagerTextField : FormInput
-    {
-        private readonly InputField _field;
-        private bool _multiline;
-
-        public AssetManagerTextField(
-            string label,
-            params string[] classNames)
-            : base(label, new InputField())
-        {
-            AddToClassList("ee4v-asset-manager-control-field");
-            AssetManagerControls.AddClasses(this, classNames);
-            LabelText.AddToClassList(
-                "ee4v-asset-manager-control-field__label");
-
-            _field = (InputField)Input;
-            _field.AddToClassList(
-                "ee4v-asset-manager-control-field__input");
-        }
-
-        public string value
-        {
-            get { return _field.Value; }
-            set { _field.Value = value ?? string.Empty; }
-        }
-
-        public bool multiline
-        {
-            get { return _multiline; }
-            set { SetMultiline(value); }
-        }
-
-        public bool isReadOnly
-        {
-            get { return _field.IsReadOnly; }
-            set { _field.IsReadOnly = value; }
-        }
-
-        public void FocusInput()
-        {
-            _field.FocusInput();
-        }
-
-        public void SetMultiline(bool multiline, float maxHeight = 0f)
-        {
-            _multiline = multiline;
-            _field.SetState(new InputFieldState(
-                _field.Value,
-                multiline,
-                maxHeight));
-        }
-    }
-
-    internal sealed class AssetManagerGridSizeSlider : VisualElement
-    {
-        private readonly SliderInt _slider;
-
-        public AssetManagerGridSizeSlider(
-            int value,
-            int minimum,
-            int maximum,
-            params string[] classNames)
-        {
-            var safeMinimum = Math.Min(minimum, maximum);
-            var safeMaximum = Math.Max(minimum, maximum);
-            AddToClassList("ee4v-asset-manager-grid-slider");
-            AssetManagerControls.AddClasses(this, classNames);
-
-            hierarchy.Add(CreateEndpointButton(
-                I18N.Get("toolbar.gridDecrease"),
-                "subtract.png",
-                -1));
-            _slider = new SliderInt(safeMinimum, safeMaximum)
-            {
-                showInputField = false
-            };
-            _slider.AddToClassList(
-                "ee4v-asset-manager-grid-slider__slider");
-            _slider.SetValueWithoutNotify(Mathf.Clamp(
-                value,
-                safeMinimum,
-                safeMaximum));
-            _slider.RegisterValueChangedCallback(evt =>
-                ValueChanged?.Invoke(evt.newValue));
-            hierarchy.Add(_slider);
-            hierarchy.Add(CreateEndpointButton(
-                I18N.Get("toolbar.gridIncrease"),
-                "add.png",
-                1));
-        }
-
-        public event Action<int> ValueChanged;
-
-        public void SetRangeWithoutNotify(int minimum, int maximum)
-        {
-            var safeMinimum = Math.Min(minimum, maximum);
-            var safeMaximum = Math.Max(minimum, maximum);
-            _slider.lowValue = safeMinimum;
-            _slider.highValue = safeMaximum;
-            SetValueWithoutNotify(_slider.value);
-        }
-
-        public void SetValueWithoutNotify(int value)
-        {
-            _slider.SetValueWithoutNotify(Mathf.Clamp(
-                value,
-                _slider.lowValue,
-                _slider.highValue));
-        }
-
-        private void SetValue(int value)
-        {
-            _slider.value = Mathf.Clamp(
-                value,
-                _slider.lowValue,
-                _slider.highValue);
-        }
-
-        private UiButton CreateEndpointButton(
-            string tooltip,
-            string iconFileName,
-            int delta)
-        {
-            return AssetManagerControls.CreateIconButton(
-                tooltip,
-                iconFileName,
-                () => SetValue(_slider.value + delta),
-                "ee4v-asset-manager-grid-slider__endpoint");
-        }
-    }
-
-    internal sealed class AssetManagerEnumField : FormInput
-    {
-        private readonly BaseField<Enum> _field;
-
-        public AssetManagerEnumField(
-            string label,
-            Enum value,
-            Func<Enum, string> formatter,
-            params string[] classNames)
-            : base(label, new EnumInput(value, formatter))
-        {
-            AddToClassList("ee4v-asset-manager-control-field");
-            AddToClassList("ee4v-asset-manager-control-field--enum");
-            AssetManagerControls.AddClasses(this, classNames);
-            LabelText.AddToClassList(
-                "ee4v-asset-manager-control-field__label");
-
-            _field = ((EnumInput)Input).Field;
-            _field.RegisterCallback<FocusInEvent>(_ => EnableInClassList(
-                "ee4v-asset-manager-control-field--focused",
-                true));
-            _field.RegisterCallback<FocusOutEvent>(_ => EnableInClassList(
-                "ee4v-asset-manager-control-field--focused",
-                false));
-        }
-
-        public Enum value
-        {
-            get { return _field.value; }
-        }
-
-        public void SetValueWithoutNotify(Enum value)
-        {
-            _field.SetValueWithoutNotify(value);
-        }
-
-        private sealed class EnumInput : VisualElement
-        {
-            internal EnumInput(
-                Enum value,
-                Func<Enum, string> formatter)
-            {
-                AddToClassList(
-                    "ee4v-asset-manager-control-field__container");
-                Field = CreateField(value, formatter);
-                Add(Field);
-            }
-
-            internal BaseField<Enum> Field { get; }
-
-            private static BaseField<Enum> CreateField(
-                Enum value,
-                Func<Enum, string> formatter)
-            {
-                if (formatter == null)
-                {
-                    return UiTextFactory.CreateEnumField(
-                        string.Empty,
-                        value,
-                        "ee4v-asset-manager-control-field__input");
-                }
-
-                var values = Enum.GetValues(value.GetType());
-                var choices = new List<Enum>(values.Length);
-                var selectedIndex = 0;
-                for (var i = 0; i < values.Length; i++)
-                {
-                    var choice = (Enum)values.GetValue(i);
-                    choices.Add(choice);
-                    if (choice.Equals(value))
-                    {
-                        selectedIndex = i;
-                    }
-                }
-
-                return UiTextFactory.CreatePopupField(
-                    string.Empty,
-                    choices,
-                    selectedIndex,
-                    formatter,
-                    formatter,
-                    "ee4v-asset-manager-control-field__input");
-            }
-        }
-    }
-
-    internal sealed class AssetManagerNotice : VisualElement
-    {
-        public AssetManagerNotice(
-            string text,
-            params string[] classNames)
-        {
-            AddToClassList("ee4v-asset-manager-control-notice");
-            AssetManagerControls.AddClasses(this, classNames);
-
-            var iconState = AssetManagerControls.LoadFluentIconState(
-                "info.png",
-                UiSizeTokens.Size18);
-            if (iconState != null)
-            {
-                var icon = new Icon(iconState);
-                icon.AddToClassList(
-                    "ee4v-asset-manager-control-notice__icon");
-                Add(icon);
-            }
-
-            var message = UiTextFactory.Create(
-                text,
-                UiClassNames.SecondaryText,
-                "ee4v-asset-manager-control-notice__text");
-            message.SetColor(UiColorTokens.StatusIdleText);
-            message.SetWhiteSpace(WhiteSpace.Normal);
-            message.pickingMode = PickingMode.Ignore;
-            Add(message);
-
-            style.display = string.IsNullOrWhiteSpace(text)
-                ? DisplayStyle.None
-                : DisplayStyle.Flex;
-        }
     }
 
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Ee4v.UI;
 using UnityEngine.UIElements;
 
@@ -72,26 +73,31 @@ namespace Ee4v.SceneSwitcher
                 UiBuiltinIconResolver.LoadTexture(
                     UiBuiltinIcon.Scene),
                 FluentUiIcons.LoadTexture("star.png", UiSizeTokens.Size14));
-            view.SetState(new SceneSwitcherViewState(
-                string.Empty,
-                new[]
-                {
-                    new SceneSwitcherItem(
-                        "Assets/Scenes/Main.unity",
-                        true,
-                        true),
-                    new SceneSwitcherItem(
-                        "Assets/Scenes/Gameplay.unity",
-                        false,
-                        false)
-                },
-                false));
+            var paths = new List<string> { "Assets/Scenes/Main.unity", "Assets/Scenes/Gameplay.unity" };
+            var favorites = new HashSet<string> { paths[0] };
+            var opened = paths[0];
+            var query = string.Empty;
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
+            void Render()
+            {
+                view.SetState(new SceneSwitcherViewState(query,
+                    paths.Where(path => path.IndexOf(query, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                        .Select(path => new SceneSwitcherItem(path, path == opened, favorites.Contains(path))).ToArray(), false));
+            }
+            view.QueryChanged += value => { query = value; Render(); };
+            view.ActivateRequested += value => { opened = value; Render(); result.SetText("選択: " + value); };
+            view.AddRequested += value => result.SetText("追加操作: " + value);
+            view.FavoriteRequested += value => { if (!favorites.Remove(value)) { favorites.Add(value); } Render(); };
+            view.OrderChanged += order => { paths = order.ToList(); Render(); };
+            view.CreateRequested += value => { paths.Add("Assets/Scenes/" + value + ".unity"); Render(); };
+            Render();
             var surface = new VisualElement();
             surface.AddToClassList("ee4v-scene-switcher-window");
             surface.style.width = 200f;
             surface.style.height = 300f;
             surface.Add(view);
             parent.Add(surface);
+            parent.Add(result);
         }
 
         private static void BuildRow(VisualElement parent)
@@ -100,12 +106,19 @@ namespace Ee4v.SceneSwitcher
                 CreateText(),
                 UiBuiltinIconResolver.LoadTexture(UiBuiltinIcon.Scene),
                 FluentUiIcons.LoadTexture("star.png", UiSizeTokens.Size14));
-            row.SetState(new SceneSwitcherItem(
-                "Assets/Scenes/Main.unity",
-                true,
-                true));
+            var favorite = true;
+            row.SetState(new SceneSwitcherItem("Assets/Scenes/Main.unity", true, favorite));
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
+            row.ActivateRequested += value => result.SetText("選択: " + value);
+            row.AddRequested += value => result.SetText("追加操作: " + value);
+            row.FavoriteRequested += _ =>
+            {
+                favorite = !favorite;
+                row.SetState(new SceneSwitcherItem("Assets/Scenes/Main.unity", true, favorite));
+            };
             row.style.width = 320f;
             parent.Add(row);
+            parent.Add(result);
         }
 
         private static SceneSwitcherViewText CreateText()

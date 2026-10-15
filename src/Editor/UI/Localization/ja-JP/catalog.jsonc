@@ -1,5 +1,17 @@
 {
   "ui": {
+    "tagsNew": "タグを追加",
+    "tagsRemove": "「{0}」を削除",
+    "tagsSourceReadOnly": "Eagle 由来のタグは Eagle で編集します",
+    "tagsPickerTitle": "タグを選択",
+    "tagsClose": "閉じる",
+    "tagsSearch": "タグを検索",
+    "tagsCreate": "作成 '{0}'",
+    "tagsWithCount": "{0} ({1})",
+    "tagsEmpty": "タグがありません",
+    "tagsNoMatch": "一致するタグがありません",
+    "decrease": "減らす",
+    "increase": "増やす",
     "pathField": {
       "selectFolder": "フォルダーを選択",
       "selectFile": "ファイルを選択"

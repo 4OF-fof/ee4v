@@ -175,10 +175,6 @@
     margin-bottom: var(--ee4v-space-sm);
 }
 
-.ee4v-ui-catalog-preview-card--flush {
-    margin-bottom: var(--ee4v-space-none);
-}
-
 .ee4v-ui-catalog-color-palette {
     flex-direction: row;
     flex-wrap: wrap;

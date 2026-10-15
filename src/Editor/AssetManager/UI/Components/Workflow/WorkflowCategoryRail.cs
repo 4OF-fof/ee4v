@@ -8,8 +8,8 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed class WorkflowCategoryRail : VisualElement
     {
-        private readonly Dictionary<WorkflowCategory, UiButton> _buttons =
-            new Dictionary<WorkflowCategory, UiButton>();
+        private readonly Dictionary<WorkflowCategory, NavigationItem> _buttons =
+            new Dictionary<WorkflowCategory, NavigationItem>();
         private readonly Action<WorkflowCategory> _selected;
 
         internal WorkflowCategoryRail(Action<WorkflowCategory> selected, bool playMode = false, bool avatar = true)
@@ -54,15 +54,12 @@ namespace Ee4v.AssetManager.UI
             string labelKey,
             string icon)
         {
-            var button = new UiButton(
-                I18N.Get(labelKey),
-                () => _selected?.Invoke(category),
+            var button = new NavigationItem(
+                new NavigationItemState(I18N.Get(labelKey),
                 icon: AssetManagerControls.LoadFluentIconState(
                     icon,
-                    UiSizeTokens.Size18),
-                variant: UiButtonVariant.Ghost,
-                labelTypographyClassName:
-                    UiClassNames.NavigationItemLabel);
+                    UiSizeTokens.Size18)),
+                () => _selected?.Invoke(category));
             button.AddToClassList(
                 "ee4v-modification-workflow__category-button");
             _buttons[category] = button;
@@ -73,9 +70,7 @@ namespace Ee4v.AssetManager.UI
         {
             foreach (var pair in _buttons)
             {
-                pair.Value.EnableInClassList(
-                    "ee4v-modification-workflow__category-button--active",
-                    pair.Key == category);
+                pair.Value.SetSelected(pair.Key == category);
             }
         }
 

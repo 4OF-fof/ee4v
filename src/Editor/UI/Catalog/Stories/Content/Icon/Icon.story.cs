@@ -30,7 +30,7 @@ namespace Ee4v.UI
                         "Editor/AssetManager/UI/AssetManagerControls.cs",
                         "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs",
                         "Editor/AssetManager/UI/AssetModificationWorkflowView.Changes.cs",
-                        "Editor/AssetManager/UI/Components/AssetItemGridCard.cs",
+                        "Editor/UI/Components/Collections/ImageGridView/ImageGridCard.cs",
                         "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs",
                         "Editor/AssetManager/UI/SearchableFileTree.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",

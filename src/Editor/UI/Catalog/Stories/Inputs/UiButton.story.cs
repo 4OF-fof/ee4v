@@ -28,7 +28,7 @@ namespace Ee4v.UI
                     {
                         "Editor/AssetManager/UI/AssetManagerControls.cs",
                         "Editor/AssetManager/UI/AssetManagerView.cs",
-                        "Editor/AssetManager/UI/AssetTagField.cs",
+                        "Editor/UI/Components/Inputs/TagField/TagField.cs",
                         "Editor/AssetManager/UI/AssetPrefabPickerWindow.cs",
                         "Editor/UI/Components/Inputs/PrefabSelector/PrefabPickerWindow.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
@@ -47,6 +47,7 @@ namespace Ee4v.UI
         {
             var label = "Primary action";
             var variant = UiButtonVariant.Solid;
+            var tone = UiButtonTone.Default;
             var showIcon = true;
             var enabled = true;
             var clickCount = 0;
@@ -73,6 +74,7 @@ namespace Ee4v.UI
                     variant = value;
                     refresh();
                 });
+            AddEnumField(controls.Content, "強調度", tone, value => { tone = value; refresh(); });
             var iconToggle = AddToggle(
                 controls.Content,
                 "アイコンを表示",
@@ -123,6 +125,7 @@ namespace Ee4v.UI
                         : null,
                     variant: variant);
                 button.SetEnabled(enabled);
+                button.SetTone(tone);
                 buttonHost.Add(button);
             };
 

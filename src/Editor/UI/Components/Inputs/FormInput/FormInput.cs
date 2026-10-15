@@ -3,6 +3,16 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
+    public sealed class FormInput<TInput> : FormInput where TInput : VisualElement
+    {
+        public FormInput(string label, TInput input, Button button = null)
+            : base(label, input, button)
+        {
+        }
+
+        public new TInput Input => (TInput)base.Input;
+    }
+
     public class FormInput : VisualElement
     {
         public FormInput(

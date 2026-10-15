@@ -17,6 +17,12 @@ namespace Ee4v.FaceExpression
         {
             return new[]
             {
+                new UiStory("expression-conversion", "Domain/FaceExpression", "ExpressionConversionView",
+                    "ダミーClipのBlendShape対応付け、検証と変換を確認します。",
+                    "変換結果はメモリ上だけで作成して破棄し、ファイルダイアログと保存は行いません。",
+                    BuildConversion,
+                    usageLocations: new[] { "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs" },
+                    styleSheetPaths: new[] { "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss" }),
                 new UiStory(
                     "face-expression-editor",
                     "Domain/FaceExpression",
@@ -123,7 +129,8 @@ namespace Ee4v.FaceExpression
                     usageLocations: new[]
                     {
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetWindow.cs"
-                    }),
+                    },
+                    styleSheetPaths: new[] { "Editor/Feature/Avatar/FaceExpression/UI/face-expression.uss" }),
                 new UiStory(
                     "gesture-assignment-cell",
                     "Domain/FaceExpression/Inputs",
@@ -138,7 +145,8 @@ namespace Ee4v.FaceExpression
                     },
                     usageLocations: new[]
                     {
-                        "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs"
+                        "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs"
                     },
                     styleSheetPaths: new[]
                     {
@@ -183,17 +191,58 @@ namespace Ee4v.FaceExpression
             };
         }
 
+        private static void BuildConversion(VisualElement parent)
+        {
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
+            var avatar = new GameObject("Conversion Sample") { hideFlags = HideFlags.HideAndDontSave };
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(avatar, scene);
+            var body = new GameObject("Body") { hideFlags = HideFlags.HideAndDontSave };
+            body.transform.SetParent(avatar.transform, false);
+            var mesh = new Mesh { name = "Sample Face", hideFlags = HideFlags.HideAndDontSave };
+            mesh.vertices = new[] { Vector3.zero, Vector3.right, Vector3.up };
+            mesh.triangles = new[] { 0, 1, 2 };
+            var delta = new[] { Vector3.up * 0.1f, Vector3.zero, Vector3.zero };
+            mesh.AddBlendShapeFrame("Smile", 100, delta, new Vector3[3], new Vector3[3]);
+            body.AddComponent<SkinnedMeshRenderer>().sharedMesh = mesh;
+            var clip = new AnimationClip { name = "Smile", hideFlags = HideFlags.HideAndDontSave };
+            AnimationUtility.SetEditorCurve(clip,
+                EditorCurveBinding.FloatCurve("Body", typeof(SkinnedMeshRenderer), "blendShape.Smile"),
+                AnimationCurve.Linear(0, 0, 1, 100));
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
+            var view = new ExpressionConversionView(avatar, clip,
+                () => result.SetText("一覧へ戻る操作を確認しました"),
+                converted => result.SetText("メモリ上で変換しました: " + converted.name), previewOnly: true);
+            view.style.width = 1000;
+            view.style.height = 620;
+            view.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                if (evt.target != view) { return; }
+                UnityEngine.Object.DestroyImmediate(avatar);
+                UnityEngine.Object.DestroyImmediate(mesh);
+                UnityEngine.Object.DestroyImmediate(clip);
+                if (scene.IsValid()) { UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(scene); }
+            });
+            parent.Add(view);
+            parent.Add(result);
+        }
+
         private static void BuildAssignmentCell(VisualElement parent)
         {
             var clip = new AnimationClip
             {
                 name = "Smile"
             };
-            var cell = new GestureAssignmentCell(
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
+            GestureAssignmentCell cell = null;
+            cell = new GestureAssignmentCell(
                 "Expression clip",
                 "Unassigned",
-                () => { },
-                _ => { },
+                () => result.SetText("セルを選択しました"),
+                selected =>
+                {
+                    cell.SetAssignment(new FaceExpressionAssignment(selected));
+                    result.SetText(selected != null ? selected.name : "未割り当て");
+                },
                 rect => EditorGUI.DrawRect(
                     rect,
                     new Color(0.18f, 0.28f, 0.42f, 1f)));
@@ -203,14 +252,16 @@ namespace Ee4v.FaceExpression
             cell.RegisterCallback<DetachFromPanelEvent>(_ =>
                 UnityEngine.Object.DestroyImmediate(clip));
             parent.Add(cell);
+            parent.Add(result);
         }
 
         private static void BuildPresetMappingRow(VisualElement parent)
         {
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
             var row = new BlendShapePresetMappingRow(
-                () => { },
+                () => result.SetText("マッピングをメモリ内で変更しました"),
                 _ => null,
-                (_, __) => { });
+                (_, __) => result.SetText("マッピングを受け取りました"));
             row.Bind(new BlendShapeNameMapping
             {
                 meshName = "Body",
@@ -221,10 +272,12 @@ namespace Ee4v.FaceExpression
             row.style.width = 620f;
             row.style.height = 34f;
             parent.Add(row);
+            parent.Add(result);
         }
 
         private static void BuildBlendShapeRow(VisualElement parent)
         {
+            var favorites = new HashSet<string>(StringComparer.Ordinal);
             var items = BlendShapeRowItem.Create(
                 new[]
                 {
@@ -239,7 +292,8 @@ namespace Ee4v.FaceExpression
                 false);
             foreach (var item in items)
             {
-                var row = new BlendShapeRow();
+                var row = new BlendShapeRow(isFavorite: key => favorites.Contains(key),
+                    toggleFavorite: key => { if (!favorites.Remove(key)) { favorites.Add(key); } });
                 row.SetItem(item);
                 row.style.width = 720f;
                 parent.Add(row);
@@ -248,6 +302,7 @@ namespace Ee4v.FaceExpression
 
         private static void Build(VisualElement parent)
         {
+            var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
             var view = new FaceExpressionView(
                 new FaceExpressionViewText
                 {
@@ -342,6 +397,31 @@ namespace Ee4v.FaceExpression
             surface.style.width = 920f;
             surface.style.height = 640f;
             surface.Add(view);
+            surface.Add(result);
+            view.SaveRequested += () => result.SetText("サンプルをメモリ内で確定しました");
+            view.NewClipRequested += () => result.SetText("新規表情を要求しました（Storyでは保存しません）");
+            view.CopyClipRequested += clip => result.SetText("コピーを要求: " + clip?.name);
+            view.EditClipRequested += clip => result.SetText("編集を要求: " + clip?.name);
+            view.LibraryClipSelected += clip => { view.SetClip(clip); result.SetText("選択: " + clip?.name); };
+            view.ClipChanged += clip => result.SetText("Clip変更: " + clip?.name);
+            view.LibraryFolderRequested += folder => result.SetText("フォルダー選択: " + folder);
+            view.ChannelChanged += _ => result.SetText("BlendShapeをメモリ内で変更しました");
+            view.ConversionRequested += () => result.SetText("変換画面はExpressionConversionView Storyで確認できます");
+            view.BackRequested += () => result.SetText("ライブラリへ戻る操作を受け取りました");
+            view.ClearClipAssignmentsRequested += clip => result.SetText("割り当て解除: " + clip?.name);
+            view.AssignmentSelectionCleared += () => result.SetText("選択を解除しました");
+            view.PoseSelected += pose => result.SetText("Pose: " + pose);
+            view.PoseAddRequested += () => result.SetText("Poseの追加を要求しました");
+            view.PoseInsertRequested += pose => result.SetText("Poseの挿入: " + pose);
+            view.PoseMoveRequested += (from, to) => result.SetText("Poseの移動: " + from + " → " + to);
+            view.PoseNameChanged += (pose, name) => result.SetText("Pose名: " + name);
+            view.PoseSourceChanged += (pose, clip) => result.SetText("PoseのClip: " + clip?.name);
+            view.PoseRemoveRequested += pose => result.SetText("Poseの削除: " + pose);
+            view.TransitionDurationChanged += (pose, value) => result.SetText("遷移時間: " + value);
+            view.ResetViewRequested += () => result.SetText("カメラをリセットしました");
+            view.PlaybackChanged += () => result.SetText("再生状態を切り替えました");
+            view.TimeChanged += value => result.SetText("再生位置: " + value);
+            view.LoopChanged += value => result.SetText("ループ: " + value);
             parent.Add(surface);
         }
 

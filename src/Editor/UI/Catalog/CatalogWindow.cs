@@ -634,12 +634,33 @@ namespace Ee4v.UI
                 return;
             }
 
+            var rootGroup = (story.Group ?? string.Empty).Split('/')[0];
+            if (!RootGroupOrder.ContainsKey(rootGroup))
+            {
+                throw new InvalidOperationException("Unknown UI Story category: " + story.Group);
+            }
+            if (rootGroup != "Reference" && story.UsageLocations.Count == 0)
+            {
+                throw new InvalidOperationException("UI Story requires a production usage: " + story.Id);
+            }
+            var packageRoot = Ee4v.Core.EditorIntegration.PackageAssetApi.GetPackageRootAssetPath();
+            var package = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(packageRoot);
+            var physicalRoot = package != null ? package.resolvedPath : System.IO.Path.Combine(
+                System.IO.Directory.GetParent(Application.dataPath).FullName, packageRoot);
+            foreach (var usage in story.UsageLocations)
+            {
+                if (string.IsNullOrWhiteSpace(usage) || usage.EndsWith(".story.cs", StringComparison.OrdinalIgnoreCase) ||
+                    !System.IO.File.Exists(System.IO.Path.Combine(physicalRoot, usage)))
+                {
+                    throw new InvalidOperationException("Invalid UI Story usage for " + story.Id + ": " + usage);
+                }
+            }
+
             for (var i = 0; i < RegisteredStories.Count; i++)
             {
                 if (string.Equals(RegisteredStories[i].Id, story.Id, StringComparison.Ordinal))
                 {
-                    RegisteredStories[i] = story;
-                    return;
+                    throw new InvalidOperationException("Duplicate UI Story id: " + story.Id);
                 }
             }
 
@@ -668,7 +689,8 @@ namespace Ee4v.UI
                 return;
             }
 
-            _registrationsLoaded = true;
+            RegisteredStories.Clear();
+            RegisteredStyleSheetPaths.Clear();
             var registrarTypes = TypeCache.GetTypesDerivedFrom<ICatalogRegistrar>()
                 .Where(type => type != null && !type.IsAbstract && !type.IsInterface)
                 .OrderBy(type => type.FullName, StringComparer.Ordinal)
@@ -722,14 +744,6 @@ namespace Ee4v.UI
                         continue;
                     }
 
-                    for (var styleIndex = 0;
-                         styleIndex < story.StyleSheetPaths.Count;
-                         styleIndex++)
-                    {
-                        registry.RegisterStyleSheet(
-                            story.StyleSheetPaths[styleIndex]);
-                    }
-
                     registry.RegisterStory(new StoryRegistration(
                         story.Id,
                         story.Group,
@@ -741,10 +755,18 @@ namespace Ee4v.UI
                             UiStoryImplementationKind.Imgui
                                 ? ComponentImplementationKind.Imgui
                                 : ComponentImplementationKind.UiToolkit,
-                        (_, parent) => story.Build(parent),
+                        (_, parent) =>
+                        {
+                            foreach (var style in story.StyleSheetPaths)
+                            {
+                                UiStyleUtility.AddPackageStyleSheet(parent, style);
+                            }
+                            story.Build(parent);
+                        },
                         story.UsageLocations));
                 }
             }
+            _registrationsLoaded = true;
         }
 
         internal static IReadOnlyList<StoryRegistration>

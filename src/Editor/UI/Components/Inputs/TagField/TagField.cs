@@ -1,16 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ee4v.AssetManager.UI
+namespace Ee4v.UI
 {
-    internal sealed class AssetTagOption
+    public sealed class TagOption
     {
-        public AssetTagOption(string path, int usageCount)
+        public TagOption(string path, int usageCount)
         {
             Path = (path ?? string.Empty).Trim();
             UsageCount = Math.Max(0, usageCount);
@@ -20,13 +19,13 @@ namespace Ee4v.AssetManager.UI
         public int UsageCount { get; }
     }
 
-    internal sealed class AssetTagSelection
+    public sealed class TagSelection
     {
-        private readonly List<AssetTagOption> _options;
+        private readonly List<TagOption> _options;
         private readonly List<string> _selected;
 
-        public AssetTagSelection(
-            IReadOnlyList<AssetTagOption> options,
+        public TagSelection(
+            IReadOnlyList<TagOption> options,
             IReadOnlyList<string> selected)
         {
             _selected = Normalize(selected);
@@ -35,7 +34,7 @@ namespace Ee4v.AssetManager.UI
 
         public IReadOnlyList<string> Selected => _selected;
 
-        public IReadOnlyList<AssetTagOption> Filter(string query)
+        public IReadOnlyList<TagOption> Filter(string query)
         {
             var normalizedQuery = NormalizeValue(query);
             return _options
@@ -76,17 +75,17 @@ namespace Ee4v.AssetManager.UI
             }
             if (option == null)
             {
-                _options.Insert(0, new AssetTagOption(normalized, 0));
+                _options.Insert(0, new TagOption(normalized, 0));
             }
         }
 
-        private static List<AssetTagOption> NormalizeOptions(
-            IEnumerable<AssetTagOption> options,
+        private static List<TagOption> NormalizeOptions(
+            IEnumerable<TagOption> options,
             IEnumerable<string> selected)
         {
-            var result = new List<AssetTagOption>();
+            var result = new List<TagOption>();
             foreach (var option in options ??
-                     Array.Empty<AssetTagOption>())
+                     Array.Empty<TagOption>())
             {
                 if (option == null || option.Path.Length == 0 ||
                     result.Any(candidate => string.Equals(
@@ -109,7 +108,7 @@ namespace Ee4v.AssetManager.UI
                         normalized,
                         StringComparison.OrdinalIgnoreCase)))
                 {
-                    result.Add(new AssetTagOption(normalized, 0));
+                    result.Add(new TagOption(normalized, 0));
                 }
             }
 
@@ -150,40 +149,38 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetTagField : VisualElement
+    public sealed class TagField : VisualElement
     {
         private readonly Action<string> _selectTag;
         private readonly bool _isReadOnly;
         private readonly VisualElement _tags;
         private readonly UiButton _addButton;
-        private IReadOnlyList<AssetTagOption> _available =
-            Array.Empty<AssetTagOption>();
+        private IReadOnlyList<TagOption> _available =
+            Array.Empty<TagOption>();
         private IReadOnlyList<string> _values = Array.Empty<string>();
         private ISet<string> _readOnlyValues =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private Vector2? _pickerPanelPosition;
-        private AssetTagPickerWindow _pickerWindow;
+        private TagPickerWindow _pickerWindow;
 
-        internal bool IsPickerOpen { get; private set; }
+        public bool IsPickerOpen { get; private set; }
 
-        internal void ClosePicker() => _pickerWindow?.Close();
+        public void ClosePicker() => _pickerWindow?.Close();
 
-        public AssetTagField(
+        public TagField(
             Action<string> selectTag = null,
             bool isReadOnly = false)
         {
             _selectTag = selectTag;
             _isReadOnly = isReadOnly;
-            AddToClassList("ee4v-asset-manager-tag-field");
+            AddToClassList("ee4v-ui-tag-field");
             _tags = new VisualElement();
-            _tags.AddToClassList("ee4v-asset-manager-tag-field__tags");
+            _tags.AddToClassList("ee4v-ui-tag-field__tags");
             Add(_tags);
 
-            _addButton = AssetManagerControls.CreateIconTextButton(
-                I18N.Get("detail.item.tagsNew"),
-                "add.png",
-                OpenPicker,
-                "ee4v-asset-manager-tag-field__add");
+            _addButton = new UiButton(UiLocalization.Get("ui.tagsNew"), OpenPicker,
+                icon: FluentUiIcons.CreateState("add.png", UiSizeTokens.Size12));
+            _addButton.AddToClassList("ee4v-ui-tag-field__add");
             _addButton.SetEnabled(!isReadOnly);
             Add(_addButton);
             RegisterCallback<ClickEvent>(
@@ -196,11 +193,11 @@ namespace Ee4v.AssetManager.UI
         public IReadOnlyList<string> Values => _values;
 
         public void SetValues(
-            IReadOnlyList<AssetTagOption> available,
+            IReadOnlyList<TagOption> available,
             IReadOnlyList<string> values,
             IReadOnlyList<string> readOnlyValues = null)
         {
-            _available = available ?? Array.Empty<AssetTagOption>();
+            _available = available ?? Array.Empty<TagOption>();
             _readOnlyValues = new HashSet<string>(
                 readOnlyValues ?? Array.Empty<string>(),
                 StringComparer.OrdinalIgnoreCase);
@@ -232,7 +229,7 @@ namespace Ee4v.AssetManager.UI
                         readOnly || _isReadOnly
                             ? null
                             : string.Format(
-                                I18N.Get("detail.item.tagsRemove"),
+                                UiLocalization.Get("ui.tagsRemove"),
                                 tag)),
                     readOnly || _isReadOnly
                         ? (Action)null
@@ -242,11 +239,10 @@ namespace Ee4v.AssetManager.UI
                         : () => _selectTag(tag));
                 if (readOnly)
                 {
-                    chip.tooltip = I18N.Get(
-                        "detail.item.tagsSourceReadOnly");
+                    chip.tooltip = UiLocalization.Get("ui.tagsSourceReadOnly");
                 }
                 chip.AddToClassList(
-                    "ee4v-asset-manager-tag-field__tag");
+                    "ee4v-ui-tag-field__tag");
                 _tags.Add(chip);
             }
         }
@@ -269,7 +265,7 @@ namespace Ee4v.AssetManager.UI
             _pickerPanelPosition = null;
             // Set this before ShowPopup transfers focus to the child window.
             IsPickerOpen = true;
-            _pickerWindow = AssetTagPickerWindow.Show(
+            _pickerWindow = TagPickerWindow.Show(
                 _addButton,
                 panelPosition,
                 _available,
@@ -293,11 +289,11 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetTagPickerWindow : CustomPopupWindow
+    public sealed class TagPickerWindow : CustomPopupWindow
     {
         private const float PopupWidth = 340f;
         private const float PopupHeight = 400f;
-        private AssetTagSelection _selection;
+        private TagSelection _selection;
         private Action<IReadOnlyList<string>> _selectionChanged;
         private Action _closed;
         private SearchField _search;
@@ -305,18 +301,18 @@ namespace Ee4v.AssetManager.UI
         private bool _didClose;
         private bool _singleSelection;
 
-        public static AssetTagPickerWindow Show(
+        public static TagPickerWindow Show(
             VisualElement anchor,
             Vector2? panelPosition,
-            IReadOnlyList<AssetTagOption> options,
+            IReadOnlyList<TagOption> options,
             IReadOnlyList<string> selected,
             Action<IReadOnlyList<string>> selectionChanged,
             Action closed,
             bool singleSelection = false)
         {
             CloseExistingWindows();
-            var window = CreateInstance<AssetTagPickerWindow>();
-            window._selection = new AssetTagSelection(options, selected);
+            var window = CreateInstance<TagPickerWindow>();
+            window._selection = new TagSelection(options, selected);
             window._selectionChanged = selectionChanged;
             window._closed = closed;
             window._singleSelection = singleSelection;
@@ -339,29 +335,29 @@ namespace Ee4v.AssetManager.UI
         {
             var root = rootVisualElement;
             root.Clear();
-            AssetManagerWindowSession.PrepareRoot(root);
+            UiComposition.Prepare(root);
             root.focusable = true;
             root.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
             var popup = new CustomPopup(
-                I18N.Get("detail.item.tagsPickerTitle"),
-                closeTooltip: I18N.Get("detail.item.tagsClose"));
+                UiLocalization.Get("ui.tagsPickerTitle"),
+                closeTooltip: UiLocalization.Get("ui.tagsClose"));
 
             var body = new VisualElement();
             body.AddToClassList(
-                "ee4v-asset-manager-tag-picker__body");
+                "ee4v-ui-tag-picker__body");
             _search = new SearchField(new SearchFieldState(
-                placeholder: I18N.Get("detail.item.tagsSearch"),
+                placeholder: UiLocalization.Get("ui.tagsSearch"),
                 searchIconState:
-                    AssetManagerControls.LoadFluentIconState(
+                    FluentUiIcons.CreateState(
                         "search.png",
                         UiSizeTokens.Size14),
                 clearIconState:
-                    AssetManagerControls.LoadFluentIconState(
+                    FluentUiIcons.CreateState(
                         "dismiss.png",
                         UiSizeTokens.Size10)));
             _search.AddToClassList(
-                "ee4v-asset-manager-tag-picker__search");
+                "ee4v-ui-tag-picker__search");
             _search.ValueChanged += _ => RebuildOptions();
             body.Add(_search);
 
@@ -370,10 +366,10 @@ namespace Ee4v.AssetManager.UI
                 horizontalScrollerVisibility = ScrollerVisibility.Hidden
             };
             scroll.AddToClassList(
-                "ee4v-asset-manager-tag-picker__content");
+                "ee4v-ui-tag-picker__content");
             _tagContainer = scroll.contentContainer;
             _tagContainer.AddToClassList(
-                "ee4v-asset-manager-tag-picker__tags");
+                "ee4v-ui-tag-picker__tags");
             body.Add(scroll);
             popup.Content.Add(body);
             SetPopup(popup);
@@ -401,7 +397,7 @@ namespace Ee4v.AssetManager.UI
             {
                 _tagContainer.Add(CreateOptionTag(
                     string.Format(
-                        I18N.Get("detail.item.tagsCreate"),
+                        UiLocalization.Get("ui.tagsCreate"),
                         normalizedQuery),
                     () => Add(normalizedQuery),
                     true));
@@ -412,7 +408,7 @@ namespace Ee4v.AssetManager.UI
                 var option = options[index];
                 _tagContainer.Add(CreateOptionTag(
                     string.Format(
-                        I18N.Get("detail.item.tagsWithCount"),
+                        UiLocalization.Get("ui.tagsWithCount"),
                         option.Path,
                         option.UsageCount),
                     () => Add(option.Path),
@@ -425,10 +421,10 @@ namespace Ee4v.AssetManager.UI
                 var empty = new EmptyState(new EmptyStateState(
                     string.Empty,
                     string.IsNullOrWhiteSpace(query)
-                        ? I18N.Get("detail.item.tagsEmpty")
-                        : I18N.Get("detail.item.tagsNoMatch")));
+                        ? UiLocalization.Get("ui.tagsEmpty")
+                        : UiLocalization.Get("ui.tagsNoMatch")));
                 empty.AddToClassList(
-                    "ee4v-asset-manager-tag-picker__empty");
+                    "ee4v-ui-tag-picker__empty");
                 _tagContainer.Add(empty);
             }
         }
@@ -449,11 +445,11 @@ namespace Ee4v.AssetManager.UI
                         : null),
                 onClick: clicked);
             tag.AddToClassList(
-                "ee4v-asset-manager-tag-picker__tag");
+                "ee4v-ui-tag-picker__tag");
             if (create)
             {
                 tag.AddToClassList(
-                    "ee4v-asset-manager-tag-picker__tag--create");
+                    "ee4v-ui-tag-picker__tag--create");
             }
             if (!string.IsNullOrEmpty(tooltip))
             {
@@ -519,7 +515,7 @@ namespace Ee4v.AssetManager.UI
         private static void CloseExistingWindows()
         {
             var windows =
-                Resources.FindObjectsOfTypeAll<AssetTagPickerWindow>();
+                Resources.FindObjectsOfTypeAll<TagPickerWindow>();
             for (var index = 0; index < windows.Length; index++)
             {
                 windows[index]?.Close();

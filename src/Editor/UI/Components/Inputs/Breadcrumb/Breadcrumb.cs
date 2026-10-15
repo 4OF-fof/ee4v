@@ -4,11 +4,11 @@ using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ee4v.AssetManager.UI
+namespace Ee4v.UI
 {
-    internal sealed class AssetManagerBreadcrumbItem
+    public sealed class BreadcrumbItem
     {
-        public AssetManagerBreadcrumbItem(string label, Action action = null)
+        public BreadcrumbItem(string label, Action action = null)
         {
             Label = label ?? string.Empty;
             Action = action;
@@ -19,25 +19,25 @@ namespace Ee4v.AssetManager.UI
         public Action Action { get; }
     }
 
-    internal sealed class AssetManagerBreadcrumb : VisualElement, IDisposable
+    public sealed class Breadcrumb : VisualElement, IDisposable
     {
         private readonly UiTextElement _current;
-        private readonly AssetManagerBreadcrumbTooltip _tooltip;
-        private IReadOnlyList<AssetManagerBreadcrumbItem> _items =
-            Array.Empty<AssetManagerBreadcrumbItem>();
+        private readonly BreadcrumbTooltip _tooltip;
+        private IReadOnlyList<BreadcrumbItem> _items =
+            Array.Empty<BreadcrumbItem>();
 
-        public AssetManagerBreadcrumb()
+        public Breadcrumb()
         {
-            AddToClassList("ee4v-asset-manager__breadcrumbs");
+            AddToClassList("ee4v-ui-breadcrumbs");
             _current = UiTextFactory.Create(
                 string.Empty,
-                "ee4v-asset-manager__breadcrumb-current");
+                "ee4v-ui-breadcrumb-current");
             _current.pickingMode = PickingMode.Ignore;
             _current.SetColor(UiColorTokens.TextSoft);
             _current.SetWhiteSpace(WhiteSpace.NoWrap);
             Add(_current);
 
-            _tooltip = new AssetManagerBreadcrumbTooltip();
+            _tooltip = new BreadcrumbTooltip();
             RegisterCallback<PointerEnterEvent>(_ => ShowTooltip());
             RegisterCallback<PointerLeaveEvent>(_ =>
                 _tooltip.ScheduleHide());
@@ -45,10 +45,10 @@ namespace Ee4v.AssetManager.UI
         }
 
         public void SetItems(
-            IReadOnlyList<AssetManagerBreadcrumbItem> items)
+            IReadOnlyList<BreadcrumbItem> items)
         {
             _tooltip.Hide();
-            _items = items ?? Array.Empty<AssetManagerBreadcrumbItem>();
+            _items = items ?? Array.Empty<BreadcrumbItem>();
             _current.SetText(
                 _items.Count > 0
                     ? _items[_items.Count - 1]?.Label ?? string.Empty
@@ -81,7 +81,7 @@ namespace Ee4v.AssetManager.UI
                  ancestor != null;
                  ancestor = ancestor.parent)
             {
-                if (ancestor.ClassListContains("ee4v-asset-manager"))
+                if (ancestor.ClassListContains("ee4v-ui"))
                 {
                     overlayRoot = ancestor;
                 }
@@ -91,7 +91,7 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetManagerBreadcrumbTooltip
+    public sealed class BreadcrumbTooltip
         : VisualElement, IDisposable
     {
         private const long HideDelayMilliseconds = 120;
@@ -99,10 +99,10 @@ namespace Ee4v.AssetManager.UI
         private VisualElement _anchor;
         private IVisualElementScheduledItem _pendingHide;
 
-        public AssetManagerBreadcrumbTooltip()
+        public BreadcrumbTooltip()
         {
             AddToClassList(
-                "ee4v-asset-manager__breadcrumb-tooltip");
+                "ee4v-ui-breadcrumb-tooltip");
             style.display = DisplayStyle.None;
             RegisterCallback<PointerEnterEvent>(_ => CancelPendingHide());
             RegisterCallback<PointerLeaveEvent>(_ => ScheduleHide());
@@ -112,7 +112,7 @@ namespace Ee4v.AssetManager.UI
         public void Show(
             VisualElement root,
             VisualElement anchor,
-            IReadOnlyList<AssetManagerBreadcrumbItem> items)
+            IReadOnlyList<BreadcrumbItem> items)
         {
             if (root == null || anchor == null ||
                 items == null || items.Count <= 1)
@@ -127,14 +127,14 @@ namespace Ee4v.AssetManager.UI
             {
                 if (i > 0)
                 {
-                    var separator = AssetManagerControls.CreateIcon(
+                    var separator = new Icon(FluentUiIcons.CreateState(
                         "chevron_right.png",
                         UiSizeTokens.Size10,
-                        UiColorTokens.TextMuted);
+                        tintColor: UiColorTokens.TextMuted));
                     if (separator != null)
                     {
                         separator.AddToClassList(
-                            "ee4v-asset-manager__breadcrumb-tooltip-separator");
+                            "ee4v-ui-breadcrumb-tooltip-separator");
                         Add(separator);
                     }
                 }
@@ -178,14 +178,14 @@ namespace Ee4v.AssetManager.UI
         }
 
         private VisualElement CreateItem(
-            AssetManagerBreadcrumbItem item)
+            BreadcrumbItem item)
         {
-            item = item ?? new AssetManagerBreadcrumbItem(string.Empty);
+            item = item ?? new BreadcrumbItem(string.Empty);
             if (item.Action == null)
             {
                 var current = UiTextFactory.Create(
                     item.Label,
-                    "ee4v-asset-manager__breadcrumb-tooltip-current");
+                    "ee4v-ui-breadcrumb-tooltip-current");
                 current.SetColor(UiColorTokens.TextSoft);
                 current.SetWhiteSpace(WhiteSpace.NoWrap);
                 return current;
@@ -200,7 +200,7 @@ namespace Ee4v.AssetManager.UI
                     action();
                 });
             button.AddToClassList(
-                "ee4v-asset-manager__breadcrumb-tooltip-button");
+                "ee4v-ui-breadcrumb-tooltip-button");
             button.focusable = false;
             return button;
         }

@@ -70,8 +70,8 @@ namespace Ee4v.FaceExpression
         private readonly VisualElement _previewPane;
         private readonly VisualElement _leftPane;
         private readonly VisualElement _browserTabs;
-        private readonly UiButton _libraryMode;
-        private readonly UiButton _overviewMode;
+        private readonly SelectionTab _libraryMode;
+        private readonly SelectionTab _overviewMode;
         private readonly ActionBar _previewNavbar;
         private readonly VisualElement _assignmentPane;
         private readonly VisualElement _assignmentMatrix;
@@ -222,12 +222,12 @@ namespace Ee4v.FaceExpression
             content.AddToClassList("ee4v-face-expression__content");
             _leftPane = new VisualElement();
             _leftPane.AddToClassList("ee4v-face-expression__left-pane");
-            _browserTabs = new VisualElement();
+            _browserTabs = SelectionTab.CreateStrip();
             _browserTabs.AddToClassList("ee4v-face-expression__browser-tabs");
-            _libraryMode = new UiButton(I18N.Get("assignments.libraryView"),
-                () => SetAssignmentMatrixVisible(false), variant: UiButtonVariant.Ghost);
-            _overviewMode = new UiButton(I18N.Get("assignments.reviewList"),
-                () => SetAssignmentMatrixVisible(true), variant: UiButtonVariant.Ghost);
+            _libraryMode = new SelectionTab(I18N.Get("assignments.libraryView"), SelectionTabVariant.Underline,
+                () => SetAssignmentMatrixVisible(false));
+            _overviewMode = new SelectionTab(I18N.Get("assignments.reviewList"), SelectionTabVariant.Underline,
+                () => SetAssignmentMatrixVisible(true));
             _libraryMode.AddToClassList("ee4v-face-expression__browser-tab");
             _overviewMode.AddToClassList("ee4v-face-expression__browser-tab");
             _browserTabs.Add(_libraryMode);
@@ -372,7 +372,7 @@ namespace Ee4v.FaceExpression
             var timelineStack = new VisualElement();
             timelineStack.AddToClassList(
                 "ee4v-face-expression__timeline-stack");
-            _timeline = new Slider(0f, 1f);
+            _timeline = UiTextFactory.CreateSlider(lowValue: 0f, highValue: 1f);
             _timeline.AddToClassList(
                 "ee4v-face-expression__timeline");
             _timeline.RegisterValueChangedCallback(evt =>
@@ -1456,10 +1456,8 @@ namespace Ee4v.FaceExpression
             _rightPane.style.display = DisplayStyle.Flex;
             _assignmentActions.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
             _browserTabs.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
-            _libraryMode.EnableInClassList("ee4v-face-expression__browser-tab--selected", !confirming);
-            _overviewMode.EnableInClassList("ee4v-face-expression__browser-tab--selected", confirming);
-            _libraryMode.SetLabelColor(!confirming ? UiColorTokens.TextPrimary : UiColorTokens.TextMuted);
-            _overviewMode.SetLabelColor(confirming ? UiColorTokens.TextPrimary : UiColorTokens.TextMuted);
+            _libraryMode.SetSelected(!confirming);
+            _overviewMode.SetSelected(confirming);
             _assignmentLibrary.style.display = assigning ? DisplayStyle.Flex : DisplayStyle.None;
             var libraryHost = assigning ? _assignmentLibrary : _editorContent;
             if (_library.parent != libraryHost)
@@ -1905,6 +1903,8 @@ namespace Ee4v.FaceExpression
         private readonly UiButton _favorite;
         private readonly UiButton _groupToggle;
         private readonly Func<BlendShapeChannel, string> _favoriteKey;
+        private readonly Func<string, bool> _isFavorite;
+        private readonly Action<string> _toggleFavorite;
         private readonly UiTextElement _name;
         private readonly VisualElement _controls;
         private readonly Slider _slider;
@@ -1914,8 +1914,11 @@ namespace Ee4v.FaceExpression
         private bool _rendering;
         private bool _editingEnabled = true;
 
-        public BlendShapeRow(Func<BlendShapeChannel, string> favoriteKey = null)
+        public BlendShapeRow(Func<BlendShapeChannel, string> favoriteKey = null,
+            Func<string, bool> isFavorite = null, Action<string> toggleFavorite = null)
         {
+            _isFavorite = isFavorite ?? BlendShapeFavorites.Contains;
+            _toggleFavorite = toggleFavorite ?? (key => BlendShapeFavorites.Toggle(key));
             _favoriteKey = favoriteKey ?? (channel => string.IsNullOrEmpty(channel?.SourceAssetGuid) ? null
                 : BlendShapeFavorites.Key(channel.SourceAssetGuid, channel.SourceMeshLocalId, channel.Name));
             AddToClassList("ee4v-face-expression-row");
@@ -1931,8 +1934,8 @@ namespace Ee4v.FaceExpression
                 var channel = _item?.ActiveChannel;
                 if (_editingEnabled && channel != null)
                 {
-                    BlendShapeFavorites.Toggle(_favoriteKey(channel));
-                    if (panel == null) { RefreshFavoriteIcon(); }
+                    _toggleFavorite(_favoriteKey(channel));
+                    RefreshFavoriteIcon();
                 }
             }, icon: AvatarEditingUi.CreateBlendShapeFavoriteIcon(false), variant: UiButtonVariant.Ghost);
             _favorite.AddToClassList("ee4v-face-expression-row__favorite");
@@ -1958,22 +1961,18 @@ namespace Ee4v.FaceExpression
             _controls = new VisualElement();
             _controls.AddToClassList("ee4v-face-expression-row__controls");
             Add(_controls);
-            _slider = new Slider(0f, 100f);
-            _slider.AddToClassList("ee4v-face-expression-row__slider");
-            _slider.RegisterValueChangedCallback(evt => SetValue(evt.newValue));
-            _controls.Add(_slider);
-            _value = UiTextFactory.CreateFloatField();
-            _value.AddToClassList("ee4v-face-expression-row__value");
-            _value.RegisterValueChangedCallback(evt => SetValue(evt.newValue));
-            _controls.Add(_value);
-            _reset = new UiButton(I18N.Get("action.resetBlendShape"),
+            var scalar = new ScalarInput(0f, 100f, I18N.Get("action.resetBlendShape"),
                 () =>
                 {
                     var channel = _item?.ActiveChannel;
                     if (channel != null) { SetValue(channel.InitialValue); }
-                }, variant: UiButtonVariant.Ghost);
-            _reset.AddToClassList("ee4v-face-expression-row__reset");
-            _controls.Add(_reset);
+                });
+            _controls.Add(scalar);
+            _slider = scalar.Slider;
+            _slider.RegisterValueChangedCallback(evt => SetValue(evt.newValue));
+            _value = scalar.ValueField;
+            _value.RegisterValueChangedCallback(evt => SetValue(evt.newValue));
+            _reset = scalar.ResetButton;
         }
 
         public event Action<BlendShapeChannel> Changed;
@@ -2033,7 +2032,7 @@ namespace Ee4v.FaceExpression
         private void RefreshFavoriteIcon()
         {
             var key = _favoriteKey(_item?.ActiveChannel);
-            var favorite = BlendShapeFavorites.Contains(key);
+            var favorite = _isFavorite(key);
             _favorite.SetIcon(AvatarEditingUi.CreateBlendShapeFavoriteIcon(favorite));
             _favorite.tooltip = I18N.Get(favorite ? "favorites.remove" : "favorites.add");
         }

@@ -117,8 +117,10 @@ namespace Ee4v.UI
 
         private bool Accepts(GameObject prefab)
         {
-            return prefab == null ? _allowEmpty :
-                _candidatePaths.Contains(AssetDatabase.GetAssetPath(prefab));
+            if (prefab == null) { return _allowEmpty; }
+            var path = AssetDatabase.GetAssetPath(prefab);
+            return _candidates.Contains(prefab) ||
+                (!string.IsNullOrEmpty(path) && _candidatePaths.Contains(path));
         }
 
         private void OnDragUpdated(DragUpdatedEvent evt)

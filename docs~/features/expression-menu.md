@@ -1,5 +1,7 @@
 # Expression Menu
 
+Catalogの`Domain/ExpressionMenu`には実`ExpressionMenuView`、テンプレート画面、メニューのPreviewを登録します。専用Preview Sceneと一時的なDescriptor・Menu・MA Componentを使い、実アバターとライブラリへ保存しません。
+
 `src/Editor/Feature/Avatar/ExpressionMenu`の`Ee4v.ExpressionMenu.Editor`は、Unity 2022.3 / VRChatでギミック制作とExpression Menu編集を扱います。AssetManagerの「Expression Menu」カテゴリと単独の`ee4v/Window/Avatar/Expression Menu`が同じ`ExpressionMenuView`を使用します。個別編集の下部操作はAvatarEvaluationのプレビューへ接続し、MA Merge Armature・Bone Proxyを反映した再生とNDMF Preview対応の加工を表示します。実行時の動作確認はPlay Modeの既存GestureManager Controlsで行います。
 
 ## ギミックエディター

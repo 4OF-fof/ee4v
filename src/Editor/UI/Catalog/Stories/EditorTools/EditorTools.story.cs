@@ -47,6 +47,7 @@ namespace Ee4v.UI
         {
             return new UiStory(id, group, title, description, description, parent =>
             {
+                if (id == "selection-tab") { build(parent); return; }
                 var surface = new VisualElement();
                 surface.AddToClassList("ee4v-ui-editor-tools-story");
                 surface.AddToClassList("ee4v-ui-editor-tools-story--" + id);
@@ -56,6 +57,11 @@ namespace Ee4v.UI
                 enabled.SetValueWithoutNotify(true);
                 enabled.RegisterValueChangedCallback(evt => surface.SetEnabled(evt.newValue));
                 controls.Body.Add(new FormInput("有効", enabled));
+                var width = UiTextFactory.CreateSlider(lowValue: 320, highValue: 1200);
+                width.SetValueWithoutNotify(960);
+                width.showInputField = true;
+                width.RegisterValueChangedCallback(evt => surface.style.width = evt.newValue);
+                controls.Body.Add(new FormInput("表示幅", width));
                 parent.Add(controls);
                 var preview = new InfoCard(new InfoCardState("プレビュー"));
                 preview.Body.Add(surface);
@@ -92,10 +98,34 @@ namespace Ee4v.UI
 
         private static void BuildPrefabTab(VisualElement parent)
         {
-            var tab = new SelectionTab("Long sample prefab name");
+            var controls = new InfoCard(new InfoCardState("コントロール"));
+            var preview = new InfoCard(new InfoCardState("プレビュー"));
+            var label = new InputField(new InputFieldState("Long sample prefab name"));
+            controls.Body.Add(new FormInput("文字", label));
+            var variant = UiTextFactory.CreateEnumField(string.Empty, SelectionTabVariant.Default);
+            controls.Body.Add(new FormInput("種類", variant));
+            var toggle = UiTextFactory.CreateToggle();
+            controls.Body.Add(new FormInput("選択", toggle));
             var selected = false;
-            tab.RegisterCallback<ClickEvent>(_ => tab.SetSelected(selected = !selected));
-            parent.Add(tab);
+            void Render()
+            {
+                preview.Body.Clear();
+                var tab = new SelectionTab(label.Value, (SelectionTabVariant)variant.value);
+                tab.SetSelected(selected);
+                tab.RegisterCallback<ClickEvent>(_ =>
+                {
+                    selected = !selected;
+                    toggle.SetValueWithoutNotify(selected);
+                    tab.SetSelected(selected);
+                });
+                preview.Body.Add(tab);
+            }
+            label.ValueChanged += _ => Render();
+            variant.RegisterValueChangedCallback(_ => Render());
+            toggle.RegisterValueChangedCallback(evt => { selected = evt.newValue; Render(); });
+            parent.Add(controls);
+            parent.Add(preview);
+            Render();
         }
 
         private static void BuildBodyPartSelector(VisualElement parent)
@@ -144,21 +174,35 @@ namespace Ee4v.UI
             UnityEngine.Object.DestroyImmediate(part.GetComponent<Collider>());
         }
 
-        private static GameObject[] GetPrefabCandidates()
+        private static GameObject[] GetPrefabCandidates(VisualElement host)
         {
-            return AssetDatabase.FindAssets("t:Prefab").Take(12)
-                .Select(guid => AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid)))
-                .Where(prefab => prefab != null).ToArray();
+            var scene = EditorSceneManager.NewPreviewScene();
+            var candidates = new List<GameObject>();
+            for (var index = 0; index < 3; index++)
+            {
+                var sample = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                sample.name = "Sample Prefab " + (index + 1);
+                sample.hideFlags = HideFlags.HideAndDontSave;
+                SceneManager.MoveGameObjectToScene(sample, scene);
+                candidates.Add(sample);
+            }
+            host.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                if (evt.target != host) { return; }
+                foreach (var sample in candidates) { UnityEngine.Object.DestroyImmediate(sample); }
+                if (scene.IsValid()) { EditorSceneManager.ClosePreviewScene(scene); }
+            });
+            return candidates.ToArray();
         }
 
         private static void BuildPrefabSelector(VisualElement parent)
         {
-            parent.Add(new PrefabSelector(GetPrefabCandidates()));
+            parent.Add(new PrefabSelector(GetPrefabCandidates(parent)));
         }
 
         private static void BuildPrefabPreview(VisualElement parent)
         {
-            var preview = new PrefabThumbnail(GetPrefabCandidates().FirstOrDefault());
+            var preview = new PrefabThumbnail(GetPrefabCandidates(parent).FirstOrDefault());
             preview.AddToClassList("ee4v-ui-editor-tools-story__prefab-thumbnail");
             parent.Add(preview);
         }

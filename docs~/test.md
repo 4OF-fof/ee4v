@@ -144,7 +144,7 @@ ee4v・BLM・Eagleの契約は [datasources.md](./datasources.md) を参照し�
 | --- | --- | --- |
 | `UiTextFactoryTests.UiButton_UpdatesDisplayedText` | `UiButton`の表示文字を作成後に更新できる | Unityの文字描画問題を避ける共通境界である |
 | `UiStoryTests.Catalog_DiscoversExternalStoryProviders` | 別assemblyのStory providerを検出する | reflectionによる拡張境界を確認する |
-| `UiStoryTests.CatalogStories_DeclareUsageLocations` | 機能Storyが実使用箇所を宣言する | 未使用componentの残存を通常の表示確認では検出できない |
+| `UiStoryTests.CatalogStories_DeclareUsageLocations` | Reference以外のStoryが使用箇所を1件以上宣言する | 空の使用箇所を検出する。登録処理は別途、パスの存在・カテゴリ・ID重複を検証する |
 | `UiIconTests.UiBuiltinIconResolver_TryResolve_AllRegisteredIcons` | 全登録アイコンをUnity textureへ解決する | Unity versionで変わり得る外部アイコン契約である |
 | `UiIconTests.FluentUiIcons_LoadsBundledRuntimeIcons` | 同梱したFluent UI System IconsをすべてTextureへ解決する | サードパーティーアセットと実行時パスの契約である |
 

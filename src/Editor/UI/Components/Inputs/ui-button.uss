@@ -80,6 +80,22 @@
     justify-content: center;
 }
 
+.ee4v-ui-button.ee4v-ui-button--danger {
+    border-color: var(--ee4v-color-danger-action);
+    background-color: var(--ee4v-color-danger-action);
+}
+
+.ee4v-ui-button.ee4v-ui-button--danger:enabled:hover,
+.ee4v-ui-button.ee4v-ui-button--danger:enabled:focus {
+    border-color: var(--ee4v-color-danger-action-hover);
+    background-color: var(--ee4v-color-danger-action-hover);
+}
+
+.ee4v-ui-button.ee4v-ui-button--danger:enabled:active {
+    border-color: var(--ee4v-color-danger-action-pressed);
+    background-color: var(--ee4v-color-danger-action-pressed);
+}
+
 .ee4v-ui-button__content--with-icon > .ee4v-ui-button__icon {
     margin-right: var(--ee4v-space-sm);
 }

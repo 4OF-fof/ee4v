@@ -132,7 +132,7 @@ namespace Ee4v.AssetManager.UI
             _gridControls.style.display = DisplayStyle.Flex;
 
             _itemGrid.SetItems(items.Select(item =>
-                    new AssetItemGridEntry(
+                    new ImageGridEntry(
                         item.Id,
                         item.Name))
                 .ToArray());
@@ -170,7 +170,7 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("navigation.variants"), UiColorTokens.TextMuted);
             var entries = GetVisibleItems().Select(item => new
                 {
-                    Grid = new AssetItemGridEntry(item.Id, item.Name),
+                    Grid = new ImageGridEntry(item.Id, item.Name),
                     item.CreatedAt, item.UpdatedAt, FileCount = item.Files?.Count ?? 0
                 })
                 .Concat(GetVariants().Where(variant =>
@@ -179,7 +179,7 @@ namespace Ee4v.AssetManager.UI
                     variant.IsArchived && AssetManagerSearch.MatchesVariant(
                     variant, _search.Value, _viewState.SearchTargets)).Select(variant => new
                 {
-                    Grid = new AssetItemGridEntry(ArchiveVariantPrefix + variant.VariantId, variant.Name)
+                    Grid = new ImageGridEntry(ArchiveVariantPrefix + variant.VariantId, variant.Name)
                     {
                         PlaceholderIcon = icon
                     },
@@ -276,7 +276,7 @@ namespace Ee4v.AssetManager.UI
                 _viewState.IsItemSortReversed);
             if (variants.Count == 0 && !string.IsNullOrWhiteSpace(_search.Value))
             {
-                _itemGrid.SetItems(Array.Empty<AssetItemGridEntry>());
+                _itemGrid.SetItems(Array.Empty<ImageGridEntry>());
                 _content.Add(AssetManagerControls.CreateEmptyState(
                     I18N.Get("notice.noVariants"), "cube.png"));
                 return;
@@ -284,13 +284,13 @@ namespace Ee4v.AssetManager.UI
             var icon = AssetManagerControls.LoadFluentIconState(
                 "cube.png", UiSizeTokens.Size24,
                 I18N.Get("navigation.variants"), UiColorTokens.TextMuted);
-            var createCard = new AssetItemGridEntry("create-original-work", I18N.Get("workflow.original.createCard"))
+            var createCard = new ImageGridEntry("create-original-work", I18N.Get("workflow.original.createCard"))
             {
                 PlaceholderIcon = AssetManagerControls.LoadFluentIconState(
                     "add.png", UiSizeTokens.Size24, I18N.Get("workflow.original.create"), UiColorTokens.TextMuted),
                 Activate = StartOriginalAssetCreation
             };
-            _itemGrid.SetItems(new[] { createCard }.Concat(variants.Select(variant => new AssetItemGridEntry(
+            _itemGrid.SetItems(new[] { createCard }.Concat(variants.Select(variant => new ImageGridEntry(
                 variant.VariantId, variant.IsArchived ? variant.Name + " (" + I18N.Get("detail.item.archived") + ")" : variant.Name)
             {
                 PlaceholderIcon = icon
@@ -433,7 +433,7 @@ namespace Ee4v.AssetManager.UI
         {
             _gridSizeSlider.SetRangeWithoutNotify(
                 value,
-                AssetItemGridView.MaximumItemsPerRow);
+                ImageGridView.MaximumItemsPerRow);
             _gridSizeSlider.SetValueWithoutNotify(
                 _itemGrid.ItemsPerRow);
         }

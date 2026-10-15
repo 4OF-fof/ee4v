@@ -104,6 +104,7 @@ namespace Ee4v.AssetManager.UI
 
         private string GetWorkingAssetPath()
         {
+            if (_previewOnly) { return "Preview"; }
             return _avatarContext.PrefabAsset == null
                 ? string.Empty
                 : AssetDatabase.GetAssetPath(_avatarContext.PrefabAsset);

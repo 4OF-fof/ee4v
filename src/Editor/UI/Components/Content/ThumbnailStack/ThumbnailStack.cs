@@ -5,9 +5,9 @@ using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ee4v.AssetManager.UI
+namespace Ee4v.UI
 {
-    internal sealed class AssetThumbnailStack : VisualElement, IDisposable
+    public sealed class ThumbnailStack : VisualElement, IDisposable
     {
         private const int MaximumThumbnailCount = 3;
         private const float MinimumSize = 48f;
@@ -22,7 +22,7 @@ namespace Ee4v.AssetManager.UI
         private readonly List<ThumbnailSlot> _slots =
             new List<ThumbnailSlot>();
 
-        public AssetThumbnailStack(
+        public ThumbnailStack(
             CachedImageCache imageCache,
             IReadOnlyList<string> itemIds)
         {
@@ -31,7 +31,7 @@ namespace Ee4v.AssetManager.UI
                 throw new ArgumentNullException(nameof(imageCache));
             }
 
-            AddToClassList("ee4v-asset-manager__thumbnail-stack");
+            AddToClassList("ee4v-ui-thumbnail-stack");
             var safeIds = itemIds ?? Array.Empty<string>();
             var firstIndex = Math.Max(
                 0,
@@ -137,16 +137,16 @@ namespace Ee4v.AssetManager.UI
             {
                 ItemId = itemId ?? string.Empty;
                 AddToClassList(
-                    "ee4v-asset-manager__thumbnail-stack-image");
+                    "ee4v-ui-thumbnail-stack-image");
                 var placeholder = new VisualElement();
                 placeholder.AddToClassList(
-                    "ee4v-asset-manager__thumbnail-placeholder");
+                    "ee4v-ui-thumbnail-placeholder");
                 _image = new CachedImage(imageCache)
                 {
                     scaleMode = ScaleMode.ScaleAndCrop
                 };
                 _image.AddToClassList(
-                    "ee4v-asset-manager__thumbnail-image");
+                    "ee4v-ui-thumbnail-image");
                 Placeholder.Add(placeholder);
                 Content.Add(_image);
                 Refresh();

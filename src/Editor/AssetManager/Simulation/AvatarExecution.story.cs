@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Ee4v.UI;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ee4v.AssetManager.Simulation
@@ -14,7 +15,7 @@ namespace Ee4v.AssetManager.Simulation
             {
                 new UiStory("avatar-execution-view", "Domain/AssetManager/Containers",
                     "AvatarExecutionView", "PlayModeの操作確認用にアバター描画とGestureManagerの入力をまとめます。",
-                    "対象がない状態の実Viewを表示します。StoryからPlay ModeやSceneを変更しないよう操作を無効にします。",
+                    "専用Preview Sceneのダミーアバターで、手の入力状態をメモリ内だけで切り替えます。",
                     Build, dependencies: new[] { "PreviewPane", "GestureManager" },
                     usageLocations: new[]
                     {
@@ -22,11 +23,12 @@ namespace Ee4v.AssetManager.Simulation
                     },
                     styleSheetPaths: new[]
                     {
+                        "Editor/AssetManager/Simulation/avatar-execution.uss",
                         "Editor/AssetManager/UI/asset-modification-workflow.uss",
                         "Editor/AssetManager/UI/Components/Workflow/workflow-story.uss"
                     }),
                 new UiStory("avatar-lighting-view", "Domain/AssetManager/Containers", "AvatarLightingView",
-                    "プレビューを追加・削除し、右ペインのライト設定と保存したプリセットで比較します。", "対象がない実Viewのプレビュー操作、プリセットとライト設定を表示します。",
+                    "プレビューを追加・削除し、右ペインのライト設定と保存したプリセットで比較します。", "専用Preview Sceneのダミーアバターと、メモリ内のプリセットで比較します。",
                     BuildLighting, usageLocations: new[]
                     { "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs" },
                     styleSheetPaths: new[]
@@ -42,9 +44,10 @@ namespace Ee4v.AssetManager.Simulation
             var surface = new VisualElement();
             surface.AddToClassList("ee4v-workflow-story");
             surface.AddToClassList("ee4v-workflow-story--avatar-execution-view");
-            var view = new AvatarExecutionView(null, () => { });
-            view.SetEnabled(false);
-            view.RegisterCallback<DetachFromPanelEvent>(_ => view.Dispose());
+            surface.style.width = 1360;
+            var avatar = CreateAvatar(surface);
+            var view = new AvatarExecutionView(avatar, parent.MarkDirtyRepaint, previewOnly: true);
+            view.RegisterCallback<DetachFromPanelEvent>(evt => { if (evt.target == view) { view.Dispose(); } });
             surface.Add(view);
             parent.Add(surface);
         }
@@ -54,11 +57,28 @@ namespace Ee4v.AssetManager.Simulation
             var surface = new VisualElement();
             surface.AddToClassList("ee4v-workflow-story");
             surface.AddToClassList("ee4v-workflow-story--avatar-lighting-view");
-            var view = new AvatarLightingView(null, () => { });
-            view.SetEnabled(false);
-            view.RegisterCallback<DetachFromPanelEvent>(_ => view.Dispose());
+            surface.style.width = 1360;
+            var avatar = CreateAvatar(surface);
+            var view = new AvatarLightingView(avatar, parent.MarkDirtyRepaint, previewOnly: true);
+            view.RegisterCallback<DetachFromPanelEvent>(evt => { if (evt.target == view) { view.Dispose(); } });
             surface.Add(view);
             parent.Add(surface);
+        }
+
+        private static GameObject CreateAvatar(VisualElement surface)
+        {
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
+            var avatar = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            avatar.name = "Sample Avatar";
+            avatar.hideFlags = HideFlags.HideAndDontSave;
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(avatar, scene);
+            surface.RegisterCallback<DetachFromPanelEvent>(evt =>
+            {
+                if (evt.target != surface) { return; }
+                UnityEngine.Object.DestroyImmediate(avatar);
+                if (scene.IsValid()) { UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(scene); }
+            });
+            return avatar;
         }
     }
 }

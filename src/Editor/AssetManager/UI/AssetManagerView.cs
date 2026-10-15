@@ -349,9 +349,9 @@ namespace Ee4v.AssetManager.UI
         private readonly VisualElement _navigation;
         private readonly VisualElement _content;
         private readonly VisualElement _detail;
-        private readonly AssetItemGridView _itemGrid;
+        private readonly ImageGridView _itemGrid;
         private VisualElement _toolbar;
-        private AssetManagerGridSizeSlider _gridSizeSlider;
+        private StepperSlider _gridSizeSlider;
         private VisualElement _gridControls;
         private SearchField _search;
         private AssetTagListView _tagList;
@@ -360,10 +360,10 @@ namespace Ee4v.AssetManager.UI
         private UiButton _reloadButton;
         private UiButton _backButton;
         private UiButton _forwardButton;
-        private AssetManagerBreadcrumb _breadcrumbs;
+        private Breadcrumb _breadcrumbs;
 
-        private AssetThumbnailStack _detailThumbnailStack;
-        private AssetThumbnailStack _itemOverviewThumbnailStack;
+        private ThumbnailStack _detailThumbnailStack;
+        private ThumbnailStack _itemOverviewThumbnailStack;
         private SearchableFileTree _fileTree;
         private ScrollView _itemDetailPane;
         private IReadOnlyList<FileTreeSelection> _fileTreeSelections =
@@ -422,7 +422,7 @@ namespace Ee4v.AssetManager.UI
             }
             else if (ShowsMain)
             {
-                _itemGrid = new AssetItemGridView(_imageCache);
+                _itemGrid = new ImageGridView(_imageCache);
                 _itemGrid.SelectionChanged += SelectItems;
                 _itemGrid.ItemDoubleClicked += OpenItemDetail;
                 _itemGrid.ContextMenuRequested += ShowItemContextMenu;

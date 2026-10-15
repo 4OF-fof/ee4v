@@ -13,7 +13,7 @@ namespace Ee4v.AvatarInfo
         public int Order => 204;
         public IReadOnlyList<UiStory> GetStories()
         {
-            return new[] { new UiStory("avatar-info", "Domain/AvatarInfo/Displays", "AvatarInfoView",
+            return new[] { new UiStory("avatar-info", "Domain/AvatarInfo", "AvatarInfoView",
                 "名前編集、サンプル一覧からのID選択、装着警告、パラメーター使用量、手動測定、ツリーマップ・Prefab別カード・ボーンとPhysBoneの親子ツリー・比較バー・Constraintの種類別表示と依存グラフ、取得日時を確認できます。SDKへの通信は行いません。",
                 "AvatarInfoの詳細表示です。", BuildOverview,
                 usageLocations: new[] { "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",

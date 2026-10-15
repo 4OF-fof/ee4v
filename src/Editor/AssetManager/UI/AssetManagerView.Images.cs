@@ -222,17 +222,17 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private AssetThumbnailStack CreateDetailThumbnailStack(
+        private ThumbnailStack CreateDetailThumbnailStack(
             IReadOnlyList<string> itemIds)
         {
-            var stack = new AssetThumbnailStack(_imageCache, itemIds);
+            var stack = new ThumbnailStack(_imageCache, itemIds);
             _detailThumbnailStack = stack;
             return stack;
         }
 
         private async Task LoadDetailThumbnailsAsync(
             IReadOnlyList<AssetItem> items,
-            AssetThumbnailStack thumbnailStack)
+            ThumbnailStack thumbnailStack)
         {
             var firstIndex = Math.Max(0, items.Count - 3);
             var cancellation = new CancellationTokenSource();
@@ -284,7 +284,7 @@ namespace Ee4v.AssetManager.UI
 
         private async Task LoadItemOverviewThumbnailAsync(
             AssetItem item,
-            AssetThumbnailStack thumbnailStack)
+            ThumbnailStack thumbnailStack)
         {
             var cancellation = new CancellationTokenSource();
             _itemOverviewThumbnailCancellation = cancellation;
@@ -399,7 +399,7 @@ namespace Ee4v.AssetManager.UI
             }
         }
 
-        private async Task LoadDerivedVariantThumbnailAsync(AssetItemGridCard card, DerivedAssetInfo variant)
+        private async Task LoadDerivedVariantThumbnailAsync(ImageGridCard card, DerivedAssetInfo variant)
         {
             var saved = _variantManager?.GetVariants().FirstOrDefault(candidate => candidate.Id == variant.VariantId);
             if (saved == null) { return; }
@@ -415,7 +415,7 @@ namespace Ee4v.AssetManager.UI
                 var thumbnail = await pending;
                 if (_disposed || cancellation.IsCancellationRequested) { return; }
                 _imageCache.SetSource(variant.AssetPath, thumbnail.Data);
-                card.SetState(new AssetItemGridEntry(variant.AssetPath, variant.Name), selected: false);
+                card.SetState(new ImageGridEntry(variant.AssetPath, variant.Name), selected: false);
             }
             catch (OperationCanceledException) { }
             catch (Exception exception)

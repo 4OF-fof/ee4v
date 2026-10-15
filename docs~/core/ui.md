@@ -6,11 +6,27 @@
 
 Catalogは利用場面ではなく、部品が公開する責務で分類します。ユーザーの操作や値を受け取る部品は`Inputs`、情報を描画する部品は`Displays`、呼び出し側の子要素を配置する部品は`Containers`、複数項目を管理する部品は`Collections`に置きます。
 
+使用する機能や使用箇所の数は、汎用部品をDomainへ置く理由にしません。ID、文字、画像、値、callbackだけを受け取る部品は`Ee4v.UI.Editor`へ置き、Item・File・Gestureなどのドメインデータの取得、変換、保存は利用側に残します。
+
+| 責務 | 汎用部品 |
+|---|---|
+| Inputs | `EnumFormInput`、`StepperSlider`、`ScalarInput`、`TagField`、`Breadcrumb` |
+| Displays | `MetricDisplay`、`KeyValueRow`、`ThumbnailStack`、`MessagePanel` |
+| Containers | `DetailHeader`、`DetailSection`、`SettingList` |
+| Inputs / 編集行 | `SettingRow` |
+| Collections / 選択カード | `ImageGridView` / `ImageGridCard` |
+
+`FormInput<TInput>`は型付きの`Input`を公開する配置部品です。文字入力は`FormInput<InputField>`へまとめ、値・読み取り専用・フォーカスは`Input`へ設定します。`EnumFormInput`は標準EnumFieldまたは表示名formatter付きPopupFieldを配置し、独自の入力枠を重ねません。`StepperSlider`は整数値と範囲・増減操作を公開します。`ScalarInput`はSlider、FloatField、任意単位、リセットの配置を共有し、値の同期・丸め・保存は利用側が担当します。
+
+`UiButton.SetTone`は通常・Primary・Dangerを切り替えます。Primaryは青い操作面、Dangerは不透明な赤い操作面と白文字を共有します。無効状態との連動には`SetPrimaryActionEnabled`を使用します。情報通知は`MessagePanel`へ統一し、`MessagePanelDensity.Compact`で小さい余白と強調線を使用します。
+
+`SelectionTabVariant.Underline`と`SelectionTab.CreateStrip`は画面内の下線型タブを共有します。Default・Primaryは構成Prefabなどのカード型タブです。各タブはフォーカスでき、Enter・Spaceからクリックと同じ操作を通知します。Project Tabsのピン留め・並べ替え・閉じる操作は機能側へ残します。`UiTextFactory.CreateSwitch`は標準Toggleと同じ値通知・bindingを持つSwitch表示です。
+
 Catalogのナビゲーションではカテゴリ名も選択できます。カテゴリページには分類の説明と、下位カテゴリを含めて属しているStoryの名称・概要を表示します。一覧から各Storyへ移動できます。
 
 Storyページは詳細カードと実部品の描画領域を分離し、内容の高さを維持してスクロールします。必要な最小幅がウィンドウを超える部品は横スクロールで確認できます。親のサイズに追従するプレビューや画面全体の部品は、Story側で高さを持つ外枠へ配置します。
 
-Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します。共通部品のスタイルはこの入口から読み込み、Storyが別途登録する機能固有スタイルを追加します。
+Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します。共通部品のスタイルはこの入口から読み込み、機能固有の`styleSheetPaths`はそのStoryの描画領域へだけ追加します。他のStoryが登録した機能スタイルには依存しません。
 
 ### Reference
 
@@ -35,7 +51,7 @@ Catalogのrootにも実画面と同じ`UiComposition.Prepare`を適用します�
 - `SelectionTab`は名称と選択状態を持つタブです。通常と強調用の`SelectionTabVariant`を持ち、クリック時の操作は利用側が接続します。
 - `BodyPartSelector`はCoreの`BodyPartCategory`を使う部位選択です。選択通知と利用可否の判定は利用側が渡します。`Refresh`は既存のボタンと文字要素を保持し、選択状態と利用可否だけを更新します。
 - `PrefabSelector`は候補Prefabの選択とドラッグの受け入れを行います。constructorの任意の`showPicker`には、anchor・現在値・選択確定callbackを受け取る機能固有Pickerを指定できます。callbackで受け取る値にも同じ候補の検証を適用し、ドラッグの受け入れと値変更通知を共有します。未指定時は共通のPickerを使用します。`ShowPicker`は同じ候補を検索付きの一覧・Gridから選択する入口で、候補取得や保存は行いません。共通PickerのWindowは内部実装です。
-- `AssetPicker.Show(anchor, type, reference, usageContext)`はMaterial・Texture・AnimationClipなどを探して既存の入力欄へドラッグするProject assetブラウザーPopupの入口です。`CreateButton(type, getReference, getUsageContext)`は同じPopupの起動ボタンを返し、押した時点の参照元・contextを取得します。`GetReferenceType(type)`はMaterial・Textureに対してMaterial、AnimationClipと種類「すべて」に対してnull、それ以外に対して候補の型を返します。起動時の参照元はその型の保存済みassetだけを受け入れます。統合ee4vでは編集中画面の左のカテゴリ一覧の最下部に「AssetManagerを開く」と縦に並べて配置します。Popupで型を変更でき、Material・Textureの参照元にはMaterialの標準ObjectFieldを使用します。MaterialとTextureの切り替えでは同じ参照Materialを保持します。AnimationClipでは参照欄を表示せず、すべて・表情の分類ドロップダウンを表示します。分類は候補metadataを使い、所属カード・候補一覧・件数のすべてへ適用します。分類選択肢はenumと表示名で定義し、追加分類を拡張できます。型と参照元・分類のラベル幅は文字に合わせ、入力欄との間隔は共通の余白に揃えます。名前・所属名・path・GUIDで検索できます。Materialの順位は同じUV0配置でのMaterial使用、同一主Texture参照、参照元自身の同一フォルダー、同一Item所属の順です。Textureの順位は同じUV0のMaterialが参照するTexture、参照元の主Texture、参照元の他のTexture property参照、同じフォルダー、同じItemの順です。Textureのフォルダー判定には参照元Materialと参照Textureの親フォルダーを使います。複数に該当する場合は最優先の理由を使い、いずれかに一致した候補を関連アセットに含めます。AnimationClipは関連順位と関連アセットカードを持ちません。関連アセットの一覧では関連順位を先に適用し、同順位では所属・フォルダー・名前で並べます。通常の所属内一覧と分類なしの一覧は同一フォルダーごとの見出しでまとめ、フォルダーpathと各グループ内の候補名の順に並べます。未登録の所属を推測で補いません。候補はvirtualized ListViewへ表示し、ファイルごとの候補読み込みとPrefab/ModelのUV調査をEditor tickへ分割します。一つの大きなファイルの解析中は処理時間がtickの目標を超える場合があります。Catalogの`Overlays/AssetPicker`へ登録します。
+- `AssetPicker.Show(anchor, type, reference, usageContext)`はMaterial・Texture・AnimationClipなどを探して既存の入力欄へドラッグするProject assetブラウザーPopupの入口です。`CreateButton(type, getReference, getUsageContext)`は同じPopupの起動ボタンを返し、押した時点の参照元・contextを取得します。`GetReferenceType(type)`はMaterial・Textureに対してMaterial、AnimationClipと種類「すべて」に対してnull、それ以外に対して候補の型を返します。起動時の参照元はその型の保存済みassetだけを受け入れます。統合ee4vでは編集中画面の左のカテゴリ一覧の最下部に「AssetManagerを開く」と縦に並べて配置します。Popupで型を変更でき、Material・Textureの参照元にはMaterialの標準ObjectFieldを使用します。MaterialとTextureの切り替えでは同じ参照Materialを保持します。AnimationClipでは参照欄を表示せず、すべて・表情の分類ドロップダウンを表示します。分類は候補metadataを使い、所属カード・候補一覧・件数のすべてへ適用します。分類選択肢はenumと表示名で定義し、追加分類を拡張できます。型と参照元・分類のラベル幅は文字に合わせ、入力欄との間隔は共通の余白に揃えます。名前・所属名・path・GUIDで検索できます。Materialの順位は同じUV0配置でのMaterial使用、同一主Texture参照、参照元自身の同一フォルダー、同一Item所属の順です。Textureの順位は同じUV0のMaterialが参照するTexture、参照元の主Texture、参照元の他のTexture property参照、同じフォルダー、同じItemの順です。Textureのフォルダー判定には参照元Materialと参照Textureの親フォルダーを使います。複数に該当する場合は最優先の理由を使い、いずれかに一致した候補を関連アセットに含めます。AnimationClipは関連順位と関連アセットカードを持ちません。関連アセットの一覧では関連順位を先に適用し、同順位では所属・フォルダー・名前で並べます。通常の所属内一覧と分類なしの一覧は同一フォルダーごとの見出しでまとめ、フォルダーpathと各グループ内の候補名の順に並べます。未登録の所属を推測で補いません。候補はvirtualized ListViewへ表示し、ファイルごとの候補読み込みとPrefab/ModelのUV調査をEditor tickへ分割します。一つの大きなファイルの解析中は処理時間がtickの目標を超える場合があります。Catalogの`Inputs/AssetPicker`へ登録します。
 - `TagPill`は任意の選択操作と削除操作を持つタグ入力です。pill形と薄い面を保ち、境界線と選択操作にはInputFieldと同じフォーカス色を使用します。
 
 種類の選択肢は「すべて」「Material」「Texture」「AnimationClip」です。「すべて」は`UnityEngine.Object`で指定し、`GetReferenceType`はnullを返します。参照元と表情分類は表示せず、Item内の取り込み済みアセットを種類横断で一覧にします。候補には型名も表示します。種類変更は同じPopup内で候補取得を切り替え、ウィンドウと主要UI要素を作り直しません。位置・サイズ・検索文字・開いているItemを保持し、切り替え後の候補がないItemは取得完了後にカード一覧へ戻します。取得中の旧型の列挙は破棄し、候補キャッシュと取得済みサムネイルを再利用します。Material・Texture間は参照Materialを保持し、関連アセットは参照元がなくなる種類へ切り替えた際に解除します。右ペインは選択アセットの型に応じてMaterial・Texture・AnimationClipなどの表示を切り替えます。「すべて」で選択したMaterialにも大きなMaterialプレビューと主Texture切り替えを使用し、Material下の情報欄は表示しません。
@@ -156,7 +172,7 @@ AssetManagerのタグ選択画面、Target選択画面、コレクション作�
 
 独立したEditorWindowまたは機能固有のVisualElementは、実使用するViewを`IUiStoryProvider`から組み立てます。Story専用の複製UIは作らず、保存や外部Sourceの変更は行いません。独立画面は`Domain/<feature>`に配置します。画面内で再利用する機能固有UIはCoreと同じ責務で分類し、`Domain/<feature>/Inputs`、`Displays`、`Containers`、`Collections`に配置します。
 
-Storyは独立画面または単独で再利用するVisualElementを一単位とします。同じ部品の状態違いは一つのStoryで扱い、異なる部品や別Windowを確認するためのStoryへまとめません。配置部品の責務を示すために実際の子部品を組み込むことは許容します。Factory、状態型、部品内部だけで使う実装には単独のStoryを作りません。
+Storyは独立画面または単独で再利用するVisualElementを一単位とします。同じ部品の状態違いは一つのStoryで扱い、異なる部品や別Windowを確認するためのStoryへまとめません。配置部品の責務を示すために実際の子部品を組み込むことは許容します。Factory、状態型、部品内部だけで使う実装には単独のStoryを作りません。登録時にはカテゴリ、IDの重複、実在する使用ファイルを検証し、Story自身を使用箇所として受け入れません。
 
 Domain固有UIもCoreと同じ視覚上の役割へ揃えます。入力と操作は`Button`、`InputField`と同じ境界線、面、focus、hoverの状態を使用します。一覧の行は通常時を透過、hover時を`surface-hover`、選択時を`focus`の境界線と`selection-soft`の面にします。Card、Panel、Collectionは`border-default`、`surface-subtle`、`radius-2xl`を基本とします。機能固有の配置、意味を持つ状態色、3D PreviewやThumbnailの描画面はこの規則の対象外です。
 
@@ -169,9 +185,8 @@ Catalog上の分類とコード上の分割は別に扱います。コードで�
 | Core Settings | `Domain/Core/Settings UI` |
 | AssetManagerの画面とPopup | `Domain/AssetManager/*` |
 | AssetManagerの操作、選択、値入力、編集行 | `Domain/AssetManager/Inputs/*` |
-| AssetManagerの通知、画像、詳細値 | `Domain/AssetManager/Displays/*` |
-| AssetManagerの詳細領域と設定一覧 | `Domain/AssetManager/Containers/*` |
-| AssetManagerのGrid、File TreeとTag一覧 | `Domain/AssetManager/Collections/*` |
+| AssetManagerの統合編集、Prefab選択、検索条件、Target Popup | `Domain/AssetManager/*` |
+| AssetManagerのFile TreeとTag一覧 | `Domain/AssetManager/Collections/*` |
 | ItemStyleのProject・Hierarchy編集 | `Domain/ProjectStyle/Project Style Window`、`Domain/HierarchyStyle/Hierarchy Style Window` |
 | Hidden Objects | `Domain/HierarchyStyle/Hidden Objects`、`Domain/HierarchyStyle/Inputs/*`、`Domain/HierarchyStyle/Containers/*` |
 | Scene Switcher | `Domain/SceneSwitcher/SceneSwitcherView`、`Domain/SceneSwitcher/Inputs/SceneSwitcherRow` |
@@ -179,6 +194,9 @@ Catalog上の分類とコード上の分割は別に扱います。コードで�
 | Face Expressionの各画面と設定画面 | `Domain/FaceExpression/*` |
 | パーツ・体型編集 | `Domain/AvatarParts/Containers/AvatarPartsEditor` |
 | Material編集と埋め込みInspector | `Domain/AvatarMaterials/Containers/AvatarMaterialsEditor`、`Domain/AvatarMaterials/Inputs/EmbeddedMaterialInspector` |
-| アバター詳細と性能結果 | `Domain/AvatarInfo/Displays/AvatarInfoView` |
+| アバター詳細の表示・名前とIDの編集 | `Domain/AvatarInfo/AvatarInfoView` |
+| Expression Menuの画面・項目設定・動作Preview | `Domain/ExpressionMenu/*` |
 | Face Expressionの編集CellとRow | `Domain/FaceExpression/Inputs/*` |
 | Window Groups | `Domain/WindowGroup/Window Groups` |
+
+編集・SimulationのStoryは専用Preview Sceneのダミーアバター、一時的な画像・Clip・Mesh、メモリ上のManager・設定・ライティングプリセットを使います。Project assetを検索する部品の通常動作とは区別します。表情変換の`previewOnly`は変換結果をcallbackへ渡した後に破棄し、保存ダイアログとAsset作成を行いません。統合編集画面のプレビューは実Managerの取得と書き込み操作を無効にします。SimulationのプレビューはPlay Modeへ入らず、実GestureManagerやプリセット保存先へ接続しません。

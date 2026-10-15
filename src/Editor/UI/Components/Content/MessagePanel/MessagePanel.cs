@@ -6,6 +6,8 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.UI
 {
+    public enum MessagePanelDensity { Default, Compact }
+
     public enum MessageSeverity
     {
         Info,
@@ -38,9 +40,10 @@ namespace Ee4v.UI
         private readonly ScrollView _details;
         private readonly VisualElement _detailsRow;
 
-        public MessagePanel(MessagePanelState state = null)
+        public MessagePanel(MessagePanelState state = null, MessagePanelDensity density = MessagePanelDensity.Default)
         {
             AddToClassList(RootClassName);
+            EnableInClassList(RootClassName + "--compact", density == MessagePanelDensity.Compact);
             _icon = new Icon();
             _icon.AddToClassList(RootClassName + "__icon");
             var content = new VisualElement();
@@ -78,6 +81,11 @@ namespace Ee4v.UI
         public UiTextElement MessageText { get; }
         public VisualElement Actions { get; }
         public VisualElement DetailsActions { get; }
+
+        public void SetDensity(MessagePanelDensity density)
+        {
+            EnableInClassList(RootClassName + "--compact", density == MessagePanelDensity.Compact);
+        }
 
         public void SetState(MessagePanelState state)
         {

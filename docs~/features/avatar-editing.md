@@ -52,4 +52,6 @@ Material Inspectorは割り当て先アセットを直接編集し、単独Mater
 
 単独Windowの共通スタイルは`avatar-prefab-editor.uss`で読み込みます。翻訳は各機能のnamespaceと一致するLocalization scopeに置き、共有ホストの文字列はAvatarEditingが所有します。
 
+部位・体型と表情の数値調整は共通`ScalarInput`、カテゴリ内の切り替えは共通`SelectionTab`、有効状態のスイッチは`UiTextFactory.CreateSwitch`を使います。値の丸め、変更通知、Prefabへの反映は各機能が担当します。
+
 AssetManager統合ホストも同じ`SaveAfterEdit`を使用します。部位・体型・素材・構成・アバター情報などの編集で作業Sceneをdirtyにしたとき、または編集完了通知を受けたときに対象Sceneの保存を予約します。Previewだけのoverride、カテゴリ・カメラ変更やAssetManagerの索引更新では保存を予約しません。

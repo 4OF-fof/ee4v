@@ -57,7 +57,7 @@ namespace Ee4v.UI
         {
             var button = new UiButton(label, action);
             button.AddToClassList("ee4v-ui-confirmation-overlay__discard");
-            button.SetLabelColor(UiColorTokens.TextOnState);
+            button.SetTone(UiButtonTone.Danger);
             Notification.Actions.Add(button);
             return button;
         }

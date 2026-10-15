@@ -2,11 +2,11 @@ using Ee4v.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ee4v.AssetManager.UI
+namespace Ee4v.UI
 {
-    internal sealed class AssetDetailHeader : InfoCard
+    public sealed class DetailHeader : InfoCard
     {
-        internal AssetDetailHeader(
+        public DetailHeader(
             string title,
             string eyebrow,
             string subtitle = null,
@@ -17,14 +17,14 @@ namespace Ee4v.AssetManager.UI
                 eyebrow,
                 status))
         {
-            AddToClassList("ee4v-asset-manager__detail-header");
-            EyebrowText.AddToClassList("ee4v-asset-manager__eyebrow");
+            AddToClassList("ee4v-ui-details__detail-header");
+            EyebrowText.AddToClassList("ee4v-ui-details__eyebrow");
             EyebrowText.tooltip = eyebrow ?? string.Empty;
-            TitleText.AddToClassList("ee4v-asset-manager__detail-title");
+            TitleText.AddToClassList("ee4v-ui-details__detail-title");
             TitleText.SetFontSize(UiTypographyTokens.TitleFontSize);
             TitleText.tooltip = title ?? string.Empty;
             DescriptionText.AddToClassList(
-                "ee4v-asset-manager__detail-subtitle");
+                "ee4v-ui-details__detail-subtitle");
             DescriptionText.SetWhiteSpace(WhiteSpace.NoWrap);
             DescriptionText.SetColor(UiColorTokens.TextMuted);
             DescriptionText.SetTextAlign(TextAnchor.MiddleLeft);
@@ -32,13 +32,13 @@ namespace Ee4v.AssetManager.UI
             if (status != null)
             {
                 Badge.AddToClassList(
-                    "ee4v-asset-manager__detail-status");
+                    "ee4v-ui-details__detail-status");
             }
 
-            Body.AddToClassList("ee4v-asset-manager__actions");
+            Body.AddToClassList("ee4v-ui-details__actions");
         }
 
-        internal void AddAction(VisualElement action)
+        public void AddAction(VisualElement action)
         {
             if (action == null)
             {
@@ -48,7 +48,7 @@ namespace Ee4v.AssetManager.UI
             Body.Add(action);
         }
 
-        internal void AddHeaderAction(VisualElement action)
+        public void AddHeaderAction(VisualElement action)
         {
             if (action == null)
             {
@@ -56,29 +56,29 @@ namespace Ee4v.AssetManager.UI
             }
 
             action.AddToClassList(
-                "ee4v-asset-manager__detail-header-action");
+                "ee4v-ui-details__detail-header-action");
             HeaderRight.Add(action);
             HeaderRight.style.display = DisplayStyle.Flex;
         }
     }
 
-    internal sealed class AssetDetailSection : VisualElement
+    public sealed class DetailSection : VisualElement
     {
-        internal AssetDetailSection(string title, string note = null)
+        public DetailSection(string title, string note = null)
         {
             AddToClassList(
-                "ee4v-asset-manager__item-detail-section");
+                "ee4v-ui-details__item-detail-section");
             var header = new SectionHeader(title);
             header.AddToClassList(
-                "ee4v-asset-manager__section-header");
+                "ee4v-ui-details__section-header");
             header.TitleText.AddToClassList(
-                "ee4v-asset-manager__section-title");
+                "ee4v-ui-details__section-title");
             if (!string.IsNullOrWhiteSpace(note))
             {
                 var noteText = UiTextFactory.Create(
                     note,
                     UiClassNames.SecondaryText,
-                    "ee4v-asset-manager__section-note");
+                    "ee4v-ui-details__section-note");
                 noteText.SetTextAlign(TextAnchor.MiddleRight);
                 header.Actions.Add(noteText);
             }
@@ -86,43 +86,43 @@ namespace Ee4v.AssetManager.UI
         }
     }
 
-    internal sealed class AssetDetailFact : VisualElement
+    public sealed class MetricDisplay : VisualElement
     {
-        internal AssetDetailFact(string label, string value)
+        public MetricDisplay(string label, string value)
         {
-            AddToClassList("ee4v-asset-manager__overview-fact");
+            AddToClassList("ee4v-ui-details__overview-fact");
             Add(UiTextFactory.Create(
                 label,
                 UiClassNames.SecondaryText,
-                "ee4v-asset-manager__overview-fact-label"));
+                "ee4v-ui-details__overview-fact-label"));
             var valueText = UiTextFactory.Create(
                 value,
                 UiClassNames.SectionTitle,
-                "ee4v-asset-manager__overview-fact-value");
+                "ee4v-ui-details__overview-fact-value");
             valueText.SetWhiteSpace(WhiteSpace.Normal);
             Add(valueText);
         }
     }
 
-    internal sealed class AssetDetailSettingList : VisualElement
+    public sealed class SettingList : VisualElement
     {
-        internal AssetDetailSettingList()
+        public SettingList()
         {
-            AddToClassList("ee4v-asset-manager__setting-list");
+            AddToClassList("ee4v-ui-details__setting-list");
         }
 
-        internal void AddRow(AssetDetailSettingRow row)
+        public void AddRow(SettingRow row)
         {
             row.EnableInClassList(
-                "ee4v-asset-manager__setting-row--separated",
+                "ee4v-ui-details__setting-row--separated",
                 childCount > 0);
             Add(row);
         }
     }
 
-    internal sealed class AssetDetailSettingRow : VisualElement
+    public sealed class SettingRow : VisualElement
     {
-        internal AssetDetailSettingRow(
+        public SettingRow(
             string label,
             VisualElement value,
             VisualElement action = null)
@@ -131,64 +131,65 @@ namespace Ee4v.AssetManager.UI
             if (value != null)
             {
                 value.AddToClassList(
-                    "ee4v-asset-manager__setting-value-content");
+                    "ee4v-ui-details__setting-value-content");
                 _value.Add(value);
             }
             if (action != null)
             {
                 action.AddToClassList(
-                    "ee4v-asset-manager__setting-action");
+                    "ee4v-ui-details__setting-action");
                 _value.Add(action);
             }
         }
 
-        private AssetDetailSettingRow(string label)
+        private SettingRow(string label)
         {
-            AddToClassList("ee4v-asset-manager__setting-row");
+            AddToClassList("ee4v-ui-details__setting-row");
             Add(UiTextFactory.Create(
                 label,
                 UiClassNames.FormLabel,
-                "ee4v-asset-manager__setting-label"));
+                "ee4v-ui-details__setting-label"));
             _value = new VisualElement();
-            _value.AddToClassList("ee4v-asset-manager__setting-value");
+            _value.AddToClassList("ee4v-ui-details__setting-value");
             Add(_value);
         }
 
-        internal static AssetDetailSettingRow Editable(
+        public static SettingRow Editable(
             string label,
             string summary,
-            AssetManagerTextField editor,
+            FormInput<InputField> editor,
             VisualElement saveAction,
             string editLabel)
         {
-            var row = new AssetDetailSettingRow(label);
+            var row = new SettingRow(label);
             var display = new VisualElement();
             display.AddToClassList(
-                "ee4v-asset-manager__setting-display");
+                "ee4v-ui-details__setting-display");
             var summaryText = UiTextFactory.Create(
                 summary,
-                "ee4v-asset-manager__setting-summary");
+                "ee4v-ui-details__setting-summary");
             summaryText.SetWhiteSpace(WhiteSpace.Normal);
             display.Add(summaryText);
 
             var editorRow = new VisualElement();
             editorRow.AddToClassList(
-                "ee4v-asset-manager__setting-editor");
+                "ee4v-ui-details__setting-editor");
             editorRow.style.display = DisplayStyle.None;
             editorRow.Add(editor);
             saveAction.AddToClassList(
-                "ee4v-asset-manager__setting-action");
+                "ee4v-ui-details__setting-action");
             editorRow.Add(saveAction);
 
-            display.Add(AssetManagerControls.CreateButton(
+            var edit = new UiButton(
                 editLabel,
                 () =>
                 {
                     display.style.display = DisplayStyle.None;
                     editorRow.style.display = DisplayStyle.Flex;
-                    editor.FocusInput();
-                },
-                "ee4v-asset-manager__inline-action"));
+                    editor.Input.FocusInput();
+                });
+            edit.AddToClassList("ee4v-ui-details__inline-action");
+            display.Add(edit);
             row._value.Add(display);
             row._value.Add(editorRow);
             return row;
@@ -197,25 +198,25 @@ namespace Ee4v.AssetManager.UI
         private readonly VisualElement _value;
     }
 
-    internal sealed class AssetDetailKeyValueRow : VisualElement
+    public sealed class KeyValueRow : VisualElement
     {
-        internal AssetDetailKeyValueRow(string key, string value)
+        public KeyValueRow(string key, string value)
             : this(key, CreateValue(value))
         {
         }
 
-        internal AssetDetailKeyValueRow(
+        public KeyValueRow(
             string key,
             VisualElement value)
         {
-            AddToClassList("ee4v-asset-manager__key-value");
+            AddToClassList("ee4v-ui-details__key-value");
             Add(UiTextFactory.Create(
                 key,
                 UiClassNames.FormLabel,
-                "ee4v-asset-manager__key"));
+                "ee4v-ui-details__key"));
             if (value != null)
             {
-                value.AddToClassList("ee4v-asset-manager__value");
+                value.AddToClassList("ee4v-ui-details__value");
                 Add(value);
             }
         }
