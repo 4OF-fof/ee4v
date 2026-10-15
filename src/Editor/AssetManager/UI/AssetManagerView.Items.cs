@@ -448,15 +448,14 @@ namespace Ee4v.AssetManager.UI
             _search.style.display = DisplayStyle.None;
             _sortButton.style.display = DisplayStyle.None;
             _gridControls.style.display = DisplayStyle.None;
-            var sources = AssetPrefabPickerWindow.FindSources(_manager);
-            var prefabs = sources.SelectMany(source => source.Prefabs).Distinct().ToArray();
-            var form = new VariantCreationView(null, prefabs, _originalAssetName, _originalAssetDescription,
+            var form = new VariantCreationView(null, Array.Empty<GameObject>(), _originalAssetName, _originalAssetDescription,
                 _originalAssetPrefab, I18N.Get("workflow.original.create"), () =>
                 {
                     _creatingOriginalAsset = false;
                     RefreshMain();
                 }, original: true, showPrefabPicker: (anchor, selected, select) =>
-                    AssetPrefabPickerWindow.Show(anchor, sources, _manager, select, null, selectPrefab: true));
+                    AssetPrefabPickerWindow.Show(anchor, _manager, null, null, select, null, selectPrefab: true),
+                canSelectPrefab: prefab => AssetPrefabPickerWindow.ContainsPrefab(_manager, prefab));
             _originalAssetPrefab = form.Prefab.Value;
             form.Prefab.ValueChanged += value => _originalAssetPrefab = value;
             form.Name.ValueChanged += value => _originalAssetName = value;
@@ -506,8 +505,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             var prefabPath = AssetDatabase.GetAssetPath(prefab);
-            if (original && prefab != null && !AssetPrefabPickerWindow.FindSources(_manager)
-                .SelectMany(source => source.Prefabs).Contains(prefab))
+            if (original && prefab != null && !AssetPrefabPickerWindow.ContainsPrefab(_manager, prefab))
             {
                 SetDerivedAssetFeedback(message, I18N.Get("notice.derivedAssetPrefabInvalid"));
                 return;

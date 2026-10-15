@@ -344,9 +344,10 @@ namespace Ee4v.AssetManager.Application
                             Tags = updatedTags, CreatedAt = variant.CreatedAt,
                             RootAssetPath = _workspace.GetRootAssetPath(variantId, name),
                             HeadRevisionId = variant.HeadRevisionId, UpdatedAt = DateTime.UtcNow,
-                            IsArchived = variant.IsArchived
+                            IsArchived = variant.IsArchived, FileSizeBytes = variant.FileSizeBytes
                         };
                         await Task.Run(() => _repository.UpdateMetadata(updated));
+                        UpdateCachedMetadata(updated);
                     }
                 }
                 catch (Exception exception)
@@ -364,7 +365,6 @@ namespace Ee4v.AssetManager.Application
                     }
                     throw;
                 }
-                if (!string.IsNullOrEmpty(variant.HeadRevisionId)) ReplaceIndex();
                 NotifyChanged();
             }
             finally { _busy = false; }
@@ -411,9 +411,7 @@ namespace Ee4v.AssetManager.Application
                             HeadRevisionId = variant.HeadRevisionId, FileSizeBytes = variant.FileSizeBytes
                         };
                         await Task.Run(() => _repository.UpdateMetadata(updated));
-                        _index.UpdateVariantMetadata(updated);
-                        if (_snapshots.TryGetValue((variant.Id, variant.HeadRevisionId), out var head))
-                            head.Variant = updated;
+                        UpdateCachedMetadata(updated);
                     }
                 }
                 catch
@@ -488,8 +486,19 @@ namespace Ee4v.AssetManager.Application
                 capture.Snapshot.Variant.IsArchived = current?.IsArchived ?? capture.Snapshot.Variant.IsArchived;
                 var saved = await Task.Run(() =>
                     _repository.Save(capture.Snapshot, capture.StagingPath));
+                // A no-op save may return the previous manifest, before subsequent metadata edits.
+                saved.Variant.Tags = capture.Snapshot.Variant.Tags;
+                saved.Variant.CreatedAt = capture.Snapshot.Variant.CreatedAt;
+                saved.Variant.IsArchived = capture.Snapshot.Variant.IsArchived;
+                if (current != null && current.UpdatedAt > saved.Variant.UpdatedAt)
+                    saved.Variant.UpdatedAt = current.UpdatedAt;
                 _workspace.SetBaseRevision(saved.Variant.Id, saved.Revision.Id);
-                ReplaceIndex();
+                _index.UpsertVariantRevision(saved);
+                var snapshots = _snapshots.ToDictionary(pair => pair.Key, pair => pair.Value);
+                foreach (var previous in snapshots.Values.Where(snapshot => snapshot.Variant.Id == saved.Variant.Id))
+                    previous.Variant.HeadRevisionId = saved.Revision.Id;
+                snapshots[(saved.Variant.Id, saved.Revision.Id)] = saved;
+                _snapshots = snapshots;
                 NotifyChanged();
                 return saved.Revision;
             }
@@ -676,6 +685,13 @@ namespace Ee4v.AssetManager.Application
                     dependency.SourceId);
             }
             return file;
+        }
+
+        private void UpdateCachedMetadata(AssetVariant variant)
+        {
+            _index.UpdateVariantMetadata(variant);
+            if (_snapshots.TryGetValue((variant.Id, variant.HeadRevisionId), out var head))
+                head.Variant = variant;
         }
 
         private void ReplaceIndex()

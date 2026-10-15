@@ -12,6 +12,7 @@ namespace Ee4v.UI
         private readonly IReadOnlyList<TObject> _candidates;
         private readonly Action<VisualElement, TObject, Action<TObject>> _showPicker;
         private readonly bool _allowEmpty;
+        private readonly Func<TObject, bool> _canSelect;
         private readonly string _placeholder;
         private TObject _value;
 
@@ -19,12 +20,16 @@ namespace Ee4v.UI
             IReadOnlyList<TObject> candidates,
             Action<VisualElement, TObject, Action<TObject>> showPicker = null,
             bool allowEmpty = false,
-            string placeholder = null)
+            string placeholder = null,
+            Func<TObject, bool> canSelect = null)
             : base(onClick: null)
         {
             _candidates = candidates ?? Array.Empty<TObject>();
             _showPicker = showPicker;
             _allowEmpty = allowEmpty;
+            if (canSelect != null && showPicker == null)
+                throw new ArgumentException("A selection predicate requires a custom picker.", nameof(showPicker));
+            _canSelect = canSelect;
             _placeholder = placeholder ?? UiLocalization.Get("ui.objectPicker.select");
             AddToClassList(
                 "ee4v-ui-object-selector");
@@ -36,7 +41,7 @@ namespace Ee4v.UI
 
             RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
             RegisterCallback<DragPerformEvent>(OnDragPerform);
-            SetEnabled(_candidates.Count > 0);
+            SetEnabled(_candidates.Count > 0 || _canSelect != null);
             Refresh();
         }
 
@@ -117,7 +122,7 @@ namespace Ee4v.UI
         private bool Accepts(TObject candidate)
         {
             if (candidate == null) { return _allowEmpty; }
-            return _candidates.Contains(candidate);
+            return _canSelect != null ? _canSelect(candidate) : _candidates.Contains(candidate);
         }
 
         private void OnDragUpdated(DragUpdatedEvent evt)

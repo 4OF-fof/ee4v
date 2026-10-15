@@ -103,9 +103,9 @@ namespace Ee4v.AssetManager.UI
 
         private VisualElement BuildDerivedAssetCreation()
         {
+            _manager = _manager ?? AssetManagerWindowSession.GetManager();
             var selectedSource = GetSelectedVariantSource();
-            var sources = _creatingOriginalAsset ? GetVariantSources() : null;
-            var prefabs = sources != null ? sources.SelectMany(source => source.Prefabs).Distinct().ToArray()
+            var prefabs = _creatingOriginalAsset ? Array.Empty<GameObject>()
                 : selectedSource?.Prefabs;
             var form = new VariantCreationView(
                 selectedSource?.Item,
@@ -116,8 +116,10 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get("workflow.selection.createAndStart"),
                 CancelDerivedAssetCreation,
                 _creatingOriginalAsset,
-                sources == null ? null : (anchor, selected, select) =>
-                    AssetPrefabPickerWindow.Show(anchor, sources, _manager, select, null, selectPrefab: true));
+                !_creatingOriginalAsset ? null : (anchor, selected, select) =>
+                    AssetPrefabPickerWindow.Show(anchor, _manager, null, null, select, null, selectPrefab: true),
+                canSelectPrefab: !_creatingOriginalAsset ? null :
+                    prefab => AssetPrefabPickerWindow.ContainsPrefab(_manager, prefab));
             _creationPrefab = form.Prefab.Value;
             form.Prefab.ValueChanged += prefab => _creationPrefab = prefab;
             form.Name.ValueChanged += value => _derivedName = value;
@@ -290,7 +292,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             if (_creatingOriginalAsset && _creationPrefab != null &&
-                !GetVariantSources().SelectMany(source => source.Prefabs).Contains(_creationPrefab))
+                !AssetPrefabPickerWindow.ContainsPrefab(_manager, _creationPrefab))
             {
                 SetCreationFeedback(I18N.Get("notice.derivedAssetPrefabInvalid"), MessageSeverity.Error);
                 return;

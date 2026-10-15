@@ -22,6 +22,17 @@ namespace Ee4v.AssetManager.Infrastructure
         private readonly string _root;
         private readonly string _previewCacheRoot;
         private readonly string _stagingRoot;
+        private readonly object _galleryCacheGate = new object();
+        private readonly Dictionary<string, string> _galleryOwners = new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, GallerySnapshot> _gallerySnapshots =
+            new Dictionary<string, GallerySnapshot>(StringComparer.Ordinal);
+        private string _galleryRepositoryVersion;
+
+        private sealed class GallerySnapshot
+        {
+            internal string Repository;
+            internal AssetVariantGalleryImage[] Images;
+        }
 
         private sealed class VariantMetadata
         {
@@ -96,6 +107,12 @@ namespace Ee4v.AssetManager.Infrastructure
                         result.Add(snapshot);
                     }
                 }
+            }
+            lock (_galleryCacheGate)
+            {
+                foreach (var snapshot in result)
+                    _galleryOwners[snapshot.Variant.Id] = RepositoryPath(snapshot.Variant.ParentItemId);
+                _gallerySnapshots.Clear();
             }
             return result;
         }
@@ -206,6 +223,7 @@ namespace Ee4v.AssetManager.Infrastructure
                         "\nprepare\ncommit\n";
                     Git(repository, null, null, new[] { "update-ref", "--stdin" }, transaction);
                     snapshot.Revision.CommitId = commit;
+                    lock (_galleryCacheGate) _galleryOwners[snapshot.Variant.Id] = repository;
                     Git(repository, null, null, "symbolic-ref", "HEAD", MasterRef);
                     var preview = TryReadPreview(Path.Combine(variantStage, "preview.png"), snapshot.PreviewHash);
                     if (preview != null) { TryWritePreview(previewCachePath, preview); }
@@ -395,8 +413,52 @@ namespace Ee4v.AssetManager.Infrastructure
         public IReadOnlyList<AssetVariantGalleryImage> ReadGallery(string variantId)
         {
             ValidateId(variantId);
-            var repository = FindGalleryRepository(variantId);
-            return repository == null ? Array.Empty<AssetVariantGalleryImage>() : ReadGallery(repository, variantId);
+            return GetGallerySnapshot(variantId).Images.Select(image => new AssetVariantGalleryImage
+                { Id = image.Id, FileName = image.FileName }).ToArray();
+        }
+
+        private GallerySnapshot GetGallerySnapshot(string variantId)
+        {
+            lock (_galleryCacheGate)
+            {
+                // Loose refs contain only a small commit ID. Packed refs also change on external writes.
+                var version = string.Join("|", Repositories().Select(repository =>
+                {
+                    var master = Path.Combine(repository, "refs", "heads", "master");
+                    var packed = new FileInfo(Path.Combine(repository, "packed-refs"));
+                    return repository + ":" + ReadLooseRef(master) +
+                        ":" + (packed.Exists ? packed.Length + ":" + packed.LastWriteTimeUtc.Ticks : string.Empty);
+                }));
+                if (_galleryRepositoryVersion != version)
+                {
+                    _gallerySnapshots.Clear();
+                    _galleryRepositoryVersion = version;
+                }
+                if (_gallerySnapshots.TryGetValue(variantId, out var cached)) return cached;
+                if (!_galleryOwners.TryGetValue(variantId, out var repository) ||
+                    !File.Exists(Path.Combine(repository, "HEAD")))
+                    repository = FindGalleryRepository(variantId);
+                var snapshot = new GallerySnapshot
+                {
+                    Repository = repository,
+                    Images = repository == null ? Array.Empty<AssetVariantGalleryImage>() : ReadGallery(repository, variantId)
+                };
+                if (repository != null) _galleryOwners[variantId] = repository;
+                _gallerySnapshots[variantId] = snapshot;
+                return snapshot;
+            }
+        }
+
+        private static string ReadLooseRef(string path)
+        {
+            try
+            {
+                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read,
+                           FileShare.ReadWrite | FileShare.Delete))
+                using (var reader = new StreamReader(stream)) return reader.ReadToEnd();
+            }
+            catch (FileNotFoundException) { return string.Empty; }
+            catch (DirectoryNotFoundException) { return string.Empty; }
         }
 
         private AssetVariantGalleryImage[] ReadGallery(string repository, string variantId)
@@ -422,8 +484,9 @@ namespace Ee4v.AssetManager.Infrastructure
         {
             ValidateId(variantId);
             var cachePath = PreviewCachePath(imageId);
-            var repository = FindGalleryRepository(variantId);
-            if (repository == null || !ReadGallery(repository, variantId).Any(image => image.Id == imageId))
+            var gallery = GetGallerySnapshot(variantId);
+            var repository = gallery.Repository;
+            if (repository == null || !gallery.Images.Any(image => image.Id == imageId))
             {
                 throw new InvalidOperationException("The Variant gallery image was not found.");
             }

@@ -351,6 +351,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             _disposed = true;
+            _variantChangesSnapshot = null;
             HideVariantChangesHover();
             _parts.EndBodyScaleDrag(false);
             _parts.SaveBodyScalePrefab(false);

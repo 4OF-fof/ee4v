@@ -501,6 +501,7 @@ namespace Ee4v.AssetManager.UI
 
         private void InvalidateVariantSaveStatus()
         {
+            _variantChangesSnapshot = null;
             _variantSaveStatusVersion++;
             _variantSaveStatusDirty = true;
             _variantSaveStatusDueAt = EditorApplication.timeSinceStartup +

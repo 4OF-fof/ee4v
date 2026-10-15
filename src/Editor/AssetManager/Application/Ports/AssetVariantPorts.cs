@@ -28,6 +28,7 @@ namespace Ee4v.AssetManager.Application.Ports
     {
         void ReplaceVariantIndex(IReadOnlyList<AssetVariantSnapshot> snapshots);
         void UpdateVariantMetadata(AssetVariant variant);
+        void UpsertVariantRevision(AssetVariantSnapshot snapshot);
         void DeleteVariantIndex(string variantId);
         IReadOnlyList<AssetVariant> GetVariants();
         IReadOnlyList<AssetVariantRevision> GetVariantRevisions(string variantId);

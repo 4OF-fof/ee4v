@@ -23,7 +23,8 @@ namespace Ee4v.AssetManager.UI
             string submitLabel,
             Action goBack,
             bool original = false,
-            Action<VisualElement, GameObject, Action<GameObject>> showPrefabPicker = null)
+            Action<VisualElement, GameObject, Action<GameObject>> showPrefabPicker = null,
+            Func<GameObject, bool> canSelectPrefab = null)
         {
             _original = original;
             AddToClassList("ee4v-variant-creation");
@@ -68,7 +69,7 @@ namespace Ee4v.AssetManager.UI
             };
             Prefab = new ObjectSelector<GameObject>(prefabs, showPrefabPicker ?? ((anchor, selected, select) =>
                 AssetPrefabPickerWindow.ShowForSource(anchor, pickerSource, selected, select)), allowEmpty: original,
-                placeholder: I18N.Get("workflow.selection.prefabPlaceholder"));
+                placeholder: I18N.Get("workflow.selection.prefabPlaceholder"), canSelect: canSelectPrefab);
             Prefab.AddToClassList("ee4v-variant-creation__prefab");
             UiButton clearBase = null;
             if (original)
@@ -155,7 +156,9 @@ namespace Ee4v.AssetManager.UI
                     ? I18N.Get("notice.derivedAssetNameInvalid") : string.Empty);
                 RefreshAction();
             };
-            Prefab.SetValueWithoutNotify(prefabs.Contains(selectedPrefab) ? selectedPrefab :
+            var acceptsSelected = selectedPrefab != null &&
+                (canSelectPrefab?.Invoke(selectedPrefab) ?? prefabs.Contains(selectedPrefab));
+            Prefab.SetValueWithoutNotify(acceptsSelected ? selectedPrefab :
                 original ? null : prefabs.FirstOrDefault());
             if (clearBase != null)
             {

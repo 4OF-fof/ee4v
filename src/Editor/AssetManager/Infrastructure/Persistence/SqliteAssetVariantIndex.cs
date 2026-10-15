@@ -71,6 +71,35 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             });
         }
 
+        public void UpsertVariantRevision(AssetVariantSnapshot snapshot)
+        {
+            Run(() =>
+            {
+                using (var connection = OpenConnection())
+                using (var transaction = new DatabaseTransaction(connection))
+                {
+                    var variant = snapshot.Variant;
+                    connection.Execute(@"INSERT INTO variant VALUES(?,?,?,?,?,?,?,?)
+                        ON CONFLICT(id) DO UPDATE SET source_prefab_guid = excluded.source_prefab_guid,
+                        name = excluded.name, description = excluded.description,
+                        parent_item_id = excluded.parent_item_id, root_asset_path = excluded.root_asset_path,
+                        head_revision_id = excluded.head_revision_id, updated_at = excluded.updated_at",
+                        variant.Id, variant.SourcePrefabGuid, variant.Name, variant.Description ?? string.Empty,
+                        variant.ParentItemId, variant.RootAssetPath, variant.HeadRevisionId,
+                        variant.UpdatedAt.ToString("O"));
+                    var revision = snapshot.Revision;
+                    connection.Execute(@"INSERT INTO variant_revision VALUES(?,?,?,?,?,?,?)
+                        ON CONFLICT(id) DO UPDATE SET parent_revision_id = excluded.parent_revision_id,
+                        number = excluded.number, commit_id = excluded.commit_id, memo = excluded.memo,
+                        created_at = excluded.created_at",
+                        revision.Id, revision.VariantId, revision.ParentRevisionId, revision.Number,
+                        revision.CommitId, revision.Memo ?? string.Empty, revision.CreatedAt.ToString("O"));
+                    transaction.Commit();
+                }
+                return true;
+            });
+        }
+
         public void DeleteVariantIndex(string variantId)
         {
             Run(() =>

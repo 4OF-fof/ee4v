@@ -114,15 +114,29 @@ namespace Ee4v.AssetManager.UI
         internal static IReadOnlyList<VariantSourceOption> FindSources(IAssetManager manager,
             Func<GameObject, bool> canSelect = null)
         {
-            return manager.SearchItems(new AssetItemQuery()).Items
-                .Where(item => item != null && !item.IsArchived)
-                .Select(item => new VariantSourceOption
+            UseSourceManager(manager);
+            var sources = _cachedSources;
+            if (sources == null)
+            {
+                var version = _sourceCacheVersion;
+                sources = DiscoverSources(manager).Where(source => source != null).ToArray();
+                if (version == _sourceCacheVersion) _cachedSources = sources;
+            }
+            if (canSelect == null) return sources;
+            return sources.Select(source => new VariantSourceOption
                 {
-                    Item = item, Prefabs = DerivedAssetCreator.FindPrefabCandidates(manager, item)
-                        .Where(prefab => canSelect == null || canSelect(prefab)).ToArray()
+                    Item = source.Item, Prefabs = source.Prefabs.Where(canSelect).ToArray()
                 })
-                .Where(source => source.Prefabs.Count > 0)
-                .OrderBy(source => source.Item.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+                .Where(source => source.Prefabs.Count > 0).ToArray();
+        }
+
+        internal static bool ContainsPrefab(IAssetManager manager, GameObject prefab)
+        {
+            if (prefab == null) return false;
+            var path = AssetDatabase.GetAssetPath(prefab);
+            return !string.IsNullOrEmpty(path) &&
+                FindSources(manager).Any(source => source.PrefabPaths.Contains(path, StringComparer.OrdinalIgnoreCase)) &&
+                AssetDatabase.LoadAssetAtPath<GameObject>(path) == prefab;
         }
 
         internal static void Show(VisualElement anchor,
@@ -148,7 +162,8 @@ namespace Ee4v.AssetManager.UI
         }
 
         internal static void Show(VisualElement anchor, IAssetManager manager, string excludedPrefabPath,
-            Func<string, bool> canSelectPath, Action<GameObject> select, Action openAssetManager)
+            Func<string, bool> canSelectPath, Action<GameObject> select, Action openAssetManager,
+            bool selectPrefab = false)
         {
             if (anchor == null || manager == null || select == null) { return; }
             foreach (var existing in Resources.FindObjectsOfTypeAll<AssetPrefabPickerWindow>())
@@ -159,6 +174,7 @@ namespace Ee4v.AssetManager.UI
             window._manager = manager;
             window._imageCache = new CachedImageCache();
             window._select = select;
+            window._selectPrefab = selectPrefab;
             window._openAssetManager = openAssetManager;
             window._canSelectPath = canSelectPath;
             window._excludedPrefabPath = excludedPrefabPath;
@@ -184,14 +200,14 @@ namespace Ee4v.AssetManager.UI
             }).Where(source => source.PrefabCount > 0).ToArray();
         }
 
-        private IEnumerable<VariantSourceOption> DiscoverSources()
+        private static IEnumerable<VariantSourceOption> DiscoverSources(IAssetManager manager)
         {
             // Take shared snapshots once instead of opening the DB and scanning Variants per Item.
-            var items = _manager.SearchItems(new AssetItemQuery()).Items
+            var items = manager.SearchItems(new AssetItemQuery()).Items
                 .Where(item => item != null && !item.IsArchived)
                 .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToArray();
             yield return null;
-            var imported = _manager.GetImportedAssetAssociations()
+            var imported = manager.GetImportedAssetAssociations()
                 .Where(association => !string.IsNullOrEmpty(association.ItemId))
                 .ToLookup(association => association.ItemId, association => association.AssetGuid,
                     StringComparer.Ordinal);
@@ -236,7 +252,7 @@ namespace Ee4v.AssetManager.UI
                     _discoveredSources.Clear();
                     _sourceVersion = _sourceCacheVersion;
                 }
-                _sourceDiscovery = _sourceDiscovery ?? DiscoverSources().GetEnumerator();
+                _sourceDiscovery = _sourceDiscovery ?? DiscoverSources(_manager).GetEnumerator();
                 var timer = System.Diagnostics.Stopwatch.StartNew();
                 while (timer.ElapsedMilliseconds < 6)
                 {
