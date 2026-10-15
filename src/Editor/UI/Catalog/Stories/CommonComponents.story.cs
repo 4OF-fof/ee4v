@@ -404,6 +404,7 @@ namespace Ee4v.UI
         private static void BuildDetailFact(VisualElement parent)
         {
             var surface = CreateDetailStorySurface();
+            surface.style.flexDirection = FlexDirection.Row;
             surface.Add(new MetricDisplay("Files", "12"));
             parent.Add(surface);
         }

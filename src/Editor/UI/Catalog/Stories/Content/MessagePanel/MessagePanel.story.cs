@@ -93,6 +93,7 @@ namespace Ee4v.UI
                     ? Enumerable.Range(0, 30).Select(index => "Avatar/Face/AdditionalMesh_" + index + " / BlendShape_" + index).ToArray()
                     : targets
                     : Array.Empty<string>()) : null);
+                preview.RefreshLayout();
             };
             refresh();
             FinalizeControlsSection(parent, controls);
