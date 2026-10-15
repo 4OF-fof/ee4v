@@ -43,6 +43,8 @@ namespace Ee4v.AssetManager.UI
             var savedVariants = _variantManager != null
                 ? _variantManager.GetVariants().ToDictionary(variant => variant.Id, StringComparer.Ordinal)
                 : null;
+            var ownedWorks = GetVariants().Where(variant => variant.IsOwnedWork)
+                .ToLookup(variant => variant.ParentItemId, StringComparer.Ordinal);
             try
             {
                 await Task.Yield();
@@ -67,11 +69,10 @@ namespace Ee4v.AssetManager.UI
                             }
                             else
                             {
-                                var standalone = savedVariants?.Values.FirstOrDefault(variant =>
-                                    string.IsNullOrEmpty(variant.SourcePrefabGuid) && variant.ParentItemId == itemId &&
-                                    FindVariantItem(itemId)?.IsOriginal == true);
-                                thumbnail = standalone != null
-                                    ? await _variantManager.GetRevisionThumbnail(standalone.Id, standalone.HeadRevisionId, cancellation.Token)
+                                var work = ownedWorks[itemId].FirstOrDefault();
+                                thumbnail = work != null && savedVariants != null &&
+                                    savedVariants.TryGetValue(work.VariantId, out var savedWork)
+                                    ? await _variantManager.GetRevisionThumbnail(savedWork.Id, savedWork.HeadRevisionId, cancellation.Token)
                                     : await _manager.GetThumbnail(itemId, cancellation.Token);
                             }
                             if (!ReferenceEquals(
@@ -173,7 +174,7 @@ namespace Ee4v.AssetManager.UI
             }
 
             _importedItemIdsInProject = itemIds;
-            foreach (var asset in DerivedAssetCreator.FindAll().Where(asset => asset.IsOriginal))
+            foreach (var asset in GetVariants().Where(asset => asset.IsOwnedWork && asset.Prefab != null))
             {
                 if (FindVariantItem(asset.ParentItemId)?.IsOriginal == true) itemIds.Add(asset.ParentItemId);
             }

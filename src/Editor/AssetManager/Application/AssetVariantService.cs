@@ -33,13 +33,15 @@ namespace Ee4v.AssetManager.Application
         public IReadOnlyList<AssetVariant> GetVariants()
         {
             var variants = GetStoredVariants();
+            var variantsById = variants.ToDictionary(variant => variant.Id, StringComparer.Ordinal);
             foreach (var variant in variants)
             {
-                var owner = GetStandaloneOwner(variant);
+                var owner = GetOwnedWorkOwner(variant, variantsById);
                 if (owner == null) continue;
                 variant.Name = owner.Name;
                 variant.Description = owner.Description;
-                variant.Tags = owner.Tags.Select(tag => tag.Path).ToArray();
+                variant.Tags = string.IsNullOrEmpty(variant.SourcePrefabGuid)
+                    ? owner.Tags.Select(tag => tag.Path).ToArray() : Array.Empty<string>();
                 variant.IsArchived = owner.IsArchived;
                 if (owner.UpdatedAt > variant.UpdatedAt) variant.UpdatedAt = owner.UpdatedAt;
             }
@@ -64,14 +66,23 @@ namespace Ee4v.AssetManager.Application
             return variants;
         }
 
-        private AssetItem GetStandaloneOwner(AssetVariant variant)
+        private AssetItem GetOwnedWorkOwner(AssetVariant variant,
+            IReadOnlyDictionary<string, AssetVariant> variantsById = null)
         {
-            if (!string.IsNullOrEmpty(variant.SourcePrefabGuid) || string.IsNullOrEmpty(variant.ParentItemId))
+            if (string.IsNullOrEmpty(variant.ParentItemId))
                 return null;
             try
             {
                 var owner = _manager.GetItem(variant.ParentItemId);
-                return owner?.IsOriginal == true ? owner : null;
+                if (owner?.IsOriginal != true) return null;
+                AssetVariant source = null;
+                if (!string.IsNullOrEmpty(variant.SourcePrefabGuid))
+                {
+                    if (variantsById != null) variantsById.TryGetValue(variant.SourcePrefabGuid, out source);
+                    else source = _index.GetVariants().FirstOrDefault(candidate => candidate.Id == variant.SourcePrefabGuid);
+                    source = source ?? _workspace.GetMetadata(variant.SourcePrefabGuid);
+                }
+                return source?.ParentItemId != owner.Id ? owner : null;
             }
             catch (AssetManagerException exception) when (exception.Code == AssetManagerErrorCode.NotFound)
             {
@@ -311,17 +322,20 @@ namespace Ee4v.AssetManager.Application
             var variant = GetStoredVariants().FirstOrDefault(candidate => candidate.Id == variantId)
                 ?? _workspace.GetMetadata(variantId);
             if (variant == null) throw new InvalidOperationException("The Variant was not found.");
-            var owner = GetStandaloneOwner(variant);
+            var owner = GetOwnedWorkOwner(variant);
             var updatedTags = !string.IsNullOrEmpty(variant.SourcePrefabGuid) ? Array.Empty<string>() :
                 request.Tags != null ? AssetManagerRequestValidator.NormalizeTags(request.Tags) :
                 owner == null ? variant.Tags : owner.Tags.Select(tag => tag.Path).ToArray();
+            var ownerTags = owner == null ? Array.Empty<string>() :
+                string.IsNullOrEmpty(variant.SourcePrefabGuid) ? updatedTags :
+                owner.Tags.Select(tag => tag.Path).ToArray();
             _busy = true;
             try
             {
                 if (variant.Name == name && (variant.Description ?? string.Empty) == description &&
                     variant.Tags.SequenceEqual(updatedTags) && (owner == null ||
                     (owner.Name == name && owner.Description == description &&
-                     owner.Tags.Select(tag => tag.Path).SequenceEqual(updatedTags))))
+                     owner.Tags.Select(tag => tag.Path).SequenceEqual(ownerTags))))
                 {
                     return;
                 }
@@ -333,7 +347,7 @@ namespace Ee4v.AssetManager.Application
                     if (owner != null)
                     {
                         ownerUpdated = true;
-                        UpdateStandaloneOwner(owner, name, description, updatedTags);
+                        UpdateOwnedWorkOwner(owner, name, description, ownerTags);
                     }
                     if (!string.IsNullOrEmpty(variant.HeadRevisionId))
                     {
@@ -354,7 +368,7 @@ namespace Ee4v.AssetManager.Application
                 {
                     try
                     {
-                        if (ownerUpdated) UpdateStandaloneOwner(_manager.GetItem(owner.Id), owner.Name,
+                        if (ownerUpdated) UpdateOwnedWorkOwner(_manager.GetItem(owner.Id), owner.Name,
                             owner.Description, owner.Tags.Select(tag => tag.Path).ToArray());
                         undoLocalUpdate?.Invoke();
                     }
@@ -370,7 +384,7 @@ namespace Ee4v.AssetManager.Application
             finally { _busy = false; }
         }
 
-        private void UpdateStandaloneOwner(AssetItem owner, string name, string description,
+        private void UpdateOwnedWorkOwner(AssetItem owner, string name, string description,
             IReadOnlyList<string> tags)
         {
             if (owner.Name != name || owner.Description != description)
@@ -392,7 +406,7 @@ namespace Ee4v.AssetManager.Application
             {
                 var variant = GetVariants().FirstOrDefault(candidate => candidate.Id == variantId)
                     ?? _workspace.GetMetadata(variantId);
-                var owner = variant == null ? null : GetStandaloneOwner(variant);
+                var owner = variant == null ? null : GetOwnedWorkOwner(variant);
                 var undo = _workspace.SetArchived(variantId, archived);
                 if (variant == null && undo == null) throw new InvalidOperationException("The Variant was not found.");
                 try
@@ -467,12 +481,13 @@ namespace Ee4v.AssetManager.Application
                     ?? _workspace.GetMetadata(request.RootAssetPath);
                 if (current != null)
                 {
-                    var owner = GetStandaloneOwner(current);
+                    var owner = GetOwnedWorkOwner(current);
                     if (owner != null)
                     {
                         current.Name = owner.Name;
                         current.Description = owner.Description;
-                        current.Tags = owner.Tags.Select(tag => tag.Path).ToArray();
+                        current.Tags = string.IsNullOrEmpty(current.SourcePrefabGuid)
+                            ? owner.Tags.Select(tag => tag.Path).ToArray() : Array.Empty<string>();
                         current.IsArchived = owner.IsArchived;
                     }
                     _workspace.UpdateMetadata(current.Id, current.Name, current.Description,

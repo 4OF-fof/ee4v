@@ -252,7 +252,7 @@ namespace Ee4v.AssetManager.UI
             return new VariantSourceOption
             {
                 Item = item,
-                Prefabs = DerivedAssetCreator.FindPrefabCandidates(_manager, item)
+                Prefabs = DerivedAssetCreator.FindDerivedPrefabCandidates(_manager, item)
             };
         }
 
@@ -284,7 +284,9 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             if (!_creatingOriginalAsset && (string.IsNullOrEmpty(_creationItemId) ||
-                _creationPrefab == null))
+                _creationPrefab == null ||
+                !DerivedAssetCreator.FindDerivedPrefabCandidates(_manager, _manager.GetItem(_creationItemId))
+                    .Contains(_creationPrefab)))
             {
                 SetCreationFeedback(
                     I18N.Get("notice.derivedAssetPrefabInvalid"),

@@ -29,6 +29,7 @@ namespace Ee4v.AssetManager.UI
     {
         public string VariantId { get; set; }
         public string ParentItemId { get; set; }
+        public string SourcePrefabGuid { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public string AssetPath { get; set; }
@@ -39,6 +40,7 @@ namespace Ee4v.AssetManager.UI
         public DateTime UpdatedAt { get; set; }
         public bool IsArchived { get; set; }
         public bool IsOriginal { get; set; }
+        public bool IsOwnedWork { get; set; }
         public GameObject Prefab { get; set; }
     }
 
@@ -284,6 +286,20 @@ namespace Ee4v.AssetManager.UI
                 .ThenBy(AssetDatabase.GetAssetPath, StringComparer.OrdinalIgnoreCase).ToArray();
         }
 
+        internal static IReadOnlyList<GameObject> FindDerivedPrefabCandidates(IAssetManager manager, AssetItem item)
+        {
+            if (item == null || item.IsArchived) { return Array.Empty<GameObject>(); }
+            if (!item.IsOriginal) { return FindPrefabCandidates(manager, item); }
+            return FindByParentItem(item.Id)
+                .Where(asset => !asset.IsArchived &&
+                    DerivedAssetCatalog.Read(AssetDatabase.GUIDToAssetPath(asset.SourcePrefabGuid ?? string.Empty))
+                        ?.ParentItemId != item.Id)
+                .Select(asset => asset.Prefab)
+                .Where(prefab => prefab != null).Distinct()
+                .OrderBy(prefab => prefab.name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(AssetDatabase.GetAssetPath, StringComparer.OrdinalIgnoreCase).ToArray();
+        }
+
         public static string CreateMaterialVariant(
             string variantPath,
             Material sourceMaterial)
@@ -407,6 +423,7 @@ namespace Ee4v.AssetManager.UI
             {
                 VariantId = AssetDatabase.AssetPathToGUID(record.AssetPath),
                 ParentItemId = record.ParentItemId,
+                SourcePrefabGuid = record.SourceGuid,
                 Name = record.Name,
                 Description = record.Description,
                 Tags = record.Tags,

@@ -71,6 +71,10 @@ namespace Ee4v.AssetManager.UI
                 AssetPrefabPickerWindow.ShowForSource(anchor, pickerSource, selected, select)), allowEmpty: original,
                 placeholder: I18N.Get("workflow.selection.prefabPlaceholder"), canSelect: canSelectPrefab);
             Prefab.AddToClassList("ee4v-variant-creation__prefab");
+            if (!original && item?.IsOriginal == true)
+            {
+                Prefab.SetEnabled(false);
+            }
             UiButton clearBase = null;
             if (original)
             {

@@ -22,10 +22,10 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var standalone = FindStandaloneAsset(item.Id);
-            if (standalone != null)
+            var work = FindOwnedWork(item.Id);
+            if (work != null)
             {
-                ShowVariantDetail(standalone.VariantId);
+                ShowVariantDetail(work.VariantId);
                 return;
             }
 
@@ -380,10 +380,10 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
 
-            var standalone = FindStandaloneAsset(item.Id);
-            if (standalone != null)
+            var work = FindOwnedWork(item.Id);
+            if (work != null)
             {
-                BuildVariantDetailPage(standalone);
+                BuildVariantDetailPage(work);
                 return;
             }
 
@@ -473,7 +473,7 @@ namespace Ee4v.AssetManager.UI
             _fileTreeSelections = Array.Empty<FileTreeSelection>();
             var item = _manager.GetItem(_viewState.DetailItemId);
             var prefabCandidates = DerivedAssetCreator
-                .FindPrefabCandidates(_manager, item);
+                .FindDerivedPrefabCandidates(_manager, item);
             var form = new VariantCreationView(
                 item,
                 prefabCandidates,
@@ -514,7 +514,7 @@ namespace Ee4v.AssetManager.UI
                 !prefabPath.EndsWith(
                     ".prefab",
                     StringComparison.OrdinalIgnoreCase) ||
-                !DerivedAssetCreator.FindPrefabCandidates(
+                !DerivedAssetCreator.FindDerivedPrefabCandidates(
                     _manager, _manager.GetItem(_viewState.DetailItemId)).Contains(prefab)))
             {
                 SetDerivedAssetFeedback(
@@ -831,7 +831,7 @@ namespace Ee4v.AssetManager.UI
             foreach (var derivedAsset in
                      GetVariants()
                          .Where(variant => !variant.IsArchived && string.Equals(
-                             variant.ParentItemId, itemId, StringComparison.Ordinal))
+                             variant.ParentItemId, itemId, StringComparison.Ordinal) && !variant.IsOwnedWork)
                          .OrderBy(variant => variant.Name, StringComparer.OrdinalIgnoreCase)
                          .ThenBy(variant => variant.VariantId, StringComparer.Ordinal))
             {

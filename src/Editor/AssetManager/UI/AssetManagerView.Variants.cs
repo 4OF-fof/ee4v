@@ -44,19 +44,19 @@ namespace Ee4v.AssetManager.UI
             (_viewState.Page == AssetManagerPage.Archived &&
              TryGetArchiveVariantId(_viewState.SelectedArchiveEntryId, out var archiveVariantId)
                 ? archiveVariantId : ShowsVariants ? _viewState.SelectedVariantId : null) ??
-            (ShowsVariants ? null : FindStandaloneAsset(_viewState.DetailItemId ??
+            (ShowsVariants ? null : FindOwnedWork(_viewState.DetailItemId ??
                 (_viewState.Page == AssetManagerPage.Archived ? _viewState.SelectedArchiveEntryId : _viewState.SelectedItemId)))?.VariantId;
 
-        private DerivedAssetInfo FindStandaloneAsset(string itemId)
+        private DerivedAssetInfo FindOwnedWork(string itemId)
         {
             if (string.IsNullOrEmpty(itemId)) return null;
             var item = FindVariantItem(itemId);
             return item?.IsOriginal == true ? GetVariants().FirstOrDefault(variant =>
-                variant.IsOriginal && variant.ParentItemId == itemId) : null;
+                variant.IsOwnedWork && variant.ParentItemId == itemId) : null;
         }
 
         private bool IsStandaloneAsset(DerivedAssetInfo variant) =>
-            variant.IsOriginal && FindVariantItem(variant.ParentItemId)?.IsOriginal == true;
+            variant.IsOriginal && variant.IsOwnedWork;
 
         private void ShowVariantDetail(string variantId = null)
         {
@@ -115,7 +115,7 @@ namespace Ee4v.AssetManager.UI
             descriptionContainer.Add(description);
             var standalone = IsStandaloneAsset(variant);
             name.Input.IsReadOnly = description.IsReadOnly = _variantManager == null || _variantState.VariantBusy ||
-                (standalone && variant.IsArchived);
+                (variant.IsOwnedWork && variant.IsArchived);
             VisualElement tagsContainer = null;
             TagField tags = null;
             if (standalone)
@@ -321,14 +321,14 @@ namespace Ee4v.AssetManager.UI
             };
             refreshAction();
             if (_variantState.VariantGalleryView != null) { _variantState.VariantGalleryView.RefreshControls += refreshAction; }
-            if (IsStandaloneAsset(variant))
+            if (variant.IsOwnedWork)
             {
                 var createDerived = AssetManagerControls.CreateButton(I18N.Get("detail.derivedAssetsAdd"), () =>
                 {
                     if (_createDerivedAsset != null) _createDerivedAsset(variant.ParentItemId);
                     else _viewState.OpenDerivedAssetsPage(variant.ParentItemId);
                 });
-                createDerived.SetEnabled(!variant.IsArchived && !_variantState.VariantBusy);
+                createDerived.SetEnabled(!variant.IsArchived && !_variantState.VariantBusy && variant.Prefab != null);
                 detail.Add(createDerived);
             }
             action = operation;
@@ -1033,6 +1033,7 @@ namespace Ee4v.AssetManager.UI
                             VariantId = saved.Id, Name = saved.Name, Description = saved.Description,
                             Tags = saved.Tags, CreatedAt = saved.CreatedAt, FileSizeBytes = saved.FileSizeBytes,
                             ParentItemId = saved.ParentItemId, AssetPath = saved.RootAssetPath,
+                            SourcePrefabGuid = saved.SourcePrefabGuid,
                             IsOriginal = string.IsNullOrEmpty(saved.SourcePrefabGuid),
                             UpdatedAt = saved.UpdatedAt, IsArchived = saved.IsArchived
                         });
@@ -1043,11 +1044,14 @@ namespace Ee4v.AssetManager.UI
                 .Items.ToDictionary(item => item.Id, StringComparer.Ordinal);
             foreach (var variant in project.Values)
             {
-                if (!variant.IsOriginal || !visibleItems.TryGetValue(variant.ParentItemId, out var owner) ||
+                if (!visibleItems.TryGetValue(variant.ParentItemId, out var owner) ||
                     !owner.IsOriginal) continue;
+                variant.IsOwnedWork = !project.TryGetValue(variant.SourcePrefabGuid ?? string.Empty, out var source) ||
+                    source.ParentItemId != owner.Id;
+                if (!variant.IsOwnedWork) continue;
                 variant.Name = owner.Name;
                 variant.Description = owner.Description;
-                variant.Tags = GetTagPaths(owner);
+                variant.Tags = variant.IsOriginal ? GetTagPaths(owner) : Array.Empty<string>();
                 variant.IsArchived = owner.IsArchived;
                 if (owner.UpdatedAt > variant.UpdatedAt) variant.UpdatedAt = owner.UpdatedAt;
             }
@@ -1083,15 +1087,15 @@ namespace Ee4v.AssetManager.UI
             if (_disposed || _variantManager == null || _variantState.VariantBusy) return;
             var selectedCount = ids.Count + (itemIds?.Count ?? 0);
             var variants = GetVariants();
-            var standaloneOwnerIds = new HashSet<string>(variants.Where(IsStandaloneAsset)
+            var ownedWorkItemIds = new HashSet<string>(variants.Where(variant => variant.IsOwnedWork)
                 .Select(variant => variant.ParentItemId), StringComparer.Ordinal);
             var ownerIds = (itemIds ?? Array.Empty<string>()).Concat(variants
-                    .Where(variant => ids.Contains(variant.VariantId) && IsStandaloneAsset(variant))
+                    .Where(variant => ids.Contains(variant.VariantId) && variant.IsOwnedWork)
                     .Select(variant => variant.ParentItemId))
                 .Distinct(StringComparer.Ordinal).ToArray();
             ids = ids.Concat(variants.Where(variant => ownerIds.Contains(variant.ParentItemId) &&
-                    standaloneOwnerIds.Contains(variant.ParentItemId) &&
-                    (!archived.HasValue || variant.IsOriginal)).Select(variant => variant.VariantId))
+                    ownedWorkItemIds.Contains(variant.ParentItemId) &&
+                    (!archived.HasValue || variant.IsOwnedWork)).Select(variant => variant.VariantId))
                 .Distinct(StringComparer.Ordinal).ToArray();
             itemIds = ownerIds;
             var deleteMessageKey = itemIds.Count == 0 ? "variant.deleteConfirm" :
