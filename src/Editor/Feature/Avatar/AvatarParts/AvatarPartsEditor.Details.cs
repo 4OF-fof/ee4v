@@ -45,17 +45,16 @@ namespace Ee4v.AvatarParts
         {
             var panel = new VisualElement();
             panel.AddToClassList("ee4v-part-details");
-            var back = new UiButton(I18N.Get("workflow.objects.backToParts"),
+            var header = BuildObjectRow(entry, isDetailsHeader: true);
+            header.AddToClassList("ee4v-part-details__header");
+            var back = new UiButton(string.Empty,
                 () => NavigateToPart(null),
+                tooltip: I18N.Get("workflow.objects.backToParts"),
                 icon: FluentUiIcons.CreateState("arrow_left.png", UiSizeTokens.Size18),
                 variant: UiButtonVariant.Ghost);
             back.AddToClassList("ee4v-part-details__back");
-            panel.Add(back);
-            panel.Add(UiTextFactory.Create(entry.Name, UiClassNames.SectionTitle));
-            var path = UiTextFactory.Create(entry.Path, UiClassNames.SecondaryText,
-                "ee4v-part-details__path");
-            path.SetWhiteSpace(WhiteSpace.Normal);
-            panel.Add(path);
+            header.Insert(0, back);
+            panel.Add(header);
             GameObject target;
             try { target = ResolvePartObject(_context.Root, entry); }
             catch (Exception exception)
@@ -65,6 +64,24 @@ namespace Ee4v.AvatarParts
                     MessageSeverity.Error));
                 return panel;
             }
+            var headerState = _objectRows[entry];
+            panel.schedule.Execute(() =>
+            {
+                if (target == null) { return; }
+                var visible = !target.CompareTag("EditorOnly");
+                var activeSelf = target.activeSelf;
+                var parentActive = target.transform.parent == null ||
+                    target.transform.parent.gameObject.activeInHierarchy;
+                var activeInHierarchy = target.activeInHierarchy;
+                if (entry.IsVisible == visible && entry.IsActiveSelf == activeSelf &&
+                    entry.ParentActiveInHierarchy == parentActive &&
+                    entry.IsVisibleInHierarchy == activeInHierarchy) { return; }
+                entry.IsVisible = visible;
+                entry.IsActiveSelf = activeSelf;
+                entry.ParentActiveInHierarchy = parentActive;
+                entry.IsVisibleInHierarchy = activeInHierarchy;
+                UpdateObjectRow(entry, headerState);
+            }).Every(200);
             foreach (var component in target.GetComponents<Component>())
             {
                 if (component == null)

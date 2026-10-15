@@ -321,7 +321,9 @@ namespace Ee4v.AvatarParts
             _context.Host.RefreshPrefabPreviewVisibilityControls(prefabSiblingIndex);
         }
 
-        private VisualElement BuildObjectRow(PrefabObjectEntry entry)
+        private VisualElement BuildObjectRow(
+            PrefabObjectEntry entry,
+            bool isDetailsHeader = false)
         {
             var row = new VisualElement();
             row.AddToClassList(
@@ -330,15 +332,22 @@ namespace Ee4v.AvatarParts
                 entry.PrefabSiblingIndex, entry.SiblingPath);
             row.EnableInClassList(
                 "ee4v-modification-workflow__object-row--selected",
-                key == _context.SelectedPartKey);
+                !isDetailsHeader && key == _context.SelectedPartKey);
             var text = new VisualElement();
             text.AddToClassList(
                 "ee4v-modification-workflow__object-text");
-            text.RegisterCallback<ClickEvent>(_ => SelectPartRow(key));
+            if (!isDetailsHeader)
+            {
+                text.RegisterCallback<ClickEvent>(_ => SelectPartRow(key));
+            }
             var name = UiTextFactory.Create(
                 entry.Name,
                 "ee4v-modification-workflow__object-name");
             name.tooltip = entry.Path;
+            if (isDetailsHeader)
+            {
+                name.AddToClassList(UiClassNames.SectionTitle);
+            }
             if (entry.IsPrefabRoot)
             {
                 var nameLine = new VisualElement();
@@ -355,11 +364,22 @@ namespace Ee4v.AvatarParts
                 UiClassNames.SecondaryText,
                 "ee4v-modification-workflow__object-path");
             path.tooltip = entry.Path;
+            if (isDetailsHeader)
+            {
+                path.AddToClassList("ee4v-part-details__path");
+                path.SetWhiteSpace(WhiteSpace.Normal);
+            }
             if (!entry.IsPrefabRoot || !string.Equals(entry.Name, entry.Path, StringComparison.Ordinal))
             {
                 text.Add(path);
             }
             row.Add(text);
+            var state = new PrefabObjectRowState
+            {
+                Row = row,
+                Name = name,
+                Path = path
+            };
             var actions = new VisualElement();
             actions.AddToClassList(
                 "ee4v-modification-workflow__object-actions");
@@ -369,7 +389,11 @@ namespace Ee4v.AvatarParts
                 previewVisibility = AvatarEditingUi.CreatePrefabVisibilityButton(
                     true,
                     string.Empty,
-                    () => TogglePartPreviewVisibility(entry),
+                    () =>
+                    {
+                        TogglePartPreviewVisibility(entry);
+                        UpdateObjectRow(entry, state);
+                    },
                     "ee4v-modification-workflow__object-preview-visibility");
                 actions.Add(previewVisibility);
             }
@@ -377,19 +401,16 @@ namespace Ee4v.AvatarParts
             visibility.AddToClassList(
                 "ee4v-modification-workflow__object-visibility");
             visibility.RegisterValueChangedCallback(evt =>
-                ChangePrefabObject(entry, evt.newValue));
+            {
+                ChangePrefabObject(entry, evt.newValue);
+                UpdateObjectRow(entry, state);
+            });
             actions.Add(visibility);
             row.Add(actions);
             row.RegisterCallback<ContextClickEvent>(evt =>
                 ShowActiveSelfContextMenu(evt, entry));
-            var state = new PrefabObjectRowState
-            {
-                Row = row,
-                Name = name,
-                Path = path,
-                Visibility = visibility,
-                PreviewVisibility = previewVisibility
-            };
+            state.Visibility = visibility;
+            state.PreviewVisibility = previewVisibility;
             _objectRows[entry] = state;
             UpdateObjectRow(entry, state);
             return row;

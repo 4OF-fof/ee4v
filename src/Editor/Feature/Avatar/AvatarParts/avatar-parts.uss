@@ -7,13 +7,28 @@
     min-width: 0;
 }
 
-.ee4v-part-details__back.ee4v-ui-button {
-    align-self: flex-start;
-    margin-bottom: var(--ee4v-space-md);
+.ee4v-part-details__header.ee4v-modification-workflow__object-row {
+    min-height: 56px;
+    margin-bottom: var(--ee4v-space-lg);
+    padding: var(--ee4v-space-sm) var(--ee4v-space-md);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-lg);
+    background-color: var(--ee4v-color-surface-subtle);
 }
 
-.ee4v-part-details__path {
-    margin-bottom: var(--ee4v-space-lg);
+.ee4v-part-details__back.ee4v-ui-button {
+    width: var(--ee4v-size-28);
+    min-width: var(--ee4v-size-28);
+    height: var(--ee4v-size-28);
+    min-height: var(--ee4v-size-28);
+    flex-shrink: 0;
+    margin-right: var(--ee4v-space-md);
+    padding: 0;
+}
+
+.ee4v-part-details__path.ee4v-modification-workflow__object-path {
+    white-space: normal;
 }
 
 .ee4v-part-component {

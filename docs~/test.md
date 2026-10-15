@@ -179,6 +179,8 @@ componentの有効状態をOFFにして名前・アイコンがグレーアウ�
 
 パーツ詳細は統合ee4vと独立版Shape and Partsで手動確認します。名前・pathのクリックとPreviewの選択で詳細へ移動し、「一覧へ戻る」で一覧のスクロール位置と階層の開閉状態を復元することを確認します。Transform、Renderer、MAなどのcomponentのUI Toolkit・IMGUI Inspectorから値と有効状態を変更し、入力中のfocusを保持しながらPreviewに反映すること、Undo/RedoとホストのPrefab保存・変更破棄へ接続することを確認します。部位・Prefab範囲変更、対象切替、Window終了でInspectorを解放し、編集不可のPrefabでは変更できないこと、Missing Scriptが他のcomponentの表示を妨げないことも確認します。Catalogの`Domain/AvatarParts/Containers/Part details`は読み取り専用の詳細サンプルです。
 
+パーツ詳細のヘッダは戻る矢印、名前・path、目アイコン、EditorOnlyチェックボックスの並びを確認します。長い名前・pathでも右端の操作が収まり、pathを折り返すこと、Meshを持たないパーツでは目アイコンを表示しないことを確認します。目アイコンでPreviewだけを隠して戻せること、チェックボックスでactiveSelf・EditorOnly・Previewが一覧と同様に変わり、詳細とInspectorを保持することを確認します。非アクティブな自身・祖先では目アイコンを無効にしてTooltipを消し、EditorOnlyは操作できること、再有効化で一時非表示の状態を復元することを確認します。componentの編集後も両操作が即座にヘッダへ反映され、Undo/Redo・外部Inspectorの変更・一覧へ戻ったときに状態が一致し、Prefab保存・変更破棄へ反映されることを確認します。
+
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |
 | `ItemStyleServiceTests.Scopes_KeepProjectAndHierarchyValuesSeparate` | ProjectとHierarchyの同一IDを別設定として扱う | 異なる保存scope間のデータ混入を防ぐ |
