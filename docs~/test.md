@@ -1,5 +1,7 @@
 # テスト一覧
 
+AssetManagerのアーカイブ・解除・削除は、既存`AssetManagerApiTests`でItemとFileの所有権、複数選択と変更通知を確認します。手動では保存済みVariantの操作が全VariantのGit履歴再読み込みを起こさず、対象の索引とアーカイブ表示だけを更新し、削除したVariantの履歴だけが索引から消えることを確認します。途中で失敗した複数操作でも完了済みの状態を一覧へ反映し、所有Itemとの同期を維持することも確認します。構成Prefabの「＋」は初回のPopup表示と候補取得完了を分けて計測し、2回目はキャッシュを使って候補取得のスピナーを表示しないことを確認します。Item更新・取り込みGUID変更・アセット追加／移動／削除・Manager切り替えによる再取得、取得中の終了、編集中Prefab自身の除外、選択時の循環参照検査と追加拒否も確認します。新規テストケースは追加しません。
+
 CLIは[CLI動作確認](cli.md)に従い、起動中Unity 2022.3 EditorでMCP catalogとの全操作一致、引数、構造化失敗、画像、job・取消・reloadを確認します。Scene/Projectのwriterは隔離SceneとAssetへ実行し、元Sceneと共通Libraryを保持します。共通Library・FBX分類・照明preset・制作履歴などProjectをまたぐwriterはCLI導入時の実機検証から除外します。新規テストケースは追加しません。
 
 MCPのauthoring操作は、既存FaceExpressionTests・DerivedAssetCreatorTests・AssetManagerApiTestsで共有の曲線・Prefab・Library・履歴処理を回帰確認します。手動ではbody調査／dryRunでpreset・Sceneを変更しないこと、元Prefab基準の倍率とViewPosition連動、個別・GroupのBlendShape同期／remap、追加装着の推奨先・外部参照拒否・既存設定保持・Undoを確認します。Collectionの検索tree、Item／Fileの所有権とArchive、制作物の新規作成・metadata・試着、Projectにない保存版の一覧・復元、dirty Sceneの明示的な破棄指定、Galleryの画像検証とID・順序、animation曲線の除去・再有効化とrevisionも確認します。新規テストケースは追加しません。

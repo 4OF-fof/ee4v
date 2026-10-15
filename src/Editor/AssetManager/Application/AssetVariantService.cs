@@ -401,15 +401,19 @@ namespace Ee4v.AssetManager.Application
                         _manager.SetItemArchived(new[] { owner.Id }, archived);
                     if (variant != null && !string.IsNullOrEmpty(variant.HeadRevisionId))
                     {
-                        await Task.Run(() => _repository.UpdateMetadata(new AssetVariant
+                        var updated = new AssetVariant
                         {
                             Id = variant.Id, ParentItemId = variant.ParentItemId,
                             SourcePrefabGuid = variant.SourcePrefabGuid,
                             Name = variant.Name, Description = variant.Description,
                             Tags = variant.Tags, CreatedAt = variant.CreatedAt,
-                            RootAssetPath = variant.RootAssetPath, IsArchived = archived, UpdatedAt = DateTime.UtcNow
-                        }));
-                        ReplaceIndex();
+                            RootAssetPath = variant.RootAssetPath, IsArchived = archived, UpdatedAt = DateTime.UtcNow,
+                            HeadRevisionId = variant.HeadRevisionId, FileSizeBytes = variant.FileSizeBytes
+                        };
+                        await Task.Run(() => _repository.UpdateMetadata(updated));
+                        _index.UpdateVariantMetadata(updated);
+                        if (_snapshots.TryGetValue((variant.Id, variant.HeadRevisionId), out var head))
+                            head.Variant = updated;
                     }
                 }
                 catch
@@ -441,7 +445,9 @@ namespace Ee4v.AssetManager.Application
                     throw;
                 }
                 _workspace.SetBaseRevision(variantId, null);
-                ReplaceIndex();
+                _index.DeleteVariantIndex(variantId);
+                _snapshots = _snapshots.Where(pair => pair.Key.VariantId != variantId)
+                    .ToDictionary(pair => pair.Key, pair => pair.Value);
                 NotifyChanged();
             }
             finally { _busy = false; }

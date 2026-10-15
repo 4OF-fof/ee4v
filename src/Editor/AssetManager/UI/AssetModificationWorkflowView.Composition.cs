@@ -460,11 +460,11 @@ namespace Ee4v.AssetManager.UI
         {
             var target = _avatarContext.Root;
             var variantPath = GetWorkingAssetPath();
-            var sources = GetVariantSources(prefab => CanAddPrefab(prefab, variantPath));
             AssetPrefabPickerWindow.Show(
                 anchor,
-                sources,
                 _manager,
+                variantPath,
+                path => CanAddPrefabPath(path, variantPath),
                 prefab =>
                 {
                     if (!_disposed && _avatarContext.Root == target)
@@ -531,7 +531,11 @@ namespace Ee4v.AssetManager.UI
         private static bool CanAddPrefab(GameObject prefab, string variantPath)
         {
             if (prefab == null) return false;
-            var prefabPath = AssetDatabase.GetAssetPath(prefab);
+            return CanAddPrefabPath(AssetDatabase.GetAssetPath(prefab), variantPath);
+        }
+
+        private static bool CanAddPrefabPath(string prefabPath, string variantPath)
+        {
             return !string.IsNullOrEmpty(prefabPath) &&
                 prefabPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(prefabPath, variantPath, StringComparison.OrdinalIgnoreCase) &&

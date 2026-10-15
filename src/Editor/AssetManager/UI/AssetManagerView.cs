@@ -649,7 +649,7 @@ namespace Ee4v.AssetManager.UI
                 _itemGrid?.ClearThumbnails();
             }
 
-            if (_defersManagerRefresh)
+            if (_defersManagerRefresh || _variantState.DefersLifecycleRefresh)
             {
                 _managerRefreshPending = true;
                 return;
@@ -688,6 +688,7 @@ namespace Ee4v.AssetManager.UI
         private void OnProjectChanged()
         {
             _importedItemIdsInProject = null;
+            if (_variantState.DefersLifecycleRefresh) { return; }
             if (_variantState.VariantMetadataSaveCount > 0) { return; }
             if (ShowsVariants || _viewState.Page == AssetManagerPage.Archived || !string.IsNullOrEmpty(_viewState.DetailVariantId) ||
                 !string.IsNullOrEmpty(_viewState.DetailItemId))
@@ -714,6 +715,7 @@ namespace Ee4v.AssetManager.UI
         private void OnViewStateChanged(
             AssetManagerViewStateChange change)
         {
+            if (_variantState.DefersLifecycleRefresh) { return; }
             switch (change)
             {
                 case AssetManagerViewStateChange.ArchiveSelection:

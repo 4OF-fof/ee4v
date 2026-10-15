@@ -30,6 +30,7 @@ namespace Ee4v.AssetManager.UI
             internal CancellationTokenSource VariantRevisionHoverCancellation;
             internal FileTreeImageTooltipWindow VariantRevisionTooltip;
             internal bool VariantBusy;
+            internal bool DefersLifecycleRefresh;
             internal Task VariantMetadataSaveTask = Task.CompletedTask;
             internal int VariantMetadataSaveCount;
             internal CancellationTokenSource VariantPreviewCancellation;
@@ -1099,6 +1100,7 @@ namespace Ee4v.AssetManager.UI
                 I18N.Get(deleteMessageKey, selectedCount))) return;
             _variantState.VariantBusy = true;
             Refresh();
+            _variantState.DefersLifecycleRefresh = true;
             try
             {
                 foreach (var id in ids.Distinct(StringComparer.Ordinal))
@@ -1112,10 +1114,15 @@ namespace Ee4v.AssetManager.UI
                     {
                         _viewState.SelectArchiveEntries(Array.Empty<string>(), null);
                     }
-                    if (archived.HasValue) _manager.SetItemArchived(itemIds, archived.Value);
+                    if (archived.HasValue)
+                    {
+                        var changed = itemIds.Where(id => _manager.GetItem(id).IsArchived != archived.Value).ToArray();
+                        if (changed.Length > 0) _manager.SetItemArchived(changed, archived.Value);
+                    }
                     else
                     {
-                        _manager.SetItemArchived(itemIds, true);
+                        var unarchived = itemIds.Where(id => !_manager.GetItem(id).IsArchived).ToArray();
+                        if (unarchived.Length > 0) _manager.SetItemArchived(unarchived, true);
                         _manager.DeleteItem(itemIds);
                     }
                 }
@@ -1136,8 +1143,10 @@ namespace Ee4v.AssetManager.UI
             }
             finally
             {
+                _variantState.DefersLifecycleRefresh = false;
                 _variantState.VariantBusy = false;
-                if (!_disposed) Refresh();
+                _managerRefreshPending = false;
+                if (!_disposed) RefreshAfterManagerChange();
             }
         }
 
@@ -1176,6 +1185,7 @@ namespace Ee4v.AssetManager.UI
             if (_variantState.VariantGalleryOperationId != null) { return; }
             _variantState.VariantRevisionDetails.Clear();
             _itemGrid?.ClearThumbnails();
+            if (_variantState.DefersLifecycleRefresh) { return; }
             if (_variantState.VariantMetadataSaveCount > 0) { return; }
             if (!_disposed && (ShowsMain || ShowsVariants || InformationVariantId != null ||
                 _viewState.Page == AssetManagerPage.Archived || !string.IsNullOrEmpty(_viewState.DetailVariantId) ||

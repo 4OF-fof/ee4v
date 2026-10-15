@@ -115,6 +115,7 @@
       "addToVariant": "追加",
       "choosePrefab": "左の一覧からPrefabを選択してください。",
       "loadingPreview": "プレビューを準備中…",
+      "loadingSources": "Prefab候補を取得中…",
       "noPreview": "プレビューを表示できません。",
       "pickerTitle": "Prefabを追加",
       "closePicker": "閉じる",

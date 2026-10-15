@@ -43,8 +43,17 @@ namespace Ee4v.AssetManager.UI
 
         internal sealed class VariantSourceOption
         {
+            private IReadOnlyList<GameObject> _prefabs;
             internal AssetItem Item { get; set; }
-            internal IReadOnlyList<GameObject> Prefabs { get; set; }
+            internal IReadOnlyList<string> PrefabPaths { get; set; }
+            internal int PrefabCount => PrefabPaths?.Count ?? Prefabs?.Count ?? 0;
+            internal IReadOnlyList<GameObject> Prefabs
+            {
+                get => _prefabs ?? (_prefabs = (PrefabPaths ?? Array.Empty<string>())
+                    .Select(AssetDatabase.LoadAssetAtPath<GameObject>).Where(prefab => prefab != null)
+                    .OrderBy(prefab => prefab.name, StringComparer.OrdinalIgnoreCase).ToArray());
+                set => _prefabs = value;
+            }
         }
 
         private sealed class AssetChildEntry

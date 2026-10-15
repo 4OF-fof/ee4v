@@ -115,6 +115,7 @@
       "addToVariant": "Add",
       "choosePrefab": "Select a Prefab from the list.",
       "loadingPreview": "Preparing preview…",
+      "loadingSources": "Loading Prefab candidates…",
       "noPreview": "Preview is unavailable.",
       "pickerTitle": "Add a Prefab",
       "closePicker": "Close",

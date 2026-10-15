@@ -56,6 +56,34 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             });
         }
 
+        public void UpdateVariantMetadata(AssetVariant variant)
+        {
+            Run(() =>
+            {
+                using (var connection = OpenConnection())
+                {
+                    connection.Execute(@"UPDATE variant SET name = ?, description = ?,
+                        root_asset_path = ?, updated_at = ? WHERE id = ?",
+                        variant.Name, variant.Description ?? string.Empty, variant.RootAssetPath,
+                        variant.UpdatedAt.ToString("O"), variant.Id);
+                }
+                return true;
+            });
+        }
+
+        public void DeleteVariantIndex(string variantId)
+        {
+            Run(() =>
+            {
+                using (var connection = OpenConnection())
+                {
+                    // The foreign key removes this Variant's revision rows as well.
+                    connection.Execute("DELETE FROM variant WHERE id = ?", variantId);
+                }
+                return true;
+            });
+        }
+
         public IReadOnlyList<AssetVariant> GetVariants()
         {
             return Run(() =>
