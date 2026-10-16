@@ -14,13 +14,19 @@ namespace Ee4v.FaceExpression
     {
         public static ExpressionLibraryEntry Publish(GameObject avatar, AnimationClip clip, string folder = "",
             string primaryFbxGuid = null, IExpressionLibrary library = null)
+            => Publish(avatar, clip, folder, primaryFbxGuid, library,
+                () => FaceExpressionApi.RenderPreview(avatar, clip, 256, 256));
+
+        internal static ExpressionLibraryEntry Publish(GameObject avatar, AnimationClip clip, string folder,
+            string primaryFbxGuid, IExpressionLibrary library, Func<byte[]> renderPreview)
         {
             if (avatar == null || clip == null) throw new ArgumentException("An avatar and expression Clip are required.");
             var findings = FaceExpressionApi.ValidateClip(avatar, clip);
             if (findings.Any(finding => finding.Code == "binding_not_found" || finding.Code == "non_blendshape_curve" ||
                     finding.Code == "object_reference_curves" || finding.Code == "animation_events" || finding.Severity == "error"))
                 throw new InvalidOperationException("The expression contains unsupported or invalid bindings.");
-            var channels = FaceExpressionApi.Inspect(avatar, clip);
+            var channels = FaceExpressionClipEditor.Read(avatar, clip, FaceExpressionSettings.GetSeparators(),
+                FaceExpressionClipEditor.GetRendererPaths(avatar));
             var targets = channels.Where(channel => channel.Animated && !channel.IsHeader)
                 .Select(channel => new ExpressionTarget { FbxGuid = channel.SourceAssetGuid,
                     FbxName = Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(channel.SourceAssetGuid)),
@@ -46,7 +52,7 @@ namespace Ee4v.FaceExpression
             return library.Publish(new ExpressionPublishRequest { AssetPath = AssetDatabase.GetAssetPath(clip), Name = clip.name,
                 Folder = folder, PrimaryFbxGuid = primaryFbxGuid, Targets = targets,
                 ExpectedRevision = library.GetWorkingRevision(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(clip))),
-                Preview = FaceExpressionApi.RenderPreview(avatar, clip, 256, 256) });
+                Preview = renderPreview() });
         }
 
         public static void ValidateTarget(GameObject avatar, ExpressionLibraryEntry entry)

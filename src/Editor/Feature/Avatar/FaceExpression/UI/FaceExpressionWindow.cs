@@ -187,6 +187,7 @@ namespace Ee4v.FaceExpression
             Undo.undoRedoPerformed += OnUndoRedo;
             EditorApplication.projectChanged += RefreshLibrary;
             EditorApplication.update += UpdatePlayback;
+            EditorApplication.update += RegisterNextLocalExpression;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             AssemblyReloadEvents.beforeAssemblyReload += SavePendingChanges;
             I18N.Reloaded += Rebuild;
@@ -220,6 +221,7 @@ namespace Ee4v.FaceExpression
             Undo.undoRedoPerformed -= OnUndoRedo;
             EditorApplication.projectChanged -= RefreshLibrary;
             EditorApplication.update -= UpdatePlayback;
+            EditorApplication.update -= RegisterNextLocalExpression;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             AssemblyReloadEvents.beforeAssemblyReload -= SavePendingChanges;
             I18N.Reloaded -= Rebuild;
@@ -357,6 +359,8 @@ namespace Ee4v.FaceExpression
             _sharedCandidateEntry = null;
             ReleaseClipSnapshots();
             _avatar = avatar;
+            _localRegistrations.Clear();
+            _localRegistrationFailures.Clear();
             _showOtherLibraryTargets = false;
             _sharedFolder = string.Empty;
             _libraryFolder = _libraryRootFolder;
@@ -410,6 +414,7 @@ namespace Ee4v.FaceExpression
 
         private void SelectAssignmentCandidate(AnimationClip clip)
         {
+            _libraryInteractionAt = EditorApplication.timeSinceStartup;
             if (_avatar == null) { return; }
             CancelLibraryOperation();
             _sharedCandidateEntry = null;
@@ -1342,7 +1347,7 @@ namespace Ee4v.FaceExpression
 
         private void RefreshLibrary()
         {
-            SynchronizeSharedLibrary();
+            var libraryReady = SynchronizeSharedLibrary();
             if (IsClipMissing)
             {
                 SetClip(null);
@@ -1366,6 +1371,7 @@ namespace Ee4v.FaceExpression
             if (!AssetDatabase.IsValidFolder(rootFolder))
             {
                 _libraryClips = Array.Empty<AnimationClip>();
+                QueueLocalRegistrations(libraryReady);
                 RenderLibrary();
                 return;
             }
@@ -1390,6 +1396,7 @@ namespace Ee4v.FaceExpression
                             finding.Code == "animation_events" || finding.Severity == "error"))
                         _currentLibraryClips.Add(clip);
             }
+            QueueLocalRegistrations(libraryReady);
             RenderLibrary();
         }
 
@@ -1400,6 +1407,7 @@ namespace Ee4v.FaceExpression
 
         private void OpenLibraryFolder(string folder)
         {
+            _libraryInteractionAt = EditorApplication.timeSinceStartup;
             if (folder == FaceExpressionView.OtherAvatarsFolderPath)
             {
                 _showOtherLibraryTargets = true;
@@ -1428,6 +1436,7 @@ namespace Ee4v.FaceExpression
 
         private void GoBack()
         {
+            _libraryInteractionAt = EditorApplication.timeSinceStartup;
             if (HasClipReference)
             {
                 SetClip(null);

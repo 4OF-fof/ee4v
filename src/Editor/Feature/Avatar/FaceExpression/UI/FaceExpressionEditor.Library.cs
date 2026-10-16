@@ -23,6 +23,11 @@ namespace Ee4v.FaceExpression
         private string _sharedFolder = string.Empty;
         private CancellationTokenSource _libraryOperation = new CancellationTokenSource();
         private readonly Dictionary<string, Texture2D> _sharedPreviews = new Dictionary<string, Texture2D>();
+        private readonly Queue<AnimationClip> _localRegistrations = new Queue<AnimationClip>();
+        private readonly Dictionary<string, Hash128> _localRegistrationFailures = new Dictionary<string, Hash128>();
+        private bool _localRegistrationRenderPending;
+        private bool _localRegistrationPreviewPrepared;
+        private double _libraryInteractionAt = double.NegativeInfinity;
 
         private void EnsureSharedLibrary()
         {
@@ -34,7 +39,7 @@ namespace Ee4v.FaceExpression
             catch (Exception exception) { ReportLibraryFailure(exception); }
         }
 
-        private void SynchronizeSharedLibrary()
+        private bool SynchronizeSharedLibrary()
         {
             try
             {
@@ -42,14 +47,99 @@ namespace Ee4v.FaceExpression
                 _expressionLibrary.Synchronize();
                 _sharedEntries = _expressionLibrary.List();
                 PruneSharedPreviews();
+                return true;
             }
-            catch (Exception exception) { ReportLibraryFailure(exception); }
+            catch (Exception exception) { ReportLibraryFailure(exception); return false; }
         }
+
+        private void QueueLocalRegistrations(bool libraryReady)
+        {
+            _localRegistrations.Clear();
+            _localRegistrationRenderPending = false;
+            _localRegistrationPreviewPrepared = false;
+            if (!libraryReady || _avatar == null || _expressionLibrary == null || _disposed) return;
+            var sharedGuids = _sharedEntries.SelectMany(entry => entry.Assets.Select(asset => asset.Guid)).ToHashSet();
+            foreach (var clip in _libraryClips)
+            {
+                if (!_currentLibraryClips.Contains(clip)) continue;
+                var path = AssetDatabase.GetAssetPath(clip);
+                var guid = AssetDatabase.AssetPathToGUID(path);
+                if (!path.EndsWith(".anim", StringComparison.OrdinalIgnoreCase) || sharedGuids.Contains(guid) ||
+                    HasPendingLibraryEdits(clip, path)) continue;
+                if (_localRegistrationFailures.TryGetValue(guid, out var failedHash) &&
+                    failedHash == AssetDatabase.GetAssetDependencyHash(path)) continue;
+                _localRegistrations.Enqueue(clip);
+            }
+        }
+
+        private void RegisterNextLocalExpression()
+        {
+            if (_disposed || _avatar == null || _expressionLibrary == null || _root.panel == null ||
+                EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+            if (_localRegistrations.Count > 0)
+            {
+                var clip = _localRegistrations.Dequeue();
+                if (clip != null)
+                {
+                    var path = AssetDatabase.GetAssetPath(clip);
+                    var guid = AssetDatabase.AssetPathToGUID(path);
+                    if (IsAtOrBelow(GetAssetDirectory(path), _libraryRootFolder) &&
+                        !HasPendingLibraryEdits(clip, path) &&
+                        !_expressionLibrary.List().Any(entry => entry.Assets.Any(asset => asset.Guid == guid)))
+                    {
+                        try
+                        {
+                            FaceExpressionLibraryApi.Publish(_avatar, clip, GetLocalLibraryFolder(clip), null,
+                                _expressionLibrary, () => RenderLocalRegistrationPreview(clip));
+                            _localRegistrationFailures.Remove(guid);
+                            _localRegistrationRenderPending = true;
+                        }
+                        catch (Exception exception)
+                        {
+                            _localRegistrationFailures[guid] = AssetDatabase.GetAssetDependencyHash(path);
+                            ReportLibraryFailure(new InvalidOperationException(clip.name + ": " + exception.Message, exception));
+                        }
+                    }
+                }
+            }
+            // Keep the clicked card alive throughout the double-click interval.
+            if (_localRegistrations.Count > 0 || !_localRegistrationRenderPending ||
+                EditorApplication.timeSinceStartup - _libraryInteractionAt < 0.6d) return;
+            _localRegistrationRenderPending = false;
+            _sharedEntries = _expressionLibrary.List();
+            if (_assignmentCandidateClip != null && _sharedCandidateEntry == null)
+                _sharedCandidateEntry = _expressionLibrary.FindByRootGuid(
+                    AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(_assignmentCandidateClip)));
+            PruneSharedPreviews();
+            RenderLibrary();
+        }
+
+        private byte[] RenderLocalRegistrationPreview(AnimationClip clip)
+        {
+            if (!_localRegistrationPreviewPrepared)
+            {
+                _preview.PrepareThumbnailSource(FaceExpressionPreview.GetThumbnailSourceSignature(_avatar));
+                _localRegistrationPreviewPrepared = true;
+            }
+            var channels = FaceExpressionClipEditor.Read(_avatar, clip, FaceExpressionSettings.GetSeparators(_settings),
+                _previewRendererPaths);
+            var texture = _preview.RenderThumbnail(channels, 256, 256);
+            if (texture == null) return Array.Empty<byte>();
+            try { return texture.EncodeToPNG(); }
+            finally { UnityEngine.Object.DestroyImmediate(texture); }
+        }
+
+        private bool HasPendingLibraryEdits(AnimationClip clip, string path) => _editedClips.Contains(clip) ||
+            AssetDatabase.GetDependencies(path, true).Where(dependency => dependency.EndsWith(".anim", StringComparison.OrdinalIgnoreCase))
+                .SelectMany(AssetDatabase.LoadAllAssetsAtPath)
+                .Any(asset => EditorUtility.IsDirty(asset) || asset is AnimationClip dependencyClip && _editedClips.Contains(dependencyClip));
 
         private void OnLibraryPathChanged()
         {
             CancelLibraryOperation();
             _expressionLibrary = null;
+            _localRegistrations.Clear();
+            _localRegistrationFailures.Clear();
             _sharedEntries = Array.Empty<ExpressionLibraryEntry>();
             _sharedCandidateEntry = null;
             _showOtherLibraryTargets = false;
@@ -96,6 +186,7 @@ namespace Ee4v.FaceExpression
 
         private void SelectSharedCandidate(ExpressionLibraryEntry entry)
         {
+            _libraryInteractionAt = EditorApplication.timeSinceStartup;
             if (_sharedCandidateEntry?.Id == entry.Id && _sharedCandidateEntry.Revision == entry.Revision &&
                 _assignmentCandidateClip != null) return;
             CancelLibraryOperation();
@@ -275,6 +366,8 @@ namespace Ee4v.FaceExpression
 
         private void DisposeSharedLibrary()
         {
+            _localRegistrations.Clear();
+            _localRegistrationFailures.Clear();
             _libraryOperation.Cancel();
             _libraryOperation.Dispose();
             if (_libraryPlaceholder != null) UnityEngine.Object.DestroyImmediate(_libraryPlaceholder);

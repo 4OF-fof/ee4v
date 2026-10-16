@@ -2,6 +2,8 @@
 
 表情の共有保存・ee4v固定の同期・ライブラリ表示・割り当て前の自動Importは、[表情ライブラリの契約](face-expression-library-sync.md)を参照してください。AssetManagerと同じDB内の専用テーブルを使用します。
 
+`Animation/Facial`配下の未登録Clipは、一覧表示と同時に自動登録の対象となります。現在のアバターと対象が一致する保存済みClipを下位フォルダーからも検出し、Editor更新ごとに1件ずつ共有登録します。登録済みClipと未保存の編集は自動更新せず、対象不一致・登録失敗のClipはローカル候補として保持します。
+
 ライブラリと割り当て一覧、および割り当て編集と設定の切り替えには共通`ExclusiveButtonGroup`の下線型タブを使用します。選択表示と排他制御は共通UIが担当し、表示する内容と選択可能な状態はFaceExpressionが決定します。
 
 Catalogの表情変換Storyは専用Preview SceneのMesh・Clipを使います。`ExpressionConversionView`の`previewOnly`では通常と同じ変換・検証を実行し、結果通知後に一時Clipを破棄します。保存ダイアログとAsset作成は行いません。BlendShapeの数値行は共通`ScalarInput`を使い、Storyのお気に入り状態もメモリ内に保持します。
