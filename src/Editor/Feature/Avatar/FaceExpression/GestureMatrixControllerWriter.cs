@@ -1276,24 +1276,13 @@ namespace Ee4v.FaceExpression
                      .Where(item => item.Value.Clip != null))
             {
                 var assignment = pair.Value;
-                var leftGesture = pair.Key.Left == FaceGesture.Neutral
-                    ? (FaceGesture?)null
-                    : pair.Key.Left;
-                var name = string.IsNullOrWhiteSpace(assignment.MenuName)
-                    ? assignment.Clip.name
-                    : assignment.MenuName.Trim();
-                if (result.Any(item =>
-                        item.LeftGesture == leftGesture &&
-                        item.Entry.Name == name &&
-                        item.Entry.Assignment.Clip == assignment.Clip))
-                {
-                    continue;
-                }
+                var name = pair.Key.Left.ToString().ToLowerInvariant() + "+" +
+                           pair.Key.Right.ToString().ToLowerInvariant();
 
                 result.Add(new EffectiveMenuEntry(
                     new FaceExpressionMenuEntry(name, assignment),
                     false,
-                    leftGesture));
+                    pair.Key.Left));
             }
 
             foreach (var entry in (menuEntries ?? Array.Empty<FaceExpressionMenuEntry>())

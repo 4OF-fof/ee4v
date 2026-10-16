@@ -177,6 +177,7 @@ namespace Ee4v.FaceExpression
             {
                 _thumbnailSourceSignature ??= GetThumbnailSourceSignature(_sourceAvatar);
                 _thumbnailUtility = new AvatarPreviewRenderer(_sourceAvatar, isolatedSnapshot: true);
+                _thumbnailUtility.SetHumanoidPose(false);
                 foreach (var renderer in _thumbnailUtility.Root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 {
                     if (renderer.sharedMesh == null) continue;
@@ -223,7 +224,14 @@ namespace Ee4v.FaceExpression
         }
 
         internal static Hash128 GetThumbnailSourceSignature(GameObject avatar) => Hash128.Compute(
-            avatar.GetInstanceID() + ":" + string.Join(";",
+            "facial-thumbnail-v2:" + avatar.GetInstanceID() + ":" + string.Join(";",
+                avatar.GetComponentsInChildren<Transform>(true).Select(transform =>
+                    AnimationUtility.CalculateTransformPath(transform, avatar.transform) + ":" +
+                    EditorJsonUtility.ToJson(transform) + ":" + transform.gameObject.activeSelf)) + ":" +
+            string.Join(";", avatar.GetComponentsInChildren<Component>(true)
+                .Where(component => component != null && (component.GetType().Name == "ModularAvatarBoneProxy" ||
+                    component.GetType().Name == "ModularAvatarMergeArmature"))
+                .Select(EditorJsonUtility.ToJson)) + ":" + string.Join(";",
                 avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(renderer =>
                     EditorJsonUtility.ToJson(renderer) + ":" +
                     AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetPath(renderer.sharedMesh)) + ":" +

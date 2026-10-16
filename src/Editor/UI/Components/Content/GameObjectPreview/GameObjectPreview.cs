@@ -203,7 +203,7 @@ namespace Ee4v.UI
                     UpdateBodyPartAnimationTime();
                     RequestPreviewRepaint();
                 }
-            }).Every(33);
+            }).Every(16);
         }
 
         public void SetTarget(GameObject target)

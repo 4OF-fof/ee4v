@@ -134,10 +134,10 @@ namespace Ee4v.FaceExpression.Tests
                         assignments,
                         menuEntries);
                 Assert.That(
-                    effectiveEntries.Count(entry =>
-                        entry.Name == "Smile Pair" &&
-                        entry.LeftGesture == FaceGesture.Fist),
-                    Is.EqualTo(1));
+                    effectiveEntries.Where(entry =>
+                            !entry.IsExplicit && entry.LeftGesture == FaceGesture.Fist)
+                        .Select(entry => entry.Name),
+                    Is.EqualTo(new[] { "fist+open", "fist+point" }));
                 Assert.That(
                     effectiveEntries.Any(entry =>
                         entry.Name == "Menu Angry" &&

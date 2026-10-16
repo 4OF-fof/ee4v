@@ -15,6 +15,8 @@
 
 CameraはPreview Sceneの描画資源と照明を使用し、NDMFのProxy Sceneも描画対象に含めます。対象外のRendererはCameraの描画中だけ`forceRenderingOff`へ変更します。Materialの非表示と選択比較は該当slotへ描画中だけ透明Materialを割り当てます。描画後・例外時に元のRenderer状態とMaterialを復元し、保存対象に表示設定を残しません。対象外Rendererの検索結果はHierarchy変更まで再利用します。
 
+UIの`GameObjectPreview`は16ms間隔でアニメーション時刻と描画を更新要求します。瞬きなどの短い動きを約60fpsで表示できる周期とし、実際の表示頻度はEditorの更新と描画負荷に従います。生成AnimationClipのサンプルレートやAnimatorの再生速度は変更しません。
+
 ## 編集用override
 
 `RenderPng`は64〜1024pxの描画をsRGBへreadbackし、PNGをメモリ上で返します。RenderTextureのactive状態と`GL.sRGBWrite`を成功・失敗とも復元し、一時RenderTexture・Texture2Dを解放します。同期的な外部撮影では`isolatedSnapshot: true`を使用し、NDMFの非同期Preview構築を待たずにSceneの元Avatarへ書き込みません。
