@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Ee4v.Mcp
 {
-    internal static class FaceExpressionMcpTools
+    internal static partial class FaceExpressionMcpTools
     {
         internal static void Register()
         {
@@ -23,9 +23,10 @@ namespace Ee4v.Mcp
                     ["rendererPath"] = McpSchemas.String(), ["shapeName"] = McpSchemas.String(), ["enabled"] = McpSchemas.Boolean(),
                     ["poseIndex"] = McpSchemas.Integer(), ["value"] = McpSchemas.Number(), ["expectedRevision"] = McpSchemas.String(), ["dryRun"] = McpSchemas.Boolean() },
                     "avatarRef", "clipPath", "rendererPath", "shapeName", "enabled", "expectedRevision"),
-                args => Task.FromResult(McpToolResult.Success(McpJson.From(FaceExpressionApi.SetAnimationChannelEnabled(Avatar(args), RequiredClip(args),
+                args => Task.FromResult(SaveExpressionWrite(args, () => McpToolResult.Success(McpJson.From(FaceExpressionApi.SetAnimationChannelEnabled(Avatar(args), RequiredClip(args),
                     (string)args["rendererPath"], McpJson.RequireString(args, "shapeName"), (bool)args["enabled"], (int?)args["poseIndex"] ?? 0,
-                    (float?)args["value"], (bool?)args["dryRun"] ?? false, McpJson.RequireString(args, "expectedRevision"))))), false, destructive: true));
+                    (float?)args["value"], (bool?)args["dryRun"] ?? false, McpJson.RequireString(args, "expectedRevision")))), "clipPath")), false, destructive: true));
+            RegisterExpressionLibrary();
             RegisterListBlendShapePresets();
             RegisterGetBlendShapePreset();
             RegisterUpdateBlendShapePreset();
@@ -165,26 +166,33 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_upsert_expression_clip",
-                "Creates or atomically updates a static, single-pose face AnimationClip. Use create to reject overwrites, patch to preserve unspecified channels, or replace to clear unspecified BlendShape channels. Use the expression-animation tools for clips with multiple poses.",
+                "Creates or updates a static single-pose expression and saves it to the shared expression library. For create, supply name and optional libraryFolder to use the configured Animation/Facial location, or assetPath within that location. patch/replace require assetPath. Use expression-animation tools for multiple poses. dryRun creates no Clip or shared entry.",
                 McpSchemas.Object(new JObject
                 {
                     ["avatarRef"] = McpSchemas.String(),
                     ["assetPath"] = McpSchemas.String(
-                        "Destination .anim path under Assets."),
+                        "Optional for create; destination .anim path in the configured Animation/Facial folder. Required for patch/replace."),
+                    ["name"] = McpSchemas.String("New expression file name without a directory."),
+                    ["libraryFolder"] = McpSchemas.String("Optional relative folder in the expression library."),
+                    ["primaryFbxGuid"] = McpSchemas.String("Optional primary FBX for avatars with multiple FBXs and no Body."),
                     ["mode"] = McpSchemas.Enum("create", "patch", "replace"),
                     ["channels"] = McpSchemas.Array(StaticChannelSchema()),
                     ["dryRun"] = McpSchemas.Boolean(),
                     ["expectedRevision"] = McpSchemas.String(
                         "Optional revision returned by inspect_face when clipPath is provided.")
-                }, "avatarRef", "assetPath", "mode", "channels"),
-                arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
+                }, "avatarRef", "mode", "channels"),
+                arguments =>
+                {
+                    var prepared = PrepareExpressionDestination(arguments, "assetPath", (string)arguments["mode"] == "create");
+                    return Task.FromResult(SaveExpressionWrite(prepared, () => McpToolResult.Success(McpJson.From(
                     FaceExpressionApi.WriteClip(
-                        Avatar(arguments),
-                        (string)arguments["assetPath"],
-                        ParseWriteMode((string)arguments["mode"]),
-                        McpJson.To<List<FaceExpressionClipChange>>(arguments["channels"]),
-                        (bool?)arguments["dryRun"] ?? false,
-                        (string)arguments["expectedRevision"])))),
+                        Avatar(prepared),
+                        (string)prepared["assetPath"],
+                        ParseWriteMode((string)prepared["mode"]),
+                        McpJson.To<List<FaceExpressionClipChange>>(prepared["channels"]),
+                        (bool?)prepared["dryRun"] ?? false,
+                        (string)prepared["expectedRevision"]))), "assetPath"));
+                },
                 readOnly: false,
                 destructive: true,
                 idempotent: true));
@@ -210,6 +218,7 @@ namespace Ee4v.Mcp
                     {
                         ok = true,
                         revision = FaceExpressionApi.Revision(clip),
+                        library = InspectLibraryClip(clip),
                         animation = (bool?)arguments["includeAnimation"] == false ? null :
                             FaceExpressionApi.InspectAnimation(clip, (bool?)arguments["includeChannels"] ?? false),
                         errorCount = findings.Count(finding => finding.Severity == "error"),
@@ -237,17 +246,17 @@ namespace Ee4v.Mcp
                 ["dryRun"] = McpSchemas.Boolean(),
                 ["expectedRevision"] = RevisionSchema()
             };
-            var schema = McpSchemas.Object(properties, "action", "clipPath");
+            var schema = McpSchemas.Object(properties, "action", "avatarRef", "clipPath");
             schema["oneOf"] = new JArray(
                 AnimationEditSchema(properties, "add", new[] { "avatarRef", "afterPoseIndex", "transitionDuration", "name", "sourceClipPath", "channels" }, new[] { "avatarRef", "afterPoseIndex", "transitionDuration" }),
                 AnimationEditSchema(properties, "update", new[] { "avatarRef", "poseIndex", "name", "sourceClipPath", "channels", "transitionDuration" }, new[] { "avatarRef", "poseIndex" }),
-                AnimationEditSchema(properties, "move", new[] { "poseIndex", "targetIndex" }, new[] { "poseIndex", "targetIndex" }),
-                AnimationEditSchema(properties, "setLoop", new[] { "looping" }, new[] { "looping" }));
+                AnimationEditSchema(properties, "move", new[] { "avatarRef", "poseIndex", "targetIndex" }, new[] { "avatarRef", "poseIndex", "targetIndex" }),
+                AnimationEditSchema(properties, "setLoop", new[] { "avatarRef", "looping" }, new[] { "avatarRef", "looping" }));
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_edit_expression_animation",
-                "Edits one expression animation using action add, update, move, or setLoop. add duplicates a pose after afterPoseIndex; update patches supplied pose fields; move swaps adjacent poses; setLoop changes looping only. dryRun and expectedRevision apply to every action. Pose deletion is a separate destructive tool.",
+                "Edits and saves one shared expression animation using action add, update, move, or setLoop. avatarRef is required for every action. add duplicates a pose after afterPoseIndex; update patches supplied pose fields; move swaps adjacent poses; setLoop changes looping only. dryRun and expectedRevision apply to every action. Pose deletion is a separate destructive tool.",
                 schema,
-                arguments => Task.FromResult(EditAnimation(arguments)),
+                arguments => Task.FromResult(SaveExpressionWrite(arguments, () => EditAnimation(arguments), "clipPath")),
                 readOnly: false, destructive: false, idempotent: false));
         }
 
@@ -317,20 +326,21 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_remove_expression_pose",
-                "Removes one expression pose and closes the resulting gap. An expression clip must retain at least one pose.",
+                "Removes one expression pose and saves the updated shared expression. avatarRef is required. An expression clip must retain at least one pose.",
                 McpSchemas.Object(new JObject
                 {
+                    ["avatarRef"] = McpSchemas.String(),
                     ["clipPath"] = McpSchemas.String(),
                     ["poseIndex"] = McpSchemas.Integer(),
                     ["dryRun"] = McpSchemas.Boolean(),
                     ["expectedRevision"] = RevisionSchema()
-                }, "clipPath", "poseIndex"),
-                arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
+                }, "avatarRef", "clipPath", "poseIndex"),
+                arguments => Task.FromResult(SaveExpressionWrite(arguments, () => McpToolResult.Success(McpJson.From(
                     FaceExpressionApi.RemoveAnimationPose(
                         RequiredClip(arguments),
                         (int)arguments["poseIndex"],
                         (bool?)arguments["dryRun"] ?? false,
-                        (string)arguments["expectedRevision"])))),
+                        (string)arguments["expectedRevision"]))), "clipPath")),
                 readOnly: false,
                 destructive: true,
                 idempotent: false));
@@ -386,24 +396,31 @@ namespace Ee4v.Mcp
         {
             McpToolRegistry.Register(new McpToolDefinition(
                 "ee4v_remap_expression_clip",
-                "Copies a static, single-pose face clip between avatars; animated source clips are rejected. An existing static destination is replaced. Exact renderer-path and BlendShape-name matches are preferred, then ee4v preset role and side are used. Ambiguous or unresolved channels are reported instead of guessed.",
+                "Copies and registers a static single-pose expression for the target avatar; animated source clips are rejected. Supply name and optional libraryFolder for the configured Animation/Facial destination, or targetAssetPath within that folder. An existing static destination is replaced. Exact renderer-path and BlendShape-name matches are preferred, then ee4v preset role and side are used. Ambiguous or unresolved channels are reported instead of guessed.",
                 McpSchemas.Object(new JObject
                 {
                     ["sourceAvatarRef"] = McpSchemas.String(),
                     ["sourceClipPath"] = McpSchemas.String(),
                     ["targetAvatarRef"] = McpSchemas.String(),
                     ["targetAssetPath"] = McpSchemas.String(),
+                    ["name"] = McpSchemas.String("New destination expression name when targetAssetPath is omitted."),
+                    ["libraryFolder"] = McpSchemas.String(),
+                    ["primaryFbxGuid"] = McpSchemas.String(),
                     ["dryRun"] = McpSchemas.Boolean()
-                }, "sourceAvatarRef", "sourceClipPath", "targetAvatarRef", "targetAssetPath"),
-                arguments => Task.FromResult(McpToolResult.Success(McpJson.From(
+                }, "sourceAvatarRef", "sourceClipPath", "targetAvatarRef"),
+                arguments =>
+                {
+                    var prepared = PrepareExpressionDestination(arguments, "targetAssetPath", true);
+                    return Task.FromResult(SaveExpressionWrite(prepared, () => McpToolResult.Success(McpJson.From(
                     FaceExpressionApi.RemapClip(
                         UnityObjectReference.ResolveGameObject(
-                            (string)arguments["sourceAvatarRef"]),
-                        LoadClip((string)arguments["sourceClipPath"], true),
+                            (string)prepared["sourceAvatarRef"]),
+                        LoadClip((string)prepared["sourceClipPath"], true),
                         UnityObjectReference.ResolveGameObject(
-                            (string)arguments["targetAvatarRef"]),
-                        (string)arguments["targetAssetPath"],
-                        (bool?)arguments["dryRun"] ?? false)))),
+                            (string)prepared["targetAvatarRef"]),
+                        (string)prepared["targetAssetPath"],
+                        (bool?)prepared["dryRun"] ?? false))), "targetAssetPath", "targetAvatarRef"));
+                },
                 readOnly: false,
                 destructive: true,
                 idempotent: true));

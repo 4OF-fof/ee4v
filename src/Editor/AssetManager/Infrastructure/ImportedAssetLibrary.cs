@@ -141,6 +141,9 @@ namespace Ee4v.AssetManager.Infrastructure
             (folder ? Directory.Exists(destination) : File.Exists(destination) && HashFile(source) == HashFile(destination)) &&
             Settings(File.ReadAllText(source + ".meta")) == Settings(File.ReadAllText(destination + ".meta"));
 
+        internal static string SnapshotHash(string path) => HashBytes(System.Text.Encoding.UTF8.GetBytes(
+            HashFile(path) + "\n" + Settings(File.ReadAllText(path + ".meta"))));
+
         internal static string HashFile(string path)
         {
             using (var stream = File.OpenRead(path))

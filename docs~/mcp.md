@@ -21,7 +21,7 @@ url = "http://127.0.0.1:48884/mcp"
 
 portはEditorPrefsの`ee4v.mcp.port`へ保存し、既定値は`48884`です。占有時は最大31個の後続portを試します。実際のendpointは起動ログとCLIのProject一覧で確認できます。通常のUnity Editor起動時は常に自動開始し、バッチモードでは開始しません。
 
-同じserverに[CLI接続](cli.md)を併設します。MCPの既存protocol・sessionと操作の契約は維持し、CLIも同じ80操作のregistryを使用します。
+同じserverに[CLI接続](cli.md)を併設します。MCPの既存protocol・sessionと操作の契約は維持し、CLIも同じ操作のregistryを使用します。
 
 ## Transportと安全境界
 
@@ -145,6 +145,8 @@ Play Modeの開始・停止は汎用Unity MCPで行います。開始後に`ee4v
 | `ee4v_get_blendshape_preset` | 指定FBXの全Mappingとrevisionを返す |
 | `ee4v_update_blendshape_preset` | Mappingの役割名、左右、口形状、見た目の部位・グループ名を部分更新する |
 | `ee4v_inspect_face` | Avatarの編集可能なBlendShape channelとpreset分類を列挙する。`clipPath`指定時はClip値、revision、validation結果も返す |
+| `ee4v_list_expression_library` | 未Importを含む共有表情のID・名前・論理フォルダー・対象FBX・共有revision・現在ProjectのClip pathを返す。任意の`avatarRef`で現在アバターのFBXへ絞る |
+| `ee4v_import_expression` | `libraryId`と共有`expectedRevision`・`avatarRef`を指定し、対象検証後に共通の表情Importを実行する。`dryRun`はImportしない |
 | `ee4v_upsert_expression_clip` | 静止表情Clipを`create`、`patch`、`replace`のいずれかで作成・更新する。複数ポーズClipの更新は拒否する |
 | `ee4v_inspect_expression_clip` | 静止・animation Clipのrevision、validationと件数、ポーズ順・時刻・遷移・名前・参照Clip・Loopを取得する。`includeAnimation: false`はvalidationだけ、`includeChannels: true`はポーズ値も返す |
 | `ee4v_edit_expression_animation` | `action`の`add`、`update`、`move`、`setLoop`でポーズ追加・部分更新・隣接移動・Loop変更を行う |
@@ -156,6 +158,14 @@ Play Modeの開始・停止は汎用Unity MCPで行います。開始後に`ee4v
 | `ee4v_apply_facial_set` | FX Controller、Expression Parameters、Expression Menu、Modular Avatar installerを生成・更新する。`mode: patch`は指定Gesture／Menuだけ更新し、`mode: replace`は全設定を置き換える。`dryRun`では設定と前提条件だけを検証する |
 
 AnimationClipの一般検索は汎用Unity MCPへ任せます。`ee4v_upsert_expression_clip`の`patch`は未指定channelを維持し、`replace`は未指定BlendShape curveを削除します。同じ内容を再指定した場合は`changed: false`としてAssetを書き直しません。複数ポーズClipはこの静止表情toolで誤って単一frameへ戻さず、アニメーション専用toolだけで更新します。
+
+表情のMCP writerはUIと同じ共有ライブラリへ保存します。静止Clip、曲線の有効／無効、ポーズ・Loop・ポーズ削除、Avatar間変換を対象とし、成功応答へ`library`（`libraryId`・共有revision・対象・現在Projectの`clipPath`）を追加します。Clipの`revision`と共有版の`library.revision`は別の値です。調査toolにも登録済みClipの`library`を返します。
+
+新規静止Clipは`mode: create`と`name`、任意の`libraryFolder`を指定すれば、設定済み共通生成ルートの`Animation/Facial/<libraryFolder>/<name>.anim`へ作成します。`assetPath`を指定する場合もこの生成フォルダー配下に限定します。`patch`／`replace`では既存の`assetPath`を指定します。変換の保存先も同じ規則で、`targetAssetPath`の代わりに`name`を指定できます。フォルダーは相対path、名前は単独ファイル名で、path逸脱・既存の別種類Asset・通常Source由来Clipの直接更新は拒否します。共有保存に失敗した新規Clipは削除し、既存Clipは保存した本体とmetaへ戻します。
+
+すべてのアニメーションwriterは保存時の対象情報とPreviewのため`avatarRef`を必須とします。`move`・`setLoop`・`ee4v_remove_expression_pose`も同じです。ローカルの未保存編集があるClipや、編集元の共有revisionが最新でないClipは書き込み前に拒否します。`dryRun`はClipと共有正本を作成・更新しません。
+
+未Importの表情は共有一覧から`libraryId`と`revision`を取得し、`ee4v_import_expression`の結果にある実際の`clipPath`を既存の編集・FacialSet割り当てtoolへ渡します。Import先は`Animation/Facial/<libraryId>/`で、GUID・参照Clip・シーケンスを維持します。Projectの削除済みGUIDが一時的に古いpathを返す場合も、一覧の`clipPath`は実在するClipだけを返します。対象のMesh local IDは精度を維持するため文字列で返します。
 
 自動生成済みのFBX別プリセットをagentが整える場合は、一覧から`assetGuid`を選び、詳細の`revision`、`meshLocalId`（文字列）、`shapeName`を取得します。更新toolの`changes`には編集するMappingと項目だけを指定します。`role`と`appearanceGroup`は空文字で消去でき、`side`は空文字／`L`／`R`、`appearancePart`は空文字（自動）／`expression`／`head`／`chest`／`waist`／`shoulders`／`arms`／`hands`／`legs`／`feet`／`other`を指定できます。区切り見出しは編集できません。`expectedRevision`が一致しない場合は再取得が必要です。`dryRun: true`は変更件数と適用後のrevisionを返しますが、保存しません。書き込みは既存プリセットに限り、他のMappingと未指定項目を維持します。保存時はUIと同じ保存先・通知を使用します。
 

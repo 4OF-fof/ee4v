@@ -2,6 +2,7 @@
   "name": "Ee4v.FaceExpression.Editor",
   "rootNamespace": "Ee4v.FaceExpression",
   "references": [
+    "Ee4v.AssetLibrary.Editor",
     "Ee4v.Core.Contracts.Editor",
     "Ee4v.Core.Editor",
     "Ee4v.Core.AvatarEvaluation.Editor",

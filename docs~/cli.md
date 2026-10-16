@@ -1,6 +1,6 @@
 # CLIとskill
 
-ee4v-cliはWindows x64で、起動中のUnity 2022.3 Editorへ接続して[現行MCP](mcp.md)の全80操作を実行する。UI・MCP・CLIは同じMcpToolRegistryと機能公開APIを使用し、入力検証、参照、revision、Undo、保存、副作用、エラーを共有する。CLIへ業務処理を複製しない。
+ee4v-cliはWindows x64で、起動中のUnity 2022.3 Editorへ接続して[現行MCP](mcp.md)の全操作を実行する。UI・MCP・CLIは同じMcpToolRegistryと機能公開APIを使用し、入力検証、参照、revision、Undo、保存、副作用、エラーを共有する。CLIへ業務処理を複製しない。
 
 CLIはExternal~/Cli、配布skillはExternal~/Agent/Skill/ee4v-cli。CLI固有のbuild、引数、終了コード、導入方法は[CLI README](../External~/Cli/README.md)を参照する。
 
@@ -28,4 +28,4 @@ CLIは画像をfileへ保存し、JSONに絶対pathを返す。skillは対象の
 
 ## 動作確認
 
-接続・全80操作のcatalog一致、引数変換、構造化error、画像保存、job待機・timeout・取消・release、Domain Reloadを確認する。Project内の隔離Scene/AssetでAvatar調査・体型・装着・表情・Expression MenuとPlay Mode操作を確認する。共通Library、FBX分類、照明preset、制作履歴・GalleryなどProjectをまたいで永続するwriterは、このCLI導入時の実機検証から除外する。新規テストケースは追加しない。
+接続・全操作のcatalog一致、引数変換、構造化error、画像保存、job待機・timeout・取消・release、Domain Reloadを確認する。Project内の隔離Scene/AssetでAvatar調査・体型・装着・表情・Expression MenuとPlay Mode操作を確認する。共通Library、FBX分類、照明preset、制作履歴・GalleryなどProjectをまたいで永続するwriterは、このCLI導入時の実機検証から除外する。新規テストケースは追加しない。

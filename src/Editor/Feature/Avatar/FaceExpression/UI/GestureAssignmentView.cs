@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Ee4v.Core.Settings;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
@@ -601,6 +602,7 @@ namespace Ee4v.FaceExpression
         private AnimationClip _candidate;
         private bool _hasAvatar;
         private bool _updatingConditions;
+        private int _candidateGeneration;
         private bool _updatingCommonInputs;
         private bool _refreshing;
         private string _draftMenuName = string.Empty;
@@ -674,6 +676,8 @@ namespace Ee4v.FaceExpression
         internal VisualElement Header { get; }
         internal VisualElement Footer { get; }
         internal event Action<AnimationClip> CandidateChanged;
+        internal Func<AnimationClip, Task<AnimationClip>> PrepareCandidate { get; set; }
+        internal event Action<Exception> AssignmentFailed;
 
         private VisualElement CreatePanel()
         {
@@ -790,14 +794,31 @@ namespace Ee4v.FaceExpression
             RefreshConditionButtons();
         }
 
-        private void ApplyConditions(Condition selected)
+        private async void ApplyConditions(Condition selected)
         {
-            if (!_hasAvatar || _candidate == null) { return; }
-            var assignment = _session.GetClipAssignments(_candidate).FirstOrDefault();
-            var hasAssignment = assignment.Clip != null;
+            if (!_hasAvatar || _candidate == null || _updatingConditions) { return; }
+            var generation = _candidateGeneration;
             _updatingConditions = true;
+            SetEnabled(false);
+            Header.SetEnabled(false);
+            Footer.SetEnabled(false);
             try
             {
+                if (PrepareCandidate != null)
+                {
+                    var prepared = await PrepareCandidate(_candidate);
+                    if (generation != _candidateGeneration || !_hasAvatar || prepared == null) return;
+                    _candidate = prepared;
+                    _candidateField.SetValueWithoutNotify(prepared);
+                    foreach (var condition in _conditions.Where(condition => condition.MenuEntry != null))
+                    {
+                        var previous = condition.MenuEntry;
+                        condition.MenuEntry = new FaceExpressionMenuEntry(previous.Name,
+                            new FaceExpressionAssignment(prepared, previous.Assignment.EnableBlink, previous.Assignment.FixMouth));
+                    }
+                }
+                var assignment = _session.GetClipAssignments(_candidate).FirstOrDefault();
+                var hasAssignment = assignment.Clip != null;
                 _session.Activate();
                 var applied = _session.SetClipConditions(_candidate,
                     _conditions.SelectMany(condition => condition.GetCombinations()),
@@ -823,8 +844,16 @@ namespace Ee4v.FaceExpression
                     }
                 }
             }
-            finally { _updatingConditions = false; }
-            Refresh();
+            catch (OperationCanceledException) { _observedCombinations = null; }
+            catch (Exception exception) { _observedCombinations = null; AssignmentFailed?.Invoke(exception); }
+            finally
+            {
+                _updatingConditions = false;
+                SetEnabled(true);
+                Header.SetEnabled(true);
+                Footer.SetEnabled(true);
+                Refresh();
+            }
         }
 
         private HashSet<GestureCombination> GetClipCombinations()
@@ -921,7 +950,7 @@ namespace Ee4v.FaceExpression
         private bool CanSelectHand(Condition condition, bool left, FaceGesture? gesture,
             ISet<GestureCombination> own = null, ISet<GestureCombination> others = null)
         {
-            if (!_hasAvatar || _candidate == null) { return false; }
+            if (!_hasAvatar || _candidate == null || _updatingConditions) { return false; }
             if (left ? !condition.HasRight : !condition.HasLeft) { return true; }
             var targets = Condition.Expand(left ? gesture : condition.Left, left ? condition.Right : gesture);
             own ??= new HashSet<GestureCombination>(condition.AssignedCombinations);
@@ -934,7 +963,7 @@ namespace Ee4v.FaceExpression
 
         private bool CanSelectMenu(Condition condition)
         {
-            return _hasAvatar && _candidate != null &&
+            return _hasAvatar && _candidate != null && !_updatingConditions &&
                 !_session.MenuEntries.Any(entry => entry.Assignment.Clip == _candidate) &&
                 !_conditions.Any(other => other != condition && other.KeepsMenu);
         }
@@ -958,6 +987,7 @@ namespace Ee4v.FaceExpression
         {
             if (_candidate != clip)
             {
+                _candidateGeneration++;
                 _draftMenuName = string.Empty;
                 _observedCombinations = null;
             }
@@ -968,6 +998,7 @@ namespace Ee4v.FaceExpression
 
         internal void SetAvatar(GameObject avatar)
         {
+            _candidateGeneration++;
             _hasAvatar = avatar != null;
             _candidateField.SetEnabled(_hasAvatar);
             _observedCombinations = null;

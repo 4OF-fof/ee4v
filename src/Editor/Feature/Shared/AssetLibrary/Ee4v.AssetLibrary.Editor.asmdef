@@ -1,0 +1,7 @@
+{
+  "name": "Ee4v.AssetLibrary.Editor",
+  "rootNamespace": "Ee4v.AssetLibrary",
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true,
+  "noEngineReferences": true
+}

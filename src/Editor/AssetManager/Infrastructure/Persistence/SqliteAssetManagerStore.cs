@@ -1689,6 +1689,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 Execute(connection, null, statements[i]);
             }
             ExecuteVariantSchema(connection);
+            ExecuteExpressionSchema(connection);
         }
 
         private string BuildFilterSql(

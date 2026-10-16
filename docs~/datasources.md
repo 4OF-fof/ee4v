@@ -1,5 +1,7 @@
 # AssetManager データソース
 
+同じAssetManagerのDB内の表情専用テーブルをee4v固定で同期し、表情タブから利用します。[表情ライブラリの契約](features/face-expression-library-sync.md)を参照してください。以下は通常SourceとItem／Fileの契約です。
+
 Sourceは設定 `assetManager.datasource` の `Ee4v`、`BoothLibraryManager`、`Eagle` から1つだけ選択します。設定画面の文字はCoreのUiTextFactory対応rendererを使用します。Sourceを明示したmanagerは選択したSource以外の同期を拒否し、起動時と再読込も選択したSourceだけを同期します。設定を切り替えるとWindowのmanagerと表示状態を再作成します。既にDBへ保存した別SourceのItemを切替時に削除する処理はありません。
 
 起動時の自動同期と再読込は同じUI同期処理を使用します。同期前に環境変数を展開した保存先フォルダーと、BOOTH Library Manager選択時のDBファイルの存在を確認します。空欄・不正なパス・存在しない保存先、同期結果のエラー、同期中の例外はConsoleへ理由を出力します。パスの不備ではsnapshotを適用せず、既存DBの取り込みデータを維持します。

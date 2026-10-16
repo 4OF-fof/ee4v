@@ -1,5 +1,7 @@
 # AssetManager
 
+表情は同じDB内の専用テーブルで管理し、ee4v固定の同期・自動Importを表情タブへ提供します。[表情ライブラリの契約](features/face-expression-library-sync.md)を参照してください。表情はItem／Fileや通常AssetManager画面へ追加しません。
+
 画像Grid・Card・Thumbnailの重ね表示、Breadcrumb、Tag選択、詳細Header・Section・設定行は機能横断の`Ee4v.UI`部品を使います。分類は利用箇所の数ではなく責務で決め、Item・Fileなどの業務モデルとの接続だけをAssetManager側が担当します。詳細は[共通UI](core/ui.md)を参照してください。
 
 Catalogには統合編集画面、Variant保存、Prefab選択、検索条件、Target追加・編集の実Viewを登録します。Managerはメモリ上のサンプル実装、アバターは専用Preview Sceneを使用し、既存ライブラリへ書き込みません。SimulationのStoryはPlay Modeを開始せず、ジェスチャー値とライティングプリセットをメモリ内で操作します。

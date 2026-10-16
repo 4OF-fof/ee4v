@@ -1,4 +1,9 @@
 {
+  "library": {
+    "otherAvatars": "Other Avatars' Expressions",
+    "delete": "Delete from library", "failed": "The expression library operation failed.",
+    "importing": "Importing expression…"
+  },
   "favorites": { "title": "Favorites", "add": "Add to favorites", "remove": "Remove from favorites", "removeCurve": "Remove this BlendShape from the clip" },
   "conversion": {
     "pickerTitle": "Find a target BlendShape",

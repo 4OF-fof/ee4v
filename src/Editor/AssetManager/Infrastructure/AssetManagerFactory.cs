@@ -1,4 +1,8 @@
 using System;
+using System.IO;
+using Ee4v.AssetLibrary;
+using Ee4v.Core.Settings;
+using UnityEditor;
 using Ee4v.AssetManager.Application;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Infrastructure.Eagle;
@@ -15,6 +19,36 @@ namespace Ee4v.AssetManager.Infrastructure
         private static string _variantSessionDatabasePath;
         private static IAssetManager _variantSessionAssetManager;
         private static IAssetVariantManager _variantSessionManager;
+        private static string _expressionDatabasePath;
+        private static IExpressionLibrary _expressionLibrary;
+
+        [InitializeOnLoadMethod]
+        private static void RegisterExpressionLibrary()
+        {
+            ExpressionLibrary.Register(() => OpenExpressionSession(
+                Path.Combine(GlobalDataSettings.RootDirectory, "asset-manager-v1.db")));
+            GlobalDataSettings.PathChanged += () =>
+            {
+                _expressionDatabasePath = null;
+                _expressionLibrary = null;
+            };
+        }
+
+        public static IExpressionLibrary OpenExpressions(string databasePath)
+        {
+            return new Ee4vExpressionLibrary(databasePath, new SqliteAssetManagerStore(databasePath), Open(databasePath));
+        }
+
+        public static IExpressionLibrary OpenExpressionSession(string databasePath)
+        {
+            var path = Path.GetFullPath(databasePath);
+            if (_expressionLibrary == null || !string.Equals(path, _expressionDatabasePath, StringComparison.OrdinalIgnoreCase))
+            {
+                _expressionLibrary = OpenExpressions(path);
+                _expressionDatabasePath = path;
+            }
+            return _expressionLibrary;
+        }
 
         public static IAssetManager OpenSession(string databasePath)
         {

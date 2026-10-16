@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.AssetLibrary;
 using Ee4v.Core.I18n;
 using Ee4v.AvatarEditing;
 using Ee4v.UI;
@@ -99,6 +100,11 @@ namespace Ee4v.FaceExpression
         private readonly VisualElement _conversionPane;
         private readonly SearchField _search;
         private readonly SearchField _librarySearch;
+        internal const string OtherAvatarsFolderPath = "other-avatars:/";
+        private bool _showOtherAvatarsFolder;
+        private IReadOnlyList<ExpressionLibraryEntry> _sharedEntries = Array.Empty<ExpressionLibraryEntry>();
+        private string _sharedSelectionId;
+        private Action<ExpressionLibraryEntry, Rect> _drawSharedPreview;
         private IReadOnlyList<string> _libraryFolders;
         private IReadOnlyList<AnimationClip> _libraryClips;
         private Action<AnimationClip, Rect> _drawLibraryPreview;
@@ -538,6 +544,11 @@ namespace Ee4v.FaceExpression
         public event Action<AnimationClip> ClearClipAssignmentsRequested;
         public event Action BackRequested;
         public event Action<string> LibraryFolderRequested;
+        public event Action<ExpressionLibraryEntry> SharedClipSelected;
+        public event Action<ExpressionLibraryEntry> SharedClipEditRequested;
+        public event Action<ExpressionLibraryEntry> SharedClipCopyRequested;
+        public event Action<AnimationClip> DeleteClipRequested;
+        public event Action<ExpressionLibraryEntry> SharedClipDeleteRequested;
         public event Action<BlendShapeChannel> ChannelChanged;
         public event Action ConversionRequested;
 
@@ -1106,12 +1117,28 @@ namespace Ee4v.FaceExpression
             IReadOnlyList<string> folders,
             IReadOnlyList<AnimationClip> clips,
             bool canNavigateBack,
-            Action<AnimationClip, Rect> drawPreview)
+            Action<AnimationClip, Rect> drawPreview,
+            bool showOtherAvatarsFolder = false)
         {
             _canNavigateLibraryBack = canNavigateBack;
+            _showOtherAvatarsFolder = showOtherAvatarsFolder;
             _libraryFolders = folders;
             _libraryClips = clips;
             _drawLibraryPreview = drawPreview;
+            RenderLibraryItems();
+        }
+
+        public void SetSharedLibrary(IReadOnlyList<ExpressionLibraryEntry> entries, string selectedId,
+            Action<ExpressionLibraryEntry, Rect> drawPreview)
+        {
+            _sharedEntries = entries ?? Array.Empty<ExpressionLibraryEntry>();
+            _sharedSelectionId = selectedId;
+            _drawSharedPreview = drawPreview;
+        }
+
+        public void SetSharedSelection(string id)
+        {
+            _sharedSelectionId = id;
             RenderLibraryItems();
         }
 
@@ -1164,6 +1191,12 @@ namespace Ee4v.FaceExpression
                         clip,
                         _drawLibraryPreview)));
             }
+
+            items.AddRange(_sharedEntries.Where(entry => entry.Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+                .Select(CreateSharedLibraryItem));
+            if (_showOtherAvatarsFolder)
+                items.Add(CreateIconLibraryItem(I18N.Get("library.otherAvatars"), "folder.png", LibraryFolderIconSize,
+                    () => LibraryFolderRequested?.Invoke(OtherAvatarsFolderPath)));
 
             LayoutLibraryItems();
             RefreshFilter();
@@ -1297,12 +1330,55 @@ namespace Ee4v.FaceExpression
                     false,
                     () => CopyClipRequested?.Invoke(clip));
                 menu.AddSeparator(string.Empty);
+                menu.AddItem(UiTextFactory.CreateGuiContent(I18N.Get("library.delete")), false,
+                    () => DeleteClipRequested?.Invoke(clip));
                 var clear = UiTextFactory.CreateGuiContent(I18N.Get("assignments.clear"));
                 if (CanClearLibraryAssignments(clip))
                     menu.AddItem(clear, false, () =>
                     {
                         if (CanClearLibraryAssignments(clip)) ClearClipAssignmentsRequested?.Invoke(clip);
                     });
+                else menu.AddDisabledItem(clear);
+                menu.ShowAsContext();
+                evt.StopPropagation();
+            });
+            return item;
+        }
+
+        private VisualElement CreateSharedLibraryItem(ExpressionLibraryEntry entry)
+        {
+            IMGUIContainer preview = null;
+            preview = new IMGUIContainer(() =>
+            {
+                if (Event.current?.type == EventType.Repaint) _drawSharedPreview?.Invoke(entry, preview.contentRect);
+            });
+            preview.AddToClassList("ee4v-face-expression__library-preview");
+            preview.pickingMode = PickingMode.Ignore;
+            var item = CreateLibraryItem(entry.Name, () => SharedClipEditRequested?.Invoke(entry), preview,
+                () => SharedClipSelected?.Invoke(entry), keyboardActivated: () => SharedClipSelected?.Invoke(entry));
+            item.EnableInClassList("ee4v-face-expression__library-item--selected", entry.Id == _sharedSelectionId);
+            item.tooltip = entry.Name + "\n" + string.Join(", ", entry.Targets.Select(target => target.FbxName).Distinct());
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(entry.RootGuid));
+            if (clip != null)
+            {
+                _libraryClipItems[clip] = item;
+                var badges = new VisualElement { pickingMode = PickingMode.Ignore };
+                badges.AddToClassList("ee4v-face-expression__library-assignment-badges");
+                ((UiButton)item).Content.Add(badges);
+                _libraryBadgeHosts[clip] = badges;
+                RenderLibraryAssignmentBadges(clip);
+                SetLibraryAssignmentHighlight(clip, item);
+            }
+            item.RegisterCallback<ContextClickEvent>(evt =>
+            {
+                var menu = new GenericMenu();
+                menu.AddItem(UiTextFactory.CreateGuiContent(_edit), false, () => SharedClipEditRequested?.Invoke(entry));
+                menu.AddItem(UiTextFactory.CreateGuiContent(_copyAndEdit), false, () => SharedClipCopyRequested?.Invoke(entry));
+                menu.AddSeparator(string.Empty);
+                menu.AddItem(UiTextFactory.CreateGuiContent(I18N.Get("library.delete")), false,
+                    () => SharedClipDeleteRequested?.Invoke(entry));
+                var clear = UiTextFactory.CreateGuiContent(I18N.Get("assignments.clear"));
+                if (CanClearLibraryAssignments(clip)) menu.AddItem(clear, false, () => ClearClipAssignmentsRequested?.Invoke(clip));
                 else menu.AddDisabledItem(clear);
                 menu.ShowAsContext();
                 evt.StopPropagation();
@@ -1345,17 +1421,18 @@ namespace Ee4v.FaceExpression
         {
             var item = new UiButton(
                 string.Empty,
-                selected,
+                selected ?? activated,
                 nameText,
                 variant: UiButtonVariant.Ghost);
             item.AddToClassList("ee4v-face-expression__library-item");
-            item.RegisterCallback<ClickEvent>(evt =>
-            {
-                if (evt.button != 0 || evt.clickCount != 2 ||
-                    (canActivate != null && !canActivate())) { return; }
-                activated?.Invoke();
-                evt.StopPropagation();
-            });
+            if (selected != null)
+                item.RegisterCallback<ClickEvent>(evt =>
+                {
+                    if (evt.button != 0 || evt.clickCount != 2 ||
+                        (canActivate != null && !canActivate())) { return; }
+                    activated?.Invoke();
+                    evt.StopPropagation();
+                });
             item.RegisterCallback<KeyDownEvent>(evt =>
             {
                 if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter &&
