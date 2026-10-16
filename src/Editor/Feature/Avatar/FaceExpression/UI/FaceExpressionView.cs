@@ -1366,13 +1366,15 @@ namespace Ee4v.FaceExpression
             preview.AddToClassList("ee4v-face-expression__library-preview");
             preview.EnableInClassList("ee4v-face-expression__library-preview--unimported", clip == null);
             preview.pickingMode = PickingMode.Ignore;
-            var item = CreateLibraryItem(entry.Name, () => SharedClipEditRequested?.Invoke(entry), preview,
-                () => SharedClipSelected?.Invoke(entry), () => FaceExpressionLibraryApi.GetProjectClip(entry) != null,
-                () => SharedClipSelected?.Invoke(entry));
+            var item = CreateLibraryItem(entry.Name, () =>
+                {
+                    if (FaceExpressionLibraryApi.GetProjectClip(entry) == null) SharedClipImportRequested?.Invoke(entry);
+                    else SharedClipEditRequested?.Invoke(entry);
+                }, preview, () => SharedClipSelected?.Invoke(entry),
+                keyboardActivated: () => SharedClipSelected?.Invoke(entry));
             item.EnableInClassList("ee4v-face-expression__library-item--selected", entry.Id == _sharedSelectionId);
             _sharedItems[entry.Id] = item;
-            item.tooltip = entry.Name + "\n" + string.Join(", ", entry.Targets.Select(target => target.FbxName).Distinct());
-            if (clip == null) item.tooltip += "\n" + I18N.Get("library.importRequired");
+            item.tooltip = entry.Name;
             if (clip != null)
             {
                 _libraryClipItems[clip] = item;

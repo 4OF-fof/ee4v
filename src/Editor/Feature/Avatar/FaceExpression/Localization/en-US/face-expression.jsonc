@@ -4,7 +4,7 @@
     "delete": "Delete from library", "failed": "The expression library operation failed.",
     "importing": "Importing expression…",
     "addToProject": "Add to project",
-    "importRequired": "Right-click and choose Add to project before using this expression."
+    "importRequired": "Double-click or right-click and choose Add to project before using this expression."
   },
   "favorites": { "title": "Favorites", "add": "Add to favorites", "remove": "Remove from favorites", "removeCurve": "Remove this BlendShape from the clip" },
   "conversion": {
