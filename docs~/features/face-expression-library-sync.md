@@ -1,4 +1,4 @@
-# 表情ライブラリの共有保存と自動Import
+# 表情ライブラリの共有保存とProjectへの追加
 
 表情はAssetManagerと同じ`asset-manager-v1.db`内の専用テーブルで管理します。datasourceはee4v固定で、通常アセットのdatasource設定から独立しています。表示・編集・割り当ての入口は表情タブのライブラリです。
 
@@ -65,7 +65,9 @@ Import前後の対応検証は保存された対象のRenderer・Mesh・BlendSha
 
 別アバター向けの候補がある場合、一覧ルートの末尾にフォルダーカード「その他のアバターの表情」を配置します。開くと現在のアバター以外の候補とそのフォルダーを表示し、「戻る」で元の一覧へ戻ります。アバター切り替え時はそのアバターの一覧ルートへ戻ります。共有／Project内・現在／全アバターの切り替えボタンや再読込ボタンは設けません。
 
-単クリックとEnter／Spaceは候補選択だけを行い、ProjectへImportしません。左右の条件が揃う操作やメニュー登録で必要なClipを取り込みます。ダブルクリック・編集・コピーして編集でも、必要なら同じImport入口を使用します。既存の5列Gridと割り当てバッジを使用します。
+Projectにない共有表情はサムネイルをグレースケールと低いopacityで表示し、tooltipで右クリックの「プロジェクトに追加」を案内します。存在判定はカード構築時に行い、再描画ごとのファイル確認を避けます。グレースケール画像は表示用Textureのキャッシュを使用し、共有PNGを変更しません。単クリックとEnter／Spaceはカードの選択だけを行い、割り当て候補のClipを設定しません。割り当て条件・メニュー登録・ダブルクリック編集・コピーして編集から未ImportのルートClipを暗黙に取り込むことはできません。編集とコピーの右クリック項目も無効です。
+
+未Importのカードを右クリックして「プロジェクトに追加」を実行すると、AssetManager経由でClipと必要な依存を取り込みます。追加そのものはAvatarへの割り当てを変更せず、別アバター向けの表情もProjectへ追加できます。完了後に通常のサムネイルへ戻し、選択中のカードであれば実Clipを候補へ設定します。編集・割り当てでは使用先Avatarの対象検証を行います。Projectの存在判定はGUIDのパスだけに依存せず、本体・meta・実際に読み込めるClipを確認します。既存の5列Gridと割り当てバッジを使用します。
 
 フォルダー・「その他のアバターの表情」・「戻る」・「新規表情」はシングルクリックまたはEnter／Spaceで実行します。選択と編集をクリック回数で分けるのは表情カードだけです。
 
@@ -77,6 +79,8 @@ Import前後の対応検証は保存された対象のRenderer・Mesh・BlendSha
 
 共有表情の削除は通常Importと同じ排他ゲートとGUIDロックを使います。共有ディレクトリを索引対象外へ移してからProject実体とDBを削除し、失敗時は保存したClip・metaと共有ディレクトリを戻します。古いrevisionの削除は拒否します。他Projectにある実体を直接削除する操作は行いません。
 
+Unityが削除済みGUIDの古いパスを返す場合でも、存在しないProject実体は読みません。本体とmetaが存在し、metaのGUIDが対象と一致する実体だけをProject削除の対象にします。同じパスに置かれた別GUIDのassetを削除せず、ライブラリだけに残る表情の削除を完了できます。
+
 Gestureの64組、メニュー名・登録、まばたき・口固定とFacialSet生成物は使用先アバターの設定です。表情の同期やカード選択で変更しません。
 
 ## 同期・Importと失敗
@@ -87,11 +91,11 @@ Gestureの64組、メニュー名・登録、まばたき・口固定とFacialSe
 
 同期では検証済みmetadata・本体・metaの長さ、更新時刻、作成時刻とディレクトリ属性を確認し、変更のない実体の再hashとmetadata解析を省きます。全snapshotの検証後に変更・追加・削除がある定義だけをDBへ適用し、変更がなければDB更新とChanged通知を省きます。保存・Import・削除では対象の内容hashを改めて照合し、時刻を維持した改変も処理前に拒否します。PreviewのhashもFile情報が変わるまで再利用します。一覧のキャッシュは外部ファイル編集による情報変更を次回同期で反映し、ディレクトリ・ファイルのリンクを許可しません。
 
-割り当ては次の順で処理します。
+表情UIの割り当ては次の順で処理します。
 
-1. 表情と対象アバターを検証する。
-2. AssetManagerでImport済みGUID・内容・基準hashを確認する。
-3. 未Importまたはローカル未変更の古い内容なら、必要な依存とClipを自動Importする。
+1. Projectに実体がなければ、先に右クリックの「プロジェクトに追加」を実行する。未追加のClipを割り当て候補として扱わない。
+2. 表情と対象アバターを検証し、AssetManagerでImport済みGUID・内容・基準hashを確認する。
+3. すでにProjectにあるClipのローカル未変更の古い内容や必要な依存は、同じImport入口で更新する。未追加のルートClipをここで取り込まない。
 4. 読込結果、参照・対象・Source revisionと要求の有効性を再確認する。
 5. 既存のGesture／メニュー割り当てへ渡す。
 
@@ -109,7 +113,7 @@ Import失敗・キャンセル・アバター切替・候補変更では割り�
 
 `IExpressionLibrary`は同期・一覧・GUID逆引き・編集元revision・公開・削除・Import・Preview取得を提供します。AssetManagerが実装を登録し、FaceExpressionはこの契約だけを使用します。
 
-`FaceExpressionLibraryApi.Publish`はAvatarとClipから対象情報を作り、共有保存へ渡します。`ValidateTarget`と`Import`はUIと同じ対象検証・自動Importを外部integrationへ公開します。Clip編集・対象検証・Preview・割り当て・表示はFaceExpressionが所有します。
+`FaceExpressionLibraryApi.Publish`はAvatarとClipから対象情報を作り、共有保存へ渡します。`GetProjectClip`はProjectにある実Clipを返し、削除済み・未Importの表情にはnullを返します。`ValidateTarget`と`Import`は対象検証と明示的なImportを外部integrationへ公開します。Clip編集・対象検証・Preview・割り当て・表示はFaceExpressionが所有します。
 
 MCPも静止Clip・アニメーション・変換のwriterから同じ共有保存へ接続します。新規作成の`name`と任意の`libraryFolder`は共通生成ルートの`Animation/Facial`配下へ解決します。共有一覧とImportのtoolを提供し、未Importの候補は返却された実体pathで既存の編集・割り当てへ接続します。MCP assemblyは共有のAssetLibrary契約を直接参照し、SQLや独自の表情保存基盤を持ちません。
 

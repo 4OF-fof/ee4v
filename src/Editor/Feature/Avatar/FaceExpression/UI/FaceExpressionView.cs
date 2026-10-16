@@ -105,7 +105,7 @@ namespace Ee4v.FaceExpression
         private IReadOnlyList<ExpressionLibraryEntry> _sharedEntries = Array.Empty<ExpressionLibraryEntry>();
         private string _sharedSelectionId;
         private readonly Dictionary<string, VisualElement> _sharedItems = new Dictionary<string, VisualElement>();
-        private Action<ExpressionLibraryEntry, Rect> _drawSharedPreview;
+        private Action<ExpressionLibraryEntry, Rect, bool> _drawSharedPreview;
         private IReadOnlyList<string> _libraryFolders;
         private IReadOnlyList<AnimationClip> _libraryClips;
         private Action<AnimationClip, Rect> _drawLibraryPreview;
@@ -548,6 +548,7 @@ namespace Ee4v.FaceExpression
         public event Action<ExpressionLibraryEntry> SharedClipSelected;
         public event Action<ExpressionLibraryEntry> SharedClipEditRequested;
         public event Action<ExpressionLibraryEntry> SharedClipCopyRequested;
+        public event Action<ExpressionLibraryEntry> SharedClipImportRequested;
         public event Action<AnimationClip> DeleteClipRequested;
         public event Action<ExpressionLibraryEntry> SharedClipDeleteRequested;
         public event Action<BlendShapeChannel> ChannelChanged;
@@ -1133,7 +1134,7 @@ namespace Ee4v.FaceExpression
         }
 
         public void SetSharedLibrary(IReadOnlyList<ExpressionLibraryEntry> entries, string selectedId,
-            Action<ExpressionLibraryEntry, Rect> drawPreview)
+            Action<ExpressionLibraryEntry, Rect, bool> drawPreview)
         {
             _sharedEntries = entries ?? Array.Empty<ExpressionLibraryEntry>();
             _sharedSelectionId = selectedId;
@@ -1356,19 +1357,22 @@ namespace Ee4v.FaceExpression
 
         private VisualElement CreateSharedLibraryItem(ExpressionLibraryEntry entry)
         {
+            var clip = FaceExpressionLibraryApi.GetProjectClip(entry);
             IMGUIContainer preview = null;
             preview = new IMGUIContainer(() =>
             {
-                if (Event.current?.type == EventType.Repaint) _drawSharedPreview?.Invoke(entry, preview.contentRect);
+                if (Event.current?.type == EventType.Repaint) _drawSharedPreview?.Invoke(entry, preview.contentRect, clip != null);
             });
             preview.AddToClassList("ee4v-face-expression__library-preview");
+            preview.EnableInClassList("ee4v-face-expression__library-preview--unimported", clip == null);
             preview.pickingMode = PickingMode.Ignore;
             var item = CreateLibraryItem(entry.Name, () => SharedClipEditRequested?.Invoke(entry), preview,
-                () => SharedClipSelected?.Invoke(entry), keyboardActivated: () => SharedClipSelected?.Invoke(entry));
+                () => SharedClipSelected?.Invoke(entry), () => FaceExpressionLibraryApi.GetProjectClip(entry) != null,
+                () => SharedClipSelected?.Invoke(entry));
             item.EnableInClassList("ee4v-face-expression__library-item--selected", entry.Id == _sharedSelectionId);
             _sharedItems[entry.Id] = item;
             item.tooltip = entry.Name + "\n" + string.Join(", ", entry.Targets.Select(target => target.FbxName).Distinct());
-            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(entry.RootGuid));
+            if (clip == null) item.tooltip += "\n" + I18N.Get("library.importRequired");
             if (clip != null)
             {
                 _libraryClipItems[clip] = item;
@@ -1382,8 +1386,19 @@ namespace Ee4v.FaceExpression
             item.RegisterCallback<ContextClickEvent>(evt =>
             {
                 var menu = new GenericMenu();
-                menu.AddItem(UiTextFactory.CreateGuiContent(_edit), false, () => SharedClipEditRequested?.Invoke(entry));
-                menu.AddItem(UiTextFactory.CreateGuiContent(_copyAndEdit), false, () => SharedClipCopyRequested?.Invoke(entry));
+                if (FaceExpressionLibraryApi.GetProjectClip(entry) == null)
+                {
+                    menu.AddItem(UiTextFactory.CreateGuiContent(I18N.Get("library.addToProject")), false,
+                        () => SharedClipImportRequested?.Invoke(entry));
+                    menu.AddSeparator(string.Empty);
+                    menu.AddDisabledItem(UiTextFactory.CreateGuiContent(_edit));
+                    menu.AddDisabledItem(UiTextFactory.CreateGuiContent(_copyAndEdit));
+                }
+                else
+                {
+                    menu.AddItem(UiTextFactory.CreateGuiContent(_edit), false, () => SharedClipEditRequested?.Invoke(entry));
+                    menu.AddItem(UiTextFactory.CreateGuiContent(_copyAndEdit), false, () => SharedClipCopyRequested?.Invoke(entry));
+                }
                 menu.AddSeparator(string.Empty);
                 menu.AddItem(UiTextFactory.CreateGuiContent(I18N.Get("library.delete")), false,
                     () => SharedClipDeleteRequested?.Invoke(entry));

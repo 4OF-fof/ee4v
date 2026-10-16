@@ -17,7 +17,6 @@ namespace Ee4v.FaceExpression
         private IExpressionLibrary _expressionLibrary;
         private IReadOnlyList<ExpressionLibraryEntry> _sharedEntries = Array.Empty<ExpressionLibraryEntry>();
         private ExpressionLibraryEntry _sharedCandidateEntry;
-        private AnimationClip _libraryPlaceholder;
         private bool _showOtherLibraryTargets;
         private readonly HashSet<AnimationClip> _currentLibraryClips = new HashSet<AnimationClip>();
         private string _sharedFolder = string.Empty;
@@ -187,17 +186,11 @@ namespace Ee4v.FaceExpression
         private void SelectSharedCandidate(ExpressionLibraryEntry entry)
         {
             _libraryInteractionAt = EditorApplication.timeSinceStartup;
+            var clip = FaceExpressionLibraryApi.GetProjectClip(entry);
             if (_sharedCandidateEntry?.Id == entry.Id && _sharedCandidateEntry.Revision == entry.Revision &&
-                _assignmentCandidateClip != null) return;
+                _assignmentCandidateClip == clip) return;
             CancelLibraryOperation();
             _sharedCandidateEntry = entry;
-            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(entry.RootGuid));
-            if (clip == null)
-            {
-                if (_libraryPlaceholder != null) UnityEngine.Object.DestroyImmediate(_libraryPlaceholder);
-                _libraryPlaceholder = new AnimationClip { name = entry.Name, hideFlags = HideFlags.HideAndDontSave };
-                clip = _libraryPlaceholder;
-            }
             _assignmentCandidateClip = clip;
             _assignmentPicker?.SetCandidate(clip);
             _view?.SetSharedSelection(entry.Id);
@@ -209,6 +202,8 @@ namespace Ee4v.FaceExpression
             if (entry == null && candidate != null)
                 entry = _expressionLibrary?.FindByRootGuid(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(candidate)));
             if (entry == null) return candidate;
+            if (FaceExpressionLibraryApi.GetProjectClip(entry) == null)
+                throw new InvalidOperationException(I18N.Get("library.importRequired"));
             var avatar = _avatar;
             var token = _libraryOperation.Token;
             _view?.SetValidation(new MessagePanelState(I18N.Get("library.importing")));
@@ -223,6 +218,7 @@ namespace Ee4v.FaceExpression
 
         private async void EditSharedClip(ExpressionLibraryEntry entry, bool copy)
         {
+            if (FaceExpressionLibraryApi.GetProjectClip(entry) == null) return;
             SelectSharedCandidate(entry);
             try
             {
@@ -232,6 +228,32 @@ namespace Ee4v.FaceExpression
             }
             catch (OperationCanceledException) { }
             catch (Exception exception) { ReportLibraryFailure(exception); }
+        }
+
+        private async void AddSharedClipToProject(ExpressionLibraryEntry entry)
+        {
+            if (_disposed) return;
+            CancelLibraryOperation();
+            var token = _libraryOperation.Token;
+            var avatar = _avatar;
+            var library = _expressionLibrary;
+            _view?.SetEnabled(false);
+            _view?.SetValidation(new MessagePanelState(I18N.Get("library.importing")));
+            try
+            {
+                EnsureSharedLibrary();
+                library = _expressionLibrary;
+                await library.EnsureImported(entry.Id, entry.Revision,
+                    Core.Settings.ProjectAssetSettings.GetAssetFolder("Animation/Facial/" + entry.Id, _settings), token);
+                token.ThrowIfCancellationRequested();
+                if (_disposed || _avatar != avatar || _expressionLibrary != library) return;
+                RefreshLibrary();
+                if (_sharedCandidateEntry?.Id == entry.Id) SelectSharedCandidate(entry);
+                _view?.SetValidation(null);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception exception) { ReportLibraryFailure(exception); }
+            finally { if (!_disposed) _view?.SetEnabled(true); }
         }
 
         private void DeleteLibraryClip(AnimationClip clip) => DeleteLibraryClip(clip, null);
@@ -318,9 +340,9 @@ namespace Ee4v.FaceExpression
             }
         }
 
-        private void DrawSharedThumbnail(ExpressionLibraryEntry entry, Rect rect)
+        private void DrawSharedThumbnail(ExpressionLibraryEntry entry, Rect rect, bool imported)
         {
-            var key = entry.Id + ":" + entry.PreviewHash;
+            var key = entry.Id + ":" + entry.PreviewHash + (imported ? ":project" : ":library");
             if (!_sharedPreviews.TryGetValue(key, out var texture))
             {
                 var path = _expressionLibrary?.GetPreviewPath(entry.Id);
@@ -328,6 +350,18 @@ namespace Ee4v.FaceExpression
                 {
                     texture = new Texture2D(2, 2) { hideFlags = HideFlags.HideAndDontSave };
                     if (!texture.LoadImage(File.ReadAllBytes(path))) { UnityEngine.Object.DestroyImmediate(texture); texture = null; }
+                    if (!imported && texture != null)
+                    {
+                        var pixels = texture.GetPixels32();
+                        for (var index = 0; index < pixels.Length; index++)
+                        {
+                            var pixel = pixels[index];
+                            var gray = (byte)Mathf.RoundToInt(pixel.r * 0.2126f + pixel.g * 0.7152f + pixel.b * 0.0722f);
+                            pixels[index] = new Color32(gray, gray, gray, pixel.a);
+                        }
+                        texture.SetPixels32(pixels);
+                        texture.Apply(false, false);
+                    }
                 }
                 _sharedPreviews[key] = texture;
             }
@@ -356,7 +390,8 @@ namespace Ee4v.FaceExpression
 
         private void PruneSharedPreviews()
         {
-            var keys = _sharedEntries.Select(entry => entry.Id + ":" + entry.PreviewHash).ToHashSet();
+            var keys = _sharedEntries.SelectMany(entry => new[] { entry.Id + ":" + entry.PreviewHash + ":project",
+                entry.Id + ":" + entry.PreviewHash + ":library" }).ToHashSet();
             foreach (var key in _sharedPreviews.Keys.Where(key => !keys.Contains(key)).ToArray())
             {
                 if (_sharedPreviews[key] != null) UnityEngine.Object.DestroyImmediate(_sharedPreviews[key]);
@@ -370,7 +405,6 @@ namespace Ee4v.FaceExpression
             _localRegistrationFailures.Clear();
             _libraryOperation.Cancel();
             _libraryOperation.Dispose();
-            if (_libraryPlaceholder != null) UnityEngine.Object.DestroyImmediate(_libraryPlaceholder);
             ClearSharedPreviews();
         }
     }

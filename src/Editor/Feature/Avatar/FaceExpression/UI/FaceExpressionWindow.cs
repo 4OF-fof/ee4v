@@ -313,9 +313,10 @@ namespace Ee4v.FaceExpression
             _view.SharedClipSelected += SelectSharedCandidate;
             _view.SharedClipEditRequested += entry => EditSharedClip(entry, false);
             _view.SharedClipCopyRequested += entry => EditSharedClip(entry, true);
+            _view.SharedClipImportRequested += AddSharedClipToProject;
             _view.DeleteClipRequested += DeleteLibraryClip;
             _view.SharedClipDeleteRequested += entry => DeleteLibraryClip(
-                AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(entry.RootGuid)), entry);
+                FaceExpressionLibraryApi.GetProjectClip(entry), entry);
             _view.ChannelChanged += ChangeChannel;
             _view.PoseSelected += SelectPose;
             _view.PoseAddRequested += AddPose;

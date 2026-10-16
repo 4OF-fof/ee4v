@@ -72,6 +72,18 @@ namespace Ee4v.FaceExpression
             }
         }
 
+        public static AnimationClip GetProjectClip(ExpressionLibraryEntry entry)
+        {
+            if (entry == null) return null;
+            var path = AssetDatabase.GUIDToAssetPath(entry.RootGuid);
+            if (string.IsNullOrEmpty(path) || !path.StartsWith("Assets/", StringComparison.Ordinal) ||
+                !path.EndsWith(".anim", StringComparison.OrdinalIgnoreCase)) return null;
+            var absolute = Path.Combine(Path.GetDirectoryName(Application.dataPath), path);
+            return File.Exists(absolute) && File.Exists(absolute + ".meta") &&
+                AssetDatabase.AssetPathToGUID(path, AssetPathToGUIDOptions.OnlyExistingAssets) == entry.RootGuid
+                ? AssetDatabase.LoadAssetAtPath<AnimationClip>(path) : null;
+        }
+
         public static async Task<AnimationClip> Import(GameObject avatar, ExpressionLibraryEntry entry,
             IExpressionLibrary library = null, CancellationToken cancellationToken = default)
         {

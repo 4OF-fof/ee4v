@@ -236,10 +236,15 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                         if (!assetPath.StartsWith("Assets/", StringComparison.Ordinal) ||
                             !assetPath.EndsWith(".anim", StringComparison.OrdinalIgnoreCase))
                             throw new InvalidOperationException("Only standalone project expression Clips can be deleted.");
-                        absolute = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), assetPath));
-                        RejectLinks(absolute);
-                        body = File.ReadAllBytes(absolute);
-                        meta = File.ReadAllBytes(absolute + ".meta");
+                        var candidate = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), assetPath));
+                        RejectLinks(candidate);
+                        if (File.Exists(candidate) && File.Exists(candidate + ".meta") &&
+                            AssetIdentity.ReadGuid(File.ReadAllText(candidate + ".meta")) == entry.RootGuid)
+                        {
+                            absolute = candidate;
+                            body = File.ReadAllBytes(absolute);
+                            meta = File.ReadAllBytes(absolute + ".meta");
+                        }
                     }
                     var directory = SafePath(_root, id);
                     var removed = SafePath(_root, ".deleted/" + id + "-" + Guid.NewGuid().ToString("N"));

@@ -757,6 +757,10 @@
     justify-content: center;
 }
 
+.ee4v-face-expression__library-preview--unimported {
+    opacity: 0.45;
+}
+
 .ee4v-face-expression__library-name {
     width: 100%;
     height: 30px;

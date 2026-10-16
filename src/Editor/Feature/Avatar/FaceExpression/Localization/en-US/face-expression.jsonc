@@ -2,7 +2,9 @@
   "library": {
     "otherAvatars": "Other Avatars' Expressions",
     "delete": "Delete from library", "failed": "The expression library operation failed.",
-    "importing": "Importing expression…"
+    "importing": "Importing expression…",
+    "addToProject": "Add to project",
+    "importRequired": "Right-click and choose Add to project before using this expression."
   },
   "favorites": { "title": "Favorites", "add": "Add to favorites", "remove": "Remove from favorites", "removeCurve": "Remove this BlendShape from the clip" },
   "conversion": {
