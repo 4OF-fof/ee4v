@@ -264,6 +264,25 @@ namespace Ee4v.FaceExpression
             SelectSharedCandidate(entry);
             try
             {
+                var needsConversion = false;
+                try { FaceExpressionLibraryApi.ValidateTarget(_avatar, entry); }
+                catch (InvalidOperationException) { needsConversion = true; }
+                if (needsConversion)
+                {
+                    var avatar = _avatar;
+                    var library = _expressionLibrary;
+                    var token = _libraryOperation.Token;
+                    _view?.SetValidation(new MessagePanelState(I18N.Get("library.importing")));
+                    var path = await library.EnsureImported(entry.Id, entry.Revision,
+                        Core.Settings.ProjectAssetSettings.GetAssetFolder("Animation/Facial/" + entry.Id, _settings), token);
+                    token.ThrowIfCancellationRequested();
+                    if (_disposed || _avatar != avatar || _expressionLibrary != library || _sharedCandidateEntry?.Id != entry.Id) return;
+                    var source = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+                    if (source == null) throw new InvalidOperationException("The expression Clip could not be loaded for conversion.");
+                    _view?.SetValidation(null);
+                    ShowClipConversion(source, returnToLibrary: true);
+                    return;
+                }
                 var clip = await PrepareLibraryCandidate(_assignmentCandidateClip);
                 if (copy) CopyClip(clip);
                 else SetClip(clip);

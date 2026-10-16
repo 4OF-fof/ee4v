@@ -202,7 +202,8 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                         Dependencies = dependencies.OrderBy(value => value.DependentGuid, StringComparer.Ordinal)
                             .ThenBy(value => value.AssetGuid, StringComparer.Ordinal).ToArray() };
                     entry.Revision = ContentRevision(entry);
-                    entry.ContentDirectory = "content/" + entry.Revision.Substring(0, 16);
+                    entry.ContentDirectory = previous?.Revision == entry.Revision
+                        ? previous.ContentDirectory : "content/" + entry.Revision.Substring(0, 16);
                     if (request.Preview?.Length > 0)
                     {
                         File.WriteAllBytes(Path.Combine(stage, "preview.png"), request.Preview);
@@ -399,7 +400,7 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                 entry.Dependencies.Any(dependency => dependency == null) ||
                 entry.Assets.Select(asset => asset.Guid).Distinct().Count() != entry.Assets.Length ||
                 entry.Assets.Count(asset => asset.Guid == entry.RootGuid) != 1 ||
-                entry.Revision != ContentRevision(entry) || entry.ContentDirectory != "content/" + entry.Revision.Substring(0, 16))
+                entry.Revision != ContentRevision(entry) || !IsValidContentDirectory(entry.ContentDirectory))
                 throw new InvalidDataException("Invalid expression metadata: " + id);
             ValidateFolder(entry.Folder);
             foreach (var asset in entry.Assets)
@@ -450,6 +451,10 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
         private static string ContentRevision(ExpressionLibraryEntry entry) => Hash(Encoding.UTF8.GetBytes(
             JsonConvert.SerializeObject(new { entry.SchemaVersion, entry.Id, entry.Name, entry.Folder,
                 entry.RootGuid, entry.PrimaryFbxGuid, entry.Targets, entry.Assets, entry.Dependencies })));
+
+        private static bool IsValidContentDirectory(string directory) => directory != null && directory.Length == 24 &&
+            directory.StartsWith("content/", StringComparison.Ordinal) && directory.Substring(8).All(character =>
+                character >= '0' && character <= '9' || character >= 'a' && character <= 'f');
 
         private static void WriteMetadata(string directory, ExpressionLibraryEntry entry)
         {

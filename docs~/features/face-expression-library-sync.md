@@ -28,7 +28,7 @@ schemaはv1のままです。表情の定義・実体・対象・依存は共有
 ```text
 Assets/FaceExpression/<表情ID>/
   metadata.json
-  content/<revisionの先頭16文字>/
+  content/<実体公開時のrevisionの先頭16文字>/
     <元Clipファイル名>.anim
     <元Clipファイル名>.anim.meta
     Dependencies/<GUID>/<参照Clipファイル名>.anim
@@ -39,6 +39,8 @@ Assets/FaceExpression/<表情ID>/
 metadataにはschemaVersion 1、名前・論理フォルダー・主対象FBX・channelごとの対象、ルートGUID、実体と依存、内容revisionを保存します。ClipはUnityの形式を維持し、カーブ・補間・frame rate・Loop・`FaceExpressionSequenceData`のポーズ名と参照Clipを独自形式へ変換しません。`.meta`はUnityが生成したものをコピーします。
 
 作成直後の空Clipも主対象FBXを持つ表情として保存します。この場合channel対象は空で、Import時は主対象FBXを検証します。カーブを追加して保存すると使用channelの対象情報も更新します。
+
+`ContentDirectory`は実体公開時の配置を示します。メタデータの現在revisionとディレクトリ名の一致は要求せず、`content/`直下の16桁の小文字16進数の配置、metadataの内容revision、実体・metaのhashとGUIDを検証します。metadataだけの変更で既存実体の配置を無効にしません。同一revisionの再保存では既存の`ContentDirectory`を再利用します。
 
 保存はGUIDごとの排他ロック内で同期と期待revisionの照合を使用します。実体を一時領域へ完成させてから内容ディレクトリへコピーし、最後にmetadataを原子的に確定します。初回公開はディレクトリのrenameに依存せず、metadata未確定の新規entryは一覧へ出しません。公開失敗時の未完成内容は削除します。revisionは内容のSHA-256で、短縮した内容ディレクトリが既存の場合も実体hashを照合します。同じ内容ではmetadataを書き直しません。
 
@@ -71,6 +73,8 @@ Import前後の対応検証は保存された対象のRenderer・Mesh・BlendSha
 Projectにない共有表情はサムネイルをグレースケールと低いopacityで表示します。tooltipはProject内の存在状態に関係なく表情名だけを表示します。存在判定はカード構築時に行い、再描画ごとのファイル確認を避けます。グレースケール画像は表示用Textureのキャッシュを使用し、共有PNGを変更しません。単クリックとEnter／Spaceはカードの選択だけを行い、割り当て候補のClipを設定しません。割り当て条件・メニュー登録・コピーして編集から未ImportのルートClipを暗黙に取り込むことはできません。編集とコピーの右クリック項目も無効です。
 
 未Importのカードをダブルクリックするか、右クリックして「プロジェクトに追加」を実行すると、AssetManager経由でClipと必要な依存を取り込みます。追加そのものは編集画面を開かず、Avatarへの割り当てを変更せず、別アバター向けの表情もProjectへ追加できます。完了後に通常のサムネイルへ戻し、選択中のカードであれば実Clipを候補へ設定します。追加済みカードのダブルクリックは編集を開きます。編集・割り当てでは使用先Avatarの対象検証を行います。Projectの存在判定はGUIDのパスだけに依存せず、本体・meta・実際に読み込めるClipを確認します。既存の5列Gridと割り当てバッジを使用します。
+
+追加済みの共有表情をダブルクリック、右クリック「編集」「コピーして編集」で開くとき、現在のアバターと主対象FBXまたはchannel対象が一致しなければ、既存の対応付け画面を直接開きます。元Clipは対象アバターの検証を要求せずImport済み内容として確認し、対応先の検証は変換結果へ適用します。元Clipを変更せず、新しいGUIDのClipを対応アバター用の共有表情として保存し、そのClipを候補・編集対象にします。変換を取り消した場合は元のライブラリへ戻り、割り当てを変更しません。未Importの表情は従来どおり先にProjectへ追加します。
 
 フォルダータイル・「その他のアバターの表情」の行・戻るボタン・「新規表情」はシングルクリックまたはEnter／Spaceで実行します。選択と編集をクリック回数で分けるのは表情カードだけです。
 

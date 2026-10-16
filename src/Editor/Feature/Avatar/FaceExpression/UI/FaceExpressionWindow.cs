@@ -296,20 +296,7 @@ namespace Ee4v.FaceExpression
             _view.NewClipRequested += CreateClip;
             _view.CopyClipRequested += CopyClip;
             _view.ClearClipAssignmentsRequested += ClearClipAssignments;
-            _view.ConversionRequested += () =>
-            {
-                StopPlayback();
-                var targetAvatar = _avatar;
-                var sourceClip = _clip;
-                _view.ShowConversion(targetAvatar, sourceClip, converted =>
-                {
-                    if (_disposed || _avatar != targetAvatar || _clip != sourceClip) { return; }
-                    RenderLibrary();
-                    SetClip(converted);
-                    ScheduleAssignmentRefresh();
-                    TrySavePendingChanges();
-                });
-            };
+            _view.ConversionRequested += () => ShowClipConversion(_clip);
             _view.BackRequested += GoBack;
             _view.LibraryFolderRequested += OpenLibraryFolder;
             _view.LibraryProjectFolderRequested += ShowLibraryFolderInProject;
@@ -482,7 +469,38 @@ namespace Ee4v.FaceExpression
         {
             if (_avatar == null || clip == null) { return; }
             SelectAssignmentCandidate(clip);
+            if (NeedsClipConversion(clip))
+            {
+                ShowClipConversion(clip, returnToLibrary: true);
+                return;
+            }
             SetClip(clip);
+        }
+
+        private bool NeedsClipConversion(AnimationClip clip) => _avatar != null && clip != null &&
+            FaceExpressionApi.ValidateClip(_avatar, clip).Any(finding => finding.Code == "binding_not_found");
+
+        private void ShowClipConversion(AnimationClip sourceClip, bool returnToLibrary = false)
+        {
+            if (_disposed || _avatar == null || sourceClip == null) return;
+            StopPlayback();
+            var targetAvatar = _avatar;
+            if (_clip != sourceClip) SetClip(sourceClip);
+            _view.ShowConversion(targetAvatar, sourceClip, converted =>
+            {
+                if (_disposed || _avatar != targetAvatar || _clip != sourceClip) return;
+                _showOtherLibraryTargets = false;
+                SelectAssignmentCandidate(converted);
+                SetClip(converted);
+                ScheduleAssignmentRefresh();
+                TrySavePendingChanges();
+                RenderLibrary();
+            }, returnToLibrary ? (Action)(() =>
+            {
+                if (_disposed || _avatar != targetAvatar || _clip != sourceClip) return;
+                SetClip(null);
+                RefreshLibrary();
+            }) : null);
         }
 
         private void RefreshSaveNotification()
@@ -1328,6 +1346,13 @@ namespace Ee4v.FaceExpression
         {
             if (source == null)
             {
+                return;
+            }
+
+            if (NeedsClipConversion(source))
+            {
+                SelectAssignmentCandidate(source);
+                ShowClipConversion(source, returnToLibrary: true);
                 return;
             }
 

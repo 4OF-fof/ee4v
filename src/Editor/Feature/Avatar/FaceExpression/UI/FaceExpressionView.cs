@@ -590,11 +590,15 @@ namespace Ee4v.FaceExpression
             _validation.DetailsActions.style.display = available ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        public void ShowConversion(GameObject avatar, AnimationClip source, Action<AnimationClip> saved)
+        public void ShowConversion(GameObject avatar, AnimationClip source, Action<AnimationClip> saved, Action cancelled = null)
         {
             if (avatar == null || source == null) { return; }
             _conversionPane.Clear();
-            _conversionPane.Add(new ExpressionConversionView(avatar, source, HideConversion, saved));
+            _conversionPane.Add(new ExpressionConversionView(avatar, source, () =>
+            {
+                HideConversion();
+                cancelled?.Invoke();
+            }, saved));
             _editorContent.style.display = DisplayStyle.None;
             _conversionPane.style.display = DisplayStyle.Flex;
         }
