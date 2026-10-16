@@ -471,7 +471,7 @@ namespace Ee4v.FaceExpression
             SelectAssignmentCandidate(clip);
             if (NeedsClipConversion(clip))
             {
-                ShowClipConversion(clip, returnToLibrary: true);
+                ShowClipConversion(clip);
                 return;
             }
             SetClip(clip);
@@ -480,7 +480,7 @@ namespace Ee4v.FaceExpression
         private bool NeedsClipConversion(AnimationClip clip) => _avatar != null && clip != null &&
             FaceExpressionApi.ValidateClip(_avatar, clip).Any(finding => finding.Code == "binding_not_found");
 
-        private void ShowClipConversion(AnimationClip sourceClip, bool returnToLibrary = false)
+        private void ShowClipConversion(AnimationClip sourceClip)
         {
             if (_disposed || _avatar == null || sourceClip == null) return;
             StopPlayback();
@@ -495,12 +495,7 @@ namespace Ee4v.FaceExpression
                 ScheduleAssignmentRefresh();
                 TrySavePendingChanges();
                 RenderLibrary();
-            }, returnToLibrary ? (Action)(() =>
-            {
-                if (_disposed || _avatar != targetAvatar || _clip != sourceClip) return;
-                SetClip(null);
-                RefreshLibrary();
-            }) : null);
+            });
         }
 
         private void RefreshSaveNotification()
@@ -1352,7 +1347,7 @@ namespace Ee4v.FaceExpression
             if (NeedsClipConversion(source))
             {
                 SelectAssignmentCandidate(source);
-                ShowClipConversion(source, returnToLibrary: true);
+                ShowClipConversion(source);
                 return;
             }
 

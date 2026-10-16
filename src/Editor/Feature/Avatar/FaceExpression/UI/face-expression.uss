@@ -480,16 +480,10 @@
     background-color: var(--ee4v-color-control-pressed);
 }
 
-.ee4v-expression-conversion__context,
 .ee4v-expression-conversion__name,
 .ee4v-expression-conversion__path {
     min-width: 0;
     white-space: normal;
-}
-
-.ee4v-expression-conversion__context {
-    flex-shrink: 0;
-    margin-top: var(--ee4v-space-sm);
 }
 
 .ee4v-expression-conversion__columns,

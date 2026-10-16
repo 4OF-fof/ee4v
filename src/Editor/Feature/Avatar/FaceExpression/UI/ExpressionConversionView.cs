@@ -25,7 +25,7 @@ namespace Ee4v.FaceExpression
         private readonly List<VisualElement> _rows = new List<VisualElement>();
         private ExpressionTargetPickerWindow _targetPicker;
 
-        internal ExpressionConversionView(GameObject avatar, AnimationClip source, Action back, Action<AnimationClip> saved,
+        internal ExpressionConversionView(GameObject avatar, AnimationClip source, Action<AnimationClip> saved,
             bool previewOnly = false)
         {
             _previewOnly = previewOnly;
@@ -44,13 +44,7 @@ namespace Ee4v.FaceExpression
             _mapping = new int[_bindings.Length];
             var header = new SectionHeader(I18N.Get("conversion.title"));
             header.AddToClassList("ee4v-face-expression__section-header");
-            header.Insert(0, new UiButton(string.Empty, back, I18N.Get("conversion.back"),
-                FluentUiIcons.CreateState("arrow_left.png", UiSizeTokens.Size16), UiButtonVariant.Ghost));
             Add(header);
-            var context = UiTextFactory.Create(_source.name + " → " + _avatar.name,
-                "ee4v-expression-conversion__context");
-            context.tooltip = AssetDatabase.GetAssetPath(_source);
-            Add(context);
             var columns = new VisualElement();
             columns.AddToClassList("ee4v-expression-conversion__columns");
             columns.Add(UiTextFactory.Create(I18N.Get("conversion.source"), UiClassNames.SectionTitle,
@@ -105,7 +99,6 @@ namespace Ee4v.FaceExpression
             Add(_feedback);
             var actions = new ActionBar();
             actions.AddToClassList("ee4v-expression-conversion__actions");
-            actions.Leading.Add(new UiButton(I18N.Get("conversion.back"), back, variant: UiButtonVariant.Ghost));
             _saveButton = new UiButton(I18N.Get("conversion.save"), Save);
             actions.Actions.Add(_saveButton);
             Add(actions);
@@ -117,7 +110,7 @@ namespace Ee4v.FaceExpression
             var duplicate = _mapping.Where(index => index >= 2).GroupBy(index => index)
                 .Where(group => group.Count() > 1).Select(group => group.Key).ToArray();
             var unmapped = _mapping.Count(index => index == 0);
-            _saveButton.SetEnabled(unmapped == 0 && duplicate.Length == 0 &&
+            _saveButton.SetPrimaryActionEnabled(unmapped == 0 && duplicate.Length == 0 &&
                 _mapping.Any(index => index >= 2));
             for (var index = 0; index < _rows.Count; index++)
             {

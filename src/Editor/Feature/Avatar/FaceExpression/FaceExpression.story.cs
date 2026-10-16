@@ -210,7 +210,6 @@ namespace Ee4v.FaceExpression
                 AnimationCurve.Linear(0, 0, 1, 100));
             var result = UiTextFactory.Create(string.Empty, UiClassNames.SecondaryText);
             var view = new ExpressionConversionView(avatar, clip,
-                () => result.SetText("一覧へ戻る操作を確認しました"),
                 converted => result.SetText("メモリ上で変換しました: " + converted.name), previewOnly: true);
             view.style.width = 1000;
             view.style.height = 620;

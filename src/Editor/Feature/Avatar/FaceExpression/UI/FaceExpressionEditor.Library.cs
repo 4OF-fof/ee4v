@@ -280,7 +280,7 @@ namespace Ee4v.FaceExpression
                     var source = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
                     if (source == null) throw new InvalidOperationException("The expression Clip could not be loaded for conversion.");
                     _view?.SetValidation(null);
-                    ShowClipConversion(source, returnToLibrary: true);
+                    ShowClipConversion(source);
                     return;
                 }
                 var clip = await PrepareLibraryCandidate(_assignmentCandidateClip);
