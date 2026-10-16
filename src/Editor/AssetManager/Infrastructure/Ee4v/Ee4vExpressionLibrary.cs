@@ -23,6 +23,16 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
         private readonly IAssetManager _manager;
         private readonly AssetTargetImporter _importer;
         private readonly Dictionary<string, Task<string>> _imports = new Dictionary<string, Task<string>>();
+        private readonly Dictionary<string, CachedEntry> _reads = new Dictionary<string, CachedEntry>();
+        private readonly Dictionary<string, (string Stamp, string Hash)> _previewHashes = new Dictionary<string, (string, string)>();
+        private readonly Dictionary<string, string> _previewPaths = new Dictionary<string, string>();
+        private IReadOnlyList<ExpressionLibraryEntry> _entries;
+
+        private sealed class CachedEntry
+        {
+            internal ExpressionLibraryEntry Entry;
+            internal Dictionary<string, string> Stamps;
+        }
 
         internal Ee4vExpressionLibrary(string databasePath, SqliteAssetManagerStore store, IAssetManager manager)
         {
@@ -35,7 +45,11 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
         }
 
         public event Action Changed;
-        public IReadOnlyList<ExpressionLibraryEntry> List(string primaryFbxGuid = null) => _store.GetExpressions(primaryFbxGuid);
+        public IReadOnlyList<ExpressionLibraryEntry> List(string primaryFbxGuid = null)
+        {
+            var entries = _entries ?? _store.GetExpressions();
+            return string.IsNullOrEmpty(primaryFbxGuid) ? entries : entries.Where(entry => entry.PrimaryFbxGuid == primaryFbxGuid).ToArray();
+        }
         public ExpressionLibraryEntry FindByRootGuid(string guid) => List().FirstOrDefault(entry => entry.RootGuid == guid);
         public string GetWorkingRevision(string guid) => _store.GetExpressionImportRevision(_projectKey, guid);
 
@@ -47,11 +61,19 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                 foreach (var directory in Directory.GetDirectories(_root).OrderBy(value => value, StringComparer.Ordinal))
                 {
                     if (!Guid.TryParseExact(Path.GetFileName(directory), "N", out _)) continue;
+                    if (!File.Exists(Path.Combine(directory, "metadata.json")) &&
+                        !List().Any(entry => entry.Id == Path.GetFileName(directory))) continue;
                     entries.Add(Read(Path.GetFileName(directory)));
                 }
             if (entries.Select(entry => entry.RootGuid).Distinct().Count() != entries.Count)
                 throw new InvalidDataException("Duplicate expression Clip GUIDs exist in the shared library.");
+            // Validate the complete source snapshot before changing the index or its visible cache.
+            var changed = _entries == null || _entries.Count != entries.Count ||
+                !_entries.OrderBy(entry => entry.Id).Select(JsonConvert.SerializeObject)
+                    .SequenceEqual(entries.OrderBy(entry => entry.Id).Select(JsonConvert.SerializeObject));
+            if (!changed) return;
             _store.ReplaceExpressions(entries);
+            CacheEntries(entries);
             NotifyChanged();
         }
 
@@ -68,24 +90,21 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             var guid = AssetDatabase.AssetPathToGUID(path);
             if (_manager.GetImportedAssetAssociations(new[] { guid }).Count > 0)
                 throw new InvalidOperationException("Copy the imported source Clip before saving it as an editable shared expression.");
-            Synchronize();
-            var previous = FindByRootGuid(guid);
-            if (previous != null && previous.Revision != request.ExpectedRevision)
-                throw new InvalidOperationException("The shared expression changed. Reload or save a copy before publishing.");
-            var id = previous?.Id ?? Guid.NewGuid().ToString("N");
-            var publishedDirectory = SafePath(_root, id);
-            var entryDirectory = previous == null ? SafePath(_root, ".staging/" + id) : publishedDirectory;
             var lockPath = SafePath(_root, ".locks/" + guid);
             Directory.CreateDirectory(Path.GetDirectoryName(lockPath));
             using (new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
                 Synchronize();
-                if (FindByRootGuid(guid)?.Revision != previous?.Revision)
-                    throw new InvalidOperationException("The shared expression was published by another session.");
-                if (previous != null && Read(id).Revision != request.ExpectedRevision)
+                var previous = FindByRootGuid(guid);
+                if (previous != null && previous.Revision != request.ExpectedRevision)
+                    throw new InvalidOperationException("The shared expression changed. Reload or save a copy before publishing.");
+                var id = previous?.Id ?? Guid.NewGuid().ToString("N");
+                var entryDirectory = SafePath(_root, id);
+                if (previous != null && Read(id, true).Revision != request.ExpectedRevision)
                     throw new InvalidOperationException("The shared expression changed while preparing the save.");
                 Directory.CreateDirectory(entryDirectory);
                 var stage = Path.Combine(entryDirectory, ".tmp-" + Guid.NewGuid().ToString("N"));
+                string createdContent = null;
                 Directory.CreateDirectory(stage);
                 try
                 {
@@ -154,7 +173,14 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                     if (!Directory.Exists(content))
                     {
                         Directory.CreateDirectory(Path.GetDirectoryName(content));
-                        Directory.Move(stage, content);
+                        Directory.CreateDirectory(content);
+                        createdContent = content;
+                        foreach (var source in Directory.GetFiles(stage, "*", SearchOption.AllDirectories))
+                        {
+                            var destination = SafePath(content, source.Substring(stage.Length + 1).Replace('\\', '/'));
+                            Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                            File.Copy(source, destination);
+                        }
                     }
                     else
                     {
@@ -169,8 +195,10 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                     }
                     if (previous?.Revision != entry.Revision) WriteMetadata(entryDirectory, entry);
                     else entry = previous;
-                    if (previous == null) Directory.Move(entryDirectory, publishedDirectory);
+                    createdContent = null;
                     _store.SaveExpression(entry);
+                    CacheEntries(List().Where(value => value.Id != entry.Id).Append(entry));
+                    _reads.Remove(id);
                     var hashes = entry.Assets.ToDictionary(asset => asset.Guid,
                         asset => AssetIdentity.SnapshotHash(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath),
                             AssetDatabase.GUIDToAssetPath(asset.Guid))));
@@ -181,7 +209,9 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                 finally
                 {
                     if (Directory.Exists(stage)) Directory.Delete(stage, true);
-                    if (previous == null && Directory.Exists(entryDirectory)) Directory.Delete(entryDirectory, true);
+                    if (createdContent != null && Directory.Exists(createdContent)) Directory.Delete(createdContent, true);
+                    if (previous == null && Directory.Exists(entryDirectory) &&
+                        !File.Exists(Path.Combine(entryDirectory, "metadata.json"))) Directory.Delete(entryDirectory, true);
                 }
             }
         }
@@ -190,12 +220,12 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
         {
             using (await AssetTargetImporter.LockImports(cancellationToken))
             {
-                var entry = Read(id);
+                var entry = Read(id, true);
                 var lockPath = SafePath(_root, ".locks/" + entry.RootGuid);
                 Directory.CreateDirectory(Path.GetDirectoryName(lockPath));
                 using (new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
                 {
-                    entry = Read(id);
+                    entry = Read(id, true);
                     if (entry.Revision != expectedRevision)
                         throw new InvalidOperationException("The selected expression changed. Reopen the library before deleting it.");
                     var assetPath = AssetDatabase.GUIDToAssetPath(entry.RootGuid);
@@ -221,6 +251,8 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                         if (absolute != null && !AssetDatabase.DeleteAsset(assetPath))
                             throw new IOException("The project expression Clip could not be deleted.");
                         _store.DeleteExpression(id);
+                        CacheEntries(List().Where(value => value.Id != id));
+                        _reads.Remove(id);
                     }
                     catch
                     {
@@ -259,7 +291,7 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
 
         private async Task<string> Import(string id, string expectedRevision, string destinationFolder, CancellationToken cancellationToken)
         {
-            var entry = Read(id);
+            var entry = Read(id, true);
             if (entry.Revision != expectedRevision) throw new InvalidOperationException("The selected expression changed. Reload the library.");
             foreach (var dependency in entry.Dependencies.Where(value => !string.IsNullOrEmpty(value.SourceId)))
             {
@@ -275,7 +307,7 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             var destinations = await _importer.ImportExpressionAssets(entry, SafePath(SafePath(_root, id), entry.ContentDirectory),
                 destinationFolder, guid => _store.GetExpressionImportHash(_projectKey, id, guid), cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            if (Read(id).Revision != expectedRevision) throw new InvalidOperationException("The shared expression changed during import.");
+            if (Read(id, true).Revision != expectedRevision) throw new InvalidOperationException("The shared expression changed during import.");
             foreach (var dependency in entry.Dependencies)
                 if (string.IsNullOrEmpty(AssetDatabase.GUIDToAssetPath(dependency.AssetGuid)))
                     throw new InvalidDataException("An expression reference is missing after import.");
@@ -290,13 +322,27 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
         {
             var entry = List().FirstOrDefault(value => value.Id == id);
             if (entry == null || string.IsNullOrEmpty(entry.PreviewHash)) return null;
-            var path = SafePath(SafePath(SafePath(_root, id), entry.ContentDirectory), "preview.png");
-            return File.Exists(path) && AssetIdentity.HashFile(path) == entry.PreviewHash ? path : null;
+            var key = id + ":" + entry.ContentDirectory;
+            if (!_previewPaths.TryGetValue(key, out var path))
+                _previewPaths[key] = path = SafePath(_root, id + "/" + entry.ContentDirectory + "/preview.png");
+            else
+            {
+                RejectLinks(_root);
+                foreach (var directory in Ancestors(path).TakeWhile(parent =>
+                             !string.Equals(parent, _root, StringComparison.OrdinalIgnoreCase))) FileStamp(directory);
+            }
+            var stamp = FileStamp(path);
+            if (stamp == null) return null;
+            if (!_previewHashes.TryGetValue(path, out var cached) || cached.Stamp != stamp)
+                _previewHashes[path] = cached = (stamp, AssetIdentity.HashFile(path));
+            return cached.Hash == entry.PreviewHash ? path : null;
         }
 
-        private ExpressionLibraryEntry Read(string id)
+        private ExpressionLibraryEntry Read(string id, bool verifyContent = false)
         {
             if (!Guid.TryParseExact(id, "N", out _)) throw new InvalidDataException("Invalid expression ID.");
+            if (!verifyContent && _reads.TryGetValue(id, out var cached) && cached.Stamps.All(pair => FileStamp(pair.Key) == pair.Value))
+                return cached.Entry;
             var directory = SafePath(_root, id);
             var entry = JsonConvert.DeserializeObject<ExpressionLibraryEntry>(File.ReadAllText(SafePath(directory, "metadata.json")));
             if (entry == null || entry.SchemaVersion != 1 || entry.Id != id || string.IsNullOrWhiteSpace(entry.Name) ||
@@ -317,7 +363,41 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                     AssetIdentity.ReadGuid(File.ReadAllText(source + ".meta")) != asset.Guid)
                     throw new InvalidDataException("Missing or invalid expression asset: " + asset.Path);
             }
+            var files = entry.Assets.SelectMany(asset => new[] {
+                SafePath(SafePath(directory, entry.ContentDirectory), asset.Path),
+                SafePath(SafePath(directory, entry.ContentDirectory), asset.Path) + ".meta" })
+                .Append(SafePath(directory, "metadata.json"));
+            var paths = files.ToArray();
+            var directories = paths.SelectMany(file => Ancestors(file).TakeWhile(parent =>
+                !string.Equals(parent, _root, StringComparison.OrdinalIgnoreCase))).Distinct();
+            _reads[id] = new CachedEntry { Entry = entry, Stamps = paths.Concat(directories).ToDictionary(file => file, FileStamp) };
             return entry;
+        }
+
+        private static string FileStamp(string path)
+        {
+            FileSystemInfo info = Directory.Exists(path) ? (FileSystemInfo)new DirectoryInfo(path) : new FileInfo(path);
+            if (!info.Exists) return null;
+            if ((info.Attributes & FileAttributes.ReparsePoint) != 0)
+                throw new InvalidDataException("Linked expression paths are not supported: " + path);
+            return (info is FileInfo file ? file.Length : 0) + ":" + info.LastWriteTimeUtc.Ticks + ":" + info.CreationTimeUtc.Ticks;
+        }
+
+        private static IEnumerable<string> Ancestors(string path)
+        {
+            for (var parent = Path.GetDirectoryName(path); !string.IsNullOrEmpty(parent); parent = Path.GetDirectoryName(parent))
+                yield return parent;
+        }
+
+        private void CacheEntries(IEnumerable<ExpressionLibraryEntry> entries)
+        {
+            _entries = entries.OrderBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase).ThenBy(entry => entry.Id).ToArray();
+            var ids = _entries.Select(entry => entry.Id).ToHashSet();
+            foreach (var id in _reads.Keys.Where(id => !ids.Contains(id)).ToArray()) _reads.Remove(id);
+            var previewKeys = _entries.Select(entry => entry.Id + ":" + entry.ContentDirectory).ToHashSet();
+            foreach (var key in _previewPaths.Keys.Where(key => !previewKeys.Contains(key)).ToArray()) _previewPaths.Remove(key);
+            var paths = _previewPaths.Values.ToHashSet();
+            foreach (var path in _previewHashes.Keys.Where(path => !paths.Contains(path)).ToArray()) _previewHashes.Remove(path);
         }
 
         private static string ContentRevision(ExpressionLibraryEntry entry) => Hash(Encoding.UTF8.GetBytes(

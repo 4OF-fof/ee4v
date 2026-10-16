@@ -49,9 +49,11 @@ namespace Ee4v.Mcp
             if (entry.Revision != McpJson.RequireString(args, "expectedRevision"))
                 throw new McpToolException("expression_revision_conflict", "The shared expression changed. List the library again.");
             var avatar = Avatar(args);
-            FaceExpressionLibraryApi.ValidateTarget(avatar, entry);
             if ((bool?)args["dryRun"] == true)
+            {
+                FaceExpressionLibraryApi.ValidateTarget(avatar, entry);
                 return McpToolResult.Success(McpJson.From(new { dryRun = true, library = LibraryValue(entry) }));
+            }
             var clip = await FaceExpressionLibraryApi.Import(avatar, entry, library, cancellationToken);
             return McpToolResult.Success(McpJson.From(new { clipPath = AssetDatabase.GetAssetPath(clip), library = LibraryValue(entry) }));
         }

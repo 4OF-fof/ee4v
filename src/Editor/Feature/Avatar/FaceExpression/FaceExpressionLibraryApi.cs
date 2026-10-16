@@ -55,11 +55,15 @@ namespace Ee4v.FaceExpression
             if (!avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true).Any(renderer => renderer.sharedMesh != null &&
                     AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(renderer.sharedMesh)) == entry.PrimaryFbxGuid))
                 throw new InvalidOperationException("The expression's primary FBX does not match this avatar.");
-            var channels = FaceExpressionApi.Inspect(avatar);
             foreach (var target in entry.Targets)
-                if (!channels.Any(channel => channel.RendererPath == target.RendererPath && channel.Name == target.ShapeName &&
-                        channel.SourceAssetGuid == target.FbxGuid && channel.SourceMeshLocalId == target.MeshLocalId))
+            {
+                var transform = string.IsNullOrEmpty(target.RendererPath) ? avatar.transform : avatar.transform.Find(target.RendererPath);
+                var mesh = transform?.GetComponent<SkinnedMeshRenderer>()?.sharedMesh;
+                if (mesh == null || !string.Equals(Path.GetExtension(AssetDatabase.GetAssetPath(mesh)), ".fbx", StringComparison.OrdinalIgnoreCase) ||
+                    !AssetDatabase.TryGetGUIDAndLocalFileIdentifier(mesh, out string guid, out long localId) ||
+                    guid != target.FbxGuid || localId != target.MeshLocalId || mesh.GetBlendShapeIndex(target.ShapeName) < 0)
                     throw new InvalidOperationException("The expression does not match this avatar: " + target.RendererPath + "/" + target.ShapeName);
+            }
         }
 
         public static async Task<AnimationClip> Import(GameObject avatar, ExpressionLibraryEntry entry,

@@ -237,7 +237,6 @@ namespace Ee4v.FaceExpression
         internal void Initialize(GameObject avatar)
         {
             BuildContent();
-            RefreshLibrary();
             if (!_initialized || _avatar != avatar)
             {
                 _initialized = true;
@@ -245,6 +244,7 @@ namespace Ee4v.FaceExpression
             }
             else
             {
+                RefreshLibrary();
                 RenderState();
             }
         }
@@ -1381,11 +1381,15 @@ namespace Ee4v.FaceExpression
                     StringComparer.Ordinal)
                 .ToArray();
             if (_avatar != null)
+            {
+                var sharedGuids = _sharedEntries.SelectMany(entry => entry.Assets.Select(asset => asset.Guid)).ToHashSet();
                 foreach (var clip in _libraryClips)
-                    if (!FaceExpressionApi.ValidateClip(_avatar, clip).Any(finding => finding.Code == "binding_not_found" ||
+                    if (!sharedGuids.Contains(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(clip))) &&
+                        !FaceExpressionApi.ValidateClip(_avatar, clip).Any(finding => finding.Code == "binding_not_found" ||
                             finding.Code == "non_blendshape_curve" || finding.Code == "object_reference_curves" ||
                             finding.Code == "animation_events" || finding.Severity == "error"))
                         _currentLibraryClips.Add(clip);
+            }
             RenderLibrary();
         }
 

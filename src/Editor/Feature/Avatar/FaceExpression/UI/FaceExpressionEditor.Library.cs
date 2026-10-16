@@ -30,8 +30,6 @@ namespace Ee4v.FaceExpression
             try
             {
                 _expressionLibrary = ExpressionLibrary.Open();
-                _expressionLibrary.Synchronize();
-                _sharedEntries = _expressionLibrary.List();
             }
             catch (Exception exception) { ReportLibraryFailure(exception); }
         }
@@ -43,7 +41,7 @@ namespace Ee4v.FaceExpression
                 EnsureSharedLibrary();
                 _expressionLibrary.Synchronize();
                 _sharedEntries = _expressionLibrary.List();
-                ClearSharedPreviews();
+                PruneSharedPreviews();
             }
             catch (Exception exception) { ReportLibraryFailure(exception); }
         }
@@ -98,6 +96,8 @@ namespace Ee4v.FaceExpression
 
         private void SelectSharedCandidate(ExpressionLibraryEntry entry)
         {
+            if (_sharedCandidateEntry?.Id == entry.Id && _sharedCandidateEntry.Revision == entry.Revision &&
+                _assignmentCandidateClip != null) return;
             CancelLibraryOperation();
             _sharedCandidateEntry = entry;
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(entry.RootGuid));
@@ -213,7 +213,7 @@ namespace Ee4v.FaceExpression
                 if (_assignmentCandidateClip == clip || _sharedCandidateEntry?.RootGuid == entry.RootGuid)
                     _sharedCandidateEntry = entry;
                 _saveFailed = false;
-                ClearSharedPreviews();
+                PruneSharedPreviews();
                 RenderLibrary();
                 RefreshSaveNotification();
                 return true;
@@ -261,6 +261,16 @@ namespace Ee4v.FaceExpression
         {
             foreach (var texture in _sharedPreviews.Values) if (texture != null) UnityEngine.Object.DestroyImmediate(texture);
             _sharedPreviews.Clear();
+        }
+
+        private void PruneSharedPreviews()
+        {
+            var keys = _sharedEntries.Select(entry => entry.Id + ":" + entry.PreviewHash).ToHashSet();
+            foreach (var key in _sharedPreviews.Keys.Where(key => !keys.Contains(key)).ToArray())
+            {
+                if (_sharedPreviews[key] != null) UnityEngine.Object.DestroyImmediate(_sharedPreviews[key]);
+                _sharedPreviews.Remove(key);
+            }
         }
 
         private void DisposeSharedLibrary()

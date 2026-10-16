@@ -104,6 +104,7 @@ namespace Ee4v.FaceExpression
         private bool _showOtherAvatarsFolder;
         private IReadOnlyList<ExpressionLibraryEntry> _sharedEntries = Array.Empty<ExpressionLibraryEntry>();
         private string _sharedSelectionId;
+        private readonly Dictionary<string, VisualElement> _sharedItems = new Dictionary<string, VisualElement>();
         private Action<ExpressionLibraryEntry, Rect> _drawSharedPreview;
         private IReadOnlyList<string> _libraryFolders;
         private IReadOnlyList<AnimationClip> _libraryClips;
@@ -621,6 +622,9 @@ namespace Ee4v.FaceExpression
         public void SetLibrarySelection(AnimationClip clip)
         {
             _selectedLibraryClip = clip;
+            _sharedSelectionId = null;
+            foreach (var item in _sharedItems.Values)
+                item.EnableInClassList("ee4v-face-expression__library-item--selected", false);
             foreach (var pair in _libraryClipItems)
                 pair.Value.EnableInClassList("ee4v-face-expression__library-item--selected", pair.Key == clip);
         }
@@ -1139,12 +1143,17 @@ namespace Ee4v.FaceExpression
         public void SetSharedSelection(string id)
         {
             _sharedSelectionId = id;
-            RenderLibraryItems();
+            _selectedLibraryClip = null;
+            foreach (var item in _libraryClipItems.Values)
+                item.EnableInClassList("ee4v-face-expression__library-item--selected", false);
+            foreach (var pair in _sharedItems)
+                pair.Value.EnableInClassList("ee4v-face-expression__library-item--selected", pair.Key == id);
         }
 
         private void RenderLibraryItems()
         {
             _libraryClipItems.Clear();
+            _sharedItems.Clear();
             _libraryBadgeHosts.Clear();
             _libraryItems.Clear();
             var folders = _libraryFolders;
@@ -1357,6 +1366,7 @@ namespace Ee4v.FaceExpression
             var item = CreateLibraryItem(entry.Name, () => SharedClipEditRequested?.Invoke(entry), preview,
                 () => SharedClipSelected?.Invoke(entry), keyboardActivated: () => SharedClipSelected?.Invoke(entry));
             item.EnableInClassList("ee4v-face-expression__library-item--selected", entry.Id == _sharedSelectionId);
+            _sharedItems[entry.Id] = item;
             item.tooltip = entry.Name + "\n" + string.Join(", ", entry.Targets.Select(target => target.FbxName).Distinct());
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(entry.RootGuid));
             if (clip != null)

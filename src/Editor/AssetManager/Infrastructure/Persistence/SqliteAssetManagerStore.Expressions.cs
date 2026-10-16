@@ -62,8 +62,17 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             using (var connection = OpenConnection())
             using (var transaction = new DatabaseTransaction(connection))
             {
-                connection.Execute("DELETE FROM face_expression");
-                foreach (var entry in entries) WriteExpression(connection, entry);
+                var previous = connection.QueryScalars<string>("SELECT metadata_json FROM face_expression")
+                    .Select(JsonConvert.DeserializeObject<ExpressionLibraryEntry>).ToDictionary(entry => entry.Id);
+                foreach (var id in previous.Keys.Except(entries.Select(entry => entry.Id)))
+                    connection.Execute("DELETE FROM face_expression WHERE id = ?", id);
+                foreach (var entry in entries)
+                {
+                    if (previous.TryGetValue(entry.Id, out var old) &&
+                        JsonConvert.SerializeObject(old) == JsonConvert.SerializeObject(entry)) continue;
+                    connection.Execute("DELETE FROM face_expression WHERE id = ?", entry.Id);
+                    WriteExpression(connection, entry);
+                }
                 transaction.Commit();
             }
         }
