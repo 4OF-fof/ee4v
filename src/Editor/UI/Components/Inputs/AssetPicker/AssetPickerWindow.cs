@@ -37,6 +37,8 @@ namespace Ee4v.UI
         private EditorWindow _projectBrowser;
         private IVisualElementScheduledItem _projectRefresh;
         private bool _showProject;
+        private bool _startInProject;
+        private string _initialProjectFolder;
         private bool _projectRenderFailed;
         private ObjectField _referenceField;
         private PopupField<AssetPickerAnimationFilter> _animationFilterField;
@@ -135,6 +137,14 @@ namespace Ee4v.UI
             AssetPickerAnimationFilter animationFilter = AssetPickerAnimationFilter.All, string groupKey = null)
         {
             Create(type, current, context, animationFilter, groupKey).ShowAsPopup(screenPosition, new Vector2(1040f, 720f));
+        }
+
+        internal static void ShowProject(VisualElement anchor, Type type, string folderPath)
+        {
+            var window = Create(type, null, null, AssetPickerAnimationFilter.All);
+            window._startInProject = true;
+            window._initialProjectFolder = folderPath;
+            window.ShowAsPopup(anchor, new Vector2(1040f, 720f));
         }
 
         private static AssetPickerWindow Create(Type type, Object current, GameObject context,
@@ -263,8 +273,7 @@ namespace Ee4v.UI
             _projectContent = new IMGUIContainer(DrawProjectBrowser);
             _projectContent.AddToClassList("ee4v-ui-asset-picker__project-content");
             _projectPane.Add(_projectContent);
-            _projectError = UiTextFactory.Create(UiLocalization.Get("ui.assetPicker.projectUnavailable"));
-            _projectError.AddToClassList("ee4v-ui-asset-picker__hidden");
+            _projectError = UiTextFactory.Create(string.Empty);
             _projectPane.Add(_projectError);
             _popup.Content.Add(_projectPane);
             SetPopup(_popup);
@@ -276,7 +285,8 @@ namespace Ee4v.UI
             _projectRefresh.Pause();
             EditorApplication.projectChanged += RequestProjectRepaint;
             Selection.selectionChanged += RequestProjectRepaint;
-            _search.schedule.Execute(() => _search.Q<TextField>()?.Focus());
+            if (_startInProject) ToggleProjectBrowser();
+            else _search.schedule.Execute(() => _search.Q<TextField>()?.Focus());
         }
 
         private IconState ProjectBrowserIcon()
@@ -293,11 +303,11 @@ namespace Ee4v.UI
             _showProject = !_showProject;
             if (_showProject && _projectBrowser == null)
             {
-                _projectRenderFailed = !ProjectBrowserApi.TryCreateEmbeddedBrowser(out _projectBrowser, RequestProjectRepaint);
+                _projectRenderFailed = !ProjectBrowserApi.TryCreateEmbeddedBrowser(out _projectBrowser,
+                    RequestProjectRepaint, _initialProjectFolder);
             }
             _assetBody.EnableInClassList("ee4v-ui-asset-picker__hidden", _showProject);
             _projectPane.EnableInClassList("ee4v-ui-asset-picker__hidden", !_showProject);
-            _projectToggle.EnableInClassList("ee4v-ui-asset-picker__project-toggle--active", _showProject);
             _projectToggle.SetIcon(ProjectBrowserIcon());
             _projectToggle.tooltip = UiLocalization.Get(_showProject
                 ? "ui.assetPicker.projectViewActive" : "ui.assetPicker.projectView");
@@ -359,7 +369,8 @@ namespace Ee4v.UI
         private void RefreshProjectBrowserVisibility()
         {
             _projectContent.EnableInClassList("ee4v-ui-asset-picker__hidden", _projectRenderFailed);
-            _projectError.EnableInClassList("ee4v-ui-asset-picker__hidden", !_projectRenderFailed);
+            _projectError.SetText(_projectRenderFailed
+                ? UiLocalization.Get("ui.assetPicker.projectUnavailable") : string.Empty);
         }
 
         private void BindCandidateRow(VisualElement element, CandidateRow row)

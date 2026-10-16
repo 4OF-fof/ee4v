@@ -30,7 +30,7 @@ Catalogの表情変換Storyは専用Preview SceneのMesh・Clipを使います�
 
 右ペインの見出しと「クリップ内のみ」は`UiTextFactory`の描画要素を使用します。Toggleのラベルは`FormInput`で表示し、入力欄とラベルを縦中央に揃えます。右ペインの見出しには戻るボタンを配置しません。「クリップ内のみ」はラベルをクリックしても切り替えられます。
 
-表情ライブラリの空白部分の右クリック「Projectで開く」は、現在の格納フォルダーをProjectウィンドウで表示します。表情の整理はProjectウィンドウで行い、GUIDで追跡した移動後の実体pathをAssetManagerと同じDBへProject単位で記録します。`Animation/Facial`配下で整理した表情は、移動後の相対フォルダーにライブラリ表示が追従します。詳細は[表情ライブラリの共有保存とProjectへの追加](face-expression-library-sync.md)を参照してください。
+表情ライブラリの空白部分の右クリック「Projectで開く」は、`AssetPicker.ShowProject`から共通PopupをProjectモードで開き、現在の格納フォルダーを表示します。検索を解除した2列表示でフォルダー内容を確認・整理でき、ヘッダのアイコンでAnimationClipのアセットブラウザへ切り替えられます。GUIDで追跡した移動後の実体pathをAssetManagerと同じDBへProject単位で記録します。`Animation/Facial`配下で整理した表情は、移動後の相対フォルダーにライブラリ表示が追従します。詳細は[表情ライブラリの共有保存とProjectへの追加](face-expression-library-sync.md)を参照してください。
 
 ## 対象範囲
 

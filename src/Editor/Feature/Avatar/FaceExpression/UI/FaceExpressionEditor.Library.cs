@@ -215,14 +215,7 @@ namespace Ee4v.FaceExpression
                         folder = Core.Settings.ProjectAssetSettings.EnsureAssetFolder("Animation/Facial", _settings);
                 }
             }
-            EditorUtility.FocusProjectWindow();
-            ProjectBrowserApi.TryGetOpenWindows(out var windows);
-            var window = windows?.FirstOrDefault(value => value == EditorWindow.focusedWindow) ?? windows?.FirstOrDefault();
-            ProjectBrowserApi.TryClearSearch(window);
-            if (ProjectBrowserApi.TryShowFolder(window, AssetDatabase.AssetPathToGUID(folder), reveal: true)) return;
-            var asset = AssetDatabase.LoadMainAssetAtPath(folder);
-            Selection.activeObject = asset;
-            EditorGUIUtility.PingObject(asset);
+            AssetPicker.ShowProject(_view, typeof(AnimationClip), folder);
         }
 
         private void SelectSharedCandidate(ExpressionLibraryEntry entry)

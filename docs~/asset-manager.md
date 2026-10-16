@@ -52,6 +52,8 @@ VRC Light Volumesは任意依存です。導入時だけ組み込みプリセッ
 
 ## 統合画面の部品と責務
 
+左のカテゴリ一覧の下部操作は「アセットを探す」「AssetManagerを開く」の順に並べ、領域の下端から8px空けて配置します。カテゴリ領域の下パディングには共通の`--ee4v-space-md`を使用し、下部操作ボタンの下マージンは0とします。
+
 「アセットを探す」の起動設定はボタンを押した時点の表示画面から取得します。表情タブの割当画面ではAnimationClipの「表情」絞り込みを初期表示し、種類や分類を手動で切り替えずに候補を探せます。割当画面の判定には`FaceExpressionEmbeddedView.IsAssignmentView`を使用します。表情Clip編集画面とほかのカテゴリではMaterialで起動し、参照元の自動入力はMaterial詳細画面だけに限定します。
 
 統合ee4vは`AssetModificationWorkflowView`を統合ホストとして使用します。ホストはVariant選択・作成、Prefab構成、作業Scene、編集保護、保存と外部機能への接続を管理します。パーツ・体型は[AvatarParts](./features/avatar-parts.md)、Materialは[AvatarMaterials](./features/avatar-materials.md)、詳細と性能解析は[AvatarInfo](./features/avatar-info.md)の公開APIへ委譲します。共通の編集対象・選択と通知は[AvatarEditingContext](./features/avatar-editing.md)で接続し、各機能はAssetManagerへ逆依存しません。

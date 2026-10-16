@@ -681,10 +681,6 @@
     padding-bottom: 0;
 }
 
-.ee4v-face-expression__library-folder-chevron {
-    margin-left: auto;
-}
-
 .ee4v-face-expression__library-other-avatars > .ee4v-ui-button__content {
     align-items: center;
 }

@@ -13,6 +13,7 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
         private static readonly Type ProjectBrowserType = typeof(Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
         private const BindingFlags InstanceFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private static readonly MethodInfo OnGuiMethod = ProjectBrowserType?.GetMethod("OnGUI", InstanceFlags);
+        private static readonly MethodInfo InitMethod = ProjectBrowserType?.GetMethod("Init", InstanceFlags, null, Type.EmptyTypes, null);
         private static readonly MethodInfo OnInspectorUpdateMethod = ProjectBrowserType?.GetMethod("OnInspectorUpdate", InstanceFlags);
         private static readonly MethodInfo NewPreviewTexturesMethod = typeof(AssetPreview).GetMethod(
             "HasAnyNewPreviewTexturesAvailable", BindingFlags.Static | BindingFlags.NonPublic,
@@ -24,6 +25,9 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
         private sealed class EmbeddedBrowser
         {
             internal Action Draw;
+            internal Action Initialize;
+            internal string InitialFolder;
+            internal bool InitializeIconSize = true;
             internal Action Update;
             internal Func<int, bool> HasNewPreviews;
             internal Action Repaint;
@@ -34,6 +38,8 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             new Dictionary<EditorWindow, EmbeddedBrowser>();
         private static readonly FieldInfo ListAreaField = ProjectBrowserType?.GetField("m_ListArea", InstanceFlags);
         private static readonly PropertyInfo ListRepaintProperty = ListAreaField?.FieldType.GetProperty("repaintCallback", InstanceFlags);
+        private static readonly PropertyInfo ListGridSizeProperty = ListAreaField?.FieldType.GetProperty("gridSize", InstanceFlags);
+        private static readonly PropertyInfo ListMaxGridSizeProperty = ListAreaField?.FieldType.GetProperty("maxGridSize", InstanceFlags);
         private static EditorWindow _drawingBrowser;
         private static ProjectBrowserState _drawingState;
         private static readonly MethodInfo ShowFolderContentsMethod = ProjectBrowserType?.GetMethod(
@@ -231,11 +237,12 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             return true;
         }
 
-        public static bool TryCreateEmbeddedBrowser(out EditorWindow browser, Action repaint)
+        public static bool TryCreateEmbeddedBrowser(out EditorWindow browser, Action repaint, string folderPath)
         {
             browser = null;
             if (ProjectBrowserType == null || OnGuiMethod == null ||
                 WindowPositionField == null || WindowParentField == null) return false;
+            if (folderPath != null && (!AssetDatabase.IsValidFolder(folderPath) || InitMethod == null)) return false;
 
             var source = LastInteractedBrowserField?.GetValue(null) as EditorWindow;
             if (source == null || EmbeddedBrowsers.ContainsKey(source)) source = ResolveTargetWindow();
@@ -245,14 +252,26 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                 var state = source == null ? null : EditorJsonUtility.ToJson(source);
                 browser = ScriptableObject.CreateInstance(ProjectBrowserType) as EditorWindow;
                 if (browser == null) return false;
-                var embedded = new EmbeddedBrowser { Repaint = repaint };
+                var embedded = new EmbeddedBrowser { Repaint = repaint, InitialFolder = folderPath };
                 EmbeddedBrowsers.Add(browser, embedded);
                 embedded.Draw = (Action)Delegate.CreateDelegate(typeof(Action), browser, OnGuiMethod);
+                if (InitMethod != null)
+                    embedded.Initialize = (Action)Delegate.CreateDelegate(typeof(Action), browser, InitMethod);
                 if (OnInspectorUpdateMethod != null)
                     embedded.Update = (Action)Delegate.CreateDelegate(typeof(Action), browser, OnInspectorUpdateMethod);
                 if (NewPreviewTexturesMethod != null)
                     embedded.HasNewPreviews = (Func<int, bool>)Delegate.CreateDelegate(typeof(Func<int, bool>), NewPreviewTexturesMethod);
                 if (state != null) EditorJsonUtility.FromJsonOverwrite(state, browser);
+                if (folderPath != null)
+                {
+                    using (var serialized = new SerializedObject(browser))
+                    {
+                        var viewMode = serialized.FindProperty("m_ViewMode");
+                        if (viewMode == null) throw new InvalidOperationException("Project Browser view mode is unavailable.");
+                        viewMode.intValue = 1;
+                        serialized.ApplyModifiedPropertiesWithoutUndo();
+                    }
+                }
                 browser.hideFlags = HideFlags.DontSave;
                 return true;
             }
@@ -289,14 +308,29 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                 GUI.BeginGroup(rect);
                 try
                 {
-                    embedded.Draw();
+                    if (embedded.InitializeIconSize || embedded.InitialFolder != null) embedded.Initialize?.Invoke();
+                    if (embedded.InitialFolder != null)
+                    {
+                        if (!TryClearSearch(browser) || !TryShowFolder(browser,
+                                AssetDatabase.AssetPathToGUID(embedded.InitialFolder), true)) return false;
+                        embedded.InitialFolder = null;
+                        _drawingState = null;
+                        embedded.Repaint?.Invoke();
+                    }
                     var listArea = ListAreaField?.GetValue(browser);
+                    if (embedded.InitializeIconSize && listArea != null)
+                    {
+                        if (ListGridSizeProperty != null && ListMaxGridSizeProperty != null)
+                            ListGridSizeProperty.SetValue(listArea, ListMaxGridSizeProperty.GetValue(listArea));
+                        embedded.InitializeIconSize = false;
+                    }
                     if (listArea != null && listArea != embedded.ListArea && ListRepaintProperty != null && embedded.Repaint != null)
                     {
                         var repaint = ListRepaintProperty.GetValue(listArea) as Action;
                         ListRepaintProperty.SetValue(listArea, repaint + embedded.Repaint);
                         embedded.ListArea = listArea;
                     }
+                    embedded.Draw();
                 }
                 finally
                 {

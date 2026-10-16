@@ -1274,9 +1274,6 @@ namespace Ee4v.FaceExpression
             button.AddToClassList("ee4v-face-expression__library-other-avatars");
             button.SetContentAlignment(Justify.FlexStart);
             button.SetLabelTextAlign(TextAnchor.MiddleLeft);
-            var chevron = new Icon(FluentUiIcons.CreateState("chevron_right.png", UiSizeTokens.Size16));
-            chevron.AddToClassList("ee4v-face-expression__library-folder-chevron");
-            button.Content.Add(chevron);
             return button;
         }
 

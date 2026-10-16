@@ -34,13 +34,6 @@
     background-color: var(--ee4v-color-surface-hover-strong);
 }
 
-.ee4v-ui-asset-picker__project-toggle--active.ee4v-ui-button,
-.ee4v-ui-asset-picker__project-toggle--active.ee4v-ui-button:hover,
-.ee4v-ui-asset-picker__project-toggle--active.ee4v-ui-button:active,
-.ee4v-ui Button.ee4v-ui-asset-picker__project-toggle--active:focus {
-    background-color: var(--ee4v-color-selection-soft);
-}
-
 .ee4v-ui-asset-picker__reference-controls > .unity-base-field,
 .ee4v-ui-asset-picker__source > .unity-base-field {
     margin: 0;
@@ -55,7 +48,6 @@
 
 .ee4v-ui-asset-picker__reference-controls {
     flex-direction: row;
-    flex-wrap: wrap;
     align-items: center;
     flex-shrink: 0;
     min-width: 0;
@@ -65,12 +57,15 @@
 
 .ee4v-ui-asset-picker__toolbar .ee4v-ui-asset-picker__type-filter {
     width: 210px;
-    flex-shrink: 0;
+    min-width: 140px;
+    flex-shrink: 1;
     margin-right: var(--ee4v-space-xl);
 }
 
 .ee4v-ui-asset-picker__reference {
+    flex-basis: 0;
     flex-grow: 1;
+    flex-shrink: 1;
     min-width: 0;
 }
 
@@ -78,7 +73,7 @@
     width: 200px;
     max-width: 100%;
     min-width: 0;
-    flex-shrink: 0;
+    flex-shrink: 1;
 }
 
 .ee4v-ui-asset-picker__reference-controls .unity-base-field__label {

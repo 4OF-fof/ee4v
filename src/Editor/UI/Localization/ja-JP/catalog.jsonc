@@ -27,11 +27,11 @@
       "tooltip": "閉じる"
     },
     "assetPicker": {
-      "title": "アセットブラウザー",
+      "title": "アセットブラウザ",
       "projectTitle": "Project",
       "projectView": "Project表示に切り替え",
-      "projectViewActive": "Project表示中（クリックでアセットブラウザーに戻る）",
-      "projectUnavailable": "Project表示を利用できません。ヘッダのアイコンからアセットブラウザーに戻れます。",
+      "projectViewActive": "アセットブラウザに切り替え",
+      "projectUnavailable": "Project表示を利用できません。ヘッダのアイコンからアセットブラウザに戻れます。",
       "open": "アセットを探す",
       "assetType": "種類",
       "allTypes": "すべて",

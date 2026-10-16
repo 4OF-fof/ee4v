@@ -104,9 +104,10 @@ namespace Ee4v.Core.EditorIntegration
             return ProjectBrowserBackend.TryGetOpenWindows(out windows);
         }
 
-        public static bool TryCreateEmbeddedBrowser(out EditorWindow browser, System.Action repaint = null)
+        public static bool TryCreateEmbeddedBrowser(out EditorWindow browser, System.Action repaint = null,
+            string folderPath = null)
         {
-            return ProjectBrowserBackend.TryCreateEmbeddedBrowser(out browser, repaint);
+            return ProjectBrowserBackend.TryCreateEmbeddedBrowser(out browser, repaint, folderPath);
         }
 
         public static bool TryDrawEmbeddedBrowser(EditorWindow browser, EditorWindow host, Rect rect)

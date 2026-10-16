@@ -39,6 +39,15 @@ namespace Ee4v.UI
                     ? reference : null, usageContext, animationFilter);
         }
 
+        public static void ShowProject(VisualElement anchor, Type objectType, string folderPath)
+        {
+            if (objectType == null || !typeof(Object).IsAssignableFrom(objectType))
+                throw new ArgumentException("A Unity Object type is required.", nameof(objectType));
+            if (!AssetDatabase.IsValidFolder(folderPath))
+                throw new ArgumentException("An existing project folder is required.", nameof(folderPath));
+            AssetPickerWindow.ShowProject(anchor, objectType, folderPath);
+        }
+
         public static Type GetReferenceType(Type objectType) =>
             objectType == typeof(Object) || typeof(AnimationClip).IsAssignableFrom(objectType) ? null :
             typeof(Texture).IsAssignableFrom(objectType) ? typeof(Material) : objectType;
