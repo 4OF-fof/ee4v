@@ -30,6 +30,61 @@ namespace Ee4v.FaceExpression
         private bool _localRegistrationPreviewPrepared;
         private double _libraryInteractionAt = double.NegativeInfinity;
 
+        private void AddExistingClips(IReadOnlyList<AnimationClip> sources)
+        {
+            if (_disposed || sources == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
+            _view?.SetValidation(null);
+            AnimationClip added = null;
+            var errors = new List<string>();
+            try
+            {
+                _libraryRootFolder = NormalizeAssetPath(
+                    Core.Settings.ProjectAssetSettings.EnsureAssetFolder("Animation/Facial", _settings));
+                _libraryFolder = Core.Settings.ProjectAssetSettings.EnsureAssetFolder(
+                    "Animation/Facial" + (_sharedFolder.Length > 0 ? "/" + _sharedFolder : string.Empty), _settings);
+                foreach (var source in sources.Where(clip => clip != null).Distinct())
+                {
+                    try
+                    {
+                        var sourcePath = AssetDatabase.GetAssetPath(source);
+                        if (!AssetDatabase.IsMainAsset(source) || !sourcePath.EndsWith(".anim", StringComparison.OrdinalIgnoreCase))
+                            throw new InvalidOperationException(I18N.Get("library.animRequired"));
+                        if (HasPendingLibraryEdits(source, sourcePath))
+                            throw new InvalidOperationException(I18N.Get("library.sourceUnsaved"));
+                        if (IsAtOrBelow(GetAssetDirectory(sourcePath), _libraryRootFolder))
+                        {
+                            added = source;
+                            continue;
+                        }
+                        var path = AssetDatabase.GenerateUniqueAssetPath(
+                            _libraryFolder + "/" + SanitizeFileName(source.name) + ".anim");
+                        if (!AssetDatabase.CopyAsset(sourcePath, path))
+                            throw new InvalidOperationException(I18N.Get("library.copyFailed"));
+                        added = AssetDatabase.LoadAssetAtPath<AnimationClip>(path)
+                            ?? throw new InvalidOperationException(I18N.Get("library.copyFailed"));
+                    }
+                    catch (Exception exception) { errors.Add(source.name + ": " + exception.Message); }
+                }
+                RefreshLibrary();
+                if (added != null)
+                {
+                    var entry = _expressionLibrary?.FindByRootGuid(
+                        AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(added)));
+                    _sharedFolder = entry != null ? GetSharedLibraryFolder(entry) : GetLocalLibraryFolder(added);
+                    _libraryFolder = GetAssetDirectory(AssetDatabase.GetAssetPath(added));
+                    _showOtherLibraryTargets = entry != null
+                        ? _avatar == null || !_avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true).Any(renderer =>
+                            renderer.sharedMesh != null && AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(renderer.sharedMesh)) == entry.PrimaryFbxGuid)
+                        : !_currentLibraryClips.Contains(added);
+                    if (entry != null) SelectSharedCandidate(entry);
+                    else SelectAssignmentCandidate(added);
+                    RenderLibrary();
+                }
+            }
+            catch (Exception exception) { errors.Add(exception.Message); }
+            if (errors.Count > 0) ReportLibraryFailure(new InvalidOperationException(string.Join("\n", errors)));
+        }
+
         private void EnsureSharedLibrary()
         {
             if (_expressionLibrary != null) return;

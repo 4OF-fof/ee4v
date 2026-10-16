@@ -21,6 +21,8 @@ namespace Ee4v.FaceExpression
         public string Save { get; set; }
         public string SaveFailed { get; set; }
         public string NewClip { get; set; }
+        public string LibraryEmpty { get; set; }
+        public string LibraryNoMatches { get; set; }
         public string CopyAndEdit { get; set; }
         public string Edit { get; set; }
         public string ResetView { get; set; }
@@ -89,6 +91,8 @@ namespace Ee4v.FaceExpression
         private readonly Dictionary<AnimationClip, IReadOnlyList<string>> _libraryAssignmentLabels = new Dictionary<AnimationClip, IReadOnlyList<string>>();
         private readonly ObjectField _clipField;
         private readonly MessagePanel _validation;
+        private readonly MessagePanel _libraryValidation;
+        private MessagePanelState _validationState;
         private readonly MessagePanel _saveNotification;
         private readonly string _unsavedChanges;
         private readonly string _saveFailed;
@@ -130,6 +134,8 @@ namespace Ee4v.FaceExpression
         private readonly EmptyState _empty;
         private readonly string _defaultSectionTitle;
         private readonly string _libraryTitle;
+        private readonly string _libraryEmptyText;
+        private readonly string _libraryNoMatchesText;
         private readonly string _newClip;
         private readonly string _copyAndEdit;
         private readonly string _edit;
@@ -176,6 +182,8 @@ namespace Ee4v.FaceExpression
             _defaultSectionTitle = text.BlendShapes ?? string.Empty;
             _libraryTitle = text.Library ?? string.Empty;
             _newClip = text.NewClip ?? string.Empty;
+            _libraryEmptyText = text.LibraryEmpty ?? string.Empty;
+            _libraryNoMatchesText = text.LibraryNoMatches ?? string.Empty;
             _copyAndEdit = text.CopyAndEdit ?? string.Empty;
             _edit = text.Edit ?? string.Empty;
             _noBlendShapes = text.NoBlendShapes ?? string.Empty;
@@ -445,15 +453,19 @@ namespace Ee4v.FaceExpression
             _libraryBack.style.display = DisplayStyle.None;
             _libraryToolbar.Add(_libraryBack);
             _libraryToolbar.Add(_librarySearch);
+            RegisterLibraryDropTarget(_libraryToolbar);
             var newClipButton = new UiButton(_newClip, () => NewClipRequested?.Invoke(), _newClip,
                 FluentUiIcons.CreateState("add.png", UiSizeTokens.Size16));
             newClipButton.AddToClassList("ee4v-face-expression__library-create");
             _libraryToolbar.Add(newClipButton);
             editorPane.Add(_libraryToolbar);
+            _libraryValidation = new MessagePanel();
+            editorPane.Add(_libraryValidation);
             _library = new ScrollView(ScrollViewMode.Vertical);
             _library.AddToClassList("ee4v-face-expression__library");
             _library.contentContainer.AddToClassList(
                 "ee4v-face-expression__library-content");
+            RegisterLibraryDropTarget(_library);
             _library.RegisterCallback<ContextClickEvent>(evt =>
             {
                 for (var element = evt.target as VisualElement; element != null && element != _library; element = element.parent)
@@ -569,6 +581,7 @@ namespace Ee4v.FaceExpression
         public event Action<AnimationClip> ClipChanged;
         public event Action<AnimationClip> LibraryClipSelected;
         public event Action NewClipRequested;
+        public event Action<IReadOnlyList<AnimationClip>> ExistingClipsAddRequested;
         public event Action<AnimationClip> CopyClipRequested;
         public event Action<AnimationClip> EditClipRequested;
         public event Action<AnimationClip> ClearClipAssignmentsRequested;
@@ -583,6 +596,32 @@ namespace Ee4v.FaceExpression
         public event Action<ExpressionLibraryEntry> SharedClipDeleteRequested;
         public event Action<BlendShapeChannel> ChannelChanged;
         public event Action ConversionRequested;
+
+        private void RegisterLibraryDropTarget(VisualElement target)
+        {
+            target.RegisterCallback<DragUpdatedEvent>(evt =>
+            {
+                DragAndDrop.visualMode = GetDraggedLibraryClips().Length > 0
+                    ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
+                evt.StopPropagation();
+            }, TrickleDown.TrickleDown);
+            target.RegisterCallback<DragPerformEvent>(evt =>
+            {
+                var clips = GetDraggedLibraryClips();
+                if (clips.Length == 0) { return; }
+                DragAndDrop.AcceptDrag();
+                ExistingClipsAddRequested?.Invoke(clips);
+                evt.StopPropagation();
+            }, TrickleDown.TrickleDown);
+        }
+
+        private static AnimationClip[] GetDraggedLibraryClips()
+        {
+            var objects = DragAndDrop.objectReferences;
+            return objects.Length > 0 && objects.All(value => value is AnimationClip clip &&
+                    AssetDatabase.IsMainAsset(clip) && AssetDatabase.GetAssetPath(clip).EndsWith(".anim", StringComparison.OrdinalIgnoreCase))
+                ? objects.Cast<AnimationClip>().Distinct().ToArray() : Array.Empty<AnimationClip>();
+        }
 
         public void SetConversionAvailable(bool available)
         {
@@ -1145,7 +1184,9 @@ namespace Ee4v.FaceExpression
 
         public void SetValidation(MessagePanelState state)
         {
+            _validationState = state;
             _validation.SetState(state);
+            _libraryValidation.SetState(_hasClip ? null : state);
         }
 
         public void SetLibrary(
@@ -1218,6 +1259,15 @@ namespace Ee4v.FaceExpression
         {
             var scrollOffset = _library.scrollOffset;
             _library.Clear();
+            _library.EnableInClassList("ee4v-face-expression__library--empty", _libraryItems.Count == 0);
+            if (_libraryItems.Count == 0)
+            {
+                var empty = new EmptyState(new EmptyStateState(string.Empty,
+                    string.IsNullOrWhiteSpace(_librarySearch.Value) ? _libraryEmptyText : _libraryNoMatchesText,
+                    FluentUiIcons.CreateState("info.png", 48f, tintColor: UiColorTokens.TextMuted)));
+                empty.AddToClassList("ee4v-face-expression__library-empty");
+                _library.Add(empty);
+            }
             for (var firstIndex = 0;
                  firstIndex < _libraryItems.Count;
                  firstIndex += LibraryColumns)
@@ -1540,6 +1590,7 @@ namespace Ee4v.FaceExpression
             if (_library.parent != libraryHost)
             {
                 libraryHost.Add(_libraryToolbar);
+                libraryHost.Add(_libraryValidation);
                 libraryHost.Add(_library);
                 libraryHost.Add(_libraryOtherAvatars);
             }
@@ -1556,6 +1607,7 @@ namespace Ee4v.FaceExpression
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             _libraryToolbar.style.display = _hasClip ? DisplayStyle.None : DisplayStyle.Flex;
+            _libraryValidation.SetState(_hasClip ? null : _validationState);
             _libraryOtherAvatars.style.display = !_hasClip && _showOtherAvatarsFolder ? DisplayStyle.Flex : DisplayStyle.None;
             _animationControls.style.display = _hasClip
                 ? DisplayStyle.Flex

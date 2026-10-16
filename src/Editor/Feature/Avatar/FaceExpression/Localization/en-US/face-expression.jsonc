@@ -5,6 +5,11 @@
     "importing": "Importing expression…",
     "addToProject": "Add to project",
     "openInProject": "Open in Project",
+    "empty": "Drop an existing AnimationClip or choose Create new to add an expression.",
+    "noMatches": "No expressions match your search.",
+    "animRequired": "Select a saved .anim asset.",
+    "sourceUnsaved": "The source or a referenced clip has unsaved changes. Save it before adding it.",
+    "copyFailed": "The expression clip could not be copied into the library folder.",
     "importRequired": "Double-click or right-click and choose Add to project before using this expression."
   },
   "favorites": { "title": "Favorites", "add": "Add to favorites", "remove": "Remove from favorites", "removeCurve": "Remove this BlendShape from the clip" },
@@ -192,7 +197,7 @@
   "action": {
     "resetBlendShape": "Reset",
     "resetBlendShapeTooltip": "Restore the avatar's initial value ({0}%)",
-    "newClip": "New expression",
+    "newClip": "Create new",
     "copyAndEdit": "Copy and edit",
     "edit": "Edit",
     "resetView": "Reset view",

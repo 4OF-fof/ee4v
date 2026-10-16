@@ -294,6 +294,7 @@ namespace Ee4v.FaceExpression
             _view.LibraryClipSelected += SelectAssignmentCandidate;
             _view.EditClipRequested += EditClip;
             _view.NewClipRequested += CreateClip;
+            _view.ExistingClipsAddRequested += AddExistingClips;
             _view.CopyClipRequested += CopyClip;
             _view.ClearClipAssignmentsRequested += ClearClipAssignments;
             _view.ConversionRequested += () => ShowClipConversion(_clip);
@@ -1646,6 +1647,8 @@ namespace Ee4v.FaceExpression
                 Save = I18N.Get("assignments.save"),
                 SaveFailed = I18N.Get("assignments.saveFailed"),
                 NewClip = I18N.Get("action.newClip"),
+                LibraryEmpty = I18N.Get("library.empty"),
+                LibraryNoMatches = I18N.Get("library.noMatches"),
                 CopyAndEdit = I18N.Get("action.copyAndEdit"),
                 Edit = I18N.Get("action.edit"),
                 ResetView = I18N.Get("action.resetView"),

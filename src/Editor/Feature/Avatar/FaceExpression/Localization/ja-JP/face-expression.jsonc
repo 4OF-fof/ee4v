@@ -1,10 +1,15 @@
 {
   "library": {
-    "otherAvatars": "その他のアバターの表情",
+    "otherAvatars": "他のアバターの表情",
     "delete": "ライブラリから削除", "failed": "表情ライブラリの処理に失敗しました。",
     "importing": "表情をImportしています…",
     "addToProject": "プロジェクトに追加",
     "openInProject": "Projectで開く",
+    "empty": "既存のAnimationClipをドロップするか、「新規作成」で表情を追加してください。",
+    "noMatches": "検索条件に一致する表情がありません。",
+    "animRequired": "保存済みの.animファイルを選択してください。",
+    "sourceUnsaved": "元Clipまたは参照Clipに未保存の編集があります。保存してから追加してください。",
+    "copyFailed": "表情Clipをライブラリフォルダーへコピーできませんでした。",
     "importRequired": "ダブルクリックまたは右クリックの「プロジェクトに追加」を実行してから使用してください。"
   },
   "favorites": { "title": "お気に入り", "add": "お気に入りに追加", "remove": "お気に入りから外す", "removeCurve": "クリップからこのBlendShapeを削除" },
@@ -192,7 +197,7 @@
   "action": {
     "resetBlendShape": "リセット",
     "resetBlendShapeTooltip": "アバターの初期値（{0}%）に戻す",
-    "newClip": "新規表情",
+    "newClip": "新規作成",
     "copyAndEdit": "コピーして編集",
     "edit": "編集",
     "resetView": "表示をリセット",

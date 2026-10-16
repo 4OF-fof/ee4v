@@ -631,6 +631,19 @@
     flex-direction: column;
 }
 
+.ee4v-face-expression__library--empty .ee4v-face-expression__library-content {
+    flex-grow: 1;
+}
+
+.ee4v-face-expression__library-empty.ee4v-ui-empty-state {
+    border-width: 0;
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-face-expression__library-empty > .ee4v-ui-empty-state__actions {
+    display: none;
+}
+
 .ee4v-face-expression__library-toolbar {
     flex-direction: row;
     flex-wrap: wrap;

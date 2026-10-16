@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ee4v.Core.I18n;
 using Ee4v.Core.Settings;
 using Ee4v.UI;
@@ -307,7 +308,9 @@ namespace Ee4v.FaceExpression
                 {
                     Avatar = "Avatar",
                     Clip = "Expression clip",
-                    NewClip = "New expression",
+                    NewClip = "Create new",
+                    LibraryEmpty = "Drop an existing AnimationClip or choose Create new to add an expression.",
+                    LibraryNoMatches = "No expressions match your search.",
                     CopyAndEdit = "Copy and edit",
                     Edit = "Edit",
                     ResetView = "Reset view",
@@ -399,6 +402,7 @@ namespace Ee4v.FaceExpression
             surface.Add(result);
             view.SaveRequested += () => result.SetText("サンプルをメモリ内で確定しました");
             view.NewClipRequested += () => result.SetText("新規表情を要求しました（Storyでは保存しません）");
+            view.ExistingClipsAddRequested += clips => result.SetText("追加を要求: " + string.Join(", ", clips.Select(clip => clip.name)));
             view.CopyClipRequested += clip => result.SetText("コピーを要求: " + clip?.name);
             view.EditClipRequested += clip => result.SetText("編集を要求: " + clip?.name);
             view.LibraryClipSelected += clip => { view.SetClip(clip); result.SetText("選択: " + clip?.name); };
