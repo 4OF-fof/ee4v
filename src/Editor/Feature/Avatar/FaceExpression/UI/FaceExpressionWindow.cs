@@ -1409,6 +1409,14 @@ namespace Ee4v.FaceExpression
         private void OpenLibraryFolder(string folder)
         {
             _libraryInteractionAt = EditorApplication.timeSinceStartup;
+            if (folder == FaceExpressionView.CurrentAvatarFolderPath)
+            {
+                _showOtherLibraryTargets = false;
+                _sharedFolder = string.Empty;
+                _libraryFolder = _libraryRootFolder;
+                RefreshLibrary();
+                return;
+            }
             if (folder == FaceExpressionView.OtherAvatarsFolderPath)
             {
                 _showOtherLibraryTargets = true;

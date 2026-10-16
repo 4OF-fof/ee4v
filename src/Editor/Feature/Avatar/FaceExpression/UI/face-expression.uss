@@ -178,12 +178,6 @@
     min-height: 180px;
 }
 
-.ee4v-face-expression__assignment-library > .ee4v-ui-search-field {
-    flex-shrink: 0;
-    margin-top: var(--ee4v-space-sm);
-    margin-bottom: var(--ee4v-space-sm);
-}
-
 .ee4v-gesture-picker__hand--selected.ee4v-ui-button {
     border-color: var(--ee4v-color-focus);
     background-color: var(--ee4v-color-selection-soft);
@@ -353,11 +347,6 @@
     margin-top: var(--ee4v-space-md);
     margin-left: var(--ee4v-space-xs);
     margin-right: var(--ee4v-space-xs);
-}
-
-.ee4v-face-expression__editor-content > .ee4v-face-expression__library-search {
-    flex-shrink: 0;
-    margin-bottom: var(--ee4v-space-sm);
 }
 
 .ee4v-face-expression__editor-content > .ee4v-face-expression__blend-shape-search {
@@ -634,6 +623,8 @@
 
 .ee4v-face-expression__library {
     flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
     min-height: 0;
     margin-top: var(--ee4v-space-none);
     margin-left: var(--ee4v-space-xs);
@@ -644,6 +635,69 @@
 
 .ee4v-face-expression__library-content {
     flex-direction: column;
+}
+
+.ee4v-face-expression__library-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-shrink: 0;
+    margin: var(--ee4v-space-sm) var(--ee4v-space-xs);
+}
+
+.ee4v-face-expression__library-toolbar > .ee4v-face-expression__library-search {
+    align-self: center;
+    height: var(--ee4v-size-28);
+    min-height: var(--ee4v-size-28);
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 140px;
+    margin-right: var(--ee4v-space-sm);
+}
+
+.ee4v-face-expression__library-create {
+    align-self: center;
+    height: var(--ee4v-size-28);
+    min-height: var(--ee4v-size-28);
+    flex-shrink: 0;
+}
+
+.ee4v-face-expression__library-back.ee4v-ui-button {
+    align-self: center;
+    flex-shrink: 0;
+    width: var(--ee4v-size-28);
+    min-width: var(--ee4v-size-28);
+    height: var(--ee4v-size-28);
+    min-height: var(--ee4v-size-28);
+    margin-right: var(--ee4v-space-sm);
+}
+
+.ee4v-face-expression__library-other-avatars {
+    width: auto;
+    flex-shrink: 0;
+    min-height: 36px;
+    margin: var(--ee4v-space-sm) var(--ee4v-space-xs) 0;
+    padding: var(--ee4v-space-md) var(--ee4v-space-sm);
+    border-radius: 0;
+    border-top-width: var(--ee4v-border-hairline);
+    border-top-color: var(--ee4v-color-border-subtle);
+}
+
+.ee4v-face-expression.ee4v-face-expression--library-footer .ee4v-face-expression__left-pane {
+    padding-bottom: 0;
+}
+
+.ee4v-face-expression__library-folder-chevron {
+    margin-left: auto;
+}
+
+.ee4v-face-expression__library-other-avatars > .ee4v-ui-button__content {
+    align-items: center;
+}
+
+.ee4v-face-expression__library-other-avatars .ee4v-ui-button__label {
+    align-self: center;
+    justify-content: center;
 }
 
 .ee4v-face-expression__library-row {
@@ -711,50 +765,30 @@
     white-space: nowrap;
 }
 
-.ee4v-face-expression__library-item--create {
-    border-color: var(--ee4v-color-border-subtle);
-    padding: var(--ee4v-space-md);
-}
-
-.ee4v-face-expression__library-item--create:hover {
-    border-color: var(--ee4v-color-focus);
-}
-
-.ee4v-face-expression__library-item--create > .ee4v-ui-button__content {
-    align-items: center;
-    justify-content: center;
-}
-
-.ee4v-face-expression__library-item--create .ee4v-ui-button__icon {
-    margin-right: 0;
-    margin-bottom: var(--ee4v-space-md);
-}
-
-.ee4v-face-expression__library-item--create .ee4v-ui-button__label {
-    align-self: stretch;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.ee4v-face-expression__library-item--create .ee4v-ui-button__label > .unity-label {
-    width: 100%;
-    min-width: 0;
-    align-self: stretch;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 .ee4v-face-expression__library-preview {
     width: 100%;
     flex-shrink: 0;
     background-color: var(--ee4v-color-chrome-deep);
 }
 
-.ee4v-face-expression__library-preview--icon {
+.ee4v-face-expression .ee4v-face-expression__library-item.ee4v-face-expression__library-item--folder {
+    border-radius: var(--ee4v-radius-lg);
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-face-expression .ee4v-face-expression__library-item.ee4v-face-expression__library-item--folder:hover,
+.ee4v-face-expression .ee4v-face-expression__library-item.ee4v-face-expression__library-item--folder:focus,
+.ee4v-face-expression .ee4v-face-expression__library-item.ee4v-face-expression__library-item--folder:active {
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-surface-hover);
+}
+
+.ee4v-face-expression__library-preview.ee4v-face-expression__library-preview--folder {
+    position: relative;
     align-items: center;
     justify-content: center;
+    background-color: var(--ee4v-color-transparent);
 }
 
 .ee4v-face-expression__library-preview--unimported {
