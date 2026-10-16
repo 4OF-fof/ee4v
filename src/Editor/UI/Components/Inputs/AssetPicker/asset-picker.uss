@@ -11,6 +11,36 @@
     margin-bottom: var(--ee4v-space-xl);
 }
 
+.ee4v-ui-asset-picker__project-pane,
+.ee4v-ui-asset-picker__project-content {
+    flex-grow: 1;
+    min-width: 0;
+    min-height: 0;
+}
+
+.ee4v-ui-asset-picker__project-toggle.ee4v-ui-button {
+    width: var(--ee4v-size-24);
+    min-width: var(--ee4v-size-24);
+    height: var(--ee4v-size-24);
+    min-height: var(--ee4v-size-24);
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-color: var(--ee4v-color-transparent);
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-asset-picker__project-toggle.ee4v-ui-button:hover {
+    background-color: var(--ee4v-color-surface-hover-strong);
+}
+
+.ee4v-ui-asset-picker__project-toggle--active.ee4v-ui-button,
+.ee4v-ui-asset-picker__project-toggle--active.ee4v-ui-button:hover,
+.ee4v-ui-asset-picker__project-toggle--active.ee4v-ui-button:active,
+.ee4v-ui Button.ee4v-ui-asset-picker__project-toggle--active:focus {
+    background-color: var(--ee4v-color-selection-soft);
+}
+
 .ee4v-ui-asset-picker__reference-controls > .unity-base-field,
 .ee4v-ui-asset-picker__source > .unity-base-field {
     margin: 0;

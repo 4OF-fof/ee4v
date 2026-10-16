@@ -28,6 +28,10 @@
     },
     "assetPicker": {
       "title": "Asset browser",
+      "projectTitle": "Project",
+      "projectView": "Switch to Project view",
+      "projectViewActive": "Project view active (click to return to the asset browser)",
+      "projectUnavailable": "Project view is unavailable. Use the header icon to return to the asset browser.",
       "open": "Browse assets",
       "assetType": "Type",
       "allTypes": "All",

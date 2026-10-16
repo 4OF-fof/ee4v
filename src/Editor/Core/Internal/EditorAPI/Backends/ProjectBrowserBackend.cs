@@ -11,6 +11,31 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
     internal static class ProjectBrowserBackend
     {
         private static readonly Type ProjectBrowserType = typeof(Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
+        private const BindingFlags InstanceFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private static readonly MethodInfo OnGuiMethod = ProjectBrowserType?.GetMethod("OnGUI", InstanceFlags);
+        private static readonly MethodInfo OnInspectorUpdateMethod = ProjectBrowserType?.GetMethod("OnInspectorUpdate", InstanceFlags);
+        private static readonly MethodInfo NewPreviewTexturesMethod = typeof(AssetPreview).GetMethod(
+            "HasAnyNewPreviewTexturesAvailable", BindingFlags.Static | BindingFlags.NonPublic,
+            null, new[] { typeof(int) }, null);
+        private static readonly FieldInfo WindowPositionField = typeof(EditorWindow).GetField("m_Pos", InstanceFlags);
+        private static readonly FieldInfo WindowParentField = typeof(EditorWindow).GetField("m_Parent", InstanceFlags);
+        private static readonly FieldInfo LastInteractedBrowserField = ProjectBrowserType?.GetField(
+            "s_LastInteractedProjectBrowser", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+        private sealed class EmbeddedBrowser
+        {
+            internal Action Draw;
+            internal Action Update;
+            internal Func<int, bool> HasNewPreviews;
+            internal Action Repaint;
+            internal object ListArea;
+        }
+
+        private static readonly Dictionary<EditorWindow, EmbeddedBrowser> EmbeddedBrowsers =
+            new Dictionary<EditorWindow, EmbeddedBrowser>();
+        private static readonly FieldInfo ListAreaField = ProjectBrowserType?.GetField("m_ListArea", InstanceFlags);
+        private static readonly PropertyInfo ListRepaintProperty = ListAreaField?.FieldType.GetProperty("repaintCallback", InstanceFlags);
+        private static EditorWindow _drawingBrowser;
+        private static ProjectBrowserState _drawingState;
         private static readonly MethodInfo ShowFolderContentsMethod = ProjectBrowserType?.GetMethod(
             "ShowFolderContents",
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
@@ -43,6 +68,12 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                 return false;
             }
 
+            if (window == _drawingBrowser && _drawingState != null)
+            {
+                state = ApplySelectionOrientation(_drawingState, selectionRect);
+                return true;
+            }
+
             try
             {
                 using (var serializedObject = new SerializedObject(window))
@@ -54,7 +85,8 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                     var searchText = GetSearchText(serializedObject);
                     var hasSearch = !string.IsNullOrEmpty(searchText);
                     var viewMode = GetViewMode(serializedObject);
-                    var orientation = GetOrientation(serializedObject, viewMode, selectionRect);
+                    var orientation = GetOrientation(serializedObject, viewMode,
+                        window == _drawingBrowser ? null : selectionRect);
 
                     state = new ProjectBrowserState(
                         folderGuid,
@@ -63,6 +95,11 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                         hasSearch,
                         viewMode,
                         orientation);
+                    if (window == _drawingBrowser)
+                    {
+                        _drawingState = state;
+                        state = ApplySelectionOrientation(state, selectionRect);
+                    }
                     return true;
                 }
             }
@@ -189,8 +226,125 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
             windows = Resources
                 .FindObjectsOfTypeAll(ProjectBrowserType)
                 .OfType<EditorWindow>()
+                .Where(window => !EmbeddedBrowsers.ContainsKey(window))
                 .ToArray();
             return true;
+        }
+
+        public static bool TryCreateEmbeddedBrowser(out EditorWindow browser, Action repaint)
+        {
+            browser = null;
+            if (ProjectBrowserType == null || OnGuiMethod == null ||
+                WindowPositionField == null || WindowParentField == null) return false;
+
+            var source = LastInteractedBrowserField?.GetValue(null) as EditorWindow;
+            if (source == null || EmbeddedBrowsers.ContainsKey(source)) source = ResolveTargetWindow();
+            var previous = LastInteractedBrowserField?.GetValue(null);
+            try
+            {
+                var state = source == null ? null : EditorJsonUtility.ToJson(source);
+                browser = ScriptableObject.CreateInstance(ProjectBrowserType) as EditorWindow;
+                if (browser == null) return false;
+                var embedded = new EmbeddedBrowser { Repaint = repaint };
+                EmbeddedBrowsers.Add(browser, embedded);
+                embedded.Draw = (Action)Delegate.CreateDelegate(typeof(Action), browser, OnGuiMethod);
+                if (OnInspectorUpdateMethod != null)
+                    embedded.Update = (Action)Delegate.CreateDelegate(typeof(Action), browser, OnInspectorUpdateMethod);
+                if (NewPreviewTexturesMethod != null)
+                    embedded.HasNewPreviews = (Func<int, bool>)Delegate.CreateDelegate(typeof(Func<int, bool>), NewPreviewTexturesMethod);
+                if (state != null) EditorJsonUtility.FromJsonOverwrite(state, browser);
+                browser.hideFlags = HideFlags.DontSave;
+                return true;
+            }
+            catch (Exception exception)
+            {
+                DestroyEmbeddedBrowser(browser);
+                browser = null;
+                Debug.LogException(exception);
+                return false;
+            }
+            finally
+            {
+                LastInteractedBrowserField?.SetValue(null, previous);
+            }
+        }
+
+        public static bool TryDrawEmbeddedBrowser(EditorWindow browser, EditorWindow host, Rect rect)
+        {
+            if (browser == null || host == null || !EmbeddedBrowsers.TryGetValue(browser, out var embedded) ||
+                Event.current == null || OnGuiMethod == null ||
+                WindowPositionField == null || WindowParentField == null) return false;
+            if (rect.width <= 0f || rect.height <= 0f) return true;
+
+            var previousPosition = WindowPositionField.GetValue(browser);
+            var previousParent = WindowParentField.GetValue(browser);
+            var previousDrawingBrowser = _drawingBrowser;
+            var previousDrawingState = _drawingState;
+            try
+            {
+                _drawingBrowser = browser;
+                _drawingState = null;
+                WindowPositionField.SetValue(browser, new Rect(0f, 0f, rect.width, rect.height));
+                WindowParentField.SetValue(browser, WindowParentField.GetValue(host));
+                GUI.BeginGroup(rect);
+                try
+                {
+                    embedded.Draw();
+                    var listArea = ListAreaField?.GetValue(browser);
+                    if (listArea != null && listArea != embedded.ListArea && ListRepaintProperty != null && embedded.Repaint != null)
+                    {
+                        var repaint = ListRepaintProperty.GetValue(listArea) as Action;
+                        ListRepaintProperty.SetValue(listArea, repaint + embedded.Repaint);
+                        embedded.ListArea = listArea;
+                    }
+                }
+                finally
+                {
+                    GUI.EndGroup();
+                }
+                return true;
+            }
+            catch (ExitGUIException)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception is TargetInvocationException invocation
+                    ? invocation.InnerException ?? invocation : exception);
+                return false;
+            }
+            finally
+            {
+                _drawingBrowser = previousDrawingBrowser;
+                _drawingState = previousDrawingState;
+                WindowParentField.SetValue(browser, previousParent);
+                WindowPositionField.SetValue(browser, previousPosition);
+            }
+        }
+
+        public static bool TryUpdateEmbeddedBrowser(EditorWindow browser)
+        {
+            if (browser == null || !EmbeddedBrowsers.TryGetValue(browser, out var embedded)) return false;
+            try
+            {
+                embedded.Update?.Invoke();
+                if (embedded.HasNewPreviews?.Invoke(browser.GetInstanceID()) == true) embedded.Repaint?.Invoke();
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                return false;
+            }
+        }
+
+        public static void DestroyEmbeddedBrowser(EditorWindow browser)
+        {
+            if (browser == null || !EmbeddedBrowsers.Remove(browser)) return;
+            var wasLastInteracted = LastInteractedBrowserField?.GetValue(null) as EditorWindow == browser;
+            UnityEngine.Object.DestroyImmediate(browser);
+            if (wasLastInteracted) LastInteractedBrowserField?.SetValue(null, ResolveTargetWindow());
         }
 
         private static EditorWindow ResolveTargetWindow(
@@ -202,6 +356,8 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
                     ? preferredWindow
                     : null;
             }
+
+            if (_drawingBrowser != null) return _drawingBrowser;
 
             if (IsProjectBrowser(EditorWindow.focusedWindow))
             {
@@ -215,7 +371,16 @@ namespace Ee4v.Core.Internal.EditorAPI.Backends
 
             return ProjectBrowserType == null
                 ? null
-                : Resources.FindObjectsOfTypeAll(ProjectBrowserType).OfType<EditorWindow>().FirstOrDefault();
+                : Resources.FindObjectsOfTypeAll(ProjectBrowserType).OfType<EditorWindow>()
+                    .FirstOrDefault(window => !EmbeddedBrowsers.ContainsKey(window));
+        }
+
+        private static ProjectBrowserState ApplySelectionOrientation(ProjectBrowserState state, Rect? rect)
+        {
+            if (state.Orientation != ProjectBrowserOrientation.Unknown || !rect.HasValue) return state;
+            return new ProjectBrowserState(state.FolderGuid, state.FolderPath, state.SearchText, state.HasSearch,
+                state.ViewMode, rect.Value.height > EditorGUIUtility.singleLineHeight * 1.5f
+                    ? ProjectBrowserOrientation.Vertical : ProjectBrowserOrientation.Horizontal);
         }
 
         private static bool IsProjectBrowser(EditorWindow window)
