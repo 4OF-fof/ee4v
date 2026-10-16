@@ -25,6 +25,7 @@
 
 .ee4v-ui-asset-picker__reference-controls {
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
     flex-shrink: 0;
     min-width: 0;
@@ -41,6 +42,13 @@
 .ee4v-ui-asset-picker__reference {
     flex-grow: 1;
     min-width: 0;
+}
+
+.ee4v-ui-asset-picker__animation-filter {
+    width: 200px;
+    max-width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
 }
 
 .ee4v-ui-asset-picker__reference-controls .unity-base-field__label {
@@ -221,14 +229,6 @@
 
 .ee4v-ui-asset-picker__view--selected.ee4v-ui-button {
     background-color: var(--ee4v-color-selection-soft);
-}
-
-.ee4v-ui-asset-picker__drag-hint {
-    margin-left: 0;
-    margin-right: auto;
-    flex-shrink: 1;
-    color: var(--ee4v-color-text-muted);
-    white-space: normal;
 }
 
 .ee4v-ui-asset-picker__hidden {

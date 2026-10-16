@@ -156,7 +156,7 @@ namespace Ee4v.UI
                 root.EnableInClassList("ee4v-ui-asset-picker--compact", evt.newRect.width < 720f));
             ConfigureCloseAndSubmitKeys(root);
             _popup = new CustomPopup(UiLocalization.Get("ui.assetPicker.title") + " · " + TypeName(_type),
-                showFooter: true,
+                showFooter: false,
                 closeTooltip: UiLocalization.Get("ui.dismiss.tooltip"));
             var body = new VisualElement();
             body.AddToClassList("ee4v-ui-asset-picker__body");
@@ -242,10 +242,6 @@ namespace Ee4v.UI
             _browser.SetPanels(_overviewPane, _candidatePane, BuildPreview(), _cards);
             body.Add(_browser);
             _popup.Content.Add(body);
-            var dragHint = UiTextFactory.Create(UiLocalization.Get("ui.assetPicker.dragHint"));
-            dragHint.AddToClassList("ee4v-ui-asset-picker__drag-hint");
-            _popup.Footer.Add(dragHint);
-            _popup.Footer.Add(new UiButton(UiLocalization.Get("ui.assetPicker.close"), Close));
             SetPopup(_popup);
             ShowPreview(_previewAsset);
             RefreshBrowserVisibility();
@@ -296,7 +292,7 @@ namespace Ee4v.UI
             Func<AssetPickerAnimationFilter, string> label = value => UiLocalization.Get("ui.assetPicker.animation" + value);
             _animationFilterField = UiTextFactory.CreatePopupField(UiLocalization.Get("ui.assetPicker.animationFilter"),
                 choices, choices.IndexOf(_animationFilter), label, label,
-                "ee4v-ui-asset-picker__reference");
+                "ee4v-ui-asset-picker__animation-filter");
             _animationFilterField.RegisterValueChangedCallback(evt =>
             {
                 _animationFilter = evt.newValue;
