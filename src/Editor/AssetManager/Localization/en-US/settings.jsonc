@@ -8,6 +8,7 @@
     "folderLibrary": { "label": "BOOTH Library Manager folder library path", "tooltip": "Directory for BOOTH Library Manager registered item folders. Empty by default. ee4v uses the global data directory." },
     "blmDatabase": { "label": "BOOTH Library Manager database path", "tooltip": "Path to the BOOTH Library Manager data.db. Defaults to %APPDATA%/pm.booth.library-manager/data.db. Read only; never modified." },
     "autoSyncDatasource": { "label": "Sync datasource on startup", "tooltip": "Synchronize only the selected datasource at editor startup." },
+    "downloadDirectory": { "label": "ee4v download watch directory", "tooltip": "Browser download directory watched for BOOTH imports. Defaults to the user's Downloads directory. The bridge starts automatically when the datasource is ee4v." },
     "section": {
       "assetManager": {
         "paths": "AssetManager paths",

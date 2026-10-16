@@ -6,7 +6,9 @@
 
 - script path: `External~/Scriptcat/B2ee4v.user.js`
 - BOOTH library、gifts、商品ページでdownload単位の状態表示・単品取り込み・まとめ取り込みを提供する
-- 手動起動のee4vデータソースserver `http://127.0.0.1:48197` に接続する
+- Unity Editor内のC#データソースserver `http://127.0.0.1:48197` に接続する。Node.jsは不要
+- データソースをEe4vにするとEditor起動時に自動起動する。`ee4v/Datasource/Start Server`と`Stop Server`で手動操作できる
+- AssetManager設定の「ee4v ダウンロード監視フォルダー」をブラウザのダウンロード先に合わせる
 - Eagle版とはどちらか一つだけを有効にする
 - 起動・保存・DB同期の契約は[AssetManagerデータソース](../../docs~/datasources.md)を参照する
 

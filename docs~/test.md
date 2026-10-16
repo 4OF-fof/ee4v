@@ -48,7 +48,7 @@ Gridのページ切り替えは、同じ行の項目数が減る場合と増え�
 
 ベースなしの制作物は既存の`AssetManagerApiTests`と`DerivedAssetCreatorTests`で共有のItem管理・Prefab生成の回帰を確認します。手動確認では制作物の作成、複数Prefabの追加・保存後の削除・Undo、版の保存と復元、完成Prefabの別アバターへの追加を確認します。Source切り替えとDB再生成後も制作物の所有ID・Tag・Archive状態と履歴を維持すること、試着アバターを変更・解除して再度Sceneを開けること、制作物Prefabに試着アバターを含めないこと、外部Scene参照が保存時に失われる前にエラーとなることを確認します。新規テストケースは追加しません。
 
-ee4v・BLM・Eagleの契約は [datasources.md](./datasources.md) を参照してください。新規テストケースを追加せず、既存AssetManagerApiTestsと新規隔離DBへの手動取り込み・loopback疎通で確認します。Catalogの排他表示は3SourceとSourceなしのItem・Tag・Fileを同じ隔離DBへ入れ、検索件数・ページ分割・Collection一致・Tag候補・所属/未所属Fileを確認します。手動Itemはee4vだけに表示し、Fileの拡張子条件とアーカイブ表示もSourceを越えないこと、切替後も全データを保持することを確認します。ee4vでは手動pairと複数downloadのItemが同じ同期で共存すること、metadata編集、部分File削除の退避・復元・確定を隔離ライブラリで確認します。
+ee4v・BLM・Eagleの契約は [datasources.md](./datasources.md) を参照してください。新規テストケースを追加せず、既存AssetManagerApiTestsと新規隔離DBへの手動取り込み・loopback疎通で確認します。C#待受serverは隔離したlibraryとdownload directoryで認証・Origin拒否、download完了のコピー、重複取り込み、停止後のport解放を確認します。Editor側はEe4vだけの自動起動、Source切替時の停止、共通データ・監視先変更時の再接続、メニューの有効条件、手動停止のsession内維持を確認します。Catalogの排他表示は3SourceとSourceなしのItem・Tag・Fileを同じ隔離DBへ入れ、検索件数・ページ分割・Collection一致・Tag候補・所属/未所属Fileを確認します。手動Itemはee4vだけに表示し、Fileの拡張子条件とアーカイブ表示もSourceを越えないこと、切替後も全データを保持することを確認します。ee4vでは手動pairと複数downloadのItemが同じ同期で共存すること、metadata編集、部分File削除の退避・復元・確定を隔離ライブラリで確認します。
 
 | テスト | 保証する契約 | 残す理由 |
 | --- | --- | --- |

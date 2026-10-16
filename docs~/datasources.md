@@ -28,11 +28,11 @@ Fileは指定folderlibrary直下の `<registered_items.id>/` 以下の実ファ�
 
 ee4vの保存先は共通データの保存先です。`Assets/<id>/`に保存する手動登録pairと`Items/<boothItemId>/`に保存するdownload Itemをまとめ、1回のee4v snapshotとしてDBへ適用します。片方だけのsnapshotで他方を欠落扱いにしません。Itemの名・説明・Tag編集は対応するmetadataへ保存します。複数FileのItemもFile単位で削除でき、残るFileをmetadataへ保持します。全Fileを削除するとItemのSource directoryを除きます。削除準備はtrashへ退避し、DB更新失敗時にFileとmetadataを復元します。
 
-`External~/Datasource/server.mjs` はNode標準APIのみで動き、手動起動・手動終了します。自動起動登録、credential永続化、Firewall変更は行いません。bindは常に `127.0.0.1`、既定portは48197です。データ位置に既定値はなく、`--library` と `--downloads` が必須です。ダウンロード元を消さず、完了したFileを指定libraryへコピーします。
+`Infrastructure/Ee4v/Ee4vDatasourceServer`はUnity Editor内で動くC#のHTTP待受serverです。`UI/Ee4vDatasourceBootstrap`がMCPと同じEditor lifecycleに接続し、データソースが`Ee4v`の場合だけ起動時とassembly再読み込み後に自動起動します。batchmodeでは自動起動しません。Ee4vへ切り替えると起動し、別Sourceへ切り替えると停止します。Node.jsや外部process、OSへの自動起動登録、credential永続化、Firewall変更は不要です。bindは`127.0.0.1`、portはuserscriptと共通の48197固定です。port使用中などの起動失敗はConsoleへ理由を出力し、別portへの自動切り替えは行いません。
 
-```powershell
-node External~/Datasource/server.mjs --library 'D:/isolated/folderlibrary' --downloads 'D:/isolated/downloads'
-```
+保存先には共通データの保存先を使い、監視先には設定`assetManager.downloadDirectory`（「ee4v ダウンロード監視フォルダー」）を使います。監視先の既定値はユーザーフォルダー配下の`Downloads`です。ブラウザのダウンロード先を変更・移動している場合は明示指定します。監視先が空欄・不正・存在しない場合は起動せず、Consoleに理由を表示します。共通データと監視先のsymlink/junctionは拒否します。ダウンロード元を消さず、完了したFileを共通データのlibraryへコピーします。
+
+`ee4v/Datasource/Start Server`と`ee4v/Datasource/Stop Server`で手動起動・停止できます。StartはEe4v選択中かつ停止中、Stopは起動中だけ有効です。手動停止はEditor session内でassembly再読み込みとpath変更を越えて維持し、手動Start、Sourceの再選択、Editor再起動で解除します。共通データまたは監視先の変更時は実行中serverを停止して新設定へ接続し直します。Editor終了とassembly再読み込み前には待受とコピーworkerを終了し、一時Fileを除去します。停止中の取り込み待ちは破棄し、再起動後はuserscriptから再要求します。
 
 `External~/Scriptcat/B2ee4v.user.js` はEagle版と同じBOOTH library/gifts/商品ページのdownload単位UI・まとめ取り込みを使い、48197へ接続します。Eagle版とはどちらか1つだけ有効にします。serverに登録したdownload要求のfilenameと新しい更新時刻を照合し、連続したpollでサイズ・時刻が安定し部分download拡張子がない場合だけコピーします。ブラウザの `(n)` suffixも許容します。同名の未完了要求は衝突を防ぐため拒否し、30分でtimeoutします。既存の古いdownloadを拾わないため、要求の5秒前以降に更新されたFileだけを対象にします。
 
@@ -40,8 +40,8 @@ HTTPは `/health` と、session token必須の `POST /v1/status`、`POST /v1/imp
 
 保存構造は `Items/<boothItemId>/metadata.json` と同directoryのFileです。metadataは `schemaVersion:1`、`id`、名・説明・BOOTH/shop URL・thumbnail URL・tags、`files` 配列を持ちます。File entryはdownload URLと元filenameから求めたSHA256の `id`、内部保存名 `fileName`、表示名 `originalFileName`、`downloadUrl`です。metadataは一時Fileからrenameで確定します。Fileコピー失敗・download timeout時に完成metadataを登録しません。
 
-UnityでDatasourceをEe4v、共通データの保存先をserverの`--library`と同じpathに設定し、AssetManagerの再読込でDBへ同期します。BLM用folderlibrary設定はee4vに使用しません。serverとUnityのDB更新を分離し、serverはSQLiteへ直接書きません。Editorを開いていない間もee4vライブラリへの取り込みは可能です。
+UnityでDatasourceをEe4vに設定し、AssetManagerの再読込でDBへ同期します。BLM用folderlibrary設定はee4vに使用しません。待受・コピー・metadata保存はbackground workerが担当し、serverはSQLiteへ直接書きません。取り込みにはUnity Editorの起動とserverの稼働が必要です。
 
 ## 検証
 
-連携はJavaScript構文と、隔離フォルダーでの一時loopback通信・コピー・重複取り込みで確認します。Unity側の同期とCatalogの保証範囲は[test.md](./test.md)のAssetManagerテストを参照してください。実ユーザーDB・ブラウザ設定への書き込みは行いません。
+連携はC#のコンパイルと、隔離フォルダーでの一時loopback通信・コピー・重複取り込み・停止後のport解放で確認します。Editor lifecycleはSourceによる自動起動・停止、path変更、手動停止後のassembly再読み込みで確認します。Unity側の同期とCatalogの保証範囲は[test.md](./test.md)のAssetManagerテストを参照してください。実ユーザーDB・ブラウザ設定への書き込みは行いません。

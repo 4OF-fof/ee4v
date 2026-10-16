@@ -24,6 +24,6 @@ Unity 2022.3向けの配布設定は[`src/package.json`](../src/package.json)を
 | Unity 6 移行時の確認 | [unity6.md](./unity6.md) |
 | 既存テストの保証範囲 | [test.md](./test.md) |
 
-補助ツールの資料は[Eagle plugins](../External~/Eagle/README.md)、[BOOTH userscripts](../External~/Scriptcat/README.md)、[データソース待受server](../External~/Datasource/README.md)を参照してください。
+補助ツールの資料は[Eagle plugins](../External~/Eagle/README.md)、[BOOTH userscripts](../External~/Scriptcat/README.md)を参照してください。Unity内のデータソース待受serverは[datasources.md](./datasources.md)を参照してください。
 
 機能を変更するときは該当する資料を更新します。公開 API、保存形式、副作用、失敗時の動作と、UI から確認できる現在の振る舞いを記載します。未実装の設計は実装済みの説明と混在させず、必要な場合だけ明示します。同じ契約は所有する資料に一度だけ記載し、他からはリンクします。

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.AssetManager.Infrastructure.BoothLibraryManager;
 using Ee4v.Core.Settings;
@@ -27,8 +28,14 @@ namespace Ee4v.AssetManager.UI
             new SettingDefinition<bool>("assetManager.autoSyncDatasourceOnStartup", SettingScope.User,
                 "AssetManager", "settings.section.assetManager.source", "settings.autoSyncDatasource.label",
                 "settings.autoSyncDatasource.tooltip", true, order: 0);
+        private static readonly SettingDefinition<string> DownloadDirectory =
+            new SettingDefinition<string>("assetManager.downloadDirectory", SettingScope.User,
+                "AssetManager", "settings.section.assetManager.paths", "settings.downloadDirectory.label",
+                "settings.downloadDirectory.tooltip",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"), order: 5);
 
         internal static event Action DatasourceChanged;
+        internal static event Action DownloadDirectoryChanged;
         internal static AssetDatasourceKind SelectedDatasource => Get(Datasource);
         internal static AssetDatasourceRequest DatasourceRequest => new AssetDatasourceRequest
         {
@@ -38,6 +45,7 @@ namespace Ee4v.AssetManager.UI
             DatabasePath = Get(BlmDatabase), TargetRoot = EagleTargetRoot
         };
         internal static bool AutoSyncDatasourceOnStartup => Get(AutoSyncDatasource);
+        internal static string DownloadDirectoryPath => Get(DownloadDirectory);
         private static readonly SettingDefinition<string> EagleLibrary =
             new SettingDefinition<string>(
                 "assetManager.eagleLibraryPath",
@@ -129,6 +137,7 @@ namespace Ee4v.AssetManager.UI
             PathSettingDrawer.Register(EagleLibrary);
             PathSettingDrawer.Register(FolderLibrary);
             PathSettingDrawer.Register(BlmDatabase, PathFieldKind.File, "db");
+            PathSettingDrawer.Register(DownloadDirectory);
             CommaSeparatedListSettingDrawer.Register(
                 ExcludedPartNamePrefixes);
             CommaSeparatedListSettingDrawer.Register(ExcludedItemNamePrefixes);
@@ -178,6 +187,7 @@ namespace Ee4v.AssetManager.UI
             settings.Register(FolderLibrary);
             settings.Register(BlmDatabase);
             settings.Register(AutoSyncDatasource);
+            settings.Register(DownloadDirectory);
             settings.Register(ApplyProjectThumbnailOnImport);
             settings.Register(ExcludedPartNamePrefixes);
             settings.Register(ExcludedItemNamePrefixes);
@@ -190,6 +200,8 @@ namespace Ee4v.AssetManager.UI
             object sender,
             SettingChangedEventArgs args)
         {
+            if (ReferenceEquals(args.Definition, DownloadDirectory))
+                DownloadDirectoryChanged?.Invoke();
             if (ReferenceEquals(args.Definition, Datasource) ||
                 ReferenceEquals(args.Definition, FolderLibrary) || ReferenceEquals(args.Definition, BlmDatabase))
             {

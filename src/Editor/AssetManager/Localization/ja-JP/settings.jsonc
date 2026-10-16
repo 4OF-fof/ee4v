@@ -8,6 +8,7 @@
     "folderLibrary": { "label": "BOOTH Library Manager フォルダーライブラリ", "tooltip": "BOOTH Library Managerで管理しているItemフォルダーの保存先を指定します（初期値は空欄）。データソースがee4vの場合は「ee4v 共通データの保存先」が使用されます。" },
     "blmDatabase": { "label": "BOOTH Library Manager データベース", "tooltip": "BOOTH Library Managerのデータベースファイル（data.db）を指定します（読み取り専用）。初期値は %APPDATA%/pm.booth.library-manager/data.db です。" },
     "autoSyncDatasource": { "label": "起動時にデータソース同期", "tooltip": "Unity Editorの起動時に、選択中のデータソースを自動で同期します。" },
+    "downloadDirectory": { "label": "ee4v ダウンロード監視フォルダー", "tooltip": "BOOTHからの取り込みで監視する、ブラウザのダウンロード先です（既定値: ユーザーフォルダー/Downloads）。データソースがee4vの場合に待受サーバーを自動起動します。" },
     "section": {
       "assetManager": {
         "paths": "AssetManager パス",
