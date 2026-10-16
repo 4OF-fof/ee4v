@@ -13,6 +13,7 @@ namespace Ee4v.AvatarInfo
         public bool Editable;
         public bool SdkAvailable;
         public Func<string, string> Rename;
+        public Func<string, Task<string>> RenameAsync;
         public Func<string, bool> SelectBlueprint;
         public Func<bool> IsLoggedIn;
         public Func<CancellationToken, Task<IReadOnlyList<AvatarInfoSdkAvatar>>> FetchAvatars;

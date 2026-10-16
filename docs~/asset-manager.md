@@ -52,6 +52,8 @@ VRC Light Volumesは任意依存です。導入時だけ組み込みプリセッ
 
 ## 統合画面の部品と責務
 
+アバター情報の名前確定は既存のVariantメタデータ更新へ接続し、所有Item名、Variant名、保存フォルダー、Prefabのファイル名とルート名、作業Scene名とSceneインスタンス名を揃えます。Itemの所有関係、path衝突の検証と移動のrollbackは既存のVariant更新契約を使用します。Prefabルート名も`SavePrefabAsset`で保存し、失敗時のrollbackでは元のルート名を復元します。Sceneインスタンスは成功後に改名して新しいpathへ保存し、移動後のGUIDから編集対象path・作業Sceneセッションのキー・ヘッダを更新します。詳細は[Avatar Info](./features/avatar-info.md)を参照してください。
+
 左のカテゴリ一覧の下部操作は「アセットを探す」「AssetManagerを開く」の順に並べ、領域の下端から8px空けて配置します。カテゴリ領域の下パディングには共通の`--ee4v-space-md`を使用し、下部操作ボタンの下マージンは0とします。
 
 「アセットを探す」の起動設定はボタンを押した時点の表示画面から取得します。表情タブの割当画面ではAnimationClipの「表情」絞り込みを初期表示し、種類や分類を手動で切り替えずに候補を探せます。割当画面の判定には`FaceExpressionEmbeddedView.IsAssignmentView`を使用します。表情Clip編集画面とほかのカテゴリではMaterialで起動し、参照元の自動入力はMaterial詳細画面だけに限定します。

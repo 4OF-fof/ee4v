@@ -852,6 +852,8 @@ namespace Ee4v.AssetManager.UI
             {
                 return BuildOriginalOverviewControls();
             }
+            var editing = AvatarInfoEditing.CreateOptions(_avatarContext);
+            if (!_previewOnly) editing.RenameAsync = RenameWorkingAvatar;
             return new AvatarInfoView(_avatarContext.Root.name,
                 AvatarInfoAnalysis.GetBlueprintId(_avatarContext.Root),
                 AvatarInfoAnalysis.FindAttachmentWarnings(_avatarContext.Root),
@@ -868,7 +870,7 @@ namespace Ee4v.AssetManager.UI
                     SelectPrefabCard(prefab.transform.GetSiblingIndex(), prefab.name);
                     _parts.Section = ShapePartsSection.Parts;
                     ShowAppearancePanel(AppearancePanel.Parts);
-                }, AvatarInfoEditing.CreateOptions(_avatarContext),
+                }, editing,
                 AvatarInfoSdk.Provider?.ReadParameterMemory(_avatarContext.Root),
                 AvatarBuildSizeCache.Get(_avatarContext.Root, _overviewMobile),
                 () =>
