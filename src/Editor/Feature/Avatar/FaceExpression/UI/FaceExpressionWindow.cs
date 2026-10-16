@@ -521,7 +521,7 @@ namespace Ee4v.FaceExpression
                 if (_assignments.IsInitialConfiguration && !_initiallyInstalled)
                     VrchatFaceExpressionGateway.RemoveGeneratedInstallation(_avatar);
                 else if (!_gateway.TryApply(_avatar, _assignments.CreateConfiguration(), out _, out var error,
-                             deferSave: true, generateIcons: false))
+                             deferSave: true, generateIcons: false, saveScene: true))
                 {
                     _saveFailed = true;
                     _saveAttemptNeedsRollback = true;
@@ -626,7 +626,7 @@ namespace Ee4v.FaceExpression
                     using (new FaceExpressionGenerationUndo())
                     {
                         if (!_savedInstallationPresent) { VrchatFaceExpressionGateway.RemoveGeneratedInstallation(_avatar); }
-                        else if (!_gateway.TryApply(_avatar, _savedConfiguration, out _, out _)) { return false; }
+                        else if (!_gateway.TryApply(_avatar, _savedConfiguration, out _, out _, saveScene: true)) { return false; }
                     }
                 }
                 if (_assignments.Revision != _savedAssignmentRevision)

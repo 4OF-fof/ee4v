@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ee4v.AvatarEditing;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using UnityEditor;
@@ -230,6 +231,7 @@ namespace Ee4v.AvatarParts
                     var previous = modification.previousValue;
                     if (previous != null && previous.objectReference == current.objectReference &&
                         string.Equals(previous.value, current.value, StringComparison.Ordinal)) { continue; }
+                    EditorSceneApi.SaveAfterEdit(_component.gameObject.scene);
                     if (!_changePending)
                     {
                         _changePending = true;
@@ -270,6 +272,8 @@ namespace Ee4v.AvatarParts
 
             private void ReleaseInspector()
             {
+                EditorApplication.delayCall -= NotifyChange;
+                _changePending = false;
                 Undo.postprocessModifications -= OnUndoModifications;
                 Undo.undoRedoPerformed -= RefreshEnabledHeader;
                 this.Unbind();

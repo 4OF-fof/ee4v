@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Ee4v.Core;
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
@@ -82,8 +83,10 @@ namespace Ee4v.FaceExpression
                 if (changedPaths != null && !sourceClips.Any(clip => changedPaths.Contains(AssetDatabase.GetAssetPath(clip))))
                     continue;
                 using (new FaceExpressionGenerationUndo())
-                    if (!gateway.TryApply(avatar, configuration, out _, out var error))
+                {
+                    if (!gateway.TryApply(avatar, configuration, out _, out var error, saveScene: true))
                         Debug.LogError("FacialSet source refresh failed: " + error, avatar);
+                }
             }
         }
     }
@@ -121,7 +124,11 @@ namespace Ee4v.FaceExpression
                 if (root != null)
                 {
                     UnityEngine.Object.DestroyImmediate(root.gameObject);
-                    if (avatar.scene.IsValid()) EditorSceneManager.MarkSceneDirty(avatar.scene);
+                    if (avatar.scene.IsValid())
+                    {
+                        EditorSceneManager.MarkSceneDirty(avatar.scene);
+                        EditorSceneApi.SaveAfterEdit(avatar.scene);
+                    }
                 }
                 return;
             }
@@ -171,7 +178,8 @@ namespace Ee4v.FaceExpression
             out AnimatorController controller,
             out string error,
             bool deferSave = false,
-            bool generateIcons = true)
+            bool generateIcons = true,
+            bool saveScene = false)
         {
             controller = null;
             error = null;
@@ -222,15 +230,18 @@ namespace Ee4v.FaceExpression
                     paths.MenuPath,
                     entries,
                     icons);
-                ModularAvatarFaceExpressionInstaller.Install(
+                var installationChanged = ModularAvatarFaceExpressionInstaller.Install(
                     avatar,
                     paths,
                     controller,
                     menu,
                     avatarBindings.Blink.Count > 0);
                 SaveMenu(menu, deferSave);
-                if (!EditorUtility.IsPersistent(avatar) && avatar.scene.IsValid())
+                if (installationChanged && !EditorUtility.IsPersistent(avatar) && avatar.scene.IsValid())
+                {
                     EditorSceneManager.MarkSceneDirty(avatar.scene);
+                    if (saveScene) EditorSceneApi.SaveAfterEdit(avatar.scene);
+                }
                 return true;
             }
             catch (Exception exception)

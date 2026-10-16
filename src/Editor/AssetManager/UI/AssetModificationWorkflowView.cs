@@ -356,6 +356,8 @@ namespace Ee4v.AssetManager.UI
             _parts.EndBodyScaleDrag(false);
             _parts.SaveBodyScalePrefab(false);
             _parts.FlushPendingPartVisibility();
+            Undo.FlushUndoRecordObjects();
+            QueueWorkingSceneSave();
             ReleaseWorkingScene();
             I18N.Reloaded -= Rebuild;
             AssetManagerWindowSession.ManagerInvalidated -=
