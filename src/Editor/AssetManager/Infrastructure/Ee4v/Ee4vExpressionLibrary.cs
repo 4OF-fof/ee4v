@@ -27,6 +27,7 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
         private readonly Dictionary<string, (string Stamp, string Hash)> _previewHashes = new Dictionary<string, (string, string)>();
         private readonly Dictionary<string, string> _previewPaths = new Dictionary<string, string>();
         private IReadOnlyList<ExpressionLibraryEntry> _entries;
+        private Dictionary<string, ExpressionProjectLocation> _projectLocations;
 
         private sealed class CachedEntry
         {
@@ -52,6 +53,12 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
         }
         public ExpressionLibraryEntry FindByRootGuid(string guid) => List().FirstOrDefault(entry => entry.RootGuid == guid);
         public string GetWorkingRevision(string guid) => _store.GetExpressionImportRevision(_projectKey, guid);
+        public IReadOnlyList<ExpressionProjectLocation> GetProjectLocations()
+        {
+            if (_projectLocations == null)
+                _projectLocations = _store.GetExpressionProjectLocations(_projectKey).ToDictionary(value => value.RootGuid);
+            return _projectLocations.Values.ToArray();
+        }
 
         public void Synchronize()
         {
@@ -71,10 +78,42 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             var changed = _entries == null || _entries.Count != entries.Count ||
                 !_entries.OrderBy(entry => entry.Id).Select(JsonConvert.SerializeObject)
                     .SequenceEqual(entries.OrderBy(entry => entry.Id).Select(JsonConvert.SerializeObject));
-            if (!changed) return;
-            _store.ReplaceExpressions(entries);
-            CacheEntries(entries);
-            NotifyChanged();
+            if (changed)
+            {
+                _store.ReplaceExpressions(entries);
+                CacheEntries(entries);
+            }
+            var locationsChanged = SynchronizeProjectLocations(entries);
+            if (changed || locationsChanged) NotifyChanged();
+        }
+
+        private bool SynchronizeProjectLocations(IEnumerable<ExpressionLibraryEntry> entries)
+        {
+            GetProjectLocations();
+            var updates = new List<ExpressionProjectLocation>();
+            var ids = new HashSet<string>();
+            foreach (var entry in entries)
+            {
+                ids.Add(entry.Id);
+                _projectLocations.TryGetValue(entry.RootGuid, out var previous);
+                var path = AssetDatabase.GUIDToAssetPath(entry.RootGuid);
+                var tracked = previous?.ExpressionId == entry.Id && !string.IsNullOrEmpty(previous.OriginalFolder) &&
+                    (previous.OriginalFolder == "Assets" || previous.OriginalFolder.StartsWith("Assets/", StringComparison.Ordinal));
+                if (tracked && previous.AssetPath == path) continue;
+                if (string.IsNullOrEmpty(path) || !path.StartsWith("Assets/", StringComparison.Ordinal) ||
+                    !path.EndsWith(".anim", StringComparison.OrdinalIgnoreCase)) continue;
+                var absolute = Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), path);
+                if (!File.Exists(absolute) || !File.Exists(absolute + ".meta") ||
+                    AssetDatabase.AssetPathToGUID(path, AssetPathToGUIDOptions.OnlyExistingAssets) != entry.RootGuid) continue;
+                var directory = Path.GetDirectoryName(path).Replace('\\', '/');
+                updates.Add(new ExpressionProjectLocation { ExpressionId = entry.Id, RootGuid = entry.RootGuid,
+                    AssetPath = path, OriginalFolder = tracked ? previous.OriginalFolder : directory });
+            }
+            if (updates.Count > 0) _store.SaveExpressionProjectLocations(_projectKey, updates);
+            foreach (var location in updates) _projectLocations[location.RootGuid] = location;
+            foreach (var guid in _projectLocations.Where(pair => !ids.Contains(pair.Value.ExpressionId)).Select(pair => pair.Key).ToArray())
+                _projectLocations.Remove(guid);
+            return updates.Count > 0;
         }
 
         public ExpressionLibraryEntry Publish(ExpressionPublishRequest request)
@@ -203,6 +242,7 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                         asset => AssetIdentity.SnapshotHash(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath),
                             AssetDatabase.GUIDToAssetPath(asset.Guid))));
                     _store.RecordExpressionImports(_projectKey, entry, hashes);
+                    SynchronizeProjectLocations(List());
                     NotifyChanged();
                     return entry;
                 }
@@ -257,6 +297,7 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
                             throw new IOException("The project expression Clip could not be deleted.");
                         _store.DeleteExpression(id);
                         CacheEntries(List().Where(value => value.Id != id));
+                        _projectLocations?.Remove(entry.RootGuid);
                         _reads.Remove(id);
                     }
                     catch
@@ -320,6 +361,7 @@ namespace Ee4v.AssetManager.Infrastructure.Ee4v
             if (AssetDatabase.LoadAssetAtPath<AnimationClip>(rootPath) == null) throw new InvalidDataException("The imported expression is not an AnimationClip.");
             _store.RecordExpressionImports(_projectKey, entry, destinations.ToDictionary(pair => pair.Key,
                 pair => AssetIdentity.SnapshotHash(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), pair.Value))));
+            SynchronizeProjectLocations(List());
             return rootPath;
         }
 

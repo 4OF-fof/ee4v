@@ -37,7 +37,11 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                 @"CREATE TABLE IF NOT EXISTS face_expression_import(
                     project_key TEXT NOT NULL, expression_id TEXT NOT NULL,
                     asset_guid TEXT NOT NULL, revision TEXT NOT NULL, baseline_hash TEXT NOT NULL,
-                    PRIMARY KEY(project_key, expression_id, asset_guid))"
+                    PRIMARY KEY(project_key, expression_id, asset_guid))",
+                @"CREATE TABLE IF NOT EXISTS face_expression_project_location(
+                    project_key TEXT NOT NULL, expression_id TEXT NOT NULL,
+                    root_guid TEXT NOT NULL, asset_path TEXT NOT NULL, folder TEXT NOT NULL,
+                    PRIMARY KEY(project_key, root_guid))"
             }) connection.Execute(sql);
         }
 
@@ -73,6 +77,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                     connection.Execute("DELETE FROM face_expression WHERE id = ?", entry.Id);
                     WriteExpression(connection, entry);
                 }
+                connection.Execute("DELETE FROM face_expression_project_location WHERE expression_id NOT IN (SELECT id FROM face_expression)");
                 transaction.Commit();
             }
         }
@@ -95,6 +100,7 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
             {
                 connection.Execute("DELETE FROM face_expression WHERE id = ?", id);
                 connection.Execute("DELETE FROM face_expression_import WHERE expression_id = ?", id);
+                connection.Execute("DELETE FROM face_expression_project_location WHERE expression_id = ?", id);
                 transaction.Commit();
             }
         }
@@ -124,6 +130,27 @@ namespace Ee4v.AssetManager.Infrastructure.Persistence
                       JOIN face_expression expression ON expression.id = imported.expression_id
                       WHERE imported.project_key = ? AND imported.asset_guid = ? AND expression.root_guid = imported.asset_guid LIMIT 1",
                     projectKey, guid);
+        }
+
+        internal IReadOnlyList<ExpressionProjectLocation> GetExpressionProjectLocations(string projectKey)
+        {
+            using (var connection = OpenConnection())
+                return connection.Query<ExpressionProjectLocation>(
+                    @"SELECT expression_id AS ExpressionId, root_guid AS RootGuid,
+                             asset_path AS AssetPath, folder AS OriginalFolder
+                      FROM face_expression_project_location WHERE project_key = ?", projectKey);
+        }
+
+        internal void SaveExpressionProjectLocations(string projectKey, IReadOnlyList<ExpressionProjectLocation> locations)
+        {
+            using (var connection = OpenConnection())
+            using (var transaction = new DatabaseTransaction(connection))
+            {
+                foreach (var location in locations)
+                    connection.Execute("INSERT OR REPLACE INTO face_expression_project_location VALUES(?, ?, ?, ?, ?)",
+                        projectKey, location.ExpressionId, location.RootGuid, location.AssetPath, location.OriginalFolder);
+                transaction.Commit();
+            }
         }
 
         internal string GetExpressionImportHash(string projectKey, string id, string guid)

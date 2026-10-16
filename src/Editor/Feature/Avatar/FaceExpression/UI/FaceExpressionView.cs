@@ -454,6 +454,16 @@ namespace Ee4v.FaceExpression
             _library.AddToClassList("ee4v-face-expression__library");
             _library.contentContainer.AddToClassList(
                 "ee4v-face-expression__library-content");
+            _library.RegisterCallback<ContextClickEvent>(evt =>
+            {
+                for (var element = evt.target as VisualElement; element != null && element != _library; element = element.parent)
+                    if (element is Button || element is Scroller) return;
+                var menu = new GenericMenu();
+                menu.AddItem(UiTextFactory.CreateGuiContent(I18N.Get("library.openInProject")), false,
+                    () => LibraryProjectFolderRequested?.Invoke());
+                menu.ShowAsContext();
+                evt.StopPropagation();
+            });
             editorPane.Add(_library);
             _libraryOtherAvatars = CreateOtherAvatarsButton();
             _libraryOtherAvatars.style.display = DisplayStyle.None;
@@ -564,6 +574,7 @@ namespace Ee4v.FaceExpression
         public event Action<AnimationClip> ClearClipAssignmentsRequested;
         public event Action BackRequested;
         public event Action<string> LibraryFolderRequested;
+        public event Action LibraryProjectFolderRequested;
         public event Action<ExpressionLibraryEntry> SharedClipSelected;
         public event Action<ExpressionLibraryEntry> SharedClipEditRequested;
         public event Action<ExpressionLibraryEntry> SharedClipCopyRequested;

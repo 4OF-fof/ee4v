@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ee4v.AssetLibrary;
 using Ee4v.Core.I18n;
+using Ee4v.Core.EditorIntegration;
 using Ee4v.UI;
 using UnityEditor;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace Ee4v.FaceExpression
         private IExpressionLibrary _expressionLibrary;
         private IReadOnlyList<ExpressionLibraryEntry> _sharedEntries = Array.Empty<ExpressionLibraryEntry>();
         private ExpressionLibraryEntry _sharedCandidateEntry;
+        private Dictionary<string, ExpressionProjectLocation> _projectLocations = new Dictionary<string, ExpressionProjectLocation>();
         private bool _showOtherLibraryTargets;
         private readonly HashSet<AnimationClip> _currentLibraryClips = new HashSet<AnimationClip>();
         private string _sharedFolder = string.Empty;
@@ -45,6 +47,7 @@ namespace Ee4v.FaceExpression
                 EnsureSharedLibrary();
                 _expressionLibrary.Synchronize();
                 _sharedEntries = _expressionLibrary.List();
+                _projectLocations = _expressionLibrary.GetProjectLocations().ToDictionary(value => value.RootGuid);
                 PruneSharedPreviews();
                 return true;
             }
@@ -106,6 +109,7 @@ namespace Ee4v.FaceExpression
                 EditorApplication.timeSinceStartup - _libraryInteractionAt < 0.6d) return;
             _localRegistrationRenderPending = false;
             _sharedEntries = _expressionLibrary.List();
+            _projectLocations = _expressionLibrary.GetProjectLocations().ToDictionary(value => value.RootGuid);
             if (_assignmentCandidateClip != null && _sharedCandidateEntry == null)
                 _sharedCandidateEntry = _expressionLibrary.FindByRootGuid(
                     AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(_assignmentCandidateClip)));
@@ -140,6 +144,7 @@ namespace Ee4v.FaceExpression
             _localRegistrations.Clear();
             _localRegistrationFailures.Clear();
             _sharedEntries = Array.Empty<ExpressionLibraryEntry>();
+            _projectLocations.Clear();
             _sharedCandidateEntry = null;
             _showOtherLibraryTargets = false;
             _sharedFolder = string.Empty;
@@ -163,11 +168,11 @@ namespace Ee4v.FaceExpression
                 !sharedGuids.Contains(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(clip)))).ToArray();
             var clips = localClips.Where(clip => _currentLibraryClips.Contains(clip) != _showOtherLibraryTargets).ToArray();
             var prefix = _sharedFolder.Length == 0 ? string.Empty : _sharedFolder + "/";
-            var folders = entries.Select(entry => entry.Folder).Concat(clips.Select(GetLocalLibraryFolder))
+            var folders = entries.Select(GetSharedLibraryFolder).Concat(clips.Select(GetLocalLibraryFolder))
                 .Where(folder => folder.StartsWith(prefix, StringComparison.Ordinal) && folder != _sharedFolder)
                 .Select(folder => "shared:/" + prefix + folder.Substring(prefix.Length).Split('/')[0])
                 .Distinct().OrderBy(folder => folder, StringComparer.Ordinal).ToArray();
-            _view.SetSharedLibrary(entries.Where(entry => entry.Folder == _sharedFolder).ToArray(),
+            _view.SetSharedLibrary(entries.Where(entry => GetSharedLibraryFolder(entry) == _sharedFolder).ToArray(),
                 _sharedCandidateEntry?.Id, DrawSharedThumbnail);
             var hasOtherAvatars = _sharedEntries.Any(entry => !guids.Contains(entry.PrimaryFbxGuid)) ||
                 localClips.Any(clip => !_currentLibraryClips.Contains(clip));
@@ -181,6 +186,43 @@ namespace Ee4v.FaceExpression
         {
             var folder = NormalizeAssetPath(GetAssetDirectory(AssetDatabase.GetAssetPath(clip)));
             return folder == _libraryRootFolder ? string.Empty : folder.Substring(_libraryRootFolder.Length + 1);
+        }
+
+        private string GetSharedLibraryFolder(ExpressionLibraryEntry entry)
+        {
+            if (!_projectLocations.TryGetValue(entry.RootGuid, out var location)) return entry.Folder;
+            var folder = NormalizeAssetPath(GetAssetDirectory(location.AssetPath));
+            if (string.Equals(folder, location.OriginalFolder, AssetPathComparison) || !IsAtOrBelow(folder, _libraryRootFolder))
+                return entry.Folder;
+            return folder == _libraryRootFolder ? string.Empty : folder.Substring(_libraryRootFolder.Length + 1);
+        }
+
+        private void ShowLibraryFolderInProject()
+        {
+            var folder = _libraryFolder;
+            if (!AssetDatabase.IsValidFolder(folder))
+            {
+                folder = _sharedEntries.Where(entry => GetSharedLibraryFolder(entry) == _sharedFolder &&
+                        _projectLocations.ContainsKey(entry.RootGuid))
+                    .Select(entry => GetAssetDirectory(_projectLocations[entry.RootGuid].AssetPath))
+                    .FirstOrDefault(AssetDatabase.IsValidFolder);
+                if (folder == null)
+                {
+                    folder = _libraryFolder;
+                    while (!AssetDatabase.IsValidFolder(folder) && IsAtOrBelow(folder, _libraryRootFolder))
+                        folder = GetAssetDirectory(folder);
+                    if (!IsAtOrBelow(folder, _libraryRootFolder))
+                        folder = Core.Settings.ProjectAssetSettings.EnsureAssetFolder("Animation/Facial", _settings);
+                }
+            }
+            EditorUtility.FocusProjectWindow();
+            ProjectBrowserApi.TryGetOpenWindows(out var windows);
+            var window = windows?.FirstOrDefault(value => value == EditorWindow.focusedWindow) ?? windows?.FirstOrDefault();
+            ProjectBrowserApi.TryClearSearch(window);
+            if (ProjectBrowserApi.TryShowFolder(window, AssetDatabase.AssetPathToGUID(folder), reveal: true)) return;
+            var asset = AssetDatabase.LoadMainAssetAtPath(folder);
+            Selection.activeObject = asset;
+            EditorGUIUtility.PingObject(asset);
         }
 
         private void SelectSharedCandidate(ExpressionLibraryEntry entry)
@@ -320,9 +362,10 @@ namespace Ee4v.FaceExpression
             {
                 EnsureSharedLibrary();
                 var existing = _expressionLibrary.FindByRootGuid(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(clip)));
-                var entry = FaceExpressionLibraryApi.Publish(_avatar, clip, existing?.Folder ?? _sharedFolder,
+                var entry = FaceExpressionLibraryApi.Publish(_avatar, clip, existing != null ? GetSharedLibraryFolder(existing) : _sharedFolder,
                     existing?.PrimaryFbxGuid, _expressionLibrary);
                 _sharedEntries = _expressionLibrary.List();
+                _projectLocations = _expressionLibrary.GetProjectLocations().ToDictionary(value => value.RootGuid);
                 if (_assignmentCandidateClip == clip || _sharedCandidateEntry?.RootGuid == entry.RootGuid)
                     _sharedCandidateEntry = entry;
                 _saveFailed = false;

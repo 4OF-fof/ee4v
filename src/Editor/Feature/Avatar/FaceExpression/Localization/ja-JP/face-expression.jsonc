@@ -4,6 +4,7 @@
     "delete": "ライブラリから削除", "failed": "表情ライブラリの処理に失敗しました。",
     "importing": "表情をImportしています…",
     "addToProject": "プロジェクトに追加",
+    "openInProject": "Projectで開く",
     "importRequired": "ダブルクリックまたは右クリックの「プロジェクトに追加」を実行してから使用してください。"
   },
   "favorites": { "title": "お気に入り", "add": "お気に入りに追加", "remove": "お気に入りから外す", "removeCurve": "クリップからこのBlendShapeを削除" },

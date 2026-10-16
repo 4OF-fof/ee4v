@@ -27,6 +27,12 @@ namespace Ee4v.AssetManager.Infrastructure
         {
             ExpressionLibrary.Register(() => OpenExpressionSession(
                 Path.Combine(GlobalDataSettings.RootDirectory, "asset-manager-v1.db")));
+            EditorApplication.projectChanged += () =>
+            {
+                if (_expressionLibrary == null) return;
+                try { _expressionLibrary.Synchronize(); }
+                catch (Exception exception) { UnityEngine.Debug.LogException(exception); }
+            };
             GlobalDataSettings.PathChanged += () =>
             {
                 _expressionDatabasePath = null;

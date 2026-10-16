@@ -13,6 +13,7 @@ AssetManagerのInfrastructureが共有保存・同期・DB・Import・GUID関連
 | `face_expression_asset` | 構成する実体のGUID・相対path・本体とmetaのhash |
 | `face_expression_dependency` | Clip間の依存と、通常Sourceへの依存情報 |
 | `face_expression_import` | Project識別値・表情ID・実体GUIDごとのImport済みrevisionと基準hash |
+| `face_expression_project_location` | Project識別値・表情ID・ルートGUID・現在の実体path・登録時の物理フォルダー |
 
 表情はItem／File・制作物Item・Variantへ登録しません。通常AssetManagerの一覧・検索・Collection・Tag候補・未所属File・Archive・素材Pickerへ混在させるための変更もありません。通常Sourceの同期は既存テーブル、表情同期は専用テーブルだけを更新します。
 
@@ -85,6 +86,12 @@ Unityが削除済みGUIDの古いパスを返す場合でも、存在しないPr
 
 Gestureの64組、メニュー名・登録、まばたき・口固定とFacialSet生成物は使用先アバターの設定です。表情の同期やカード選択で変更しません。
 
+一覧の空白部分を右クリックすると「Projectで開く」を表示し、現在の格納フォルダーをUnityのProjectウィンドウで開きます。カード・フォルダータイル・スクロールバーの右クリックにはこの背景メニューを出しません。Projectの検索を解除してフォルダー内容を表示し、1列表示ではフォルダーを選択・強調します。論理フォルダーに対応する物理フォルダーがない場合は、登録済みClipの格納先または最寄りの既存親フォルダーを開きます。
+
+フォルダー整理はProjectウィンドウで行います。AssetManagerは共有同期・公開・Import時にGUIDから現在のProject実体pathを確認し、同じDBの`face_expression_project_location`へProject単位で差分保存します。サービス取得後は画面を閉じていても`EditorApplication.projectChanged`で追跡します。実体が削除された場合は最後の配置を維持し、別GUIDの同名assetには関連付けません。共有表情の削除では配置記録も削除します。
+
+表情が登録時の物理フォルダーから移動していて、現在の配置が設定済み`Animation/Facial`配下なら、その相対フォルダーをライブラリ表示へ反映します。フォルダー自体の移動・改名では、そのフォルダーを表示中の画面もフォルダーGUIDで追従します。未整理のImport先`<表情ID>`は論理フォルダーとして表示せず、共有metadataのフォルダーを使用します。配置記録はProjectごとに独立し、移動だけでは共有Clip・Preview・内容revision・Import基準hashを書き換えません。ルート外へ移動した場合も実体pathを記録しますが、ライブラリの階層表示は共有フォルダーを使用します。表情を編集・保存するときは現在の表示フォルダーを共有保存へ渡します。
+
 ## 同期・Importと失敗
 
 `AssetManagerFactory.OpenExpressionSession(databasePath)`は通常CatalogのSource設定から独立した表情サービスを提供します。既定の入口は共通データの同じDBへ接続します。通常AssetManager Windowの起動は不要です。
@@ -113,7 +120,7 @@ Import失敗・キャンセル・アバター切替・候補変更では割り�
 
 `src/Editor/Feature/Shared/AssetLibrary`の`Ee4v.AssetLibrary.Editor`をAssetManager InfrastructureとFaceExpressionが使用します。同じDB・共有保存・Importを利用するための契約で、機能間の直接依存は追加しません。
 
-`IExpressionLibrary`は同期・一覧・GUID逆引き・編集元revision・公開・削除・Import・Preview取得を提供します。AssetManagerが実装を登録し、FaceExpressionはこの契約だけを使用します。
+`IExpressionLibrary`は同期・一覧・GUID逆引き・編集元revision・現在Projectの実体配置・公開・削除・Import・Preview取得を提供します。AssetManagerが実装を登録し、FaceExpressionはこの契約だけを使用します。
 
 `FaceExpressionLibraryApi.Publish`はAvatarとClipから対象情報を作り、共有保存へ渡します。`GetProjectClip`はProjectにある実Clipを返し、削除済み・未Importの表情にはnullを返します。`ValidateTarget`と`Import`は対象検証と明示的なImportを外部integrationへ公開します。Clip編集・対象検証・Preview・割り当て・表示はFaceExpressionが所有します。
 

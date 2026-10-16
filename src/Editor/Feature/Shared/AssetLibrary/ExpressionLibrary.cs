@@ -58,6 +58,14 @@ namespace Ee4v.AssetLibrary
         public string ExpectedRevision { get; set; }
     }
 
+    public sealed class ExpressionProjectLocation
+    {
+        public string ExpressionId { get; set; }
+        public string RootGuid { get; set; }
+        public string AssetPath { get; set; }
+        public string OriginalFolder { get; set; }
+    }
+
     public interface IExpressionLibrary
     {
         event Action Changed;
@@ -65,6 +73,7 @@ namespace Ee4v.AssetLibrary
         IReadOnlyList<ExpressionLibraryEntry> List(string primaryFbxGuid = null);
         ExpressionLibraryEntry FindByRootGuid(string guid);
         string GetWorkingRevision(string guid);
+        IReadOnlyList<ExpressionProjectLocation> GetProjectLocations();
         ExpressionLibraryEntry Publish(ExpressionPublishRequest request);
         Task Delete(string id, string expectedRevision, CancellationToken cancellationToken = default);
         Task<string> EnsureImported(string id, string expectedRevision, string destinationFolder,

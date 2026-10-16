@@ -125,6 +125,8 @@ namespace Ee4v.FaceExpression
             Array.Empty<AnimationClip>();
         private string _libraryRootFolder = string.Empty;
         private string _libraryFolder = string.Empty;
+        private string _observedLibraryFolder;
+        private string _observedLibraryFolderGuid;
         private IReadOnlyList<string> _previewRendererPaths =
             Array.Empty<string>();
         private bool _changingClip;
@@ -310,6 +312,7 @@ namespace Ee4v.FaceExpression
             };
             _view.BackRequested += GoBack;
             _view.LibraryFolderRequested += OpenLibraryFolder;
+            _view.LibraryProjectFolderRequested += ShowLibraryFolderInProject;
             _view.SharedClipSelected += SelectSharedCandidate;
             _view.SharedClipEditRequested += entry => EditSharedClip(entry, false);
             _view.SharedClipCopyRequested += entry => EditSharedClip(entry, true);
@@ -1368,6 +1371,17 @@ namespace Ee4v.FaceExpression
                 _libraryFolder = rootFolder;
             }
 
+            if (_observedLibraryFolder == _libraryFolder && !string.IsNullOrEmpty(_observedLibraryFolderGuid))
+            {
+                var currentFolder = NormalizeAssetPath(AssetDatabase.GUIDToAssetPath(_observedLibraryFolderGuid));
+                if (AssetDatabase.IsValidFolder(currentFolder) && IsAtOrBelow(currentFolder, rootFolder))
+                {
+                    _libraryFolder = currentFolder;
+                    _sharedFolder = currentFolder == rootFolder ? string.Empty : currentFolder.Substring(rootFolder.Length + 1);
+                }
+            }
+            _observedLibraryFolder = _libraryFolder;
+            _observedLibraryFolderGuid = AssetDatabase.IsValidFolder(_libraryFolder) ? AssetDatabase.AssetPathToGUID(_libraryFolder) : null;
             _currentLibraryClips.Clear();
             if (!AssetDatabase.IsValidFolder(rootFolder))
             {
