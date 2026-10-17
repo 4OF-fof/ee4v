@@ -29,6 +29,7 @@
       "recommended": "Recommended: {0}",
       "target": "Attachment target", "mode": "Position and rotation mode", "matchScale": "Match target scale",
       "undo": "Configure part attachment",
+      "disconnect": "Disconnect", "disconnectAll": "Disconnect all connections", "undoDisconnect": "Disconnect part attachments",
       "invalidTarget": "Select a target within this avatar and outside this part.",
       "source": "Source object", "method": "Attachment method", "add": "Add connection", "applyAll": "Add all proposed connections",
       "manual": "Specify a connection manually", "manualDescription": "Choose the source object, method and target. Existing settings are preserved.",

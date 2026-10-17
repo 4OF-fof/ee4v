@@ -31,6 +31,7 @@ namespace Ee4v.AvatarParts
             state.tooltip = string.Join("\n", new[] { I18N.Get("workflow.attachment.states." + plan.State) }
                 .Concat(plan.ReviewReasons.Select(reason => I18N.Get("workflow.attachment.reasons." + reason))));
             header.Actions.Add(state);
+            RegisterAttachmentDisconnectMenu(header, part, () => GetAttachmentComponents(part));
             panel.Add(header);
             var merges = part.GetComponentsInChildren<ModularAvatarMergeArmature>(true);
             var proxies = part.GetComponentsInChildren<ModularAvatarBoneProxy>(true);
@@ -38,16 +39,19 @@ namespace Ee4v.AvatarParts
             {
                 var sourcePath = merge.transform == part ? part.name
                     : AnimationUtility.CalculateTransformPath(merge.transform, part);
-                panel.Add(new BoneMergeSettings(merge, sourcePath, selected =>
+                var settings = new BoneMergeSettings(merge, sourcePath, selected =>
                 {
                     if (!ValidAttachmentTarget(part, selected?.transform)) { return false; }
                     ChangeAttachment(merge, () => merge.mergeTarget.Set(selected));
                     return merge.mergeTargetObject == selected;
-                }));
+                });
+                RegisterAttachmentDisconnectMenu(settings.Header, part,
+                    () => merge != null ? new Component[] { merge } : Array.Empty<Component>());
+                panel.Add(settings);
             }
             foreach (var proxy in proxies)
             {
-                panel.Add(BuildAttachmentDisclosure(proxy.GetInstanceID(),
+                var connection = BuildAttachmentDisclosure(proxy.GetInstanceID(),
                     I18N.Get("workflow.attachment.proxy"),
                     AttachmentSummary(part, proxy.transform, proxy.target), () =>
                 {
@@ -75,7 +79,10 @@ namespace Ee4v.AvatarParts
                     advanced.AddToClassList("ee4v-part-attachment--advanced");
                     settings.Add(advanced);
                     return settings;
-                }, true));
+                }, true);
+                RegisterAttachmentDisconnectMenu(connection[0], part,
+                    () => proxy != null ? new Component[] { proxy } : Array.Empty<Component>());
+                panel.Add(connection);
             }
             foreach (var proposal in proposals)
             {
@@ -275,6 +282,55 @@ namespace Ee4v.AvatarParts
             field.AddToClassList("ee4v-part-attachment__setup-target");
             field.AddToClassList("ee4v-part-attachment__setup-source");
             panel.Add(field);
+        }
+
+        private static Component[] GetAttachmentComponents(Transform part) => part == null ? Array.Empty<Component>()
+            : part.GetComponentsInChildren<Component>(true)
+                .Where(component => component is ModularAvatarMergeArmature || component is ModularAvatarBoneProxy).ToArray();
+
+        private void RegisterAttachmentDisconnectMenu(VisualElement header, Transform part, Func<Component[]> readConnections)
+        {
+            header.RegisterCallback<ContextClickEvent>(evt =>
+            {
+                var connections = readConnections().Where(component => component != null).Distinct().ToArray();
+                if (connections.Length == 0) return;
+                var menu = new GenericMenu();
+                var label = UiTextFactory.CreateGuiContent(I18N.Get(connections.Length > 1
+                    ? "workflow.attachment.disconnectAll" : "workflow.attachment.disconnect"));
+                if (_context.Edits.CanEditPrefab())
+                    menu.AddItem(label, false, () => RunAttachmentEdit(() => DisconnectAttachments(part, connections)));
+                else menu.AddDisabledItem(label);
+                menu.ShowAsContext();
+                evt.PreventDefault();
+                evt.StopPropagation();
+            });
+        }
+
+        private void DisconnectAttachments(Transform part, IReadOnlyList<Component> connections)
+        {
+            if (!_context.Edits.CanEditPrefab()) return;
+            var existing = connections.Where(component => component != null).Distinct().ToArray();
+            if (existing.Length == 0) return;
+            if (_context.Root == null || part == null || part == _context.Root.transform || !part.IsChildOf(_context.Root.transform) ||
+                existing.Any(component => !component.transform.IsChildOf(part) ||
+                    !(component is ModularAvatarMergeArmature || component is ModularAvatarBoneProxy)))
+                throw new ArgumentException("The attachment components must belong to this Item.");
+            Undo.IncrementCurrentGroup();
+            var group = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName(I18N.Get("workflow.attachment.undoDisconnect"));
+            try
+            {
+                foreach (var component in existing)
+                {
+                    var owner = component.gameObject;
+                    Undo.DestroyObjectImmediate(component);
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(owner);
+                    EditorUtility.SetDirty(owner);
+                }
+                Undo.CollapseUndoOperations(group);
+            }
+            catch { Undo.RevertAllDownToGroup(group); throw; }
+            AttachmentChanged();
         }
 
         private void RunAttachmentEdit(Action edit)

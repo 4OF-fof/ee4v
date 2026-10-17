@@ -29,6 +29,7 @@
       "recommended": "推奨: {0}",
       "target": "装着先", "mode": "位置・回転の扱い", "matchScale": "装着先のスケールに合わせる",
       "undo": "パーツの装着設定",
+      "disconnect": "接続を解除", "disconnectAll": "すべての接続を解除", "undoDisconnect": "パーツの接続を解除",
       "invalidTarget": "このパーツの外側にある、同じアバター内の装着先を指定してください。",
       "source": "接続元", "method": "接続方法", "add": "接続を追加", "applyAll": "提案された接続をまとめて追加",
       "manual": "接続を手動で指定", "manualDescription": "接続するオブジェクト・方法・装着先を指定します。既存の設定は置き換えません。",

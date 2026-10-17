@@ -13,8 +13,9 @@ namespace Ee4v.AvatarParts
             Func<GameObject, bool> targetChanged)
         {
             AddToClassList("ee4v-bone-merge-settings");
-            Add(UiTextFactory.Create(I18N.Get("workflow.attachment.mergeTitle"), UiClassNames.SectionTitle,
-                "ee4v-bone-merge-settings__title"));
+            Header = UiTextFactory.Create(I18N.Get("workflow.attachment.mergeTitle"), UiClassNames.SectionTitle,
+                "ee4v-bone-merge-settings__title");
+            Add(Header);
 
             var source = UiTextFactory.Create(sourcePath, "ee4v-bone-merge-settings__source");
             source.SetWhiteSpace(WhiteSpace.Normal);
@@ -33,6 +34,8 @@ namespace Ee4v.AvatarParts
             AddField(this, I18N.Get("workflow.attachment.mergeTarget"), target)
                 .AddToClassList("ee4v-bone-merge-settings__field--last");
         }
+
+        internal UiTextElement Header { get; }
 
         private static FormInput AddField(VisualElement parent, string label, VisualElement value)
         {

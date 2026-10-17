@@ -456,7 +456,6 @@
     border-width: var(--ee4v-border-hairline);
     border-color: var(--ee4v-color-border-default);
     border-radius: var(--ee4v-radius-lg);
-    background-color: var(--ee4v-color-panel);
 }
 
 .ee4v-part-attachments-section__header {
