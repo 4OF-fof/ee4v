@@ -93,7 +93,7 @@
       "aaoBuildTooltip": "AAO components were attached when the last manual bake started.",
       "aaoCurrentTooltip": "AAO components are attached to the current avatar.",
       "warnings": "Warnings",
-      "attachmentWarning": "\"{0}\" has neither Merge Armature nor Bone Proxy. Attachment setup may be required.",
+      "attachmentWarning": "\"{0}\" has unconnected parts or attachment settings that need review.",
       "openAttachmentSettings": "Open attachment settings",
       "performance": "Avatar performance",
       "overallRating": "Overall rating",

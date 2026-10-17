@@ -22,7 +22,7 @@ Blueprint IDは`AvatarInfoAnalysis.GetBlueprintId`で対象ルートの`VRC.Core
 
 ## 取得する情報
 
-装着警告は追加されたアバター直下のPrefabインスタンスにMerge ArmatureとBone Proxyがない場合に表示します。ベースPrefab由来の子と、Preferencesの「Avatar Info・Prefabの除外」にある「一覧・装着警告から除外するPrefab名」に一致するPrefabは除外します。`AvatarInfoSettings.IsPrefabExcluded`がPrefabファイル名の照合を公開し、統合版の上部item一覧と装着警告、単独AvatarInfo Windowの装着警告で同じ判定を使用します。`PrefabExclusionsChanged`で設定変更を通知し、統合版はitem一覧と選択範囲、総合画面を再構築し、単独Windowは警告を更新します。ExMenu専用の一覧除外は行いません。
+装着警告は追加されたアバター直下のPrefabインスタンスを共有`AvatarAttachmentAnalysis`で解析し、未接続・一部未接続・要確認の場合に表示します。MA componentの存在だけでは警告を消さず、接続先と必要な部位までの対応を確認します。接続確認済みと装着対象がないItemには表示しません。ベースPrefab由来の子と、Preferencesの「Avatar Info・Prefabの除外」にある「一覧・装着警告から除外するPrefab名」に一致するPrefabは除外します。`AvatarInfoSettings.IsPrefabExcluded`がPrefabファイル名の照合を公開し、統合版の上部item一覧と装着警告、単独AvatarInfo Windowの装着警告で同じ判定を使用します。`PrefabExclusionsChanged`で設定変更を通知し、統合版はitem一覧と選択範囲、総合画面を再構築し、単独Windowは警告を更新します。ExMenu専用の一覧除外は行いません。
 
 設定IDは`avatarInfo.attachmentWarningExcludedPrefabNames`で、User設定の文字列配列として保持します。リストの1行を1つの正規表現として扱い、Prefabファイル名（拡張子なし）へ大文字小文字を区別せず部分一致で照合します。Sceneインスタンスの名前変更は照合へ影響しません。完全一致には`^`と`$`を使用します。既定値は`^(?:ExpressionMenu|MenuItem|Gimmick)$`と`_(?:ExpressionMenu|FacialSet)$`で、ExMenuと表情の生成Prefabを一覧と装着警告から除外します。リストを空にすると両方の名前による除外を解除できます。保存は配列のJSON形式とし、正規表現のカンマ・セミコロン・バックスラッシュを区切り文字として扱いません。不正な正規表現は設定画面の検証エラーにして保存しません。照合のtimeoutは50msで、時間切れとなった式は一致扱いにせず一覧表示と警告対象を維持します。この設定は表示対象だけに適用し、Prefab本体・装着設定・アバターのcomponentを変更しません。
 

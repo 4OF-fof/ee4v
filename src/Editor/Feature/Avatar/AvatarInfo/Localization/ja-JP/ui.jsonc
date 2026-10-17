@@ -93,7 +93,7 @@
       "aaoBuildTooltip": "前回「測定」を実行した時点で、Avatar Optimizer（AAO）が設定されていたアバターの評価結果です。",
       "aaoCurrentTooltip": "現在のアバターにはAvatar Optimizer（AAO）コンポーネントが設定されています。",
       "warnings": "警告",
-      "attachmentWarning": "「{0}」にMerge ArmatureもBone Proxyもありません。装着設定が必要な可能性があります。",
+      "attachmentWarning": "「{0}」に未接続、または確認が必要な装着設定があります。",
       "openAttachmentSettings": "装着設定を開く",
       "performance": "アバターパフォーマンス",
       "overallRating": "総合評価",

@@ -12,6 +12,16 @@ namespace Ee4v.AvatarParts
 {
     public sealed partial class AvatarPartsEditor
     {
+        private static Transform FindBodyScaleArmature(Transform part)
+        {
+            var named = part.GetComponentsInChildren<Transform>(true).FirstOrDefault(candidate =>
+                candidate.childCount > 0 && string.Equals(candidate.name, "Armature", StringComparison.OrdinalIgnoreCase));
+            if (named != null) return named;
+            var hips = part.GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(renderer => renderer.rootBone)
+                .FirstOrDefault(bone => bone != null && bone.IsChildOf(part) && bone.name.IndexOf("hip", StringComparison.OrdinalIgnoreCase) >= 0);
+            return hips != null && hips.parent != null && hips.parent.IsChildOf(part) ? hips.parent : null;
+        }
+
         private IReadOnlyList<BodyBlendShapeDefinition>
             GetBodyBlendShapes()
         {
@@ -631,7 +641,7 @@ namespace Ee4v.AvatarParts
             var namedBones = ratios.Keys.GroupBy(bone => bone.name, StringComparer.Ordinal)
                 .Where(group => group.Count() == 1)
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
-            var armature = FindPartArmature(added.transform);
+            var armature = FindBodyScaleArmature(added.transform);
             var candidates = armature != null
                 ? armature.GetComponentsInChildren<Transform>(true)
                 : added.GetComponentsInChildren<SkinnedMeshRenderer>(true)

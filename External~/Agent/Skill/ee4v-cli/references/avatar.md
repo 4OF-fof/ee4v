@@ -14,7 +14,7 @@ inspect-avatar-authoring --avatar-ref <ref> のscope、scale parts、rendererPat
 
 ## MA装着
 
-edit-avatar-attachmentに渡すpartPathはAvatar直下のnested Prefab。inspectで得たownerPathと推奨先を使い、kindはauto / MergeArmature / BoneProxy。targetPath未指定なら推奨先を使う。
+edit-avatar-attachmentに渡すpartPathはAvatar直下のnested Prefab。inspectのstate、reviewReasons、canApplyと接続候補を先に確認する。kindはauto / MergeArmature / BoneProxy。autoはcanApplyの場合だけ未接続部位の提案をまとめて1つのUndoグループで追加し、ownerPathで1件に限定できる。targetPathの上書きには1件の選択が必要。要確認時はownerPath、kind、targetPathを明示し、dryRunで入力を検証する。既存接続の編集では省略したtargetPathに現在の接続先を使用する。
 
 Avatar外の装着先、part自身への追従、既存の別方式への暗黙置換をしない。装着処理は既存bone名や姿勢・scale追従を共通APIで扱う。汎用SerializedPropertyの編集で同じ処理を再実装しない。
 

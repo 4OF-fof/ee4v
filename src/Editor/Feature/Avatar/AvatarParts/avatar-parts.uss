@@ -580,6 +580,10 @@
     margin-bottom: var(--ee4v-space-sm);
 }
 
+.ee4v-part-attachment__setup-target.ee4v-part-attachment__setup-source {
+    margin-bottom: var(--ee4v-space-2xl);
+}
+
 .ee4v-part-attachment__setup-target > .ee4v-ui-form-input__input {
     min-width: 0;
     width: auto;

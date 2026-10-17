@@ -75,9 +75,9 @@ inventoryの数量は`scope: currentHierarchy`で、最終ビルドの性能で�
 
 | tool | 動作 |
 |---|---|
-| `ee4v_inspect_avatar_authoring` | 元Prefab基準の部位倍率・対象path、身長・ViewPosition基準値、体型BlendShape分類と同期元、既存装着設定と推奨先を取得する |
+| `ee4v_inspect_avatar_authoring` | 元Prefab基準の部位倍率・対象path、身長・ViewPosition基準値、体型BlendShape分類と同期元、既存接続・提案・状態・reviewReasons・canApplyを取得する |
 | `ee4v_edit_avatar_shape` | `setScale`、`setHeight`、`setBlendshape`、`setBlendshapeGroup`、`prepareBlendshapeSync`をUIの体型処理で実行する |
-| `ee4v_edit_avatar_attachment` | Merge Armature／Bone Proxyの追加・設定変更をUIと共有する処理で行う |
+| `ee4v_edit_avatar_attachment` | 共有の構造解析を使ってMerge Armature／Bone Proxyを追加・編集する。autoはcanApplyの場合だけ提案を1つのUndoグループで適用し、ownerPathで1件を選択できる。位置からの初期候補estimatedBoneを含む要確認時は接続元・方式・接続先を明示する。dryRunは変更しない |
 
 authoringは利用者のScene上の取得済みAvatarを対象とする。`scopePath`は空文字（全体）または直下のPrefab instanceのAvatar相対path。調査・dryRunは保存済み分類だけを使用し、初期presetを暗黙に作らない。未作成のFBX分類は`ee4v_ensure_blendshape_presets`で明示作成する。
 

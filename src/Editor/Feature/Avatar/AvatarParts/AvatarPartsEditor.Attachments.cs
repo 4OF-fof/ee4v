@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ee4v.AvatarEditing;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
 using nadena.dev.modular_avatar.core;
@@ -41,18 +42,11 @@ namespace Ee4v.AvatarParts
                     AttachmentSummary(part, proxy.transform, proxy.target), () =>
                 {
                     var settings = new VisualElement();
-                    var target = UiTextFactory.CreateObjectField();
-                    target.objectType = typeof(Transform);
-                    target.allowSceneObjects = true;
-                    target.SetValueWithoutNotify(proxy.target);
-                    target.RegisterValueChangedCallback(evt =>
+                    settings.Add(BuildAttachmentTargetPicker(part, proxy.target, selected =>
                     {
-                        var selected = evt.newValue as Transform;
-                        if (!ValidAttachmentTarget(part, selected))
-                        { target.SetValueWithoutNotify(proxy.target); return; }
+                        if (!ValidAttachmentTarget(part, selected)) return;
                         ChangeAttachment(proxy, () => proxy.target = selected);
-                    });
-                    settings.Add(new FormInput(I18N.Get("workflow.attachment.target"), target));
+                    }));
                     var mode = UiTextFactory.CreateEnumField(string.Empty, proxy.attachmentMode);
                     mode.RegisterValueChangedCallback(evt => ChangeAttachment(proxy,
                         () => proxy.attachmentMode = (BoneProxyAttachmentMode)evt.newValue));
@@ -64,17 +58,27 @@ namespace Ee4v.AvatarParts
                     return settings;
                 }));
             }
-            if (merges.Length != 0 || proxies.Length != 0)
+            var plan = AvatarAttachmentAnalysis.Analyze(_context.Root, part);
+            var summary = string.Join("\n", plan.ReviewReasons.Select(reason => I18N.Get("workflow.attachment.reasons." + reason)));
+            panel.Add(UiTextFactory.Create(I18N.Get("workflow.attachment.states." + plan.State), UiClassNames.SecondaryText));
+            if (!string.IsNullOrEmpty(summary))
+                panel.Add(UiTextFactory.Create(summary, UiClassNames.SecondaryText, "ee4v-part-attachment__setup-description"));
+            var proposals = plan.Connections.Where(connection => !connection.Exists).ToArray();
+            foreach (var proposal in proposals)
             {
-                panel[panel.childCount - 1].AddToClassList("ee4v-part-attachment--last");
-                return panel;
+                var candidate = proposal;
+                var canApply = plan.CanApply || candidate.Reason == "estimatedBone" &&
+                    plan.ReviewReasons.All(reason => reason == "estimatedBone");
+                panel.Add(BuildAttachmentDisclosure(candidate.Owner.GetInstanceID(),
+                    I18N.Get("workflow.attachment.recommended", AttachmentKindName(candidate.Kind)),
+                    AttachmentSummary(part, candidate.Owner, candidate.Target), () => BuildNewAttachmentControls(part, candidate, canApply)));
             }
-            var armature = FindPartArmature(part);
-            panel.Add(BuildAttachmentDisclosure(part.GetInstanceID(),
-                I18N.Get("workflow.attachment.missing"),
-                I18N.Get("workflow.attachment.recommended", I18N.Get(armature != null
-                    ? "workflow.attachment.mergeTitle" : "workflow.attachment.proxy")), () =>
-                BuildNewAttachmentControls(part, armature)));
+            if (proposals.Length > 1 && plan.CanApply)
+                panel.Add(new UiButton(I18N.Get("workflow.attachment.applyAll"), () =>
+                    RunAttachmentEdit(() => ApplyRecommendedAttachments(part, proposals))));
+            panel.Add(BuildAttachmentDisclosure(part.GetInstanceID() ^ int.MinValue,
+                I18N.Get("workflow.attachment.manual"), I18N.Get("workflow.attachment.manualDescription"), () =>
+                BuildNewAttachmentControls(part, null)));
             panel[panel.childCount - 1].AddToClassList("ee4v-part-attachment--missing");
             panel[panel.childCount - 1].AddToClassList("ee4v-part-attachment--last");
             return panel;
@@ -128,41 +132,72 @@ namespace Ee4v.AvatarParts
             return path + " → " + destination;
         }
 
-        private VisualElement BuildNewAttachmentControls(Transform part, Transform armature)
+        private static string AttachmentKindName(AttachmentKind kind) =>
+            I18N.Get(kind == AttachmentKind.MergeArmature ? "workflow.attachment.mergeTitle" : "workflow.attachment.proxy");
+
+        private VisualElement BuildNewAttachmentControls(Transform part, AttachmentConnection proposal, bool canApply = true)
         {
             var panel = new VisualElement();
             panel.AddToClassList("ee4v-part-attachment__setup");
-            var recommended = RecommendedAttachmentTarget(part, armature);
-            var targetField = UiTextFactory.CreateObjectField();
-            targetField.objectType = typeof(Transform);
-            targetField.allowSceneObjects = true;
-            targetField.SetValueWithoutNotify(recommended);
-            var description = UiTextFactory.Create(I18N.Get(armature != null
-                ? "workflow.attachment.mergeRecommended" : "workflow.attachment.proxyRecommended"),
+            var kind = proposal?.Kind ?? AttachmentKind.BoneProxy;
+            var description = UiTextFactory.Create(I18N.Get(proposal == null ? "workflow.attachment.manualDescription" : "workflow.attachment.reasons." + proposal.Reason),
                 UiClassNames.SecondaryText, "ee4v-part-attachment__setup-description");
             description.SetWhiteSpace(WhiteSpace.Normal);
             panel.Add(description);
-            var targetInput = new FormInput(I18N.Get("workflow.attachment.target"), targetField);
-            targetInput.AddToClassList("ee4v-part-attachment__setup-target");
-            panel.Add(targetInput);
-            var add = new UiButton(I18N.Get(armature != null
-                ? "workflow.attachment.addMerge" : "workflow.attachment.addProxy"), () =>
+            var target = proposal?.Target;
+            UiButton add = null;
+            var ownerField = UiTextFactory.CreateObjectField();
+            ownerField.objectType = typeof(Transform);
+            ownerField.allowSceneObjects = true;
+            ownerField.SetValueWithoutNotify(proposal?.Owner ?? part);
+            ownerField.SetEnabled(proposal == null);
+            AddAttachmentSetupField(panel, "workflow.attachment.source", ownerField);
+            var targetHost = new VisualElement();
+            void SelectTarget(Transform selected)
             {
-                var target = targetField.value as Transform;
+                target = selected;
+                if (proposal != null) proposal.Target = selected;
+                add?.SetEnabled(canApply && AvatarAttachmentAnalysis.IsValidTarget(_context.Root, part, target));
+            }
+            void BuildTarget()
+            {
+                targetHost.Clear();
+                if (kind == AttachmentKind.BoneProxy)
+                    targetHost.Add(BuildAttachmentTargetPicker(part, target, SelectTarget));
+                else
+                {
+                    var field = UiTextFactory.CreateObjectField();
+                    field.objectType = typeof(Transform);
+                    field.allowSceneObjects = true;
+                    field.SetValueWithoutNotify(target);
+                    field.RegisterValueChangedCallback(evt => SelectTarget(evt.newValue as Transform));
+                    AddAttachmentSetupField(targetHost, "workflow.attachment.target", field);
+                }
+            }
+            if (proposal == null)
+            {
+                var kindField = UiTextFactory.CreateEnumField(string.Empty, kind);
+                kindField.RegisterValueChangedCallback(evt => { kind = (AttachmentKind)evt.newValue; BuildTarget(); });
+                AddAttachmentSetupField(panel, "workflow.attachment.method", kindField);
+            }
+            BuildTarget();
+            panel.Add(targetHost);
+            add = new UiButton(I18N.Get("workflow.attachment.add"), () =>
+            {
                 if (!ValidAttachmentTarget(part, target)) { return; }
-                if (!_context.Edits.CanEditPrefab() || !FlushPendingPartVisibility()) { return; }
-                try
+                var owner = ownerField.value as Transform;
+                if (owner == null || !owner.IsChildOf(part))
                 {
-                    ApplyAttachment(part, armature ?? part, armature != null ? "MergeArmature" : "BoneProxy", target, null, null);
+                    _context.Feedback = I18N.Get("workflow.attachment.invalidSource");
+                    _context.FeedbackType = MessageSeverity.Warning;
+                    _context.Host.Refresh();
+                    return;
                 }
-                catch (Exception exception)
-                {
-                    Debug.LogException(exception);
-                    _context.Edits.ShowAssetError("workflow.assets.saveFailed");
-                }
+                RunAttachmentEdit(() => ApplyAttachment(part, owner, kind.ToString(), target, null, null));
             });
             add.AddToClassList("ee4v-part-attachment__setup-add");
             add.SetPrimaryActionEnabled(true);
+            add.SetEnabled(canApply && AvatarAttachmentAnalysis.IsValidTarget(_context.Root, part, target));
             var actions = new VisualElement();
             actions.AddToClassList("ee4v-part-attachment__setup-actions");
             actions.Add(add);
@@ -170,21 +205,78 @@ namespace Ee4v.AvatarParts
             return panel;
         }
 
-        private static Transform FindPartArmature(Transform part)
+        private VisualElement BuildAttachmentTargetPicker(Transform part, Transform initial, Action<Transform> changed)
         {
-            var transforms = part.GetComponentsInChildren<Transform>(true);
-            var named = transforms.FirstOrDefault(candidate =>
-                candidate.childCount > 0 && string.Equals(candidate.name, "Armature", StringComparison.OrdinalIgnoreCase));
-            if (named != null) { return named; }
-            var roots = part.GetComponentsInChildren<SkinnedMeshRenderer>(true)
-                .Select(renderer => renderer.rootBone).Where(bone => bone != null && bone.IsChildOf(part)).Distinct().ToArray();
-            var hips = roots.FirstOrDefault(bone => bone.name.IndexOf("hip", StringComparison.OrdinalIgnoreCase) >= 0);
-            return hips != null && hips.parent != null && hips.parent.IsChildOf(part) ? hips.parent : null;
+            var panel = new VisualElement();
+            var animator = _context.Root.GetComponentsInChildren<Animator>(true)
+                .FirstOrDefault(candidate => candidate.isHuman && !candidate.transform.IsChildOf(part));
+            var reference = PositionAvatarReferences.Where(bone => bone != HumanBodyBones.LastBone &&
+                initial != null && ResolvePositionAvatarReference(animator, bone) == initial)
+                .DefaultIfEmpty(HumanBodyBones.LastBone).First();
+            var custom = initial;
+            string Label(HumanBodyBones bone) => I18N.Get("workflow.position.references." + bone);
+            var picker = UiTextFactory.CreatePopupField(string.Empty, PositionAvatarReferences,
+                PositionAvatarReferences.IndexOf(reference), Label, Label);
+            picker.name = "ee4v-attachment-target-reference";
+            AddAttachmentSetupField(panel, "workflow.attachment.target", picker);
+            var customHost = new VisualElement { name = "ee4v-attachment-custom-target" };
+            var field = UiTextFactory.CreateObjectField();
+            field.objectType = typeof(Transform);
+            field.allowSceneObjects = true;
+            field.SetValueWithoutNotify(custom);
+            field.RegisterValueChangedCallback(evt =>
+            {
+                var selected = evt.newValue as Transform;
+                if (selected != null && !AvatarAttachmentAnalysis.IsValidTarget(_context.Root, part, selected))
+                { field.SetValueWithoutNotify(custom); return; }
+                custom = selected;
+                changed(selected);
+            });
+            AddAttachmentSetupField(customHost, null, field);
+            panel.Add(customHost);
+            var unavailable = UiTextFactory.Create(I18N.Get("workflow.position.referenceUnavailable"), UiClassNames.SecondaryText);
+            unavailable.SetWhiteSpace(WhiteSpace.Normal);
+            panel.Add(unavailable);
+            void Refresh()
+            {
+                customHost.EnableInClassList("ee4v-part-attachment__details--hidden", reference != HumanBodyBones.LastBone);
+                var target = reference == HumanBodyBones.LastBone ? custom : ResolvePositionAvatarReference(animator, reference);
+                unavailable.EnableInClassList("ee4v-part-attachment__details--hidden", reference == HumanBodyBones.LastBone || target != null);
+            }
+            picker.RegisterValueChangedCallback(evt =>
+            {
+                reference = evt.newValue;
+                Refresh();
+                changed(reference == HumanBodyBones.LastBone ? custom : ResolvePositionAvatarReference(animator, reference));
+            });
+            Refresh();
+            return panel;
+        }
+
+        private static void AddAttachmentSetupField(VisualElement panel, string label, VisualElement input)
+        {
+            var field = label == null ? new FormInput(input) : new FormInput(I18N.Get(label), input);
+            field.AddToClassList("ee4v-part-attachment__setup-target");
+            field.AddToClassList("ee4v-part-attachment__setup-source");
+            panel.Add(field);
+        }
+
+        private void RunAttachmentEdit(Action edit)
+        {
+            if (!_context.Edits.CanEditPrefab() || !FlushPendingPartVisibility()) return;
+            try { edit(); }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                _context.Feedback = exception.Message;
+                _context.FeedbackType = MessageSeverity.Warning;
+                _context.Host.Refresh();
+            }
         }
 
         private bool ValidAttachmentTarget(Transform part, Transform target)
         {
-            var valid = target != null && _context.Root != null && target.IsChildOf(_context.Root.transform) && !target.IsChildOf(part);
+            var valid = AvatarAttachmentAnalysis.IsValidTarget(_context.Root, part, target);
             if (!valid)
             {
                 _context.Feedback = I18N.Get("workflow.attachment.invalidTarget");

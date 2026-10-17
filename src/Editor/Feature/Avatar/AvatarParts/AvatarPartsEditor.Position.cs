@@ -239,7 +239,7 @@ namespace Ee4v.AvatarParts
                 explanation.EnableInClassList("ee4v-modification-workflow__hidden", string.IsNullOrEmpty(message));
                 refreshReference?.Invoke();
             }
-            UnityEditor.UIElements.ObjectField AddBoneField(VisualElement host, string label, Func<Transform> read,
+            UnityEditor.UIElements.ObjectField AddBoneField(VisualElement host, Func<Transform> read,
                 Action<Transform> set)
             {
                 var field = UiTextFactory.CreateObjectField();
@@ -258,7 +258,7 @@ namespace Ee4v.AvatarParts
                     _positionAutoMessage = null;
                     render();
                 });
-                var form = new FormInput(I18N.Get(label), field);
+                var form = new FormInput(field);
                 form.AddToClassList("ee4v-item-position__reference");
                 host.Add(form);
                 return field;
@@ -286,7 +286,7 @@ namespace Ee4v.AvatarParts
             referenceForm.AddToClassList("ee4v-item-position__reference");
             panel.Add(referenceForm);
             var customReference = new VisualElement { name = "ee4v-position-custom-reference" };
-            var avatar = AddBoneField(customReference, "workflow.position.customBone", () => _positionCustomAvatarBone,
+            var avatar = AddBoneField(customReference, () => _positionCustomAvatarBone,
                 bone => { _positionCustomAvatarBone = bone; _positionAvatarBone = bone; });
             avatar.name = "ee4v-position-custom-bone";
             panel.Add(customReference);
