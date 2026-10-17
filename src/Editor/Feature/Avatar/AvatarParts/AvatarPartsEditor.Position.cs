@@ -280,7 +280,7 @@ namespace Ee4v.AvatarParts
             if (objects.Length == 0) return null;
             if (!_positionExcludedItems.TryGetValue(target, out var excluded))
             {
-                excluded = new HashSet<Transform>();
+                excluded = ItemFittingExclusionStore.instance.Read(_context.PrefabAsset, root, target);
                 _positionExcludedItems.Add(target, excluded);
             }
             excluded.RemoveWhere(item => item == null || item == root || !item.IsChildOf(root) || item.IsChildOf(target));
@@ -332,6 +332,7 @@ namespace Ee4v.AvatarParts
                     {
                         if (target != SelectedPositionTarget()) return;
                         excluded.Remove(item);
+                        ItemFittingExclusionStore.instance.Write(_context.PrefabAsset, root, target, excluded);
                         _positionAutoMessage = null;
                         RefreshList();
                         render();
@@ -355,12 +356,14 @@ namespace Ee4v.AvatarParts
                     excluded.UnionWith(selected.Where(item => item != null && available.Contains(item)));
                     var redundant = excluded.Where(item => excluded.Any(parent => parent != item && item.IsChildOf(parent))).ToArray();
                     excluded.ExceptWith(redundant);
+                    ItemFittingExclusionStore.instance.Write(_context.PrefabAsset, root, target, excluded);
                     _positionAutoMessage = null;
                     RefreshList();
                     render();
                 });
             }, tooltip: I18N.Get("workflow.position.exclusionsAdd"),
-                icon: FluentUiIcons.CreateState("add.png", UiSizeTokens.Size14)) { name = "ee4v-position-exclusion-add" };
+                icon: FluentUiIcons.CreateState("add.png", UiSizeTokens.Size14),
+                variant: UiButtonVariant.Ghost) { name = "ee4v-position-exclusion-add" };
             header.Actions.Add(add);
             RefreshList();
             return section;
