@@ -76,6 +76,8 @@ namespace Ee4v.AssetManager.UI
 
         internal void SetPrefabScope(bool selected)
         {
+            if (_buttons.TryGetValue(WorkflowCategory.Overview, out var overview))
+                overview.SetEnabled(!selected);
             if (_buttons.TryGetValue(WorkflowCategory.ExpressionAnimation, out var expression))
             {
                 expression.SetEnabled(!selected);

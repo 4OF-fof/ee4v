@@ -12,7 +12,7 @@ CLIはこのskillに同梱されたbin/win-x64/ee4v-cli.exeを使用する。こ
 ## 接続と引数
 
 - ee4v-cli projectsで対象を確認し、以後は --project <Projectの絶対パス> を付ける。Editor未起動ならユーザーへ伝える。
-- よく使う操作は下表を使う。未掲載操作だけ ee4v-cli operations <検索語>、引数が不明な場合だけ ee4v-cli describe <操作名> を使う。全80操作の定義を毎回読み込まない。
+- よく使う操作は下表を使う。未掲載操作だけ ee4v-cli operations <検索語>、引数が不明な場合だけ ee4v-cli describe <操作名> を使う。全操作の定義を毎回読み込まない。
 - 通常は --avatar-ref <参照> のように名前付き引数を使う。配列は同じ引数を繰り返す。複雑な配列や空配列はJSONファイルに入れて --args-file <path> を渡す。オプション指定はファイルの同じフィールドを上書きする。
 - PowerShellでは空白・カンマを含む値をsingle quoteで囲む。JSON文字列をコマンドラインへ直接渡さない。
 - avatarRefはfind-avatarsまたはruntime操作の発行値だけを使う。Domain Reload、対象破棄、Play Mode切り替え後は再取得する。

@@ -65,6 +65,18 @@ namespace Ee4v.UI
                 value => select(value as TObject), showAsGrid);
         }
 
+        public static void ShowHierarchyPicker(VisualElement anchor,
+            IReadOnlyList<SearchableTreeItemData<TObject>> items,
+            Action<IReadOnlyList<TObject>> select)
+        {
+            if (select == null || items == null) { return; }
+            SearchableTreeItemData<UnityEngine.Object> ConvertItem(SearchableTreeItemData<TObject> item) =>
+                new SearchableTreeItemData<UnityEngine.Object>(item.Id, item.Data, item.SearchText,
+                    item.TooltipText, item.Children.Select(ConvertItem).ToArray());
+            ObjectHierarchyPickerWindow.Show(anchor, items.Select(ConvertItem).ToArray(),
+                values => select(values.OfType<TObject>().ToArray()));
+        }
+
         public void SetValueWithoutNotify(TObject candidate)
         {
             if (!Accepts(candidate))

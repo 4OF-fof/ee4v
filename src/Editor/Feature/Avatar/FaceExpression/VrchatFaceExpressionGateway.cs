@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Ee4v.Core;
+using Ee4v.Core.EditorIntegration;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
@@ -8,6 +9,109 @@ using UnityEngine;
 
 namespace Ee4v.FaceExpression
 {
+    // Prepared motions and menu icons are derived assets. Their source clips can
+    // also change outside the expression window (including through the public API).
+    [InitializeOnLoad]
+    internal static class FaceExpressionSourceRefresh
+    {
+        private static readonly System.Collections.Generic.HashSet<string> PendingPaths =
+            new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+        private static bool _queued;
+
+        static FaceExpressionSourceRefresh()
+        {
+            AnimationUtility.onCurveWasModified += (clip, _, __) => Queue(AssetDatabase.GetAssetPath(clip));
+            EditorApplication.playModeStateChanged += state =>
+            {
+                if (state != PlayModeStateChange.ExitingEditMode) return;
+                PendingPaths.Clear();
+                // Also repairs saved generated assets from a previous Editor session.
+                RefreshLoaded(null);
+            };
+            EditorApplication.update += RefreshAfterReload;
+        }
+
+        private static void RefreshAfterReload()
+        {
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+            EditorApplication.update -= RefreshAfterReload;
+            if (!EditorApplication.isPlayingOrWillChangePlaymode) RefreshLoaded(null);
+        }
+
+        internal static void Queue(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return;
+            PendingPaths.Add(path);
+            if (_queued) return;
+            _queued = true;
+            EditorApplication.update += Flush;
+            EditorApplication.QueuePlayerLoopUpdate();
+        }
+
+        private static void Flush()
+        {
+            EditorApplication.update -= Flush;
+            _queued = false;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                if (PendingPaths.Count > 0) Queue(PendingPaths.First());
+                return;
+            }
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            var paths = new System.Collections.Generic.HashSet<string>(PendingPaths, StringComparer.Ordinal);
+            PendingPaths.Clear();
+            if (paths.Count > 0) RefreshLoaded(paths);
+        }
+
+        private static void RefreshLoaded(System.Collections.Generic.ISet<string> changedPaths)
+        {
+            if (EditorApplication.isPlaying) return;
+            var gateway = new VrchatFaceExpressionGateway();
+            foreach (var animator in Resources.FindObjectsOfTypeAll<Animator>())
+            {
+                if (animator == null || EditorUtility.IsPersistent(animator) ||
+                    (animator.hideFlags & HideFlags.DontSaveInEditor) != 0 ||
+                    !animator.gameObject.scene.IsValid() ||
+                    Ee4v.Core.AvatarEvaluation.AvatarPreviewRenderer.IsPreviewScene(animator.gameObject.scene)) continue;
+                var avatar = animator.gameObject;
+                var paths = FaceExpressionGenerationPaths.Create(avatar);
+                var controller = ModularAvatarFaceExpressionInstaller.TryGetController(avatar, paths.RootName);
+                if (!GestureMatrixControllerWriter.OwnsLayer(controller) ||
+                    !gateway.TryRead(avatar, out var configuration)) continue;
+                var sourceClips = configuration.Assignments.Values.Select(assignment => assignment.Clip)
+                    .Concat(configuration.MenuEntries.Select(entry => entry.Assignment.Clip)).Where(clip => clip != null);
+                if (changedPaths != null && !sourceClips.Any(clip => changedPaths.Contains(AssetDatabase.GetAssetPath(clip))))
+                    continue;
+                using (new FaceExpressionGenerationUndo())
+                {
+                    if (!gateway.TryApply(avatar, configuration, out _, out var error, saveScene: true))
+                        Debug.LogError("FacialSet source refresh failed: " + error, avatar);
+                }
+            }
+        }
+    }
+
+    internal sealed class FaceExpressionSourcePostprocessor : AssetPostprocessor
+    {
+        private static void OnPostprocessAllAssets(string[] imported, string[] deleted,
+            string[] moved, string[] movedFrom)
+        {
+            foreach (var path in imported.Concat(moved))
+                if (path.EndsWith(".anim", StringComparison.OrdinalIgnoreCase) ||
+                    path.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase)) FaceExpressionSourceRefresh.Queue(path);
+        }
+    }
+
+    internal sealed class FaceExpressionSourceSaveProcessor : AssetModificationProcessor
+    {
+        private static string[] OnWillSaveAssets(string[] paths)
+        {
+            foreach (var path in paths)
+                if (path.EndsWith(".anim", StringComparison.OrdinalIgnoreCase)) FaceExpressionSourceRefresh.Queue(path);
+            return paths;
+        }
+    }
+
     internal sealed class VrchatFaceExpressionGateway
     {
         internal static void RemoveGeneratedInstallation(GameObject avatar)
@@ -20,7 +124,11 @@ namespace Ee4v.FaceExpression
                 if (root != null)
                 {
                     UnityEngine.Object.DestroyImmediate(root.gameObject);
-                    if (avatar.scene.IsValid()) EditorSceneManager.MarkSceneDirty(avatar.scene);
+                    if (avatar.scene.IsValid())
+                    {
+                        EditorSceneManager.MarkSceneDirty(avatar.scene);
+                        EditorSceneApi.SaveAfterEdit(avatar.scene);
+                    }
                 }
                 return;
             }
@@ -70,7 +178,8 @@ namespace Ee4v.FaceExpression
             out AnimatorController controller,
             out string error,
             bool deferSave = false,
-            bool generateIcons = true)
+            bool generateIcons = true,
+            bool saveScene = false)
         {
             controller = null;
             error = null;
@@ -121,15 +230,18 @@ namespace Ee4v.FaceExpression
                     paths.MenuPath,
                     entries,
                     icons);
-                ModularAvatarFaceExpressionInstaller.Install(
+                var installationChanged = ModularAvatarFaceExpressionInstaller.Install(
                     avatar,
                     paths,
                     controller,
                     menu,
                     avatarBindings.Blink.Count > 0);
                 SaveMenu(menu, deferSave);
-                if (!EditorUtility.IsPersistent(avatar) && avatar.scene.IsValid())
+                if (installationChanged && !EditorUtility.IsPersistent(avatar) && avatar.scene.IsValid())
+                {
                     EditorSceneManager.MarkSceneDirty(avatar.scene);
+                    if (saveScene) EditorSceneApi.SaveAfterEdit(avatar.scene);
+                }
                 return true;
             }
             catch (Exception exception)

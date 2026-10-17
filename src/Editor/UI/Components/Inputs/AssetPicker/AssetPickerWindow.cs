@@ -29,6 +29,17 @@ namespace Ee4v.UI
         private IVisualElementScheduledItem _loading;
         private SearchField _search;
         private CustomPopup _popup;
+        private UiButton _projectToggle;
+        private VisualElement _assetBody;
+        private VisualElement _projectPane;
+        private IMGUIContainer _projectContent;
+        private UiTextElement _projectError;
+        private EditorWindow _projectBrowser;
+        private IVisualElementScheduledItem _projectRefresh;
+        private bool _showProject;
+        private bool _startInProject;
+        private string _initialProjectFolder;
+        private bool _projectRenderFailed;
         private ObjectField _referenceField;
         private PopupField<AssetPickerAnimationFilter> _animationFilterField;
         private ListView _list;
@@ -128,6 +139,14 @@ namespace Ee4v.UI
             Create(type, current, context, animationFilter, groupKey).ShowAsPopup(screenPosition, new Vector2(1040f, 720f));
         }
 
+        internal static void ShowProject(VisualElement anchor, Type type, string folderPath)
+        {
+            var window = Create(type, null, null, AssetPickerAnimationFilter.All);
+            window._startInProject = true;
+            window._initialProjectFolder = folderPath;
+            window.ShowAsPopup(anchor, new Vector2(1040f, 720f));
+        }
+
         private static AssetPickerWindow Create(Type type, Object current, GameObject context,
             AssetPickerAnimationFilter animationFilter, string groupKey = null)
         {
@@ -156,9 +175,15 @@ namespace Ee4v.UI
                 root.EnableInClassList("ee4v-ui-asset-picker--compact", evt.newRect.width < 720f));
             ConfigureCloseAndSubmitKeys(root);
             _popup = new CustomPopup(UiLocalization.Get("ui.assetPicker.title") + " · " + TypeName(_type),
-                showFooter: true,
+                showFooter: false,
                 closeTooltip: UiLocalization.Get("ui.dismiss.tooltip"));
+            _projectToggle = new UiButton(string.Empty, ToggleProjectBrowser,
+                UiLocalization.Get("ui.assetPicker.projectView"),
+                icon: ProjectBrowserIcon(), variant: UiButtonVariant.Ghost);
+            _projectToggle.AddToClassList("ee4v-ui-asset-picker__project-toggle");
+            _popup.HeaderActions.Add(_projectToggle);
             var body = new VisualElement();
+            _assetBody = body;
             body.AddToClassList("ee4v-ui-asset-picker__body");
             var toolbar = new VisualElement();
             toolbar.AddToClassList("ee4v-ui-asset-picker__toolbar");
@@ -242,16 +267,110 @@ namespace Ee4v.UI
             _browser.SetPanels(_overviewPane, _candidatePane, BuildPreview(), _cards);
             body.Add(_browser);
             _popup.Content.Add(body);
-            var dragHint = UiTextFactory.Create(UiLocalization.Get("ui.assetPicker.dragHint"));
-            dragHint.AddToClassList("ee4v-ui-asset-picker__drag-hint");
-            _popup.Footer.Add(dragHint);
-            _popup.Footer.Add(new UiButton(UiLocalization.Get("ui.assetPicker.close"), Close));
+            _projectPane = new VisualElement();
+            _projectPane.AddToClassList("ee4v-ui-asset-picker__project-pane");
+            _projectPane.AddToClassList("ee4v-ui-asset-picker__hidden");
+            _projectContent = new IMGUIContainer(DrawProjectBrowser);
+            _projectContent.AddToClassList("ee4v-ui-asset-picker__project-content");
+            _projectPane.Add(_projectContent);
+            _projectError = UiTextFactory.Create(string.Empty);
+            _projectPane.Add(_projectError);
+            _popup.Content.Add(_projectPane);
             SetPopup(_popup);
             ShowPreview(_previewAsset);
             RefreshBrowserVisibility();
             _loading = root.schedule.Execute(LoadNext).StartingIn(16).Every(16);
             _thumbnailRefresh = root.schedule.Execute(RefreshThumbnails).Every(100);
-            _search.schedule.Execute(() => _search.Q<TextField>()?.Focus());
+            _projectRefresh = root.schedule.Execute(RefreshProjectPreviews).Every(200);
+            _projectRefresh.Pause();
+            EditorApplication.projectChanged += RequestProjectRepaint;
+            Selection.selectionChanged += RequestProjectRepaint;
+            if (_startInProject) ToggleProjectBrowser();
+            else _search.schedule.Execute(() => _search.Q<TextField>()?.Focus());
+        }
+
+        private IconState ProjectBrowserIcon()
+        {
+            var texture = EditorGUIUtility.FindTexture("Project");
+            var tint = _showProject ? UiColorTokens.Focus : UiColorTokens.TextPrimary;
+            return texture == null
+                ? FluentUiIcons.CreateState("folder.png", UiSizeTokens.Size16, tintColor: tint)
+                : IconState.FromTexture(texture, UiSizeTokens.Size16, tintColor: tint);
+        }
+
+        private void ToggleProjectBrowser()
+        {
+            _showProject = !_showProject;
+            if (_showProject && _projectBrowser == null)
+            {
+                _projectRenderFailed = !ProjectBrowserApi.TryCreateEmbeddedBrowser(out _projectBrowser,
+                    RequestProjectRepaint, _initialProjectFolder);
+            }
+            _assetBody.EnableInClassList("ee4v-ui-asset-picker__hidden", _showProject);
+            _projectPane.EnableInClassList("ee4v-ui-asset-picker__hidden", !_showProject);
+            _projectToggle.SetIcon(ProjectBrowserIcon());
+            _projectToggle.tooltip = UiLocalization.Get(_showProject
+                ? "ui.assetPicker.projectViewActive" : "ui.assetPicker.projectView");
+            _popup.SetTitle(UiLocalization.Get("ui.assetPicker.title") + " · " +
+                (_showProject ? UiLocalization.Get("ui.assetPicker.projectTitle") : TypeName(_type)));
+            RefreshProjectBrowserVisibility();
+            if (_showProject)
+            {
+                _loading.Pause();
+                _thumbnailRefresh.Pause();
+                _previewRefresh?.Pause();
+                _busy.SetState(new StatusOverlayState(false, string.Empty));
+                _projectRefresh.Resume();
+                RequestProjectRepaint();
+                _projectContent.Focus();
+            }
+            else
+            {
+                _projectRefresh.Pause();
+                _thumbnailRefresh.Resume();
+                RefreshThumbnails();
+                RefreshOptions();
+                if (!_failed && (!_initialized || _assets != null || _materialAssets != null || _usage != null))
+                    _loading.Resume();
+                if (_previewAsset != null && _previewImage.image == null && _previewAttempts < 50)
+                    _previewRefresh?.Resume();
+                _search.Q<TextField>()?.Focus();
+            }
+        }
+
+        private void DrawProjectBrowser()
+        {
+            if (!_showProject || _projectRenderFailed) return;
+            var eventType = Event.current.rawType;
+            if (!ProjectBrowserApi.TryDrawEmbeddedBrowser(_projectBrowser, this, _projectContent.contentRect))
+            {
+                _projectRenderFailed = true;
+                _projectPane.schedule.Execute(RefreshProjectBrowserVisibility);
+            }
+            if (eventType != EventType.Layout && eventType != EventType.Repaint && eventType != EventType.Ignore)
+                RequestProjectRepaint();
+        }
+
+        private void RequestProjectRepaint()
+        {
+            if (_showProject && !_projectRenderFailed) _projectContent.MarkDirtyRepaint();
+        }
+
+        private void RefreshProjectPreviews()
+        {
+            if (_projectRenderFailed) return;
+            if (!ProjectBrowserApi.TryUpdateEmbeddedBrowser(_projectBrowser))
+            {
+                _projectRenderFailed = true;
+                RefreshProjectBrowserVisibility();
+            }
+        }
+
+        private void RefreshProjectBrowserVisibility()
+        {
+            _projectContent.EnableInClassList("ee4v-ui-asset-picker__hidden", _projectRenderFailed);
+            _projectError.SetText(_projectRenderFailed
+                ? UiLocalization.Get("ui.assetPicker.projectUnavailable") : string.Empty);
         }
 
         private void BindCandidateRow(VisualElement element, CandidateRow row)
@@ -296,7 +415,7 @@ namespace Ee4v.UI
             Func<AssetPickerAnimationFilter, string> label = value => UiLocalization.Get("ui.assetPicker.animation" + value);
             _animationFilterField = UiTextFactory.CreatePopupField(UiLocalization.Get("ui.assetPicker.animationFilter"),
                 choices, choices.IndexOf(_animationFilter), label, label,
-                "ee4v-ui-asset-picker__reference");
+                "ee4v-ui-asset-picker__animation-filter");
             _animationFilterField.RegisterValueChangedCallback(evt =>
             {
                 _animationFilter = evt.newValue;
@@ -462,7 +581,7 @@ namespace Ee4v.UI
 
         private void DrawMaterialPreview()
         {
-            if (_materialEditor == null || _materialEditor.target == null || _showTexture) return;
+            if (_showProject || _materialEditor == null || _materialEditor.target == null || _showTexture) return;
             var rect = _materialPreview.contentRect;
             if (rect.width < 2f || rect.height < 2f) return;
             try
@@ -536,6 +655,7 @@ namespace Ee4v.UI
 
         private void RefreshThumbnails()
         {
+            if (_showProject) return;
             if (_initialized && _cacheVersion != AssetPickerCache.Version)
             {
                 _thumbnailTextures.Clear();
@@ -568,6 +688,7 @@ namespace Ee4v.UI
 
         private void PollPreview()
         {
+            if (_showProject) return;
             if (_previewAsset == null) { _previewRefresh?.Pause(); return; }
             var texture = AssetPreview.GetAssetPreview(_previewAsset);
             if (texture != null) SetPreviewTexture(texture);
@@ -645,6 +766,7 @@ namespace Ee4v.UI
 
         private void LoadNext()
         {
+            if (_showProject) return;
             try
             {
                 if (!_initialized) InitializeInvestigation();
@@ -1091,6 +1213,11 @@ namespace Ee4v.UI
 
         protected override void OnDisable()
         {
+            EditorApplication.projectChanged -= RequestProjectRepaint;
+            Selection.selectionChanged -= RequestProjectRepaint;
+            _projectRefresh?.Pause();
+            ProjectBrowserApi.DestroyEmbeddedBrowser(_projectBrowser);
+            _projectBrowser = null;
             _sourceThumbnailCancellation?.Cancel();
             _sourceThumbnailCancellation?.Dispose();
             _sourceThumbnailCancellation = null;

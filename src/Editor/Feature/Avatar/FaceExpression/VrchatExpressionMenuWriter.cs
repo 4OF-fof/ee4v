@@ -29,8 +29,8 @@ namespace Ee4v.FaceExpression
             }
 
             var existing = AssetDatabase.LoadMainAssetAtPath(assetPath);
-            var signature = Hash128.Compute(string.Join(";", (entries ?? Array.Empty<GestureMatrixControllerWriter.EffectiveMenuEntry>())
-                .Select((entry, index) => entry.Name.Length + ":" + entry.Name + ":" + entry.LeftGesture + ":" +
+            var signature = Hash128.Compute("facial-menu-v2;" + string.Join(";", (entries ?? Array.Empty<GestureMatrixControllerWriter.EffectiveMenuEntry>())
+                .Select((entry, index) => entry.Name.Length + ":" + entry.Name + ":" + entry.IsExplicit + ":" +
                     (index < (icons?.Count ?? 0) && icons[index] != null ? icons[index].GetInstanceID() : 0))));
             if (existing != null && existing.GetType() == menuType &&
                 Signatures.TryGetValue(assetPath, out var saved) && signature == saved)
@@ -92,8 +92,7 @@ namespace Ee4v.FaceExpression
             IReadOnlyList<Texture2D> icons)
         {
             var direct = new List<MenuNode>();
-            var groups = new Dictionary<FaceGesture, List<MenuNode>>();
-            var groupOrder = new List<FaceGesture>();
+            var gestures = new List<MenuNode>();
             for (var index = 0; index < entries.Count; index++)
             {
                 var entry = entries[index];
@@ -102,26 +101,18 @@ namespace Ee4v.FaceExpression
                     GestureMatrixControllerWriter.MenuParameter,
                     index + 1,
                     index < icons.Count ? icons[index] : null);
-                if (!entry.LeftGesture.HasValue)
+                if (entry.IsExplicit)
                 {
                     direct.Add(item);
                     continue;
                 }
 
-                var gesture = entry.LeftGesture.Value;
-                if (!groups.TryGetValue(gesture, out var group))
-                {
-                    group = new List<MenuNode>();
-                    groups.Add(gesture, group);
-                    groupOrder.Add(gesture);
-                }
-
-                group.Add(item);
+                gestures.Add(item);
             }
 
-            foreach (var gesture in groupOrder)
+            if (gestures.Count > 0)
             {
-                direct.Add(MenuNode.Group(gesture.ToString(), groups[gesture]));
+                direct.Add(MenuNode.Group("Gesture", gestures));
             }
 
             return direct;

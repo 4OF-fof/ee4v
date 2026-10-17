@@ -68,7 +68,7 @@
       "aaoCurrentTooltip": "現在のアバターにはAvatar Optimizer（AAO）コンポーネントが設定されています。",
       "warnings": "警告",
       "attachmentWarning": "「{0}」にMerge ArmatureもBone Proxyもありません。装着設定が必要な可能性があります。",
-      "openAttachmentSettings": "装着設定を開く",
+      "openAttachmentSettings": "設定",
       "performance": "アバターパフォーマンス",
       "overallRating": "総合評価",
       "metricsToReview": "{0}項目がGoodの基準を超えています",
@@ -217,7 +217,7 @@
         "feet": "足",
         "other": "その他"
       },
-      "advancedSizeTitle": "高度な骨格スケール",
+      "advancedSizeTitle": "高度な設定",
       "sizeAxisExpand": "{0}のX・Y・Zを表示",
       "sizeAxisCollapse": "{0}のX・Y・Zを非表示",
       "sizeReset": "リセット",

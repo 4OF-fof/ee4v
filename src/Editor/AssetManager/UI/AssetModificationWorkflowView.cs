@@ -209,7 +209,8 @@ namespace Ee4v.AssetManager.UI
             if (!Enum.IsDefined(typeof(WorkflowCategory), category)) { category = WorkflowCategory.Appearance; }
             _appearancePanel = appearancePanel;
             _parts.Section = appearancePanel == AppearancePanel.Shape
-                ? ShapePartsSection.Shape : ShapePartsSection.Parts;
+                ? ShapePartsSection.Shape : appearancePanel == AppearancePanel.Position
+                    ? ShapePartsSection.Position : ShapePartsSection.Parts;
             _editingCategory = category.IsPlayMode()
                 ? WorkflowCategory.Overview : category;
             if (!EditorApplication.isPlaying) { ShowCategory(_editingCategory, false); }
@@ -252,7 +253,8 @@ namespace Ee4v.AssetManager.UI
                 {
                     GetExcludedPartPrefixes = () => AssetManagerSettings.ExcludedPartPrefixes,
                     ShowParts = () => ShowAppearancePanel(_parts.Section == ShapePartsSection.Shape
-                        ? AppearancePanel.Shape : AppearancePanel.Parts),
+                        ? AppearancePanel.Shape : _parts.Section == ShapePartsSection.Position
+                            ? AppearancePanel.Position : AppearancePanel.Parts),
                     ShowMaterials = () => ShowAppearancePanel(AppearancePanel.Material),
                     InvalidateControls = InvalidateAppearanceControls,
                     InvalidateMaterialData = () =>
@@ -356,6 +358,8 @@ namespace Ee4v.AssetManager.UI
             _parts.EndBodyScaleDrag(false);
             _parts.SaveBodyScalePrefab(false);
             _parts.FlushPendingPartVisibility();
+            Undo.FlushUndoRecordObjects();
+            QueueWorkingSceneSave();
             ReleaseWorkingScene();
             I18N.Reloaded -= Rebuild;
             AssetManagerWindowSession.ManagerInvalidated -=

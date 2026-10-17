@@ -45,7 +45,11 @@ namespace Ee4v.UI
                             controls.Content.Add(open);
                         }
                     },
-                    new[] { "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs" }));
+                    new[]
+                    {
+                        "Editor/AssetManager/UI/AssetModificationWorkflowView.Workspace.cs",
+                        "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionEditor.Library.cs"
+                    }));
             }
         }
     }

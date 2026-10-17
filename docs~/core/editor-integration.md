@@ -59,10 +59,22 @@ Rootに接続されたAnimationClipのMaterial参照カーブも使用実績に�
 | `TrySetSearch(window, searchText)` | 検索文字列を設定する | Project Browser の検索状態を変更する |
 | `TryClearSearch(window)` | 検索を解除する | Project Browser の検索状態を変更する |
 | `TryGetOpenWindows(out windows)` | 開いている Project Browser を返す | なし |
+| `TryCreateEmbeddedBrowser(out browser, repaint, folderPath)` | 描画用の独立したProject Browserを生成し、任意の再描画callbackと初期フォルダーを受け取る。直前に操作したProject Windowがあればserialized状態を初期値としてコピーする | EditorWindowインスタンスを生成する。新しいWindowは表示しない |
+| `TryDrawEmbeddedBrowser(browser, host, rect)` | 生成済みBrowserをhostのIMGUI描画領域へ描画する。IMGUIのイベント中だけ呼び出す | 標準Project操作を処理する |
+| `TryUpdateEmbeddedBrowser(browser)` | 標準Browserの表示アセット変更と、そのBrowser専用cacheへの新しいpreview画像を確認する | 更新がある場合だけ再描画callbackを呼ぶ |
+| `DestroyEmbeddedBrowser(browser)` | 生成済みの描画用Browserを破棄する | EditorWindowインスタンスを破棄する |
 
 対象を自動選択する場合は focused window、mouse over window、検出した Project Browser の順に探します。
 
 状態取得は `SerializedObject` から Project Browser の内部 property を読みます。対象型や property が存在しない場合、または reflection が失敗した場合は `false` と `null` を返します。
+
+埋め込み用Browserは`TryGetOpenWindows`と通常の対象Window自動検出から除外します。埋め込み描画中の自動検出だけはそのBrowserを優先し、Project項目の描画callbackへ正しい状態を返します。生成・描画・破棄と非公開memberの解決は`ProjectBrowserBackend`が所有し、呼び出し側はPopup終了時に`DestroyEmbeddedBrowser`を呼びます。描画中だけ内部positionとparentを領域サイズとhostへ合わせ、例外時も元に戻します。`ExitGUIException`は標準IMGUIの制御フローとして呼び出し元へ伝播し、それ以外の描画失敗は`false`を返します。埋め込み内容の再描画はhost側で要求します。選択・ドラッグ・検索・アセット操作は標準Project Browserの挙動に従います。
+
+描画と更新は生成時にbindしたdelegateを再利用します。標準ObjectListAreaの再描画要求は呼び出し側のcallbackへ転送します。描画中にProject項目から取得される状態snapshotは1回のIMGUIイベント内で共有し、各項目で`SerializedObject`の生成・内部propertyの読み取り・フォルダーGUID解決を繰り返しません。項目領域による向きの判定は共有snapshotから個別に補い、次のIMGUIイベントではsnapshotを取り直します。
+
+`folderPath`を指定する場合は既存のProjectフォルダーを要求し、埋め込みBrowserだけを2列表示にします。初期化・検索解除・フォルダーの表示は初回のIMGUI描画内で行います。指定を省略した場合はコピーしたProject Windowの検索・フォルダー・表示モードを保持します。
+
+埋め込みBrowserのアイコンサイズは、初回の初期化とフォルダー選択の後、描画前にObjectListAreaの`maxGridSize`を`gridSize`へ設定します。数値の固定や毎回の描画での上書きは行わず、以後のスライダー操作と同じPopup内の表示切り替えでは変更後のサイズを保持します。
 
 ## `ProjectFavoritesApi`
 

@@ -70,9 +70,12 @@ namespace Ee4v.AvatarParts
                 "Editor/Feature/Shared/AvatarEditing/avatar-editing.uss",
                 "Editor/Feature/Avatar/AvatarParts/avatar-parts.uss");
             content.AddToClassList("ee4v-modification-workflow__controls-content");
+            content.AddToClassList("ee4v-avatar-parts__controls-content");
             AvatarEditingUi.AddFeedback(_context, content);
             content.Add(_shapePartsSection == ShapePartsSection.Shape
-                ? BuildBodyScaleControls() : BuildObjectControls());
+                ? BuildBodyScaleControls()
+                : _shapePartsSection == ShapePartsSection.Position
+                    ? BuildPositionControls() : BuildObjectControls());
             return content;
         }
 
@@ -98,6 +101,7 @@ namespace Ee4v.AvatarParts
             _expandedObjectGroups.Clear();
             _expandedAttachments.Clear();
             _partsListScrollOffset = UnityEngine.Vector2.zero;
+            _positionTarget = null;
             ClearData();
         }
 

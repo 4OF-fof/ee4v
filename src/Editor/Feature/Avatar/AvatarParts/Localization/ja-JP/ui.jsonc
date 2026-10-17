@@ -1,18 +1,51 @@
 {
   "workflow": {
     "favorites": { "title": "お気に入り", "add": "お気に入りに追加", "remove": "お気に入りから外す" },
+    "position": {
+      "offset": "位置", "scale": "大きさ", "uniform": "全体",
+      "axis": { "x": "左右（X）", "y": "上下（Y）", "z": "前後（Z）" },
+      "autoTitle": "自動調整",
+      "geometryUnavailable": "装着面の形状を推定できません。位置と大きさを手動で調整してください。",
+      "geometryUnsupported": "形状による自動調整は頭部に対応しています。この基準は手動拡縮の中心として使用できます。",
+      "target": "アバター側の基準",
+      "exclusionsTitle": "自動調整から除外",
+      "exclusionsAdd": "オブジェクトを追加", "exclusionsRemove": "除外を解除",
+      "exclusionsAllAdded": "追加できるオブジェクトはすべて除外済みです。",
+      "references": { "Head": "頭", "Neck": "首", "Chest": "胸", "Hips": "腰", "LeftHand": "左手", "RightHand": "右手", "LeftFoot": "左足", "RightFoot": "右足", "LastBone": "その他" },
+      "referenceUnavailable": "このアバターには選択した部位のボーンがありません。「その他」で任意のボーンを指定してください。",
+      "anchorsRequired": "同じアバター内でItem外の基準ボーンを指定してください。",
+      "unavailable": "編集中のItemを選択してください。編集できない状態では自動調整を使用できません。",
+      "invalidValues": "位置または倍率を計算できません。基準ボーンとItemのスケールを確認してください。",
+      "auto": "実行", "reset": "元の位置に戻す",
+      "undo": "Itemの位置・大きさを調整"
+    },
     "attachment": {
       "title": "ボーン設定",
       "mergeTitle": "Merge Armature", "mergeSource": "統合元", "mergeTarget": "統合先",
       "proxy": "Bone Proxy",
-      "missing": "装着設定なし", "unassigned": "装着先未設定",
+      "advanced": "位置・回転とスケール",
+      "status": { "Connected": "接続済み", "Missing": "未接続", "Partial": "一部未接続", "NeedsReview": "要確認", "NotRequired": "設定不要" },
+      "unassigned": "装着先未設定",
       "recommended": "推奨: {0}",
-      "addMerge": "Merge Armatureを追加", "addProxy": "Bone Proxyを追加",
       "target": "装着先", "mode": "位置・回転の扱い", "matchScale": "装着先のスケールに合わせる",
       "undo": "パーツの装着設定",
-      "mergeRecommended": "このパーツの骨格を統合して追従させます。統合先の骨格を指定してください。",
-      "proxyRecommended": "装着先のボーンに追従させます。追加時は現在の位置と回転を維持します。",
-      "invalidTarget": "このパーツの外側にある、同じアバター内の装着先を指定してください。"
+      "disconnect": "接続を解除", "disconnectAll": "すべての接続を解除", "undoDisconnect": "パーツの接続を解除",
+      "invalidTarget": "このパーツの外側にある、同じアバター内の装着先を指定してください。",
+      "source": "接続元", "method": "接続方法", "add": "接続を追加", "applyAll": "提案された接続をまとめて追加",
+      "manual": "接続を手動で指定", "manualDescription": "接続するオブジェクト・方法・装着先を指定します。既存の設定は置き換えません。",
+      "invalidSource": "このItem内の接続するオブジェクトを指定してください。",
+      "states": { "Connected": "接続を確認済み（構造・参照の確認）", "Missing": "装着設定が必要です", "Partial": "一部に未接続の部品があります", "NeedsReview": "装着方法の確認が必要です", "NotRequired": "装着対象のメッシュ・部品はありません" },
+      "reasons": {
+        "existing": "既存の装着設定を使用します。", "estimatedBone": "骨格の対応を特定できないため、現在のメッシュ中心（メッシュがなければItemの原点）に近い代表ボーンを初期選択しています。Item全体を接続してよいか確認し、装着先を選んで追加してください。",
+        "matchingHierarchy": "必要な骨まで名前と親子関係が対応する骨格を統合します。", "namedBone": "この部位を対応するアバターのボーンへ接続します。位置と回転は維持します。",
+        "disabled": "無効になっている装着コンポーネントがあります。", "unassigned": "装着先を解決できない設定があります。", "invalidTarget": "装着先がアバター外、または接続元の子孫です。",
+        "unsetMode": "Bone Proxyの位置・回転の扱いを指定してください。", "hierarchyMismatch": "Merge Armatureの階層が必要な部位まで対応していません。",
+        "missingScripts": "Missing Scriptがあるため装着構造を確定できません。", "externalReference": "アバター外へのボーン・部品参照があります。", "missingBone": "ウェイトが使用するボーンの参照がありません。",
+        "unreadableMesh": "メッシュのウェイトを読み取れないため手動で確認してください。", "animationTarget": "アニメーションの対象を解決できません。",
+        "constraint": "Constraintによる追従を自動判定できません。", "existingCoverage": "既存の設定がある範囲に未接続の部品があります。既存の装着先・階層を確認してください。",
+        "unknownStructure": "接続先を特定できない部品があります。手動で装着方法を確認してください。",
+        "ambiguousBone": "同名のアバターボーンがあり、接続先を一意に特定できません。"
+      }
     },
     "appearance": {
       "sizeProtected": "このPrefabは派生アセット外にあります。元素材を守るため、サイズを変更できません。",
@@ -37,7 +70,7 @@
         "feet": "足",
         "other": "その他"
       },
-      "advancedSizeTitle": "高度な骨格スケール",
+      "advancedSizeTitle": "高度な設定",
       "sizeAxisExpand": "{0}のX・Y・Zを表示",
       "sizeAxisCollapse": "{0}のX・Y・Zを非表示",
       "sizeReset": "リセット",
@@ -47,7 +80,6 @@
         "z": "Z"
       },
       "sizePart": {
-        "prefab": "Prefab倍率",
         "wholeBody": "身長",
         "head": "頭",
         "chest": "胸",
@@ -80,6 +112,7 @@
       "parentHidden": "親のパーツが非表示です。"
     },
     "shapeParts": {
+      "position": "位置調整",
       "material": "マテリアル",
       "shape": "体型",
       "parts": "パーツ"

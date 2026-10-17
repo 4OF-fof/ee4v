@@ -99,21 +99,7 @@ namespace Ee4v.AvatarParts
                         currentViewPosition,
                         baseViewPosition));
                 }
-                else
-                {
-                    var prefabTargets = ResolvePrefabScaleTargets();
-                    if (prefabTargets.Count > 0)
-                    {
-                        primaryScaleList.Add(BuildBodyScaleControl(
-                            new BodyScaleDefinition(
-                                "workflow.appearance.sizePart.prefab",
-                                false,
-                                false),
-                            GetTransformPaths(prefabTargets),
-                            GetBodyScaleMultipliers(prefabTargets)));
-                    }
-                }
-                content.Add(primaryScaleList);
+                if (primaryScaleList.childCount > 0) content.Add(primaryScaleList);
             }
 
             var allBodyShapes = GetBodyBlendShapes();
@@ -1007,14 +993,19 @@ namespace Ee4v.AvatarParts
             AvatarEditorPanel? selectedPanel = null)
         {
             var current = selectedPanel ?? (_shapePartsSection == ShapePartsSection.Shape
-                ? AvatarEditorPanel.Shape : AvatarEditorPanel.Parts);
+                ? AvatarEditorPanel.Shape : _shapePartsSection == ShapePartsSection.Position
+                    ? AvatarEditorPanel.Position : AvatarEditorPanel.Parts);
             var options = new List<ExclusiveButtonOption<AvatarEditorPanel>>
             {
                 new ExclusiveButtonOption<AvatarEditorPanel>(AvatarEditorPanel.Parts, I18N.Get("workflow.shapeParts.parts")),
                 new ExclusiveButtonOption<AvatarEditorPanel>(AvatarEditorPanel.Shape, I18N.Get("workflow.shapeParts.shape"))
             };
             if (selectPanel != null)
-            { options.Add(new ExclusiveButtonOption<AvatarEditorPanel>(AvatarEditorPanel.Material, I18N.Get("workflow.shapeParts.material"))); }
+            {
+                options.Insert(0, new ExclusiveButtonOption<AvatarEditorPanel>(
+                    AvatarEditorPanel.Position, I18N.Get("workflow.shapeParts.position")));
+                options.Add(new ExclusiveButtonOption<AvatarEditorPanel>(AvatarEditorPanel.Material, I18N.Get("workflow.shapeParts.material")));
+            }
             ExclusiveButtonGroup<AvatarEditorPanel> tabs = null;
             tabs = new ExclusiveButtonGroup<AvatarEditorPanel>(options, current, panel =>
             {
@@ -1046,7 +1037,13 @@ namespace Ee4v.AvatarParts
         public void RefreshShapePartsTabs(VisualElement tabs, AvatarEditorPanel? selectedPanel = null)
         {
             var current = selectedPanel ?? (_shapePartsSection == ShapePartsSection.Shape
-                ? AvatarEditorPanel.Shape : AvatarEditorPanel.Parts);
+                ? AvatarEditorPanel.Shape : _shapePartsSection == ShapePartsSection.Position
+                    ? AvatarEditorPanel.Position : AvatarEditorPanel.Parts);
+            foreach (var tab in tabs.Children())
+            {
+                if (tab.userData is AvatarEditorPanel panel && panel == AvatarEditorPanel.Position)
+                    tab.EnableInClassList("ee4v-modification-workflow__hidden", !CanAdjustItemPosition);
+            }
             tabs.userData = current;
             ((ExclusiveButtonGroup<AvatarEditorPanel>)tabs).SetSelected(current);
         }

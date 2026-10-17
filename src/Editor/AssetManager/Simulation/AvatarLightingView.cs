@@ -15,6 +15,7 @@ namespace Ee4v.AssetManager.Simulation
         private UiTextElement _selection;
         private bool _volumesAvailable;
         private readonly bool _previewOnly;
+        private bool _stateReady;
         private readonly List<LightingPreset> _previewPresets = new List<LightingPreset>();
         private readonly string[] _patternNames = { "day", "night", "warm", "cold", "backlight", "lv" };
 
@@ -25,7 +26,12 @@ namespace Ee4v.AssetManager.Simulation
         {
             _previewOnly = previewOnly;
             _volumesAvailable = LightingPresetStore.VolumesAvailable;
-            _previews.Add(CreateBuiltin(1));
+            if (_previewOnly)
+            {
+                _previews.Add(CreateBuiltin(1));
+                _previews.Add(CreateBuiltin(2));
+            }
+            else { _previews.AddRange(LightingPreviewSettings.instance.Read(MaxPreviewCount, _volumesAvailable)); }
             _addPreview = new UiButton(Text("addPreview"), AddPreview,
                 icon: FluentUiIcons.CreateState("add.png", UiSizeTokens.Size12));
             PreviewActions.Add(_addPreview);
@@ -35,7 +41,8 @@ namespace Ee4v.AssetManager.Simulation
             BuildPresetControls();
             BuildPreviewSettings();
             Controls.Add(UiTextFactory.Create(Text("compareHint"), UiClassNames.SecondaryText));
-            SetPreviewCount(_previews.Count);
+            SetPreviewCount(_previews.Count, _previewOnly ? 0 : LightingPreviewSettings.instance.Selected);
+            _stateReady = true;
             RefreshSelection();
             if (avatar == null || (!previewOnly && (!EditorApplication.isPlaying || !EditorApplication.isPlayingOrWillChangePlaymode)))
             { Status.SetText(Text("ready")); Controls.SetEnabled(false); return; }
@@ -61,6 +68,11 @@ namespace Ee4v.AssetManager.Simulation
             _directionalSettings.style.display = pattern < 6 ? DisplayStyle.Flex : DisplayStyle.None;
             if (_volumeSettings != null)
             { _volumeSettings.style.display = pattern == 6 ? DisplayStyle.Flex : DisplayStyle.None; }
+            if (_stateReady && !_previewOnly)
+            {
+                try { LightingPreviewSettings.instance.Write(_previews, ActivePreview); }
+                catch (Exception exception) { ShowPresetError(exception); }
+            }
         }
 
         protected override void RenderPreview(Camera camera, int index)

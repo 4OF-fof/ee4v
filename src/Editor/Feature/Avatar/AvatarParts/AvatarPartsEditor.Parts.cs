@@ -63,16 +63,6 @@ namespace Ee4v.AvatarParts
             {
                 _context.HighlightedPartKey = null;
             }
-            if (_context.SelectedPrefabSiblingIndex is int attachmentIndex && attachmentIndex >= 0 &&
-                _context.Root != null && attachmentIndex < _context.Root.transform.childCount)
-            {
-                var attachments = new VisualElement();
-                attachments.AddToClassList("ee4v-part-attachments-section");
-                attachments.Add(UiTextFactory.Create(I18N.Get("workflow.attachment.title"), UiClassNames.SectionTitle,
-                    "ee4v-part-attachments-section__title"));
-                attachments.Add(BuildAttachmentControls(attachmentIndex));
-                panel.Add(attachments);
-            }
             if (displayed.Count == 0)
             {
                 panel.Add(UiTextFactory.CreateMessagePanel(
@@ -312,21 +302,6 @@ namespace Ee4v.AvatarParts
                 return;
             }
             ChangePrefabObject(entry, visible);
-            if (entry.IsVisible != visible)
-            {
-                return;
-            }
-            if (entry.IsActiveSelf && entry.IsVisible)
-            {
-                _context.HiddenPrefabSiblingIndices.Remove(prefabSiblingIndex);
-            }
-            else
-            {
-                _context.HiddenPrefabSiblingIndices.Add(prefabSiblingIndex);
-            }
-            _context.Preview?.SetHiddenPrefabs(
-                _context.BasePrefabHidden, _context.HiddenPrefabSiblingIndices);
-            _context.Host.RefreshPrefabPreviewVisibilityControls(prefabSiblingIndex);
         }
 
         private VisualElement BuildObjectRow(
@@ -833,6 +808,12 @@ namespace Ee4v.AvatarParts
                 if (entry.PrefabSiblingIndex >= 0 &&
                     entry.SiblingPath.Length == 0)
                 {
+                    if (entry.IsActiveSelf && entry.IsVisible)
+                        _context.HiddenPrefabSiblingIndices.Remove(entry.PrefabSiblingIndex);
+                    else
+                        _context.HiddenPrefabSiblingIndices.Add(entry.PrefabSiblingIndex);
+                    _context.Preview?.SetHiddenPrefabs(
+                        _context.BasePrefabHidden, _context.HiddenPrefabSiblingIndices);
                     _context.Host.RefreshPrefabPreviewVisibilityControls(
                         entry.PrefabSiblingIndex);
                 }

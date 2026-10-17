@@ -19,9 +19,21 @@
     margin-bottom: var(--ee4v-space-lg);
 }
 
-.ee4v-avatar-info__overview-warning > .ee4v-ui-button {
-    align-self: flex-end;
-    margin-top: var(--ee4v-space-sm);
+.ee4v-avatar-info__overview-warning > .ee4v-ui-message-panel__content {
+    flex-direction: row;
+    align-items: center;
+}
+
+.ee4v-avatar-info__overview-warning .ee4v-ui-message-panel__message {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+}
+
+.ee4v-avatar-info__overview-warning .ee4v-ui-message-panel__actions {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-left: var(--ee4v-space-md);
 }
 
 .ee4v-avatar-info__overview > .ee4v-ui-form-input {

@@ -43,6 +43,7 @@
 | assembly | 使用する機能 | 共有理由 | 実装 |
 |---|---|---|---|
 | `Ee4v.ItemStyle.Editor` | ProjectStyle、HierarchyStyle | 背景色とアイコンの値、保存処理、編集Windowが同じ契約を持つため | `Feature/Shared/ItemStyle` |
+| `Ee4v.AssetLibrary.Editor` | FaceExpression、AssetManager Infrastructure | 同じDB・表情の共有保存・同期・Import基盤を使用するため | `Feature/Shared/AssetLibrary`、[契約](./face-expression-library-sync.md) |
 | `Ee4v.AvatarEditing.Editor` | AvatarParts、AvatarMaterials、AvatarInfo、FaceExpression、AssetManager統合ホスト | 編集対象・選択・Preview・通知と単独Windowのホストを共有し、FaceExpressionから名前分類を提供するため | `Feature/Shared/AvatarEditing`、[契約](./avatar-editing.md) |
 
 外部コードからItemStyleを操作する場合は、共有実装を直接参照せず`ProjectStyleApi`または`HierarchyStyleApi`を使用します。Avatar編集ホストは共有の`AvatarEditingContext`で各機能の公開エディターAPIを接続します。

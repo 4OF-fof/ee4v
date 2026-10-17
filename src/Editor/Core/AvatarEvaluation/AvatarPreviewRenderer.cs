@@ -158,6 +158,19 @@ namespace Ee4v.Core.AvatarEvaluation
             _hierarchyDirty = true;
         }
 
+        public void RefreshTransforms()
+        {
+            ReleaseInitialPreview();
+            if (_animation == null) return;
+            var clip = Animation;
+            var loop = _animation.Loop;
+            var time = AnimationTime;
+            var sampler = _animationSampler;
+            if (sampler != null) SetAnimationSampler(sampler);
+            else SetAnimation(clip, loop);
+            SampleAnimation(time);
+        }
+
         public Renderer ResolveRenderer(Renderer source)
         {
             return source != null && _resolved.TryGetValue(source, out var proxy) && proxy != null ? proxy : source;

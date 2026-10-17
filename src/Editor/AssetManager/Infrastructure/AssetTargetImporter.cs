@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ee4v.AssetLibrary;
 using Ee4v.AssetManager.Application.Ports;
 using Ee4v.AssetManager.Contracts;
 using Ee4v.Core.EditorIntegration;
@@ -26,7 +27,7 @@ namespace Ee4v.AssetManager.Infrastructure
             public void Dispose() => SharedImportGate.Release();
         }
 
-        private static async Task<ImportLease> LockImports(CancellationToken cancellationToken)
+        internal static async Task<IDisposable> LockImports(CancellationToken cancellationToken)
         {
             await SharedImportGate.WaitAsync(cancellationToken);
             return new ImportLease();
@@ -485,6 +486,69 @@ namespace Ee4v.AssetManager.Infrastructure
 
         private static bool SamePath(string first, string second) =>
             string.Equals(Path.GetFullPath(first), Path.GetFullPath(second), StringComparison.OrdinalIgnoreCase);
+
+        internal async Task<IReadOnlyDictionary<string, string>> ImportExpressionAssets(
+            ExpressionLibraryEntry entry, string sourceDirectory, string destinationFolder,
+            Func<string, string> baselineHash, CancellationToken cancellationToken)
+        {
+            using (await LockImports(cancellationToken))
+            {
+                var destinations = new Dictionary<string, string>(StringComparer.Ordinal);
+                var updates = new List<(ExpressionAsset Asset, string Source, string Destination)>();
+                foreach (var asset in entry.Assets)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var source = Path.Combine(sourceDirectory, asset.Path);
+                    if (!File.Exists(source) || AssetIdentity.HashFile(source) != asset.Hash ||
+                        !File.Exists(source + ".meta") || AssetIdentity.HashFile(source + ".meta") != asset.MetaHash ||
+                        AssetIdentity.ReadGuid(File.ReadAllText(source + ".meta")) != asset.Guid)
+                        throw new InvalidDataException("The shared expression asset is invalid: " + asset.Path);
+                    var existing = ExistingGuidPath(asset.Guid);
+                    var destination = existing ?? ProjectPath(destinationFolder.TrimEnd('/') + "/" + asset.Path);
+                    ValidateSafePath(destination);
+                    var unityPath = UnityPath(destination);
+                    destinations.Add(asset.Guid, unityPath);
+                    if (existing != null && AssetIdentity.Equivalent(source, existing))
+                        continue;
+                    if (existing != null)
+                    {
+                        if (AssetDatabase.LoadAllAssetsAtPath(unityPath).Any(EditorUtility.IsDirty) ||
+                            baselineHash(asset.Guid) != AssetIdentity.SnapshotHash(existing))
+                            throw new InvalidOperationException("The local expression has unsynchronized changes: " + unityPath);
+                    }
+                    else if (File.Exists(destination) || File.Exists(destination + ".meta"))
+                        throw new InvalidOperationException("Another asset occupies the expression import path: " + unityPath);
+                    updates.Add((asset, source, destination));
+                }
+
+                var backups = new Dictionary<string, byte[]>();
+                try
+                {
+                    foreach (var update in updates)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        foreach (var path in new[] { update.Destination, update.Destination + ".meta" })
+                            backups.Add(path, File.Exists(path) ? File.ReadAllBytes(path) : null);
+                        Directory.CreateDirectory(Path.GetDirectoryName(update.Destination));
+                        File.Copy(update.Source, update.Destination, true);
+                        File.Copy(update.Source + ".meta", update.Destination + ".meta", true);
+                    }
+                    if (updates.Count > 0) _refresh();
+                    foreach (var pair in destinations)
+                        if (AssetDatabase.AssetPathToGUID(pair.Value) != pair.Key)
+                            throw new InvalidDataException("Unity did not preserve the expression GUID: " + pair.Value);
+                    return destinations;
+                }
+                catch
+                {
+                    foreach (var pair in backups)
+                        if (pair.Value == null) { if (File.Exists(pair.Key)) File.Delete(pair.Key); }
+                        else File.WriteAllBytes(pair.Key, pair.Value);
+                    if (backups.Count > 0) _refresh();
+                    throw;
+                }
+            }
+        }
 
         private void ValidateSafePath(string path)
         {

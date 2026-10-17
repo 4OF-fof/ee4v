@@ -5,12 +5,16 @@
 inspect-faceでchannelのrendererPathとnameを取得し、書き込みではnameをshapeNameへ渡す。既存Clipはinspect-expression-clipへavatarRefとclipPathを渡してrevisionとポーズを取得する。
 
 - 静止Clipはupsert-expression-clipのcreate/patch/replace。patchは未指定curveを残し、replaceは除去する。複数ポーズClipには使わない。
+- 新規作成はnameと任意のlibraryFolderを指定すれば、設定されたAnimation/Facial配下へ作成し共有ライブラリにも登録する。assetPathを指定する場合もこの配下に限る。patch/replaceは実在するassetPathを指定する。
+- list-expression-libraryで未Importを含む候補を取得し、libraryIdと共有revisionをimport-expressionへ渡す。返る実際のclipPathを編集・割り当てに使用する。共有revisionとClip revisionを混同しない。
 - アニメーションはedit-expression-animationのactionでポーズ・遷移・Loopを編集する。remove-expression-poseは削除専用。
 - set-expression-channel-enabledは曲線全体を有効／無効にする。ポーズ値の変更とは異なる。expectedRevisionを渡し、dryRunで確認する。
 - remap-expression-clipは静止Clip専用。未対応channelを結果から確認し、曖昧な分類を勝手に補完しない。
 - render-expression-preview --avatar-ref <ref> --clip-path <path> --output <新しいPNG path> で実物を確認する。アニメーションはtimeで時点を指定できる。
 
 対応操作はexpectedRevisionとdryRunを使用する。競合時は現状態を取り直し、変更内容を照合して入力を作り直す。
+
+表情writerは静止Clip・曲線の有効／無効・ポーズ・Loop・変換をすべてライブラリへ保存し、結果のlibraryにID・共有revision・対象FBXを返す。move、setLoop、remove-expression-poseもavatarRefが必須。UIの未保存変更がある場合は先に保存または破棄し、共有版が更新されている場合は再Importする。dryRunはClipや共有正本を更新しない。
 
 ## 分類とFacialSet
 

@@ -25,8 +25,9 @@ namespace Ee4v.AvatarParts
     }
     public sealed class AvatarAttachmentData
     {
-        public string PartPath, OwnerPath, Kind, TargetPath, Mode;
-        public bool MatchScale, Exists;
+        public string PartPath, OwnerPath, Kind, TargetPath, Mode, State, Reason;
+        public string[] ReviewReasons;
+        public bool MatchScale, Exists, CanApply;
     }
     public sealed class AvatarAuthoringData
     {
@@ -98,15 +99,19 @@ namespace Ee4v.AvatarParts
             var attachments = new List<AvatarAttachmentData>();
             foreach (var index in _context.PrefabSiblingIndices.Where(index => !_context.SelectedPrefabSiblingIndex.HasValue || _context.SelectedPrefabSiblingIndex == index))
             {
-                var part = root.transform.GetChild(index); var merges = part.GetComponentsInChildren<ModularAvatarMergeArmature>(true); var proxies = part.GetComponentsInChildren<ModularAvatarBoneProxy>(true);
-                attachments.AddRange(merges.Select(merge => new AvatarAttachmentData { PartPath = Path(part), OwnerPath = Path(merge.transform), Kind = "MergeArmature", TargetPath = Path(merge.mergeTargetObject?.transform), Exists = true }));
-                attachments.AddRange(proxies.Select(proxy => new AvatarAttachmentData { PartPath = Path(part), OwnerPath = Path(proxy.transform), Kind = "BoneProxy", TargetPath = Path(proxy.target), Mode = proxy.attachmentMode.ToString(), MatchScale = proxy.matchScale, Exists = true }));
-                if (merges.Length + proxies.Length == 0)
+                var part = root.transform.GetChild(index);
+                var plan = AvatarAttachmentAnalysis.Analyze(root, part);
+                foreach (var connection in plan.Connections)
                 {
-                    var armature = FindPartArmature(part); var target = RecommendedAttachmentTarget(part, armature);
-                    attachments.Add(new AvatarAttachmentData { PartPath = Path(part), OwnerPath = Path(armature ?? part),
-                        Kind = armature != null ? "MergeArmature" : "BoneProxy", TargetPath = Path(target), Mode = "AsChildKeepWorldPose" });
+                    var proxy = connection.Component as ModularAvatarBoneProxy;
+                    attachments.Add(new AvatarAttachmentData { PartPath = Path(part), OwnerPath = Path(connection.Owner),
+                        Kind = connection.Kind.ToString(), TargetPath = Path(connection.Target), Exists = connection.Exists,
+                        Mode = proxy != null ? proxy.attachmentMode.ToString() : connection.Kind == AttachmentKind.BoneProxy ? "AsChildKeepWorldPose" : null,
+                        MatchScale = proxy != null && proxy.matchScale, State = plan.State.ToString(), Reason = connection.Reason,
+                        ReviewReasons = plan.ReviewReasons.ToArray(), CanApply = !connection.Exists && plan.CanApply });
                 }
+                if (plan.Connections.Count == 0)
+                    attachments.Add(new AvatarAttachmentData { PartPath = Path(part), State = plan.State.ToString(), ReviewReasons = plan.ReviewReasons.ToArray() });
             }
             Component descriptor = null; var view = Vector3.zero;
             var hasHeight = !_context.SelectedPrefabSiblingIndex.HasValue && TryGetWorkingAvatarViewPosition(out descriptor, out view);
@@ -193,52 +198,110 @@ namespace Ee4v.AvatarParts
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var editor = AuthoringEditor(root, request.PartPath, true);
-            var part = Relative(root, request.PartPath); var armature = FindPartArmature(part);
-            var kind = request.Kind == "auto" ? armature != null ? "MergeArmature" : "BoneProxy" : request.Kind;
+            var part = Relative(root, request.PartPath);
+            var plan = AvatarAttachmentAnalysis.Analyze(root, part);
+            var proposals = plan.Connections.Where(connection => !connection.Exists).ToArray();
+            if (request.Kind == "auto")
+            {
+                if (!plan.CanApply) throw new ArgumentException("No unambiguous attachment plan is available. Inspect reviewReasons and specify ownerPath, targetPath and kind explicitly.");
+                var selected = proposals.Where(connection => request.OwnerPath == null || PathEquals(root, connection.Owner, request.OwnerPath)).ToArray();
+                if (selected.Length == 0) throw new ArgumentException("ownerPath does not identify a proposed connection.");
+                if (request.TargetPath != null && selected.Length != 1) throw new ArgumentException("A target override requires one proposed connection selected by ownerPath.");
+                var targetOverride = request.TargetPath == null ? null : Relative(root, request.TargetPath);
+                var edits = selected.Select(connection => new AttachmentConnection { Owner = connection.Owner, Target = targetOverride ?? connection.Target, Kind = connection.Kind }).ToArray();
+                var proxyMode = ParseAttachmentMode(request.Mode);
+                editor.ValidateAttachments(part, edits, proxyMode, request.MatchScale);
+                if (!dryRun) editor.ApplyAttachments(part, edits, proxyMode, request.MatchScale);
+                return editor.AuthoringSnapshot();
+            }
+            var kind = request.Kind;
             if (kind != "MergeArmature" && kind != "BoneProxy") throw new ArgumentException("kind must be auto, MergeArmature or BoneProxy.");
-            var owner = request.OwnerPath == null ? kind == "MergeArmature" ? armature : part : Relative(root, request.OwnerPath);
+            var matching = proposals.Where(connection => connection.Kind.ToString() == kind).ToArray();
+            var owner = request.OwnerPath == null ? matching.Length == 1 ? matching[0].Owner : kind == "BoneProxy" ? part : null : Relative(root, request.OwnerPath);
             if (owner == null || !owner.IsChildOf(part)) throw new ArgumentException("The attachment owner must belong to this part.");
-            var target = request.TargetPath == null ? editor.RecommendedAttachmentTarget(part, armature) : Relative(root, request.TargetPath);
-            if (!editor.ValidAttachmentTarget(part, target)) throw new ArgumentException("The attachment target must belong to the Avatar and be outside this part.");
-            var mode = BoneProxyAttachmentMode.AsChildKeepWorldPose;
-            if (request.Mode != null && (!Enum.TryParse(request.Mode, out mode) || !Enum.IsDefined(typeof(BoneProxyAttachmentMode), mode))) throw new ArgumentException("Unknown Bone Proxy mode.");
-            if (kind == "MergeArmature" && (request.Mode != null || request.MatchScale.HasValue)) throw new ArgumentException("Mode and matchScale apply only to Bone Proxy.");
-            var existingCount = kind == "MergeArmature" ? owner.GetComponents<ModularAvatarMergeArmature>().Length : owner.GetComponents<ModularAvatarBoneProxy>().Length;
-            if (existingCount > 1) throw new ArgumentException("The attachment component is ambiguous.");
-            if (existingCount == 0 && part.GetComponentsInChildren<ModularAvatarMergeArmature>(true).Length + part.GetComponentsInChildren<ModularAvatarBoneProxy>(true).Length > 0)
-                throw new ArgumentException("This part already has attachment settings. Specify the existing ownerPath and kind.");
-            if (!dryRun) editor.ApplyAttachment(part, owner, kind, target, request.Mode == null ? (BoneProxyAttachmentMode?)null : mode, request.MatchScale);
+            var existing = plan.Connections.FirstOrDefault(connection => connection.Exists && connection.Owner == owner && connection.Kind.ToString() == kind);
+            if (existing == null && plan.ReviewReasons.Count > 0 && (request.OwnerPath == null || request.TargetPath == null))
+                throw new ArgumentException("A new connection in a structure requiring review needs explicit ownerPath and targetPath.");
+            var target = request.TargetPath == null ? existing?.Target ?? matching.FirstOrDefault(connection => connection.Owner == owner)?.Target : Relative(root, request.TargetPath);
+            var mode = ParseAttachmentMode(request.Mode);
+            var edit = new AttachmentConnection { Owner = owner, Target = target, Kind = (AttachmentKind)Enum.Parse(typeof(AttachmentKind), kind) };
+            editor.ValidateAttachments(part, new[] { edit }, mode, request.MatchScale);
+            if (!dryRun) editor.ApplyAttachments(part, new[] { edit }, mode, request.MatchScale);
             return editor.AuthoringSnapshot();
         }
 
-        private Transform RecommendedAttachmentTarget(Transform part, Transform armature)
+        private static bool PathEquals(GameObject root, Transform target, string path) => AnimationUtility.CalculateTransformPath(target, root.transform) == path;
+
+        private static BoneProxyAttachmentMode? ParseAttachmentMode(string value)
         {
-            var animator = _context.Root.GetComponentsInChildren<Animator>(true).FirstOrDefault(candidate => !candidate.transform.IsChildOf(part) && candidate.isHuman);
-            var target = armature != null ? animator?.GetBoneTransform(HumanBodyBones.Hips)?.parent : animator?.GetBoneTransform(HumanBodyBones.Head);
-            return target ?? (armature == null ? null : _context.Root.GetComponentsInChildren<Transform>(true)
-                .FirstOrDefault(candidate => !candidate.IsChildOf(part) && candidate != _context.Root.transform && string.Equals(candidate.name, armature.name, StringComparison.OrdinalIgnoreCase)));
+            if (value == null) return null;
+            if (!Enum.TryParse(value, out BoneProxyAttachmentMode mode) || !Enum.IsDefined(typeof(BoneProxyAttachmentMode), mode))
+                throw new ArgumentException("Unknown Bone Proxy mode.");
+            return mode;
         }
+
         private void ApplyAttachment(Transform part, Transform owner, string kind, Transform target, BoneProxyAttachmentMode? mode, bool? matchScale)
+            => ApplyAttachments(part, new[] { new AttachmentConnection { Owner = owner, Target = target, Kind = (AttachmentKind)Enum.Parse(typeof(AttachmentKind), kind) } }, mode, matchScale);
+
+        private void ApplyRecommendedAttachments(Transform part, IReadOnlyList<AttachmentConnection> selected)
         {
-            if (!ValidAttachmentTarget(part, target) || !_context.Edits.CanEditPrefab()) throw new ArgumentException("Attachment is not editable.");
+            var plan = AvatarAttachmentAnalysis.Analyze(_context.Root, part);
+            var proposals = plan.Connections.Where(connection => !connection.Exists).ToArray();
+            if (!plan.CanApply || proposals.Length != selected.Count ||
+                selected.Any(connection => !proposals.Any(proposal => proposal.Owner == connection.Owner && proposal.Kind == connection.Kind)))
+                throw new InvalidOperationException(I18N.Get("workflow.attachment.states.NeedsReview"));
+            ApplyAttachments(part, selected, null, null);
+        }
+
+        private void ValidateAttachments(Transform part, IReadOnlyList<AttachmentConnection> connections, BoneProxyAttachmentMode? mode, bool? matchScale)
+        {
+            if (!_context.Edits.CanEditPrefab() || connections.Count == 0) throw new ArgumentException("Attachment is not editable.");
+            if (connections.Select(connection => connection.Owner).Distinct().Count() != connections.Count) throw new ArgumentException("The attachment owners are ambiguous.");
+            foreach (var connection in connections)
+            {
+                if (connection.Owner == null || !connection.Owner.IsChildOf(part)) throw new ArgumentException("The attachment owner must belong to this part.");
+                if (!AvatarAttachmentAnalysis.IsValidTarget(_context.Root, part, connection.Target)) throw new ArgumentException("The attachment target must belong to the Avatar and be outside this part.");
+                var merges = connection.Owner.GetComponents<ModularAvatarMergeArmature>();
+                var proxies = connection.Owner.GetComponents<ModularAvatarBoneProxy>();
+                if (merges.Length > 1 || proxies.Length > 1 || connection.Kind == AttachmentKind.MergeArmature && proxies.Length > 0 || connection.Kind == AttachmentKind.BoneProxy && merges.Length > 0)
+                    throw new ArgumentException("An existing attachment component cannot be replaced with another kind.");
+                if (connection.Kind == AttachmentKind.MergeArmature && (mode.HasValue || matchScale.HasValue)) throw new ArgumentException("Mode and matchScale apply only to Bone Proxy.");
+            }
+        }
+
+        private void ApplyAttachments(Transform part, IReadOnlyList<AttachmentConnection> connections, BoneProxyAttachmentMode? mode, bool? matchScale)
+        {
+            ValidateAttachments(part, connections, mode, matchScale);
             Undo.IncrementCurrentGroup(); var undo = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(I18N.Get("workflow.attachment.undo"));
             try
             {
-                if (kind == "MergeArmature")
+                foreach (var connection in connections)
                 {
-                    var merge = owner.GetComponent<ModularAvatarMergeArmature>() ?? Undo.AddComponent<ModularAvatarMergeArmature>(owner.gameObject);
-                    ChangeAttachment(merge, () => merge.mergeTarget.Set(target.gameObject));
-                }
-                else
-                {
-                    var proxy = owner.GetComponent<ModularAvatarBoneProxy>(); var created = proxy == null;
-                    proxy = proxy ?? Undo.AddComponent<ModularAvatarBoneProxy>(owner.gameObject);
-                    ChangeAttachment(proxy, () => { proxy.target = target; if (created || mode.HasValue) proxy.attachmentMode = mode ?? BoneProxyAttachmentMode.AsChildKeepWorldPose;
-                        if (matchScale.HasValue) proxy.matchScale = matchScale.Value; });
+                    Component component;
+                    if (connection.Kind == AttachmentKind.MergeArmature)
+                    {
+                        var merge = connection.Owner.GetComponent<ModularAvatarMergeArmature>() ?? Undo.AddComponent<ModularAvatarMergeArmature>(connection.Owner.gameObject);
+                        Undo.RecordObject(merge, I18N.Get("workflow.attachment.undo"));
+                        merge.mergeTarget.Set(connection.Target.gameObject);
+                        component = merge;
+                    }
+                    else
+                    {
+                        var proxy = connection.Owner.GetComponent<ModularAvatarBoneProxy>(); var created = proxy == null;
+                        proxy = proxy ?? Undo.AddComponent<ModularAvatarBoneProxy>(connection.Owner.gameObject);
+                        Undo.RecordObject(proxy, I18N.Get("workflow.attachment.undo"));
+                        proxy.target = connection.Target;
+                        if (created || mode.HasValue) proxy.attachmentMode = mode ?? BoneProxyAttachmentMode.AsChildKeepWorldPose;
+                        if (matchScale.HasValue) proxy.matchScale = matchScale.Value;
+                        component = proxy;
+                    }
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+                    EditorUtility.SetDirty(component);
                 }
                 Undo.CollapseUndoOperations(undo);
             }
             catch { Undo.RevertAllDownToGroup(undo); throw; }
+            AttachmentChanged();
         }
         private string Path(Transform target) => target == null ? null : AnimationUtility.CalculateTransformPath(target, _context.Root.transform);
         private static Transform Relative(GameObject root, string path)

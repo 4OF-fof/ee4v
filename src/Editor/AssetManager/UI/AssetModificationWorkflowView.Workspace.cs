@@ -583,7 +583,9 @@ namespace Ee4v.AssetManager.UI
                 _avatarContext.HiddenPrefabSiblingIndices);
             _avatarContext.Preview.SetHiddenParts(_avatarContext.HiddenPreviewParts);
             _avatarContext.Preview.SetTarget(_avatarContext.Root);
-            _avatarContext.Preview.FocusBodyPart(_avatarContext.SelectedBodyPart, true);
+            UpdateAppearancePreviewScope(_currentCategory);
+            _avatarContext.Preview.FocusBodyPart(_appearancePanel == AppearancePanel.Position
+                ? null : _avatarContext.SelectedBodyPart, true);
             SyncPreviewSelection();
             _previewPane.Content.Add(_avatarContext.Preview);
             return _previewPane;
@@ -591,14 +593,19 @@ namespace Ee4v.AssetManager.UI
 
         private void ShowAppearancePanel(AppearancePanel panel)
         {
+            if (panel == AppearancePanel.Position && !_parts.CanAdjustItemPosition)
+                panel = AppearancePanel.Parts;
             var changed = _appearancePanel != panel;
             if (changed && !_avatarContext.Edits.FlushChanges()) { return; }
             if (changed) { ReleaseAppearanceDetails(); }
             _appearancePanel = panel;
+            if (changed) _avatarContext.Preview?.FocusBodyPart(panel == AppearancePanel.Position
+                ? null : _avatarContext.SelectedBodyPart, true);
             if (panel != AppearancePanel.Material)
             {
                 _parts.Section = panel == AppearancePanel.Shape
-                    ? ShapePartsSection.Shape : ShapePartsSection.Parts;
+                    ? ShapePartsSection.Shape : panel == AppearancePanel.Position
+                        ? ShapePartsSection.Position : ShapePartsSection.Parts;
             }
             ShowCategory(WorkflowCategory.Appearance, false);
             if (changed && _avatarContext.ControlsHost != null)
@@ -606,6 +613,20 @@ namespace Ee4v.AssetManager.UI
                 _avatarContext.ControlsHost.scrollOffset = Vector2.zero;
             }
             RequestRepaint();
+        }
+
+        private void UpdateAppearancePreviewScope(WorkflowCategory category)
+        {
+            var fitting = category == WorkflowCategory.Appearance &&
+                          _appearancePanel == AppearancePanel.Position && _parts.CanAdjustItemPosition;
+            var scope = fitting ? null : _avatarContext.SelectedPrefabSiblingIndex;
+            if (_previewScopeSiblingIndex != scope)
+            {
+                _previewScopeSiblingIndex = scope;
+                _avatarContext.Preview?.SetScope(scope, _avatarContext.PrefabSiblingIndices);
+            }
+            _avatarContext.Preview?.SetHiddenPrefabs(_avatarContext.BasePrefabHidden,
+                _avatarContext.HiddenPrefabSiblingIndices);
         }
 
         private void ReleaseAppearanceDetails()
@@ -627,6 +648,12 @@ namespace Ee4v.AssetManager.UI
             bool preservePreviewCamera = false,
             bool confirmExpressionChanges = true)
         {
+            if (_appearancePanel == AppearancePanel.Position && !_parts.CanAdjustItemPosition)
+            {
+                _appearancePanel = AppearancePanel.Parts;
+                _parts.Section = ShapePartsSection.Parts;
+                _avatarContext.Preview?.FocusBodyPart(_avatarContext.SelectedBodyPart, true);
+            }
             if (EditorApplication.isPlaying && !category.IsPlayMode()) { category = WorkflowCategory.MenuAndGestures; }
             else if (!EditorApplication.isPlaying && category.IsPlayMode()) { category = _editingCategory; }
             if (!DerivedAssetCreator.IsAvatarPrefab(_avatarContext.Root))
@@ -645,7 +672,6 @@ namespace Ee4v.AssetManager.UI
                 }
             }
             if (_avatarContext.SelectedPrefabSiblingIndex.HasValue &&
-                category != WorkflowCategory.Overview &&
                 !category.IsPlayMode() &&
                 category != WorkflowCategory.Appearance)
             {
@@ -667,12 +693,7 @@ namespace Ee4v.AssetManager.UI
                 _parts.SaveBodyScalePrefab();
                 if (_parts.BodyScaleDirty) { return; }
             }
-            var previewScope = _avatarContext.SelectedPrefabSiblingIndex;
-            if (_previewScopeSiblingIndex != previewScope)
-            {
-                _previewScopeSiblingIndex = previewScope;
-                _avatarContext.Preview?.SetScope(previewScope, _avatarContext.PrefabSiblingIndices);
-            }
+            UpdateAppearancePreviewScope(category);
             if (_customizerHost == null ||
                 _faceExpressionHost == null)
             {
@@ -833,7 +854,8 @@ namespace Ee4v.AssetManager.UI
             {
                 _avatarContext.ControlsHost.Add(cached.Content);
             }
-            _bodyPartSelector.style.display = DisplayStyle.Flex;
+            _bodyPartSelector.style.display = appearancePanel == AppearancePanel.Position
+                ? DisplayStyle.None : DisplayStyle.Flex;
             _appearanceHeader.style.display = DisplayStyle.Flex;
             if (categoryChanged)
             {
@@ -852,6 +874,8 @@ namespace Ee4v.AssetManager.UI
             {
                 return BuildOriginalOverviewControls();
             }
+            var editing = AvatarInfoEditing.CreateOptions(_avatarContext);
+            if (!_previewOnly) editing.RenameAsync = RenameWorkingAvatar;
             return new AvatarInfoView(_avatarContext.Root.name,
                 AvatarInfoAnalysis.GetBlueprintId(_avatarContext.Root),
                 AvatarInfoAnalysis.FindAttachmentWarnings(_avatarContext.Root),
@@ -866,9 +890,9 @@ namespace Ee4v.AssetManager.UI
                 {
                     if (prefab == null) { return; }
                     SelectPrefabCard(prefab.transform.GetSiblingIndex(), prefab.name);
-                    _parts.Section = ShapePartsSection.Parts;
-                    ShowAppearancePanel(AppearancePanel.Parts);
-                }, AvatarInfoEditing.CreateOptions(_avatarContext),
+                    _parts.Section = ShapePartsSection.Position;
+                    ShowAppearancePanel(AppearancePanel.Position);
+                }, editing,
                 AvatarInfoSdk.Provider?.ReadParameterMemory(_avatarContext.Root),
                 AvatarBuildSizeCache.Get(_avatarContext.Root, _overviewMobile),
                 () =>

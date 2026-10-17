@@ -798,6 +798,7 @@ namespace Ee4v.FaceExpression
             clip.frameRate = 60f;
             EditorUtility.SetDirty(clip);
             AssetDatabase.SaveAssets();
+            FaceExpressionSourceRefresh.Queue(assetPath);
             return new FaceExpressionClipWriteResult
             {
                 Changed = true,
@@ -1455,6 +1456,7 @@ namespace Ee4v.FaceExpression
             int poseIndex,
             float poseTime)
         {
+            if (changed && !dryRun) FaceExpressionSourceRefresh.Queue(AssetDatabase.GetAssetPath(clip));
             return new FaceExpressionAnimationEditResult
             {
                 Changed = changed,

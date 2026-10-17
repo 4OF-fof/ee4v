@@ -1,9 +1,13 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
+using Ee4v.AssetManager.Contracts;
+using Ee4v.AssetManager.Infrastructure;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.UI;
 using static Ee4v.AvatarEditing.AvatarBodyAnalysis;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
@@ -12,6 +16,71 @@ namespace Ee4v.AssetManager.UI
 {
     internal sealed partial class AssetModificationWorkflowView
     {
+        private async Task<string> RenameWorkingAvatar(string value)
+        {
+            var root = _avatarContext.Root;
+            var asset = _workingAsset;
+            value = value?.Trim();
+            if (_disposed || _savingVariant || !IsEditableWorkflowPrefab() || asset == null ||
+                string.IsNullOrEmpty(value) || root.name == value) return root == null ? string.Empty : root.name;
+            if (!_avatarContext.Edits.FlushChanges()) return root.name;
+            _savingVariant = true;
+            SetEnabled(false);
+            try
+            {
+                _manager = _manager ?? AssetManagerWindowSession.GetManager();
+                var variants = AssetManagerWindowSession.TryGetVariantManager(_manager)
+                    ?? throw new InvalidOperationException("The Variant manager is unavailable.");
+                var record = DerivedAssetCatalog.Read(GetWorkingAssetPath())
+                    ?? throw new InvalidOperationException("The Variant metadata is unavailable.");
+                await variants.UpdateMetadata(asset.VariantId, new UpdateAssetVariantRequest
+                {
+                    Name = value, Description = record.Description, Tags = record.Tags
+                });
+                asset.Name = value;
+                asset.AssetPath = AssetDatabase.GUIDToAssetPath(asset.VariantId);
+                asset.ScenePath = DerivedAssetCreator.GetWorkingScenePath(asset.AssetPath);
+                asset.Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(asset.AssetPath);
+                if (root != null)
+                {
+                    root.name = value;
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(root);
+                    EditorSceneManager.MarkSceneDirty(root.scene);
+                }
+                if (_workingSceneSession?.Root == root && root != null)
+                {
+                    var session = _workingSceneSession;
+                    WorkingScenes.Remove(session.PrefabPath);
+                    session.PrefabPath = asset.AssetPath;
+                    session.Scene = root.scene;
+                    WorkingScenes[session.PrefabPath] = session;
+                }
+                if (!_disposed && _workingAsset == asset)
+                {
+                    _avatarContext.PrefabAsset = asset.Prefab;
+                    if (root != null && !EditorSceneManager.SaveScene(root.scene, asset.ScenePath))
+                        throw new InvalidOperationException("The renamed working Scene could not be saved.");
+                    _avatarContext.AssetFeedback = string.Empty;
+                    DerivedAssetChanged?.Invoke(asset);
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                if (!_disposed) _avatarContext.AssetFeedback = exception.Message;
+            }
+            finally
+            {
+                _savingVariant = false;
+                if (!_disposed)
+                {
+                    SetEnabled(true);
+                    BuildWindow();
+                }
+            }
+            return root == null ? asset.Name : root.name;
+        }
+
         private void QueueWorkingSceneSave()
         {
             var session = _workingSceneSession;

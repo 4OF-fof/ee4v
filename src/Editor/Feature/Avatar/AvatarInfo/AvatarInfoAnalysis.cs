@@ -175,8 +175,7 @@ namespace Ee4v.AvatarInfo
                     continue;
                 }
                 if (AvatarInfoSettings.IsPrefabExcluded(child)) continue;
-                if (child.GetComponentInChildren<ModularAvatarMergeArmature>(true) == null &&
-                    child.GetComponentInChildren<ModularAvatarBoneProxy>(true) == null)
+                if (AvatarAttachmentAnalysis.Analyze(avatar, child.transform).NeedsAttention)
                 {
                     warnings.Add(child);
                 }

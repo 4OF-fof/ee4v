@@ -40,7 +40,7 @@ namespace Ee4v.FaceExpression
                 : GetField(merge, "animator") as AnimatorController;
         }
 
-        internal static void Install(
+        internal static bool Install(
             GameObject avatar,
             FaceExpressionGenerationPaths paths,
             AnimatorController controller,
@@ -65,10 +65,10 @@ namespace Ee4v.FaceExpression
                     controller,
                     menu,
                     disableDescriptorBlink);
-                return;
+                return true;
             }
 
-            InstallIntoTransform(
+            return InstallIntoTransform(
                 avatar.transform,
                 paths,
                 controller,
@@ -77,7 +77,7 @@ namespace Ee4v.FaceExpression
                 true);
         }
 
-        private static void InstallIntoTransform(
+        private static bool InstallIntoTransform(
             Transform avatar,
             FaceExpressionGenerationPaths paths,
             AnimatorController controller,
@@ -102,7 +102,7 @@ namespace Ee4v.FaceExpression
             ConfigureRoot(root, paths.RootName, controller, menu, disableDescriptorBlink);
             if (before == RootSignature(root) && PrefabUtility.IsAnyPrefabInstanceRoot(root) &&
                 PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root) == paths.PrefabPath)
-                return;
+                return false;
 
             if (PrefabUtility.IsAnyPrefabInstanceRoot(root))
             {
@@ -121,6 +121,7 @@ namespace Ee4v.FaceExpression
                 throw new InvalidOperationException(
                     "The generated face expression Prefab could not be saved and connected.");
             }
+            return true;
         }
 
         private static string RootSignature(GameObject root) => root.name + ":" +

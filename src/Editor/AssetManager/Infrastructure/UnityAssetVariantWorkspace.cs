@@ -191,6 +191,8 @@ namespace Ee4v.AssetManager.Infrastructure
                 ValidateMove(scenePath, folder + "/" + name + ".unity");
             }
             var originalData = AssetImporter.GetAtPath(path).userData;
+            var originalPrefabName = (AssetDatabase.LoadAssetAtPath<GameObject>(path)
+                ?? throw new InvalidOperationException("The Variant Prefab is unavailable.")).name;
             Action rollback = () =>
             {
                 var currentPath = AssetDatabase.GUIDToAssetPath(variantId);
@@ -202,6 +204,7 @@ namespace Ee4v.AssetManager.Infrastructure
                         currentFolder + "/" + Path.GetFileName(scenePath));
                 }
                 MoveAsset(currentFolder, folder);
+                SetPrefabName(path, originalPrefabName, record.Name != name);
                 var importer = AssetImporter.GetAtPath(path);
                 importer.userData = originalData;
                 AssetDatabase.WriteImportSettingsIfDirty(path);
@@ -217,6 +220,7 @@ namespace Ee4v.AssetManager.Infrastructure
                         renamedFolder + "/" + name + ".unity");
                 }
                 currentPath = AssetDatabase.GUIDToAssetPath(variantId);
+                SetPrefabName(currentPath, name, record.Name != name);
                 var importer = AssetImporter.GetAtPath(currentPath);
                 var data = DerivedAssetCatalog.Serialize(record.ParentItemId, name, description,
                     record.SourceGuid, record.IsArchived, currentTags, currentCreatedAt);
@@ -240,6 +244,16 @@ namespace Ee4v.AssetManager.Infrastructure
                 throw;
             }
             return rollback;
+        }
+
+        private static void SetPrefabName(string path, string name, bool forceSave)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path)
+                ?? throw new InvalidOperationException("The Variant Prefab is unavailable.");
+            if (prefab.name == name && !forceSave) return;
+            prefab.name = name;
+            PrefabUtility.SavePrefabAsset(prefab, out var saved);
+            if (!saved) throw new IOException("The renamed Variant Prefab could not be saved.");
         }
 
         public string GetRootAssetPath(string variantId, string name)

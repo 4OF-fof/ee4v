@@ -12,6 +12,9 @@ namespace Ee4v.FaceExpression
         private const int MaximumRenderSize = 512;
         private const int RenderSizeStep = 64;
         private PreviewGridBackground _gridBackground;
+        private GameObject _signatureAvatar;
+        private Hash128 _avatarSignature;
+        private double _signatureCheckedAt = -1d;
         private readonly Dictionary<AnimationClip, Dictionary<int, Entry>>
             _entries =
                 new Dictionary<AnimationClip, Dictionary<int, Entry>>();
@@ -62,6 +65,12 @@ namespace Ee4v.FaceExpression
             var frameRate = clip.frameRate <= 0f ? 60f : clip.frameRate;
             var frame = Mathf.RoundToInt(Mathf.Max(0f, time) * frameRate);
             var dirtyCount = EditorUtility.GetDirtyCount(clip);
+            if (_signatureAvatar != avatar || EditorApplication.timeSinceStartup - _signatureCheckedAt >= 0.25d)
+            {
+                _signatureAvatar = avatar;
+                _avatarSignature = FaceExpressionPreview.GetThumbnailSourceSignature(avatar);
+                _signatureCheckedAt = EditorApplication.timeSinceStartup;
+            }
             if (!_entries.TryGetValue(clip, out var clipEntries))
             {
                 clipEntries = new Dictionary<int, Entry>();
@@ -71,12 +80,14 @@ namespace Ee4v.FaceExpression
             if (!clipEntries.TryGetValue(frame, out var entry) ||
                 entry.Texture == null ||
                 entry.Texture.width < renderSize ||
+                entry.AvatarSignature != _avatarSignature ||
                 (refreshWhenDirty && entry.DirtyCount != dirtyCount))
             {
                 Destroy(entry.Texture);
                 Texture2D texture;
                 try
                 {
+                    preview.PrepareThumbnailSource(_avatarSignature);
                     var channels = FaceExpressionClipEditor.Read(
                         avatar,
                         clip,
@@ -98,7 +109,7 @@ namespace Ee4v.FaceExpression
                     texture.hideFlags = HideFlags.HideAndDontSave;
                 }
 
-                entry = new Entry(texture, dirtyCount);
+                entry = new Entry(texture, dirtyCount, _avatarSignature);
                 clipEntries[frame] = entry;
             }
 
@@ -139,6 +150,8 @@ namespace Ee4v.FaceExpression
             }
 
             _entries.Clear();
+            _signatureAvatar = null;
+            _signatureCheckedAt = -1d;
             _gridBackground?.Dispose();
             _gridBackground = null;
         }
@@ -168,14 +181,16 @@ namespace Ee4v.FaceExpression
 
         private readonly struct Entry
         {
-            internal Entry(Texture2D texture, int dirtyCount)
+            internal Entry(Texture2D texture, int dirtyCount, Hash128 avatarSignature)
             {
                 Texture = texture;
                 DirtyCount = dirtyCount;
+                AvatarSignature = avatarSignature;
             }
 
             internal Texture2D Texture { get; }
             internal int DirtyCount { get; }
+            internal Hash128 AvatarSignature { get; }
         }
     }
 }

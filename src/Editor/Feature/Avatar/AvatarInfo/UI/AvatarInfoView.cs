@@ -82,12 +82,11 @@ namespace Ee4v.AvatarInfo
             }
             foreach (var prefab in warnings)
             {
-                var warning = new VisualElement();
-                warning.AddToClassList("ee4v-avatar-info__overview-warning");
-                warning.Add(new MessagePanel(new MessagePanelState(string.Empty, string.Format(
+                var warning = new MessagePanel(new MessagePanelState(string.Empty, string.Format(
                     I18N.Get("workflow.overview.attachmentWarning"), prefab.name),
-                    MessageSeverity.Warning)));
-                warning.Add(new UiButton(I18N.Get("workflow.overview.openAttachmentSettings"),
+                    MessageSeverity.Warning));
+                warning.AddToClassList("ee4v-avatar-info__overview-warning");
+                warning.Actions.Add(new UiButton(I18N.Get("workflow.overview.openAttachmentSettings"),
                     () => openAttachmentSettings?.Invoke(prefab)));
                 content.Add(warning);
             }
@@ -408,10 +407,24 @@ namespace Ee4v.AvatarInfo
             {
                 name = "overviewName", IsDelayed = true, IsReadOnly = _editing?.Editable != true
             };
-            name.ValueChanged += value =>
+            var acceptedName = avatarName;
+            name.ValueChanged += async value =>
             {
-                var accepted = _editing?.Rename?.Invoke(value) ?? avatarName;
-                name.SetValueWithoutNotify(accepted);
+                name.IsReadOnly = true;
+                try
+                {
+                    var accepted = _editing?.RenameAsync != null
+                        ? await _editing.RenameAsync(value)
+                        : _editing?.Rename?.Invoke(value) ?? avatarName;
+                    acceptedName = accepted;
+                    name.SetValueWithoutNotify(accepted);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                    name.SetValueWithoutNotify(acceptedName);
+                }
+                finally { name.IsReadOnly = _editing?.Editable != true; }
             };
             content.Add(new FormInput(I18N.Get("workflow.overview.name"), name));
 

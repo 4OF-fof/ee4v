@@ -1,18 +1,51 @@
 {
   "workflow": {
     "favorites": { "title": "Favorites", "add": "Add to favorites", "remove": "Remove from favorites" },
+    "position": {
+      "offset": "Position", "scale": "Size", "uniform": "Overall",
+      "axis": { "x": "Left / right (X)", "y": "Up / down (Y)", "z": "Forward / back (Z)" },
+      "autoTitle": "Automatic alignment",
+      "geometryUnavailable": "The mounting surface could not be estimated. Adjust position and size manually.",
+      "geometryUnsupported": "Shape alignment supports the head. This reference can be used as the center for manual scaling.",
+      "target": "Avatar reference",
+      "exclusionsTitle": "Exclude from fitting",
+      "exclusionsAdd": "Add objects", "exclusionsRemove": "Remove exclusion",
+      "exclusionsAllAdded": "All available objects are already excluded.",
+      "references": { "Head": "Head", "Neck": "Neck", "Chest": "Chest", "Hips": "Hips", "LeftHand": "Left hand", "RightHand": "Right hand", "LeftFoot": "Left foot", "RightFoot": "Right foot", "LastBone": "Other" },
+      "referenceUnavailable": "The avatar has no bone for this region. Select Other to assign a custom bone.",
+      "anchorsRequired": "Assign a reference bone outside the item within the same avatar.",
+      "unavailable": "Select an editable item to use automatic alignment.",
+      "invalidValues": "Position or scale could not be calculated. Check the reference bones and item scale.",
+      "auto": "Run", "reset": "Restore original position",
+      "undo": "Adjust item position and size"
+    },
     "attachment": {
       "title": "Bone settings",
       "mergeTitle": "Merge Armature", "mergeSource": "Source armature", "mergeTarget": "Target armature",
       "proxy": "Bone Proxy",
-      "missing": "No attachment settings", "unassigned": "No target assigned",
+      "advanced": "Position, rotation and scale",
+      "status": { "Connected": "Connected", "Missing": "Not connected", "Partial": "Partially connected", "NeedsReview": "Needs review", "NotRequired": "Not required" },
+      "unassigned": "No target assigned",
       "recommended": "Recommended: {0}",
-      "addMerge": "Add Merge Armature", "addProxy": "Add Bone Proxy",
       "target": "Attachment target", "mode": "Position and rotation mode", "matchScale": "Match target scale",
       "undo": "Configure part attachment",
-      "mergeRecommended": "Merge this part's armature to make it follow the avatar. Select the target armature.",
-      "proxyRecommended": "Make this part follow the selected bone. Its current position and rotation are preserved when added.",
-      "invalidTarget": "Select a target within this avatar and outside this part."
+      "disconnect": "Disconnect", "disconnectAll": "Disconnect all connections", "undoDisconnect": "Disconnect part attachments",
+      "invalidTarget": "Select a target within this avatar and outside this part.",
+      "source": "Source object", "method": "Attachment method", "add": "Add connection", "applyAll": "Add all proposed connections",
+      "manual": "Specify a connection manually", "manualDescription": "Choose the source object, method and target. Existing settings are preserved.",
+      "invalidSource": "Select a source object within this Item.",
+      "states": { "Connected": "Connection structure and references checked", "Missing": "Attachment setup required", "Partial": "Some parts are not connected", "NeedsReview": "Attachment setup needs review", "NotRequired": "No meshes or parts require attachment" },
+      "reasons": {
+        "existing": "Use the existing attachment settings.", "estimatedBone": "No bone correspondence was identified. The representative bone nearest the current mesh bounds center (or Item origin when there is no mesh) is preselected. Check whether the whole Item should follow one bone, choose its target, and add the connection.",
+        "matchingHierarchy": "Merge the hierarchy whose bone names and parent relationships match the required avatar bones.", "namedBone": "Attach this region to its corresponding avatar bone, preserving position and rotation.",
+        "disabled": "An attachment component is disabled.", "unassigned": "An attachment target could not be resolved.", "invalidTarget": "An attachment target is outside the avatar or below its source.",
+        "unsetMode": "Choose the Bone Proxy position and rotation mode.", "hierarchyMismatch": "Merge Armature does not match the hierarchy through the required body regions.",
+        "missingScripts": "Missing scripts prevent a complete attachment analysis.", "externalReference": "A bone or part references an object outside this avatar.", "missingBone": "A bone used by mesh weights is missing.",
+        "unreadableMesh": "Mesh weights could not be read; review the attachment manually.", "animationTarget": "An animation target could not be resolved.",
+        "constraint": "Constraint-based attachment could not be verified automatically.", "existingCoverage": "Some parts within an existing attachment remain unresolved. Review its target and hierarchy.",
+        "unknownStructure": "Some attachment targets could not be identified. Review them manually.",
+        "ambiguousBone": "Avatar bone names are ambiguous; a unique attachment target could not be identified."
+      }
     },
     "appearance": {
       "sizeProtected": "This Prefab is outside the derived asset. Its size cannot be changed so the source remains protected.",
@@ -37,7 +70,7 @@
         "feet": "Feet",
         "other": "Other"
       },
-      "advancedSizeTitle": "Advanced skeleton scaling",
+      "advancedSizeTitle": "Advanced settings",
       "sizeAxisExpand": "Show X, Y, and Z for {0}",
       "sizeAxisCollapse": "Hide X, Y, and Z for {0}",
       "sizeReset": "Reset",
@@ -47,7 +80,6 @@
         "z": "Z"
       },
       "sizePart": {
-        "prefab": "Prefab scale",
         "wholeBody": "Height",
         "head": "Head",
         "chest": "Chest",
@@ -80,6 +112,7 @@
       "parentHidden": "A parent part is hidden."
     },
     "shapeParts": {
+      "position": "Position",
       "material": "Material",
       "shape": "Shape",
       "parts": "Parts"

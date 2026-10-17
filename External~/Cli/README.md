@@ -29,7 +29,7 @@ setupはCodexのCODEX_HOME/skills（未指定時は~/.codex/skills）とClaude C
 
 ## Commands and inputs
 
-operation名はMCP名のee4v_を除き、underscoreをhyphenへ変換する。MCP名も受け付ける。operationsの検索とdescribeは接続先のcatalogを使用する。全80操作を同じregistryから公開し、操作の業務処理をCLIへ複製しない。
+operation名はMCP名のee4v_を除き、underscoreをhyphenへ変換する。MCP名も受け付ける。operationsの検索とdescribeは接続先のcatalogを使用する。全操作を同じregistryから公開し、操作の業務処理をCLIへ複製しない。
 
 - projects / health / version
 - operations [検索語] / describe <operation>

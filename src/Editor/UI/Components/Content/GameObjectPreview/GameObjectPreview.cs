@@ -203,7 +203,7 @@ namespace Ee4v.UI
                     UpdateBodyPartAnimationTime();
                     RequestPreviewRepaint();
                 }
-            }).Every(33);
+            }).Every(16);
         }
 
         public void SetTarget(GameObject target)
@@ -447,6 +447,13 @@ namespace Ee4v.UI
 
         public void RefreshPreview()
         {
+            RequestPreviewRepaint();
+        }
+
+        public void RefreshTransforms(bool recalculateBounds = true)
+        {
+            _utility?.RefreshTransforms();
+            _pendingBoundsRefresh |= recalculateBounds;
             RequestPreviewRepaint();
         }
 

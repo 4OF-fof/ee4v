@@ -68,7 +68,7 @@
       "aaoCurrentTooltip": "AAO components are attached to the current avatar.",
       "warnings": "Warnings",
       "attachmentWarning": "\"{0}\" has neither Merge Armature nor Bone Proxy. Attachment setup may be required.",
-      "openAttachmentSettings": "Open attachment settings",
+      "openAttachmentSettings": "Settings",
       "performance": "Avatar performance",
       "overallRating": "Overall rating",
       "metricsToReview": "{0} metrics exceed the Good budget",
@@ -217,7 +217,7 @@
         "feet": "Feet",
         "other": "Other"
       },
-      "advancedSizeTitle": "Advanced skeleton scaling",
+      "advancedSizeTitle": "Advanced settings",
       "sizeAxisExpand": "Show X, Y, and Z for {0}",
       "sizeAxisCollapse": "Hide X, Y, and Z for {0}",
       "sizeReset": "Reset",
