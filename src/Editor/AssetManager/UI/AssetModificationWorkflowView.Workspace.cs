@@ -891,8 +891,8 @@ namespace Ee4v.AssetManager.UI
                 {
                     if (prefab == null) { return; }
                     SelectPrefabCard(prefab.transform.GetSiblingIndex(), prefab.name);
-                    _parts.Section = ShapePartsSection.Parts;
-                    ShowAppearancePanel(AppearancePanel.Parts);
+                    _parts.Section = ShapePartsSection.Position;
+                    ShowAppearancePanel(AppearancePanel.Position);
                 }, editing,
                 AvatarInfoSdk.Provider?.ReadParameterMemory(_avatarContext.Root),
                 AvatarBuildSizeCache.Get(_avatarContext.Root, _overviewMobile),

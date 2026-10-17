@@ -152,6 +152,12 @@ namespace Ee4v.AvatarParts
             { name = "ee4v-position-restore" };
             restore.AddToClassList("ee4v-item-position__restore");
             content.Add(restore);
+            var attachments = new VisualElement { name = "ee4v-position-attachments" };
+            attachments.AddToClassList("ee4v-part-attachments-section");
+            attachments.Add(UiTextFactory.Create(I18N.Get("workflow.attachment.title"), UiClassNames.SectionTitle,
+                "ee4v-part-attachments-section__title"));
+            attachments.Add(BuildAttachmentControls(target.GetSiblingIndex()));
+            content.Add(attachments);
             content.schedule.Execute(() =>
             {
                 if (target != null && (target.localPosition != renderedPosition || target.localScale != renderedScale ||
