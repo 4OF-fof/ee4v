@@ -11,6 +11,8 @@
       "geometryUnavailable": "The mounting surface could not be estimated. Adjust position and size manually.",
       "geometryUnsupported": "Shape alignment supports the head. This reference can be used as the center for manual scaling.",
       "target": "Avatar reference", "customBone": "Custom bone",
+      "exclusionsTitle": "Items excluded from fitting",
+      "exclusionsHint": "Checked items are excluded from the reference geometry. Visibility and placement are unchanged. Each item being adjusted keeps its own exclusions.",
       "references": { "Head": "Head", "Neck": "Neck", "Chest": "Chest", "Hips": "Hips", "LeftHand": "Left hand", "RightHand": "Right hand", "LeftFoot": "Left foot", "RightFoot": "Right foot", "LastBone": "Other" },
       "referenceUnavailable": "The avatar has no bone for this region. Select Other to assign a custom bone.",
       "anchorsRequired": "Assign a reference bone outside the item within the same avatar.",

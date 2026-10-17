@@ -11,6 +11,8 @@
       "geometryUnavailable": "装着面の形状を推定できません。位置と大きさを手動で調整してください。",
       "geometryUnsupported": "形状による自動調整は頭部に対応しています。この基準は手動拡縮の中心として使用できます。",
       "target": "アバター側の基準", "customBone": "任意のボーン",
+      "exclusionsTitle": "自動調整から除外するItem",
+      "exclusionsHint": "チェックしたItemを基準形状の計算から外します。表示・配置は変わりません。設定は調整するItemごとに保持します。",
       "references": { "Head": "頭", "Neck": "首", "Chest": "胸", "Hips": "腰", "LeftHand": "左手", "RightHand": "右手", "LeftFoot": "左足", "RightFoot": "右足", "LastBone": "その他" },
       "referenceUnavailable": "このアバターには選択した部位のボーンがありません。「その他」で任意のボーンを指定してください。",
       "anchorsRequired": "同じアバター内でItem外の基準ボーンを指定してください。",

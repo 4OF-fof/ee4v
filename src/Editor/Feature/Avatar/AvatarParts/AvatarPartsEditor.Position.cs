@@ -18,6 +18,9 @@ namespace Ee4v.AvatarParts
         private HumanBodyBones _positionAvatarReference;
         private Transform _positionCustomAvatarBone;
         private string _positionAutoMessage;
+        private Transform _positionExclusionsRoot;
+        private readonly Dictionary<Transform, HashSet<Transform>> _positionExcludedItems =
+            new Dictionary<Transform, HashSet<Transform>>();
         private static readonly List<HumanBodyBones> PositionAvatarReferences = new List<HumanBodyBones> {
             HumanBodyBones.Head, HumanBodyBones.Neck, HumanBodyBones.Chest, HumanBodyBones.Hips,
             HumanBodyBones.LeftHand, HumanBodyBones.RightHand, HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot,
@@ -48,6 +51,11 @@ namespace Ee4v.AvatarParts
                 return content;
             }
 
+            if (_positionExclusionsRoot != _context.Root.transform)
+            {
+                _positionExclusionsRoot = _context.Root.transform;
+                _positionExcludedItems.Clear();
+            }
             if (_positionTarget != target)
             {
                 _positionTarget = target;
@@ -239,6 +247,8 @@ namespace Ee4v.AvatarParts
                     ? DisplayStyle.Flex : DisplayStyle.None;
                 avatar.SetValueWithoutNotify(_positionCustomAvatarBone);
             };
+            var exclusions = BuildPositionExclusions(target, render);
+            if (exclusions != null) panel.Add(exclusions);
             panel.Add(explanation);
             apply = new UiButton(I18N.Get("workflow.position.auto"), () =>
             {
@@ -257,6 +267,39 @@ namespace Ee4v.AvatarParts
             refresh = RefreshAvailability;
             RefreshAvailability();
             return panel;
+        }
+
+        private VisualElement BuildPositionExclusions(Transform target, Action render)
+        {
+            var root = _context.Root.transform;
+            var items = _context.PrefabSiblingIndices.Where(index => index >= 0 && index < root.childCount)
+                .Select(root.GetChild).Where(item => item != target).Distinct().ToArray();
+            if (items.Length == 0) return null;
+            if (!_positionExcludedItems.TryGetValue(target, out var excluded))
+            {
+                excluded = new HashSet<Transform>();
+                _positionExcludedItems.Add(target, excluded);
+            }
+            excluded.RemoveWhere(item => item == null || item.parent != root);
+            var section = new VisualElement { name = "ee4v-position-exclusions" };
+            section.Add(UiTextFactory.Create(I18N.Get("workflow.position.exclusionsTitle"), UiClassNames.SectionTitle));
+            section.Add(UiTextFactory.Create(I18N.Get("workflow.position.exclusionsHint"),
+                UiClassNames.SecondaryText, "ee4v-item-position__description"));
+            foreach (var item in items)
+            {
+                var toggle = UiTextFactory.CreateToggle(item.name);
+                toggle.userData = item;
+                toggle.SetValueWithoutNotify(excluded.Contains(item));
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (item == null || target != SelectedPositionTarget()) return;
+                    if (evt.newValue) excluded.Add(item); else excluded.Remove(item);
+                    _positionAutoMessage = null;
+                    render();
+                });
+                section.Add(toggle);
+            }
+            return section;
         }
 
         private Animator FindPositionAvatarAnimator(Transform target) => _context.Root.GetComponentsInChildren<Animator>(true)
@@ -299,7 +342,7 @@ namespace Ee4v.AvatarParts
             if (!fitGeometry) return true;
             if (!ItemAttachmentFitter.TryFit(target, _context.Root.transform, head,
                     transform => PrefabHierarchyUtility.IsInScope(transform, _context.Root.transform, -1, _context.PrefabSiblingIndices),
-                    IsPositionSurfaceVisible,
+                    transform => IsPositionSurfaceVisible(target, transform),
                     out position, out scale))
             {
                 message = I18N.Get("workflow.position.geometryUnavailable");
@@ -318,7 +361,7 @@ namespace Ee4v.AvatarParts
             return true;
         }
 
-        private bool IsPositionSurfaceVisible(Transform transform)
+        private bool IsPositionSurfaceVisible(Transform target, Transform transform)
         {
             var path = new List<int>();
             for (var current = transform; current != null && current != _context.Root.transform; current = current.parent)
@@ -328,6 +371,8 @@ namespace Ee4v.AvatarParts
                 if (_context.HiddenPreviewParts.Contains(GameObjectPreview.GetPartKey(-1, path.GetRange(0, length)))) return false;
             if (path.Count == 0) return !_context.BasePrefabHidden;
             var index = path[0];
+            if (_positionExcludedItems.TryGetValue(target, out var excluded) &&
+                excluded.Contains(_context.Root.transform.GetChild(index))) return false;
             return _context.PrefabSiblingIndices.Contains(index)
                 ? !_context.HiddenPrefabSiblingIndices.Contains(index) : !_context.BasePrefabHidden;
         }
