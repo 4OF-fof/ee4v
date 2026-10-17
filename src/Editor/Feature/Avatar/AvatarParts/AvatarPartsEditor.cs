@@ -70,6 +70,7 @@ namespace Ee4v.AvatarParts
                 "Editor/Feature/Shared/AvatarEditing/avatar-editing.uss",
                 "Editor/Feature/Avatar/AvatarParts/avatar-parts.uss");
             content.AddToClassList("ee4v-modification-workflow__controls-content");
+            content.AddToClassList("ee4v-avatar-parts__controls-content");
             AvatarEditingUi.AddFeedback(_context, content);
             content.Add(_shapePartsSection == ShapePartsSection.Shape
                 ? BuildBodyScaleControls()

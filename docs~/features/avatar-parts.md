@@ -1,5 +1,7 @@
 # AvatarParts
 
+体型タブの骨格スケールは「高度な設定」から開閉し、見出しは共通Ghostボタンの透明背景とhover表示を使用します。体型・パーツの編集内容は高さ方向へ拡張・圧縮せず、内容に必要な高さでスクロールします。「高度な設定」の展開によって上にある設定行の高さと位置や、ヘッダー・Previewの配置を変えません。
+
 Prefab rootの表示チェックは、パーツ行とPrefabグループのどちらから操作しても、EditorOnly・activeSelfとPrefab単位のPreview非表示状態を同期します。有効に戻したrootは非表示リストから外し、上部Prefabタブの目アイコンと全体Previewへ反映します。子パーツだけの操作ではPrefab単位の非表示設定を変更しません。
 
 パーツ・体型・Materialの切り替えは共通`ExclusiveButtonGroup<AvatarEditorPanel>`の下線型タブを使用します。選択表示の更新は共通UIが担当し、保留中の体型変更の確定と画面切り替えはAvatarPartsまたは統合ホストが担当します。確定できない場合は元のタブを維持します。

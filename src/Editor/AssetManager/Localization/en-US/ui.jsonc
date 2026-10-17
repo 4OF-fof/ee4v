@@ -217,7 +217,7 @@
         "feet": "Feet",
         "other": "Other"
       },
-      "advancedSizeTitle": "Advanced skeleton scaling",
+      "advancedSizeTitle": "Advanced settings",
       "sizeAxisExpand": "Show X, Y, and Z for {0}",
       "sizeAxisCollapse": "Hide X, Y, and Z for {0}",
       "sizeReset": "Reset",

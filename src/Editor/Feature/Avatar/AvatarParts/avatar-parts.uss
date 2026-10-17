@@ -243,10 +243,18 @@
 .ee4v-modification-workflow__size-scale-group,
 .ee4v-modification-workflow__size-axis-rows {
     min-width: 0;
+    flex-shrink: 0;
+}
+
+.ee4v-avatar-parts__controls-content {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
 }
 
 .ee4v-modification-workflow__advanced-size {
     min-width: 0;
+    flex-shrink: 0;
     margin-top: var(--ee4v-space-lg);
 }
 
@@ -257,7 +265,6 @@
     justify-content: flex-start;
     margin-bottom: var(--ee4v-space-md);
     border-color: var(--ee4v-color-border-default);
-    background-color: var(--ee4v-color-panel);
 }
 
 .ee4v-modification-workflow__advanced-size-toggle .ee4v-ui-button__content {
