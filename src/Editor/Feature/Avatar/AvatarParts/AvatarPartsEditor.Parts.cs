@@ -302,21 +302,6 @@ namespace Ee4v.AvatarParts
                 return;
             }
             ChangePrefabObject(entry, visible);
-            if (entry.IsVisible != visible)
-            {
-                return;
-            }
-            if (entry.IsActiveSelf && entry.IsVisible)
-            {
-                _context.HiddenPrefabSiblingIndices.Remove(prefabSiblingIndex);
-            }
-            else
-            {
-                _context.HiddenPrefabSiblingIndices.Add(prefabSiblingIndex);
-            }
-            _context.Preview?.SetHiddenPrefabs(
-                _context.BasePrefabHidden, _context.HiddenPrefabSiblingIndices);
-            _context.Host.RefreshPrefabPreviewVisibilityControls(prefabSiblingIndex);
         }
 
         private VisualElement BuildObjectRow(
@@ -823,6 +808,12 @@ namespace Ee4v.AvatarParts
                 if (entry.PrefabSiblingIndex >= 0 &&
                     entry.SiblingPath.Length == 0)
                 {
+                    if (entry.IsActiveSelf && entry.IsVisible)
+                        _context.HiddenPrefabSiblingIndices.Remove(entry.PrefabSiblingIndex);
+                    else
+                        _context.HiddenPrefabSiblingIndices.Add(entry.PrefabSiblingIndex);
+                    _context.Preview?.SetHiddenPrefabs(
+                        _context.BasePrefabHidden, _context.HiddenPrefabSiblingIndices);
                     _context.Host.RefreshPrefabPreviewVisibilityControls(
                         entry.PrefabSiblingIndex);
                 }

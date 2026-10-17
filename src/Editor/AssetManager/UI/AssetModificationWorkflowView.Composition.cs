@@ -237,7 +237,6 @@ namespace Ee4v.AssetManager.UI
             _avatarContext.SelectedPartKey = null;
             _avatarContext.SelectedMaterial = null;
             if (siblingIndex.HasValue &&
-                _currentCategory != WorkflowCategory.Overview &&
                 !_currentCategory.IsPlayMode())
             {
                 _currentCategory = WorkflowCategory.Appearance;

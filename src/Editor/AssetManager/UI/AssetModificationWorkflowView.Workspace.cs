@@ -672,7 +672,6 @@ namespace Ee4v.AssetManager.UI
                 }
             }
             if (_avatarContext.SelectedPrefabSiblingIndex.HasValue &&
-                category != WorkflowCategory.Overview &&
                 !category.IsPlayMode() &&
                 category != WorkflowCategory.Appearance)
             {
