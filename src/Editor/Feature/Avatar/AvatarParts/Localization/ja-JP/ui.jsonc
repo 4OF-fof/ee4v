@@ -2,10 +2,9 @@
   "workflow": {
     "favorites": { "title": "お気に入り", "add": "お気に入りに追加", "remove": "お気に入りから外す" },
     "position": {
-      "offset": "位置（元Prefabからの移動量）", "scale": "大きさ", "uniform": "全体",
+      "offset": "位置", "scale": "大きさ", "uniform": "全体",
       "axis": { "x": "左右（X）", "y": "上下（Y）", "z": "前後（Z）" },
       "autoTitle": "自動調整",
-      "geometryApplied": "装着済みパーツを含む頭部の外形に合わせました（元Prefabの {0}%）。",
       "geometryUnavailable": "装着面の形状を推定できません。位置と大きさを手動で調整してください。",
       "geometryUnsupported": "形状による自動調整は頭部に対応しています。この基準は手動拡縮の中心として使用できます。",
       "target": "アバター側の基準", "customBone": "任意のボーン",
@@ -17,7 +16,7 @@
       "anchorsRequired": "同じアバター内でItem外の基準ボーンを指定してください。",
       "unavailable": "編集中のItemを選択してください。編集できない状態では自動調整を使用できません。",
       "invalidValues": "位置または倍率を計算できません。基準ボーンとItemのスケールを確認してください。",
-      "auto": "実行", "reset": "元Prefabの位置・大きさに戻す",
+      "auto": "実行", "reset": "元の位置に戻す",
       "undo": "Itemの位置・大きさを調整"
     },
     "attachment": {

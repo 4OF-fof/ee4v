@@ -27,6 +27,10 @@
     margin-bottom: var(--ee4v-space-sm);
 }
 
+.ee4v-item-position__restore {
+    margin-top: var(--ee4v-space-lg);
+}
+
 .ee4v-item-position__reference.ee4v-ui-form-input {
     flex-direction: column;
     align-items: stretch;

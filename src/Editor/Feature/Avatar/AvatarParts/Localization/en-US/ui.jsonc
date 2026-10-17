@@ -2,10 +2,9 @@
   "workflow": {
     "favorites": { "title": "Favorites", "add": "Add to favorites", "remove": "Remove from favorites" },
     "position": {
-      "offset": "Position (offset from source Prefab)", "scale": "Size", "uniform": "Overall",
+      "offset": "Position", "scale": "Size", "uniform": "Overall",
       "axis": { "x": "Left / right (X)", "y": "Up / down (Y)", "z": "Forward / back (Z)" },
       "autoTitle": "Automatic alignment",
-      "geometryApplied": "Aligned over the existing head items ({0}% of the original prefab).",
       "geometryUnavailable": "The mounting surface could not be estimated. Adjust position and size manually.",
       "geometryUnsupported": "Shape alignment supports the head. This reference can be used as the center for manual scaling.",
       "target": "Avatar reference", "customBone": "Custom bone",
@@ -17,7 +16,7 @@
       "anchorsRequired": "Assign a reference bone outside the item within the same avatar.",
       "unavailable": "Select an editable item to use automatic alignment.",
       "invalidValues": "Position or scale could not be calculated. Check the reference bones and item scale.",
-      "auto": "Run", "reset": "Restore source Prefab position and size",
+      "auto": "Run", "reset": "Restore original position",
       "undo": "Adjust item position and size"
     },
     "attachment": {

@@ -66,46 +66,57 @@ namespace Ee4v.AvatarParts
             }
 
             var source = PrefabUtility.GetCorrespondingObjectFromSource(target);
-            var basePosition = source != null ? source.localPosition : Vector3.zero;
-            var baseScale = source != null ? source.localScale : Vector3.one;
+            var sourcePosition = source != null ? source.localPosition : Vector3.zero;
+            var sourceScale = source != null ? source.localScale : Vector3.one;
+            var adjustments = ItemPositionAdjustmentState.instance;
+            ItemPositionAdjustmentState.Baseline Baseline() => adjustments.Get(target, sourcePosition, sourceScale);
+            void SetBaseline(Vector3 position, Vector3 scale) => adjustments.Set(Baseline(), position, scale);
             var renderers = new List<Action>();
             var renderedPosition = target.localPosition;
             var renderedScale = target.localScale;
+            var renderedBasePosition = Baseline().Position;
+            var renderedBaseScale = Baseline().Scale;
+            UiButton restore = null;
             void Render()
             {
                 if (target == null) return;
                 foreach (var render in renderers) render();
                 renderedPosition = target.localPosition;
                 renderedScale = target.localScale;
+                renderedBasePosition = Baseline().Position;
+                renderedBaseScale = Baseline().Scale;
+                restore?.SetEnabled(target.localPosition != sourcePosition || target.localScale != sourceScale ||
+                    renderedBasePosition != sourcePosition || renderedBaseScale != sourceScale);
             }
 
-            content.Add(BuildPositionAutoControls(target, Render, out var refreshAuto));
+            content.Add(BuildPositionAutoControls(target, Render,
+                () => SetBaseline(target.localPosition, target.localScale), out var refreshAuto));
             renderers.Add(refreshAuto);
             content.Add(UiTextFactory.Create(I18N.Get("workflow.position.offset"), UiClassNames.SectionTitle));
             for (var axis = 0; axis < 3; axis++)
             {
                 var index = axis;
                 content.Add(BuildPositionScalar(I18N.Get("workflow.position.axis." + "xyz"[axis]),
-                    -50f, 50f, "cm", () => (target.localPosition[index] - basePosition[index]) * 100f,
+                    -50f, 50f, "cm", () => (target.localPosition[index] - Baseline().Position[index]) * 100f,
                     value =>
                     {
                         var position = target.localPosition;
-                        position[index] = basePosition[index] + value / 100f;
+                        position[index] = Baseline().Position[index] + value / 100f;
                         ApplyPositionTransform(target, position, target.localScale);
                         Render();
                     }, renderers, 0f));
             }
 
             content.Add(UiTextFactory.Create(I18N.Get("workflow.position.scale"), UiClassNames.SectionTitle));
-            Vector3 Multipliers() => new Vector3(GetScaleRatio(target.localScale.x, baseScale.x),
-                GetScaleRatio(target.localScale.y, baseScale.y), GetScaleRatio(target.localScale.z, baseScale.z));
+            Vector3 Multipliers() => new Vector3(GetScaleRatio(target.localScale.x, Baseline().Scale.x),
+                GetScaleRatio(target.localScale.y, Baseline().Scale.y), GetScaleRatio(target.localScale.z, Baseline().Scale.z));
             content.Add(BuildPositionScalar(I18N.Get("workflow.position.uniform"), 50f, 200f, "%",
                 () => AverageVectorComponent(Multipliers()) * 100f,
                 value =>
                 {
-                    if (value > 0f) ApplyPositionScale(target, baseScale * (value / 100f));
+                    if (value > 0f) ApplyPositionScale(target, Baseline().Scale * (value / 100f));
                     Render();
-                }, renderers, 100f, true));
+                }, renderers, 100f, true, () => target.localScale == Baseline().Scale));
             for (var axis = 0; axis < 3; axis++)
             {
                 var index = axis;
@@ -114,26 +125,35 @@ namespace Ee4v.AvatarParts
                     value =>
                     {
                         var scale = target.localScale;
-                        scale[index] = baseScale[index] * (value / 100f);
+                        scale[index] = Baseline().Scale[index] * (value / 100f);
                         if (value > 0f) ApplyPositionScale(target, scale);
                         Render();
                     }, renderers, 100f, true));
             }
-            content.Add(new UiButton(I18N.Get("workflow.position.reset"), () =>
+            restore = new UiButton(I18N.Get("workflow.position.reset"), () =>
             {
-                ApplyPositionTransform(target, basePosition, baseScale);
+                if (target != SelectedPositionTarget() || EditorApplication.isPlayingOrWillChangePlaymode) return;
+                Undo.IncrementCurrentGroup();
+                ApplyPositionTransform(target, sourcePosition, sourceScale);
+                SetBaseline(sourcePosition, sourceScale);
+                _positionAutoMessage = null;
                 Render();
-            }, variant: UiButtonVariant.Ghost));
+            }, icon: FluentUiIcons.CreateState("arrow_clockwise.png", UiSizeTokens.Size14))
+            { name = "ee4v-position-restore" };
+            restore.AddToClassList("ee4v-item-position__restore");
+            content.Add(restore);
             content.schedule.Execute(() =>
             {
-                if (target != null && (target.localPosition != renderedPosition || target.localScale != renderedScale)) Render();
+                if (target != null && (target.localPosition != renderedPosition || target.localScale != renderedScale ||
+                    Baseline().Position != renderedBasePosition || Baseline().Scale != renderedBaseScale)) Render();
             }).Every(200);
             Render();
             return content;
         }
 
         private VisualElement BuildPositionScalar(string label, float minimum, float maximum, string unit,
-            Func<float> read, Action<float> apply, ICollection<Action> renderers, float resetValue, bool requiresReference = false)
+            Func<float> read, Action<float> apply, ICollection<Action> renderers, float resetValue,
+            bool requiresReference = false, Func<bool> isAtReset = null)
         {
             var row = CreateSizeControlRow(label, out var controls);
             var target = SelectedPositionTarget();
@@ -147,7 +167,7 @@ namespace Ee4v.AvatarParts
                 var value = read();
                 input.Slider.SetValueWithoutNotify(value);
                 input.ValueField.SetValueWithoutNotify(value);
-                input.ResetButton.SetEnabled(!Mathf.Approximately(value, resetValue));
+                input.ResetButton.SetEnabled(isAtReset != null ? !isAtReset() : !Mathf.Approximately(value, resetValue));
             }
             void Apply(float value)
             {
@@ -178,7 +198,7 @@ namespace Ee4v.AvatarParts
         }
 
         private VisualElement BuildPositionAutoControls(Transform target,
-            Action render, out Action refresh)
+            Action render, Action adjusted, out Action refresh)
         {
             var panel = new VisualElement();
             panel.AddToClassList("ee4v-item-position__auto");
@@ -233,6 +253,7 @@ namespace Ee4v.AvatarParts
                 }
                 Undo.IncrementCurrentGroup();
                 ApplyPositionTransform(target, position, scale);
+                adjusted();
                 _positionAutoMessage = message;
                 render();
             }) { name = "ee4v-position-auto-apply" };
@@ -388,7 +409,8 @@ namespace Ee4v.AvatarParts
             position = Vector3.zero;
             scale = Vector3.one;
             message = I18N.Get("workflow.position.anchorsRequired");
-            if (target == null || target != SelectedPositionTarget() || !_context.Edits.CanEditPrefab())
+            if (target == null || target != SelectedPositionTarget() || !_context.Edits.CanEditPrefab() ||
+                EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 message = I18N.Get("workflow.position.unavailable");
                 return false;
@@ -420,11 +442,6 @@ namespace Ee4v.AvatarParts
                 message = I18N.Get("workflow.position.invalidValues");
                 return false;
             }
-            var original = PrefabUtility.GetCorrespondingObjectFromSource(target);
-            var originalScale = original != null ? original.localScale : Vector3.one;
-            var percent = AverageVectorComponent(new Vector3(GetScaleRatio(scale.x, originalScale.x),
-                GetScaleRatio(scale.y, originalScale.y), GetScaleRatio(scale.z, originalScale.z))) * 100f;
-            message = I18N.Get("workflow.position.geometryApplied", percent.ToString("0.#"));
             return true;
         }
 
