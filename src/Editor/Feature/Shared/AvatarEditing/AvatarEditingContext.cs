@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 
 namespace Ee4v.AvatarEditing
 {
-    public enum AvatarEditorPanel { Parts, Shape, Material }
+    public enum AvatarEditorPanel { Parts, Shape, Material, Position }
 
     /// <summary>Editing target, shared selection and host services for avatar features.</summary>
     public sealed class AvatarEditingContext

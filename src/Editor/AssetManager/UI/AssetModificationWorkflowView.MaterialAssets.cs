@@ -96,7 +96,7 @@ namespace Ee4v.AssetManager.UI
                 return;
             }
             if (_currentCategory != WorkflowCategory.Appearance ||
-                _appearancePanel != AppearancePanel.Shape)
+                _appearancePanel != AppearancePanel.Shape && _appearancePanel != AppearancePanel.Position)
             {
                 _materials.RefreshMaterialPreview();
                 ShowCategory(_currentCategory, false);
@@ -105,7 +105,9 @@ namespace Ee4v.AssetManager.UI
 
             if (IsEditableWorkflowPrefab()) { _workingSceneDirty = true; }
 
-            _avatarContext.Preview?.ReloadTarget();
+            if (_appearancePanel == AppearancePanel.Position)
+                _avatarContext.Preview?.ReloadTargetPreservingView(_avatarContext.Root);
+            else _avatarContext.Preview?.ReloadTarget();
             if (_avatarContext.ControlsHost == null)
             {
                 return;

@@ -105,9 +105,7 @@ namespace Ee4v.AssetManager.UI
                 _avatarContext.HiddenPrefabSiblingIndices.Add(siblingIndex);
             }
             RefreshPrefabPreviewVisibilityControls(siblingIndex);
-            _avatarContext.Preview?.SetHiddenPrefabs(
-                _avatarContext.BasePrefabHidden,
-                _avatarContext.HiddenPrefabSiblingIndices);
+            UpdateAppearancePreviewScope(_currentCategory);
         }
 
         private void RefreshPrefabPreviewVisibilityControls(
@@ -250,7 +248,8 @@ namespace Ee4v.AssetManager.UI
             _workspaceHeader = BuildWorkspaceHeader();
             Insert(0, _workspaceHeader);
             _categoryRail?.SetPrefabScope(siblingIndex.HasValue);
-            _avatarContext.Preview?.FocusBodyPart(_avatarContext.SelectedBodyPart, true);
+            _avatarContext.Preview?.FocusBodyPart(_appearancePanel == AppearancePanel.Position
+                ? null : _avatarContext.SelectedBodyPart, true);
             ShowCategory(_currentCategory, false, true);
             SyncPreviewSelection();
             RequestRepaint();

@@ -2,6 +2,31 @@
     min-width: 0;
 }
 
+.ee4v-item-position {
+    min-width: 0;
+}
+
+.ee4v-item-position > .ee4v-ui-section-title {
+    margin-top: var(--ee4v-space-xl);
+    margin-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-item-position__auto {
+    padding: var(--ee4v-space-lg);
+    border-width: var(--ee4v-border-hairline);
+    border-color: var(--ee4v-color-border-default);
+    border-radius: var(--ee4v-radius-lg);
+}
+
+.ee4v-item-position__auto > * {
+    margin-bottom: var(--ee4v-space-sm);
+}
+
+.ee4v-item-position__description {
+    white-space: normal;
+    margin-bottom: var(--ee4v-space-sm);
+}
+
 .ee4v-part-details,
 .ee4v-part-component__body {
     min-width: 0;

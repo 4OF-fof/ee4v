@@ -32,7 +32,8 @@ namespace Ee4v.AvatarParts
         public enum ShapePartsSection
         {
             Shape,
-            Parts
+            Parts,
+            Position
         }
 
         private struct PartTagChange
