@@ -18,6 +18,8 @@ namespace Ee4v.AvatarParts
         private HumanBodyBones _positionAvatarReference;
         private Transform _positionCustomAvatarBone;
         private string _positionAutoMessage;
+        private Transform _positionDragTarget;
+        private Transform _positionPendingTarget;
         private Transform _positionExclusionsRoot;
         private readonly Dictionary<Transform, HashSet<Transform>> _positionExcludedItems =
             new Dictionary<Transform, HashSet<Transform>>();
@@ -96,25 +98,33 @@ namespace Ee4v.AvatarParts
             for (var axis = 0; axis < 3; axis++)
             {
                 var index = axis;
+                var direction = axis == 0 ? -1f : 1f;
                 content.Add(BuildPositionScalar(I18N.Get("workflow.position.axis." + "xyz"[axis]),
-                    -50f, 50f, "cm", () => (target.localPosition[index] - Baseline().Position[index]) * 100f,
+                    -50f, 50f, "cm", () => (target.localPosition[index] - Baseline().Position[index]) * 100f * direction,
                     value =>
                     {
                         var position = target.localPosition;
-                        position[index] = Baseline().Position[index] + value / 100f;
+                        position[index] = Baseline().Position[index] + value / 100f * direction;
                         ApplyPositionTransform(target, position, target.localScale);
                         Render();
                     }, renderers, 0f));
             }
 
             content.Add(UiTextFactory.Create(I18N.Get("workflow.position.scale"), UiClassNames.SectionTitle));
+            void Scale(Vector3 scale)
+            {
+                var previousPosition = target.localPosition;
+                ApplyPositionScale(target, scale);
+                var baseline = Baseline();
+                SetBaseline(baseline.Position + (target.localPosition - previousPosition), baseline.Scale);
+            }
             Vector3 Multipliers() => new Vector3(GetScaleRatio(target.localScale.x, Baseline().Scale.x),
                 GetScaleRatio(target.localScale.y, Baseline().Scale.y), GetScaleRatio(target.localScale.z, Baseline().Scale.z));
             content.Add(BuildPositionScalar(I18N.Get("workflow.position.uniform"), 50f, 200f, "%",
                 () => AverageVectorComponent(Multipliers()) * 100f,
                 value =>
                 {
-                    if (value > 0f) ApplyPositionScale(target, Baseline().Scale * (value / 100f));
+                    if (value > 0f) Scale(Baseline().Scale * (value / 100f));
                     Render();
                 }, renderers, 100f, true, () => target.localScale == Baseline().Scale));
             for (var axis = 0; axis < 3; axis++)
@@ -126,7 +136,7 @@ namespace Ee4v.AvatarParts
                     {
                         var scale = target.localScale;
                         scale[index] = Baseline().Scale[index] * (value / 100f);
-                        if (value > 0f) ApplyPositionScale(target, scale);
+                        if (value > 0f) Scale(scale);
                         Render();
                     }, renderers, 100f, true));
             }
@@ -181,6 +191,9 @@ namespace Ee4v.AvatarParts
             var undoGroup = -1;
             void EndDrag()
             {
+                if (undoGroup < 0) return;
+                _positionDragTarget = null;
+                CommitPositionTransform();
                 if (undoGroup >= 0 && Undo.GetCurrentGroup() == undoGroup) Undo.CollapseUndoOperations(undoGroup);
                 undoGroup = -1;
             }
@@ -189,6 +202,7 @@ namespace Ee4v.AvatarParts
                 if (evt.button != 0) return;
                 Undo.IncrementCurrentGroup();
                 undoGroup = Undo.GetCurrentGroup();
+                _positionDragTarget = target;
             }, TrickleDown.TrickleDown);
             input.Slider.RegisterCallback<PointerUpEvent>(_ => EndDrag());
             input.Slider.RegisterCallback<PointerCaptureOutEvent>(_ => EndDrag());
@@ -482,6 +496,20 @@ namespace Ee4v.AvatarParts
             _positionAutoMessage = null;
             target.localPosition = position;
             target.localScale = scale;
+            _positionPendingTarget = target;
+            if (_positionDragTarget == target)
+            {
+                _context.Preview?.RefreshTransforms(recalculateBounds: false);
+                _context.Host.Repaint();
+            }
+            else CommitPositionTransform();
+        }
+
+        private void CommitPositionTransform()
+        {
+            var target = _positionPendingTarget;
+            _positionPendingTarget = null;
+            if (target == null) return;
             PrefabUtility.RecordPrefabInstancePropertyModifications(target);
             EditorUtility.SetDirty(target);
             _context.Edits.WorkingSceneDirty = true;
@@ -492,7 +520,7 @@ namespace Ee4v.AvatarParts
             _context.Host.InvalidateControls(AvatarEditorPanel.Material);
             _context.Host.InvalidateMaterialData();
             _context.Edits.Changed();
-            _context.Preview?.ReloadTargetPreservingView(_context.Root);
+            _context.Preview?.RefreshTransforms();
             _context.Host.Repaint();
         }
 

@@ -31,6 +31,8 @@ UIの`GameObjectPreview`は16ms間隔でアニメーション時刻と描画を�
 
 ## 部位フォーカスのポーズ
 
+`RefreshTransforms`はScene上の位置・回転・scaleの変更後に使用します。Renderer一覧・MA骨対応・NDMF sessionを維持し、構築待ち用スナップショットを破棄します。アニメーションまたはsamplerが有効な場合は、そのサンプリング用コピーを更新して同じ再生時刻を再評価します。構造や装着設定が変わった場合は`RefreshHierarchy`を使用します。
+
 Project Settingsの`4OF/ee4v`にある「部位プレビューのアニメーション」で、全身・頭／首・肩／腕・手・胸・腰／胴・脚・足ごとにAnimationClipとループの有無を指定できます。`AvatarPreviewMotionSettings`はCoreの公開APIとして設定を登録・取得し、ClipはGlobalObjectId（GUIDとsub-asset識別子）でProject設定に保存します。FBX内の複数Clipも区別し、名前変更・移動では参照を保持します。「肩・腕」はArmsとShouldersで共用し、Otherは全身設定を使用します。None・削除済みClipはAポーズを使用し、他部位のClipへ代替しません。再生中のClipをNoneへ変更したときや、明示的な動作確認callbackを解除したときも、Aポーズを再計算して戻します。Aポーズは骨の回転から直接生成し、専用のAnimationClipアセットを使用しません。
 
 部位選択・Clip変更・表示の再接続時に先頭から自動再生します。同じ部位の再選択・前後／左右カメラ変更では継続します。ループは既定でONで、Clipのインポート設定より優先します。OFFでは一度再生して末尾の姿勢を保持します。元のClipやImporterは変更しません。設定変更は表示中の共有`GameObjectPreview`へ即時反映します。Clipは部位の表示に合わせて選ぶ全身アニメーションであり、選択部位以外の骨をマスクしません。Generic Clipはアバターのpathが一致する必要があります。Humanoid Clipは有効なHumanoid Avatarを必要とし、MA衣装への伝播はAvatarEvaluationが扱います。
