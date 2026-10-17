@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -222,6 +223,9 @@ namespace Ee4v.UI
 
         private sealed class LabelUiTextElement : UiTextElement
         {
+            private static readonly Regex NonBreakingPunctuation = new Regex(
+                @"<nobr>[\s\S]*?</nobr>|<[^>]*>|((?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\s<>、。！？）」』】])\p{M}*)([、。！？）」』】]+)",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             private readonly Label _label;
 
             public LabelUiTextElement(string text, TypographyStyleDefinition style, params string[] classNames)
@@ -240,7 +244,10 @@ namespace Ee4v.UI
 
             protected override void ApplyText(string text)
             {
-                _label.text = text;
+                _label.text = _label.style.whiteSpace.value == WhiteSpace.Normal
+                    ? NonBreakingPunctuation.Replace(text, match => match.Groups[1].Success
+                        ? "<nobr>" + match.Value + "</nobr>" : match.Value)
+                    : text;
                 _label.style.display = string.IsNullOrWhiteSpace(text) ? DisplayStyle.None : DisplayStyle.Flex;
                 style.display = string.IsNullOrWhiteSpace(text) ? DisplayStyle.None : DisplayStyle.Flex;
             }
@@ -248,6 +255,7 @@ namespace Ee4v.UI
             public override void SetWhiteSpace(WhiteSpace whiteSpace)
             {
                 _label.style.whiteSpace = whiteSpace;
+                ApplyText(Text);
             }
 
             public override void SetColor(Color color)

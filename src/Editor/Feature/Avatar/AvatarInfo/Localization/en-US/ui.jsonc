@@ -94,7 +94,7 @@
       "aaoCurrentTooltip": "AAO components are attached to the current avatar.",
       "warnings": "Warnings",
       "attachmentWarning": "\"{0}\" has unconnected parts or attachment settings that need review.",
-      "openAttachmentSettings": "Open attachment settings",
+      "openAttachmentSettings": "Settings",
       "performance": "Avatar performance",
       "overallRating": "Overall rating",
       "metricsToReview": "{0} metrics exceed the Good budget",

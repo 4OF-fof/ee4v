@@ -94,7 +94,7 @@
       "aaoCurrentTooltip": "現在のアバターにはAvatar Optimizer（AAO）コンポーネントが設定されています。",
       "warnings": "警告",
       "attachmentWarning": "「{0}」に未接続、または確認が必要な装着設定があります。",
-      "openAttachmentSettings": "装着設定を開く",
+      "openAttachmentSettings": "設定",
       "performance": "アバターパフォーマンス",
       "overallRating": "総合評価",
       "metricsToReview": "{0}項目がGoodの基準を超えています",

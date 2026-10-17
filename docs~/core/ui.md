@@ -24,6 +24,8 @@ Catalogは利用場面ではなく、部品が公開する責務で分類しま�
 
 本文だけの案内・警告・エラーは`UiTextFactory.CreateMessagePanel(message, severity, classNames)`で生成します。戻り値はCompact表示の`MessagePanel`で、重要度には共通の`MessageSeverity`を使用します。本文と重要度の更新は`SetState(new MessagePanelState(string.Empty, message, severity))`、通知の解除は`SetState(null)`で行います。空の本文は非表示になり、長文は利用可能な幅へ折り返します。機能画面と設定の検証通知にはUnity標準のHelpBoxを使用しません。
 
+`UiTextFactory`の標準Labelは、折り返し時に日本語の句読点`、。！？`と閉じ括弧`）」』】`を直前の文字と同じ改行不可のまとまりとして描画し、それらだけが次の行へ送られることを防ぎます。元の`UiTextElement.Text`や翻訳文字列は変更せず、既存のrich textタグと`<nobr>`範囲を保持します。折り返しの切り替えと文字の更新にも同じ処理を適用します。IMGUI文字と入力フィールドの描画はこの処理の対象外です。
+
 `SelectionTabVariant.Underline`と`SelectionTab.CreateStrip`は画面内の下線型タブを共有します。下線型は色のtransitionを使用せず、選択の変更を即時に描画し、ホバーやフォーカスの再取得を待たずに選択下線を表示します。下線は選択状態だけで決め、未選択タブへのフォーカス・ホバー・クリック押下では追加しません。Default・Primaryは構成Prefabなどのカード型タブです。各タブはフォーカスでき、Enter・Spaceからクリックと同じ操作を通知します。Project Tabsのピン留め・並べ替え・閉じる操作は機能側へ残します。`UiTextFactory.CreateSwitch`は標準Toggleと同じ値通知・bindingを持つSwitch表示です。
 
 Catalogのナビゲーションではカテゴリ名も選択できます。カテゴリページには分類の説明と、下位カテゴリを含めて属しているStoryの名称・概要を表示します。一覧から各Storyへ移動できます。
