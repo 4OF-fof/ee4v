@@ -5,7 +5,6 @@ using Ee4v.AvatarEditing;
 using Ee4v.Core.EditorIntegration;
 using Ee4v.Core.I18n;
 using Ee4v.UI;
-using nadena.dev.modular_avatar.core;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -15,17 +14,15 @@ namespace Ee4v.AvatarParts
     public sealed partial class AvatarPartsEditor
     {
         private Transform _positionTarget;
-        private Transform _positionSourceBone;
         private Transform _positionAvatarBone;
-        private bool _positionMatchScale;
-        private bool _positionUseGeometry = true;
+        private HumanBodyBones _positionAvatarReference;
+        private Transform _positionCustomAvatarBone;
         private string _positionAutoMessage;
-
-        private sealed class PositionBonePair
-        {
-            internal Transform Source;
-            internal Transform Target;
-        }
+        private static readonly List<HumanBodyBones> PositionAvatarReferences = new List<HumanBodyBones> {
+            HumanBodyBones.Head, HumanBodyBones.Neck, HumanBodyBones.Chest, HumanBodyBones.Hips,
+            HumanBodyBones.LeftHand, HumanBodyBones.RightHand, HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot,
+            HumanBodyBones.LastBone
+        };
 
         public bool CanAdjustItemPosition => SelectedPositionTarget() != null;
 
@@ -51,15 +48,12 @@ namespace Ee4v.AvatarParts
                 return content;
             }
 
-            var pairs = FindPositionBonePairs(target);
             if (_positionTarget != target)
             {
                 _positionTarget = target;
-                var first = pairs.FirstOrDefault();
-                var head = FindPositionAvatarAnimator(target)?.GetBoneTransform(HumanBodyBones.Head);
-                _positionSourceBone = first?.Source ?? target;
-                _positionAvatarBone = first?.Target ?? head;
-                _positionMatchScale = true;
+                _positionAvatarReference = HumanBodyBones.Head;
+                _positionAvatarBone = ResolvePositionAvatarReference(FindPositionAvatarAnimator(target), _positionAvatarReference);
+                _positionCustomAvatarBone = null;
                 _positionAutoMessage = null;
             }
 
@@ -77,7 +71,7 @@ namespace Ee4v.AvatarParts
                 renderedScale = target.localScale;
             }
 
-            content.Add(BuildPositionAutoControls(target, pairs, Render, out var refreshAuto));
+            content.Add(BuildPositionAutoControls(target, Render, out var refreshAuto));
             renderers.Add(refreshAuto);
             content.Add(UiTextFactory.Create(I18N.Get("workflow.position.offset"), UiClassNames.SectionTitle));
             for (var axis = 0; axis < 3; axis++)
@@ -103,7 +97,7 @@ namespace Ee4v.AvatarParts
                 {
                     if (value > 0f) ApplyPositionScale(target, baseScale * (value / 100f));
                     Render();
-                }, renderers, 100f));
+                }, renderers, 100f, true));
             for (var axis = 0; axis < 3; axis++)
             {
                 var index = axis;
@@ -115,7 +109,7 @@ namespace Ee4v.AvatarParts
                         scale[index] = baseScale[index] * (value / 100f);
                         if (value > 0f) ApplyPositionScale(target, scale);
                         Render();
-                    }, renderers, 100f));
+                    }, renderers, 100f, true));
             }
             content.Add(UiTextFactory.Create(I18N.Get("workflow.position.pivotHint"),
                 UiClassNames.SecondaryText, "ee4v-item-position__description"));
@@ -133,7 +127,7 @@ namespace Ee4v.AvatarParts
         }
 
         private VisualElement BuildPositionScalar(string label, float minimum, float maximum, string unit,
-            Func<float> read, Action<float> apply, ICollection<Action> renderers, float resetValue)
+            Func<float> read, Action<float> apply, ICollection<Action> renderers, float resetValue, bool requiresReference = false)
         {
             var row = CreateSizeControlRow(label, out var controls);
             var target = SelectedPositionTarget();
@@ -143,6 +137,7 @@ namespace Ee4v.AvatarParts
             void Render()
             {
                 if (target == null) return;
+                row.SetEnabled(!requiresReference || IsPositionAvatarBone(target, _positionAvatarBone));
                 var value = read();
                 input.Slider.SetValueWithoutNotify(value);
                 input.ValueField.SetValueWithoutNotify(value);
@@ -176,7 +171,7 @@ namespace Ee4v.AvatarParts
             return row;
         }
 
-        private VisualElement BuildPositionAutoControls(Transform target, IReadOnlyList<PositionBonePair> pairs,
+        private VisualElement BuildPositionAutoControls(Transform target,
             Action render, out Action refresh)
         {
             var panel = new VisualElement();
@@ -185,23 +180,20 @@ namespace Ee4v.AvatarParts
             panel.Add(UiTextFactory.Create(I18N.Get("workflow.position.autoHint"),
                 UiClassNames.SecondaryText, "ee4v-item-position__description"));
             UiButton apply = null;
-            Action refreshPicker = null;
+            Action refreshReference = null;
             var explanation = UiTextFactory.Create(string.Empty,
                 UiClassNames.SecondaryText, "ee4v-item-position__description");
             void RefreshAvailability()
             {
-                var available = TryCalculatePositionAdjustment(target, pairs, out _, out _, out var message);
-                if (available && _positionUseGeometry && _positionAvatarBone != null &&
-                    _positionAvatarBone == FindPositionAvatarAnimator(target)?.GetBoneTransform(HumanBodyBones.Head))
-                    message = I18N.Get("workflow.position.geometryReady");
+                var available = TryCalculatePositionAdjustment(target, out _, out _, out var message);
                 if (!string.IsNullOrEmpty(_positionAutoMessage)) message = _positionAutoMessage;
                 apply?.SetPrimaryActionEnabled(available);
                 explanation.SetText(message);
                 explanation.EnableInClassList("ee4v-modification-workflow__hidden", string.IsNullOrEmpty(message));
-                refreshPicker?.Invoke();
+                refreshReference?.Invoke();
             }
             UnityEditor.UIElements.ObjectField AddBoneField(VisualElement host, string label, Func<Transform> read,
-                Action<Transform> set, bool itemSide)
+                Action<Transform> set)
             {
                 var field = UiTextFactory.CreateObjectField();
                 field.objectType = typeof(Transform);
@@ -210,62 +202,52 @@ namespace Ee4v.AvatarParts
                 field.RegisterValueChangedCallback(evt =>
                 {
                     var bone = evt.newValue as Transform;
-                    if (bone != null && !(itemSide ? bone.IsChildOf(target) : IsPositionAvatarBone(target, bone)))
+                    if (bone != null && !IsPositionAvatarBone(target, bone))
                     {
                         field.SetValueWithoutNotify(read());
                         return;
                     }
                     set(bone);
                     _positionAutoMessage = null;
-                    RefreshAvailability();
+                    render();
                 });
                 host.Add(new FormInput(I18N.Get(label), field));
                 return field;
             }
-            var source = AddBoneField(panel, "workflow.position.source", () => _positionSourceBone,
-                bone => _positionSourceBone = bone, true);
-            var avatar = AddBoneField(panel, "workflow.position.target", () => _positionAvatarBone,
-                bone => _positionAvatarBone = bone, false);
-            var matchScale = UiTextFactory.CreateToggle(I18N.Get("workflow.position.matchScale"));
-            matchScale.SetValueWithoutNotify(_positionMatchScale);
-            matchScale.RegisterValueChangedCallback(evt => { _positionMatchScale = evt.newValue; _positionAutoMessage = null; RefreshAvailability(); });
-            panel.Add(matchScale);
-            var methods = new List<string> { I18N.Get("workflow.position.geometryMethod"), I18N.Get("workflow.position.boneMethod") };
-            var methodPicker = UiTextFactory.CreatePopupField(string.Empty, methods, _positionUseGeometry ? 0 : 1);
-            methodPicker.RegisterValueChangedCallback(evt =>
+            string ReferenceLabel(HumanBodyBones bone) => I18N.Get("workflow.position.references." + bone);
+            var referencePicker = UiTextFactory.CreatePopupField(string.Empty, PositionAvatarReferences,
+                PositionAvatarReferences.IndexOf(_positionAvatarReference), ReferenceLabel, ReferenceLabel);
+            referencePicker.name = "ee4v-position-avatar-reference";
+            panel.Add(new FormInput(I18N.Get("workflow.position.target"), referencePicker));
+            var customReference = new VisualElement { name = "ee4v-position-custom-reference" };
+            var avatar = AddBoneField(customReference, "workflow.position.customBone", () => _positionCustomAvatarBone,
+                bone => { _positionCustomAvatarBone = bone; _positionAvatarBone = bone; });
+            avatar.name = "ee4v-position-custom-bone";
+            panel.Add(customReference);
+            referencePicker.RegisterValueChangedCallback(evt =>
             {
-                _positionUseGeometry = evt.newValue == methods[0];
+                _positionAvatarReference = evt.newValue;
+                _positionAvatarBone = evt.newValue == HumanBodyBones.LastBone ? _positionCustomAvatarBone
+                    : ResolvePositionAvatarReference(FindPositionAvatarAnimator(target), evt.newValue);
                 _positionAutoMessage = null;
-                RefreshAvailability();
+                render();
             });
-            panel.Insert(2, new FormInput(I18N.Get("workflow.position.method"), methodPicker));
-            if (pairs.Count > 0)
+            refreshReference = () =>
             {
-                var manual = new PositionBonePair();
-                var options = new[] { manual }.Concat(pairs).ToList();
-                PositionBonePair Selected() => pairs.FirstOrDefault(pair =>
-                    pair.Source == _positionSourceBone && pair.Target == _positionAvatarBone) ?? manual;
-                var index = options.IndexOf(Selected());
-                string Label(PositionBonePair pair) => pair == manual ? I18N.Get("workflow.position.custom")
-                    : pair.Target.name + " ← " + pair.Source.name;
-                var picker = UiTextFactory.CreatePopupField(string.Empty, options, index, Label, Label);
-                refreshPicker = () => picker.SetValueWithoutNotify(Selected());
-                picker.RegisterValueChangedCallback(evt =>
-                {
-                    if (evt.newValue == manual) { RefreshAvailability(); return; }
-                    _positionSourceBone = evt.newValue.Source;
-                    _positionAvatarBone = evt.newValue.Target;
-                    _positionAutoMessage = null;
-                    source.SetValueWithoutNotify(_positionSourceBone);
-                    avatar.SetValueWithoutNotify(_positionAvatarBone);
-                    RefreshAvailability();
-                });
-                panel.Insert(3, new FormInput(I18N.Get("workflow.position.bonePair"), picker));
-            }
+                referencePicker.SetValueWithoutNotify(_positionAvatarReference);
+                customReference.style.display = _positionAvatarReference == HumanBodyBones.LastBone
+                    ? DisplayStyle.Flex : DisplayStyle.None;
+                avatar.SetValueWithoutNotify(_positionCustomAvatarBone);
+            };
             panel.Add(explanation);
             apply = new UiButton(I18N.Get("workflow.position.auto"), () =>
             {
-                if (!TryCalculatePositionAdjustment(target, pairs, out var position, out var scale, out var message, true)) return;
+                if (!TryCalculatePositionAdjustment(target, out var position, out var scale, out var message, true))
+                {
+                    _positionAutoMessage = message;
+                    render();
+                    return;
+                }
                 Undo.IncrementCurrentGroup();
                 ApplyPositionTransform(target, position, scale);
                 _positionAutoMessage = message;
@@ -285,49 +267,12 @@ namespace Ee4v.AvatarParts
         private bool IsPositionAvatarBone(Transform target, Transform bone) => bone != null &&
             bone.IsChildOf(_context.Root.transform) && !bone.IsChildOf(target);
 
-        private IReadOnlyList<PositionBonePair> FindPositionBonePairs(Transform target)
-        {
-            var mappings = new Dictionary<Transform, Transform>();
-            foreach (var merge in target.GetComponentsInChildren<ModularAvatarMergeArmature>(true))
-            {
-                var bones = merge.GetBonesMapping();
-                if (bones == null) continue;
-                foreach (var pair in bones)
-                    if (pair.Item2 != null && pair.Item2.IsChildOf(target) && IsPositionAvatarBone(target, pair.Item1))
-                        mappings[pair.Item1] = pair.Item2;
-            }
-            foreach (var proxy in target.GetComponentsInChildren<ModularAvatarBoneProxy>(true))
-                if (IsPositionAvatarBone(target, proxy.target) && !mappings.ContainsKey(proxy.target))
-                    mappings[proxy.target] = proxy.transform;
-            var animator = FindPositionAvatarAnimator(target);
-            if (animator != null)
-            {
-                var itemAnimator = target.GetComponentsInChildren<Animator>(true)
-                    .FirstOrDefault(candidate => candidate.avatar != null && candidate.avatar.isValid && candidate.isHuman);
-                var armature = FindPartArmature(target);
-                var named = (armature != null ? armature.GetComponentsInChildren<Transform>(true)
-                    : target.GetComponentsInChildren<SkinnedMeshRenderer>(true).SelectMany(renderer => renderer.bones))
-                    .Where(bone => bone != null && bone != target && bone.IsChildOf(target)).Distinct()
-                    .GroupBy(bone => bone.name, StringComparer.Ordinal).Where(group => group.Count() == 1)
-                    .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
-                for (var index = 0; index < (int)HumanBodyBones.LastBone; index++)
-                {
-                    var bone = (HumanBodyBones)index;
-                    var avatarBone = animator.GetBoneTransform(bone);
-                    if (!IsPositionAvatarBone(target, avatarBone) || mappings.ContainsKey(avatarBone)) continue;
-                    var itemBone = itemAnimator != null ? itemAnimator.GetBoneTransform(bone) : null;
-                    if (itemBone == null) named.TryGetValue(avatarBone.name, out itemBone);
-                    if (itemBone != null && itemBone.IsChildOf(target)) mappings[avatarBone] = itemBone;
-                }
-            }
-            var hips = animator?.GetBoneTransform(HumanBodyBones.Hips);
-            var head = animator?.GetBoneTransform(HumanBodyBones.Head);
-            return mappings.OrderBy(pair => pair.Key == hips ? 0 : pair.Key == head ? 1 : 2)
-                .ThenBy(pair => AnimationUtility.CalculateTransformPath(pair.Key, _context.Root.transform), StringComparer.Ordinal)
-                .Select(pair => new PositionBonePair { Source = pair.Value, Target = pair.Key }).ToArray();
-        }
+        private static Transform ResolvePositionAvatarReference(Animator animator, HumanBodyBones bone) =>
+            animator == null || bone == HumanBodyBones.LastBone ? null : bone == HumanBodyBones.Chest
+                ? animator.GetBoneTransform(HumanBodyBones.UpperChest) ?? animator.GetBoneTransform(HumanBodyBones.Chest)
+                : animator.GetBoneTransform(bone);
 
-        private bool TryCalculatePositionAdjustment(Transform target, IReadOnlyList<PositionBonePair> pairs,
+        private bool TryCalculatePositionAdjustment(Transform target,
             out Vector3 position, out Vector3 scale, out string message, bool fitGeometry = false)
         {
             position = Vector3.zero;
@@ -338,42 +283,39 @@ namespace Ee4v.AvatarParts
                 message = I18N.Get("workflow.position.unavailable");
                 return false;
             }
-            if (_positionSourceBone == null || !_positionSourceBone.IsChildOf(target) ||
-                !IsPositionAvatarBone(target, _positionAvatarBone)) return false;
+            if (_positionAvatarBone == null && _positionAvatarReference != HumanBodyBones.LastBone)
+            {
+                message = I18N.Get("workflow.position.referenceUnavailable");
+                return false;
+            }
+            if (!IsPositionAvatarBone(target, _positionAvatarBone)) return false;
             var head = FindPositionAvatarAnimator(target)?.GetBoneTransform(HumanBodyBones.Head);
-            if (fitGeometry && _positionUseGeometry && head != null && _positionAvatarBone == head &&
-                ItemAttachmentFitter.TryFit(target, _context.Root.transform, head,
+            if (head == null || _positionAvatarBone != head)
+            {
+                message = I18N.Get("workflow.position.geometryUnsupported");
+                return false;
+            }
+            message = I18N.Get("workflow.position.geometryReady");
+            if (!fitGeometry) return true;
+            if (!ItemAttachmentFitter.TryFit(target, _context.Root.transform, head,
                     transform => PrefabHierarchyUtility.IsInScope(transform, _context.Root.transform, -1, _context.PrefabSiblingIndices),
                     IsPositionSurfaceVisible,
-                    _positionMatchScale, out position, out scale) && ValidPositionVector(position) && ValidPositionScale(scale))
+                    out position, out scale))
             {
-                var original = PrefabUtility.GetCorrespondingObjectFromSource(target);
-                var originalScale = original != null ? original.localScale : Vector3.one;
-                var percent = AverageVectorComponent(new Vector3(GetScaleRatio(scale.x, originalScale.x),
-                    GetScaleRatio(scale.y, originalScale.y), GetScaleRatio(scale.z, originalScale.z))) * 100f;
-                message = I18N.Get("workflow.position.geometryApplied", percent.ToString("0.#"));
-                return true;
+                message = I18N.Get("workflow.position.geometryUnavailable");
+                return false;
             }
-            message = string.Empty;
-            var factor = 1f;
-            if (_positionMatchScale)
+            if (!ValidPositionVector(position) || !ValidPositionScale(scale))
             {
-                if (TryEstimatePositionScale(target, pairs, out var reference, out var sourceDistance, out var avatarDistance))
-                {
-                    factor = avatarDistance / sourceDistance;
-                    message = I18N.Get("workflow.position.scaleEstimated", _positionSourceBone.name, reference.Source.name,
-                        (sourceDistance * 100f).ToString("0.##"), (avatarDistance * 100f).ToString("0.##"));
-                }
-                else message = I18N.Get("workflow.position.scaleUnavailable");
+                message = I18N.Get("workflow.position.invalidValues");
+                return false;
             }
-            if (fitGeometry && _positionUseGeometry)
-                message = I18N.Get("workflow.position.geometryFallback") + (string.IsNullOrEmpty(message) ? string.Empty : "\n" + message);
-            scale = target.localScale * factor;
-            position = target.parent.InverseTransformPoint(_positionAvatarBone.position -
-                (_positionSourceBone.position - target.position) * factor);
-            if (ValidPositionVector(position) && ValidPositionScale(scale)) return true;
-            message = I18N.Get("workflow.position.invalidValues");
-            return false;
+            var original = PrefabUtility.GetCorrespondingObjectFromSource(target);
+            var originalScale = original != null ? original.localScale : Vector3.one;
+            var percent = AverageVectorComponent(new Vector3(GetScaleRatio(scale.x, originalScale.x),
+                GetScaleRatio(scale.y, originalScale.y), GetScaleRatio(scale.z, originalScale.z))) * 100f;
+            message = I18N.Get("workflow.position.geometryApplied", percent.ToString("0.#"));
+            return true;
         }
 
         private bool IsPositionSurfaceVisible(Transform transform)
@@ -390,51 +332,10 @@ namespace Ee4v.AvatarParts
                 ? !_context.HiddenPrefabSiblingIndices.Contains(index) : !_context.BasePrefabHidden;
         }
 
-        private bool TryEstimatePositionScale(Transform target, IReadOnlyList<PositionBonePair> pairs,
-            out PositionBonePair reference, out float sourceDistance, out float avatarDistance)
-        {
-            reference = null;
-            sourceDistance = 0f;
-            avatarDistance = 0f;
-            var bestScore = int.MaxValue;
-            foreach (var pair in pairs)
-            {
-                if (pair.Source == null || !pair.Source.IsChildOf(target) ||
-                    !IsPositionAvatarBone(target, pair.Target)) continue;
-                var sourceDepth = PositionBoneDepth(pair.Source, _positionSourceBone);
-                var avatarDepth = PositionBoneDepth(pair.Target, _positionAvatarBone);
-                var child = sourceDepth > 0 && avatarDepth > 0;
-                if (!child)
-                {
-                    sourceDepth = PositionBoneDepth(_positionSourceBone, pair.Source);
-                    avatarDepth = PositionBoneDepth(_positionAvatarBone, pair.Target);
-                    if (sourceDepth <= 0 || avatarDepth <= 0) continue;
-                }
-                var score = (sourceDepth + avatarDepth) * 2 + (child ? 0 : 1);
-                if (score >= bestScore) continue;
-                var sourceLength = Vector3.Distance(_positionSourceBone.position, pair.Source.position);
-                var avatarLength = Vector3.Distance(_positionAvatarBone.position, pair.Target.position);
-                if (!Finite(sourceLength) || !Finite(avatarLength) || sourceLength < 0.000001f || avatarLength < 0.000001f)
-                    continue;
-                reference = pair;
-                sourceDistance = sourceLength;
-                avatarDistance = avatarLength;
-                bestScore = score;
-            }
-            return reference != null;
-        }
-
-        private static int PositionBoneDepth(Transform bone, Transform ancestor)
-        {
-            var depth = 0;
-            for (var current = bone; current != null; current = current.parent, depth++)
-                if (current == ancestor) return depth;
-            return -1;
-        }
-
         private void ApplyPositionScale(Transform target, Vector3 scale)
         {
-            var pivot = _positionSourceBone != null && _positionSourceBone.IsChildOf(target) ? _positionSourceBone : target;
+            if (!IsPositionAvatarBone(target, _positionAvatarBone)) return;
+            var pivot = _positionAvatarBone;
             var localPoint = target.InverseTransformPoint(pivot.position);
             var pivotPosition = target.parent.InverseTransformPoint(pivot.position);
             var position = pivotPosition - target.localRotation * Vector3.Scale(scale, localPoint);

@@ -14,7 +14,7 @@ namespace Ee4v.AvatarParts
         private struct Sphere { public Vector3 Center; public float Radius; }
 
         public static bool TryFit(Transform item, Transform avatar, Transform head,
-            Func<Transform, bool> isBase, Func<Transform, bool> isVisible, bool matchScale,
+            Func<Transform, bool> isBase, Func<Transform, bool> isVisible,
             out Vector3 position, out Vector3 scale)
         {
             position = item.localPosition;
@@ -33,7 +33,7 @@ namespace Ee4v.AvatarParts
                 });
             if (existing.Length > 0) targetSphere = FitMountingVolume(existing, targetSphere);
             // The estimated shell is an outer surface. Leave room for its thickness and small shape differences.
-            var factor = matchScale ? targetSphere.Radius * 1.14f / sourceSphere.Radius : 1f;
+            var factor = targetSphere.Radius * 1.14f / sourceSphere.Radius;
             if (float.IsNaN(factor) || float.IsInfinity(factor) || factor < 0.1f || factor > 10f) return false;
             var sourceCenter = avatar.position + avatar.rotation * sourceSphere.Center;
             var targetCenter = avatar.position + avatar.rotation * targetSphere.Center;
