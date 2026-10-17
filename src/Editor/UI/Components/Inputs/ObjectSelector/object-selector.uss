@@ -31,6 +31,21 @@
     margin-bottom: var(--ee4v-space-md);
 }
 
+.ee4v-ui-object-picker__tree.ee4v-ui-searchable-tree-view {
+    border-width: 0;
+    border-radius: 0;
+    padding: 0;
+    background-color: var(--ee4v-color-transparent);
+}
+
+.ee4v-ui-object-picker__tree .unity-tree-view__item-content {
+    justify-content: center;
+}
+
+.ee4v-ui-object-picker__tree .ee4v-ui-searchable-tree-view__tree {
+    border-top-width: 0;
+}
+
 .ee4v-ui-object-picker__content {
     flex-grow: 1;
     min-height: 0;

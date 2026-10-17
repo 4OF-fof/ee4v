@@ -27,6 +27,7 @@ namespace Ee4v.UI
                         "Editor/AssetManager/UI/AssetManagerView.Navigation.cs",
                         "Editor/AssetManager/UI/SearchableFileTree.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/BlendShapePresetView.cs",
+                        "Editor/Feature/Avatar/AvatarParts/AvatarPartsEditor.Position.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionGroupView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionView.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/GestureAssignmentView.cs",

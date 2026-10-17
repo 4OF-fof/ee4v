@@ -23,6 +23,7 @@ namespace Ee4v.UI
                     new[]
                     {
                         "Editor/AssetManager/UI/SearchableFileTree.cs",
+                        "Editor/Feature/Avatar/AvatarParts/AvatarPartsEditor.Position.cs",
                         "Editor/Feature/Avatar/FaceExpression/UI/FaceExpressionGroupView.cs",
                         "Editor/Feature/Hierarchy/HierarchyStyle/HiddenObjects/UI/Components/HiddenObjectTreeRow.cs",
                         "Editor/Feature/Hierarchy/SceneSwitcher/UI/SceneSwitcherView.cs",

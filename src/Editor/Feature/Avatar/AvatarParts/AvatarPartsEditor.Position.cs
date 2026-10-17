@@ -119,8 +119,6 @@ namespace Ee4v.AvatarParts
                         Render();
                     }, renderers, 100f, true));
             }
-            content.Add(UiTextFactory.Create(I18N.Get("workflow.position.pivotHint"),
-                UiClassNames.SecondaryText, "ee4v-item-position__description"));
             content.Add(new UiButton(I18N.Get("workflow.position.reset"), () =>
             {
                 ApplyPositionTransform(target, basePosition, baseScale);
@@ -184,13 +182,14 @@ namespace Ee4v.AvatarParts
         {
             var panel = new VisualElement();
             panel.AddToClassList("ee4v-item-position__auto");
-            panel.Add(UiTextFactory.Create(I18N.Get("workflow.position.autoTitle"), UiClassNames.SectionTitle));
-            panel.Add(UiTextFactory.Create(I18N.Get("workflow.position.autoHint"),
-                UiClassNames.SecondaryText, "ee4v-item-position__description"));
+            var header = new SectionHeader(I18N.Get("workflow.position.autoTitle"))
+            { name = "ee4v-position-auto-header" };
+            panel.Add(header);
             UiButton apply = null;
             Action refreshReference = null;
             var explanation = UiTextFactory.Create(string.Empty,
                 UiClassNames.SecondaryText, "ee4v-item-position__description");
+            explanation.name = "ee4v-position-auto-message";
             void RefreshAvailability()
             {
                 var available = TryCalculatePositionAdjustment(target, out _, out _, out var message);
@@ -219,14 +218,32 @@ namespace Ee4v.AvatarParts
                     _positionAutoMessage = null;
                     render();
                 });
-                host.Add(new FormInput(I18N.Get(label), field));
+                var form = new FormInput(I18N.Get(label), field);
+                form.AddToClassList("ee4v-item-position__reference");
+                host.Add(form);
                 return field;
             }
+            apply = new UiButton(I18N.Get("workflow.position.auto"), () =>
+            {
+                if (!TryCalculatePositionAdjustment(target, out var position, out var scale, out var message, true))
+                {
+                    _positionAutoMessage = message;
+                    render();
+                    return;
+                }
+                Undo.IncrementCurrentGroup();
+                ApplyPositionTransform(target, position, scale);
+                _positionAutoMessage = message;
+                render();
+            }) { name = "ee4v-position-auto-apply" };
+            header.Actions.Add(apply);
             string ReferenceLabel(HumanBodyBones bone) => I18N.Get("workflow.position.references." + bone);
             var referencePicker = UiTextFactory.CreatePopupField(string.Empty, PositionAvatarReferences,
                 PositionAvatarReferences.IndexOf(_positionAvatarReference), ReferenceLabel, ReferenceLabel);
             referencePicker.name = "ee4v-position-avatar-reference";
-            panel.Add(new FormInput(I18N.Get("workflow.position.target"), referencePicker));
+            var referenceForm = new FormInput(I18N.Get("workflow.position.target"), referencePicker);
+            referenceForm.AddToClassList("ee4v-item-position__reference");
+            panel.Add(referenceForm);
             var customReference = new VisualElement { name = "ee4v-position-custom-reference" };
             var avatar = AddBoneField(customReference, "workflow.position.customBone", () => _positionCustomAvatarBone,
                 bone => { _positionCustomAvatarBone = bone; _positionAvatarBone = bone; });
@@ -250,20 +267,6 @@ namespace Ee4v.AvatarParts
             var exclusions = BuildPositionExclusions(target, render);
             if (exclusions != null) panel.Add(exclusions);
             panel.Add(explanation);
-            apply = new UiButton(I18N.Get("workflow.position.auto"), () =>
-            {
-                if (!TryCalculatePositionAdjustment(target, out var position, out var scale, out var message, true))
-                {
-                    _positionAutoMessage = message;
-                    render();
-                    return;
-                }
-                Undo.IncrementCurrentGroup();
-                ApplyPositionTransform(target, position, scale);
-                _positionAutoMessage = message;
-                render();
-            });
-            panel.Add(apply);
             refresh = RefreshAvailability;
             RefreshAvailability();
             return panel;
@@ -272,33 +275,94 @@ namespace Ee4v.AvatarParts
         private VisualElement BuildPositionExclusions(Transform target, Action render)
         {
             var root = _context.Root.transform;
-            var items = _context.PrefabSiblingIndices.Where(index => index >= 0 && index < root.childCount)
-                .Select(root.GetChild).Where(item => item != target).Distinct().ToArray();
-            if (items.Length == 0) return null;
+            var objects = root.GetComponentsInChildren<Transform>(true)
+                .Where(item => item != root && !item.IsChildOf(target)).ToArray();
+            if (objects.Length == 0) return null;
             if (!_positionExcludedItems.TryGetValue(target, out var excluded))
             {
                 excluded = new HashSet<Transform>();
                 _positionExcludedItems.Add(target, excluded);
             }
-            excluded.RemoveWhere(item => item == null || item.parent != root);
+            excluded.RemoveWhere(item => item == null || item == root || !item.IsChildOf(root) || item.IsChildOf(target));
             var section = new VisualElement { name = "ee4v-position-exclusions" };
-            section.Add(UiTextFactory.Create(I18N.Get("workflow.position.exclusionsTitle"), UiClassNames.SectionTitle));
-            section.Add(UiTextFactory.Create(I18N.Get("workflow.position.exclusionsHint"),
-                UiClassNames.SecondaryText, "ee4v-item-position__description"));
-            foreach (var item in items)
+            var header = new SectionHeader(I18N.Get("workflow.position.exclusionsTitle"))
+            { name = "ee4v-position-exclusions-header" };
+            header.AddToClassList("ee4v-item-position__exclusions-header");
+            section.Add(header);
+            var list = new VisualElement { name = "ee4v-position-excluded-items" };
+            section.Add(list);
+            UiButton add = null;
+            bool IsExcluded(Transform item)
             {
-                var toggle = UiTextFactory.CreateToggle(item.name);
-                toggle.userData = item;
-                toggle.SetValueWithoutNotify(excluded.Contains(item));
-                toggle.RegisterValueChangedCallback(evt =>
+                for (var current = item; current != null && current != root; current = current.parent)
+                    if (excluded.Contains(current)) return true;
+                return false;
+            }
+            Transform[] Available() => root.GetComponentsInChildren<Transform>(true)
+                .Where(item => item != root && !item.IsChildOf(target) && !IsExcluded(item)).ToArray();
+            string ObjectPath(Transform item) => AnimationUtility.CalculateTransformPath(item, root);
+            IReadOnlyList<SearchableTreeItemData<Transform>> BuildTree()
+            {
+                var available = new HashSet<Transform>(Available());
+                SearchableTreeItemData<Transform> Build(Transform item)
                 {
-                    if (item == null || target != SelectedPositionTarget()) return;
-                    if (evt.newValue) excluded.Add(item); else excluded.Remove(item);
+                    var children = new List<SearchableTreeItemData<Transform>>();
+                    foreach (Transform child in item)
+                        if (available.Contains(child)) children.Add(Build(child));
+                    var path = ObjectPath(item);
+                    return new SearchableTreeItemData<Transform>(item.GetInstanceID(), item, path, path, children);
+                }
+                var roots = new List<SearchableTreeItemData<Transform>>();
+                foreach (Transform child in root)
+                    if (available.Contains(child)) roots.Add(Build(child));
+                return roots;
+            }
+            void RefreshList()
+            {
+                list.Clear();
+                foreach (var item in objects.Where(item => item != null && excluded.Contains(item)))
+                {
+                    var parentPath = item.parent != root ? ObjectPath(item.parent) : string.Empty;
+                    var row = new ItemRow(new ItemRowState(item.name, parentPath, layout: ItemRowLayout.Stacked))
+                    { userData = item, tooltip = ObjectPath(item) };
+                    row.AddToClassList("ee4v-item-position__exclusion-row");
+                    row.TitleText.SetWhiteSpace(WhiteSpace.Normal);
+                    row.DescriptionText.SetWhiteSpace(WhiteSpace.Normal);
+                    row.Trailing.Add(new UiButton(string.Empty, () =>
+                    {
+                        if (target != SelectedPositionTarget()) return;
+                        excluded.Remove(item);
+                        _positionAutoMessage = null;
+                        RefreshList();
+                        render();
+                    }, tooltip: I18N.Get("workflow.position.exclusionsRemove"),
+                        icon: FluentUiIcons.CreateState("dismiss.png", UiSizeTokens.Size14),
+                        variant: UiButtonVariant.Ghost) { name = "ee4v-position-exclusion-remove" });
+                    list.Add(row);
+                }
+                var available = Available().Length > 0;
+                add?.SetEnabled(available);
+                if (add != null) add.tooltip = I18N.Get(available
+                    ? "workflow.position.exclusionsAdd" : "workflow.position.exclusionsAllAdded");
+            }
+            add = new UiButton(string.Empty, () =>
+            {
+                if (target != SelectedPositionTarget()) return;
+                ObjectSelector<Transform>.ShowHierarchyPicker(add, BuildTree(), selected =>
+                {
+                    if (target != SelectedPositionTarget()) return;
+                    var available = new HashSet<Transform>(Available());
+                    excluded.UnionWith(selected.Where(item => item != null && available.Contains(item)));
+                    var redundant = excluded.Where(item => excluded.Any(parent => parent != item && item.IsChildOf(parent))).ToArray();
+                    excluded.ExceptWith(redundant);
                     _positionAutoMessage = null;
+                    RefreshList();
                     render();
                 });
-                section.Add(toggle);
-            }
+            }, tooltip: I18N.Get("workflow.position.exclusionsAdd"),
+                icon: FluentUiIcons.CreateState("add.png", UiSizeTokens.Size14)) { name = "ee4v-position-exclusion-add" };
+            header.Actions.Add(add);
+            RefreshList();
             return section;
         }
 
@@ -338,7 +402,7 @@ namespace Ee4v.AvatarParts
                 message = I18N.Get("workflow.position.geometryUnsupported");
                 return false;
             }
-            message = I18N.Get("workflow.position.geometryReady");
+            message = null;
             if (!fitGeometry) return true;
             if (!ItemAttachmentFitter.TryFit(target, _context.Root.transform, head,
                     transform => PrefabHierarchyUtility.IsInScope(transform, _context.Root.transform, -1, _context.PrefabSiblingIndices),
@@ -363,6 +427,9 @@ namespace Ee4v.AvatarParts
 
         private bool IsPositionSurfaceVisible(Transform target, Transform transform)
         {
+            if (_positionExcludedItems.TryGetValue(target, out var excluded))
+                for (var current = transform; current != null && current != _context.Root.transform; current = current.parent)
+                    if (excluded.Contains(current)) return false;
             var path = new List<int>();
             for (var current = transform; current != null && current != _context.Root.transform; current = current.parent)
                 path.Add(current.GetSiblingIndex());
@@ -371,8 +438,6 @@ namespace Ee4v.AvatarParts
                 if (_context.HiddenPreviewParts.Contains(GameObjectPreview.GetPartKey(-1, path.GetRange(0, length)))) return false;
             if (path.Count == 0) return !_context.BasePrefabHidden;
             var index = path[0];
-            if (_positionExcludedItems.TryGetValue(target, out var excluded) &&
-                excluded.Contains(_context.Root.transform.GetChild(index))) return false;
             return _context.PrefabSiblingIndices.Contains(index)
                 ? !_context.HiddenPrefabSiblingIndices.Contains(index) : !_context.BasePrefabHidden;
         }

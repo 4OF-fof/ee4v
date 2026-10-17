@@ -86,6 +86,7 @@
       "select": "オブジェクトを選択",
       "close": "オブジェクト選択を閉じる",
       "search": "名前またはパスを検索",
+      "addSelected": "選択した {0} 件を追加", "cancel": "キャンセル",
       "noMatch": "一致するオブジェクトがありません"
     },
     "gameObjectPreview": {

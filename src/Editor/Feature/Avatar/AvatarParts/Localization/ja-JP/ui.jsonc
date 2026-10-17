@@ -5,21 +5,19 @@
       "offset": "位置（元Prefabからの移動量）", "scale": "大きさ", "uniform": "全体",
       "axis": { "x": "左右（X）", "y": "上下（Y）", "z": "前後（Z）" },
       "autoTitle": "自動調整",
-      "autoHint": "頭部の形状から位置と大きさを合わせます。先に内側のItemを調整してから、その上に重ねるItemを調整してください。選択した基準は手動拡縮の中心にも使います。",
-      "geometryReady": "自分自身を除く表示中のPrefab全体から、頭部周辺の外形を比較します。",
       "geometryApplied": "装着済みパーツを含む頭部の外形に合わせました（元Prefabの {0}%）。",
       "geometryUnavailable": "装着面の形状を推定できません。位置と大きさを手動で調整してください。",
       "geometryUnsupported": "形状による自動調整は頭部に対応しています。この基準は手動拡縮の中心として使用できます。",
       "target": "アバター側の基準", "customBone": "任意のボーン",
-      "exclusionsTitle": "自動調整から除外するItem",
-      "exclusionsHint": "チェックしたItemを基準形状の計算から外します。表示・配置は変わりません。設定は調整するItemごとに保持します。",
+      "exclusionsTitle": "自動調整から除外",
+      "exclusionsAdd": "オブジェクトを追加", "exclusionsRemove": "除外を解除",
+      "exclusionsAllAdded": "追加できるオブジェクトはすべて除外済みです。",
       "references": { "Head": "頭", "Neck": "首", "Chest": "胸", "Hips": "腰", "LeftHand": "左手", "RightHand": "右手", "LeftFoot": "左足", "RightFoot": "右足", "LastBone": "その他" },
       "referenceUnavailable": "このアバターには選択した部位のボーンがありません。「その他」で任意のボーンを指定してください。",
       "anchorsRequired": "同じアバター内でItem外の基準ボーンを指定してください。",
       "unavailable": "編集中のItemを選択してください。編集できない状態では自動調整を使用できません。",
       "invalidValues": "位置または倍率を計算できません。基準ボーンとItemのスケールを確認してください。",
-      "auto": "自動調整", "reset": "元Prefabの位置・大きさに戻す",
-      "pivotHint": "拡大・縮小はアバター側の基準ボーンの位置を中心に行います。基準が未指定の場合は拡縮できません。",
+      "auto": "実行", "reset": "元Prefabの位置・大きさに戻す",
       "undo": "Itemの位置・大きさを調整"
     },
     "attachment": {
@@ -68,7 +66,6 @@
         "z": "Z"
       },
       "sizePart": {
-        "prefab": "Prefab倍率",
         "wholeBody": "身長",
         "head": "頭",
         "chest": "胸",

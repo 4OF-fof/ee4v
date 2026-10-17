@@ -99,21 +99,7 @@ namespace Ee4v.AvatarParts
                         currentViewPosition,
                         baseViewPosition));
                 }
-                else
-                {
-                    var prefabTargets = ResolvePrefabScaleTargets();
-                    if (prefabTargets.Count > 0)
-                    {
-                        primaryScaleList.Add(BuildBodyScaleControl(
-                            new BodyScaleDefinition(
-                                "workflow.appearance.sizePart.prefab",
-                                false,
-                                false),
-                            GetTransformPaths(prefabTargets),
-                            GetBodyScaleMultipliers(prefabTargets)));
-                    }
-                }
-                content.Add(primaryScaleList);
+                if (primaryScaleList.childCount > 0) content.Add(primaryScaleList);
             }
 
             var allBodyShapes = GetBodyBlendShapes();

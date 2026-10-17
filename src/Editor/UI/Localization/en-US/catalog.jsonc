@@ -86,6 +86,7 @@
       "select": "Select object",
       "close": "Close object selection",
       "search": "Search name or path",
+      "addSelected": "Add {0} selected", "cancel": "Cancel",
       "noMatch": "No matching objects"
     },
     "gameObjectPreview": {
