@@ -12,6 +12,7 @@ namespace Ee4v.AvatarParts
         private struct Sample { public Vector3 Point, Normal; }
         private struct Triangle { public Sample A, B, C; public float EndArea; }
         private struct Sphere { public Vector3 Center; public float Radius; }
+        private struct Constraint { public Vector4 Weights; public float Limit; }
 
         public static bool TryFit(Transform item, Transform avatar, Transform head,
             Func<Transform, bool> isBase, Func<Transform, bool> isVisible,
@@ -29,16 +30,143 @@ namespace Ee4v.AvatarParts
                 .Where(renderer => !renderer.transform.IsChildOf(item) && isVisible(renderer.transform)),
                 inverse, avatar.position, null, false, point => {
                     var delta = point - targetSphere.Center;
-                    return delta.y >= targetSphere.Radius * 0.35f && delta.sqrMagnitude < targetSphere.Radius * targetSphere.Radius * 4f;
+                    return delta.y >= -targetSphere.Radius * 0.35f && delta.sqrMagnitude < targetSphere.Radius * targetSphere.Radius * 4f;
                 });
-            if (existing.Length > 0) targetSphere = FitMountingVolume(existing, targetSphere);
-            // The estimated shell is an outer surface. Leave room for its thickness and small shape differences.
-            var factor = targetSphere.Radius * 1.14f / sourceSphere.Radius;
+            if (!TryFitShell(source, target, existing, sourceSphere, targetSphere, out var center, out var factor))
+            {
+                var upper = existing.Where(sample => sample.Point.y >= targetSphere.Center.y + targetSphere.Radius * 0.35f).ToArray();
+                if (upper.Length > 0) targetSphere = FitMountingVolume(upper, targetSphere);
+                factor = targetSphere.Radius * 1.02f / sourceSphere.Radius;
+                center = targetSphere.Center;
+            }
             if (float.IsNaN(factor) || float.IsInfinity(factor) || factor < 0.1f || factor > 10f) return false;
             var sourceCenter = avatar.position + avatar.rotation * sourceSphere.Center;
-            var targetCenter = avatar.position + avatar.rotation * targetSphere.Center;
+            var targetCenter = avatar.position + avatar.rotation * center;
             position = item.parent.InverseTransformPoint(targetCenter - (sourceCenter - item.position) * factor);
             scale = item.localScale * factor;
+            return true;
+        }
+
+        private static bool TryFitShell(Sample[] source, Sample[] target, Sample[] existing,
+            Sphere shell, Sphere baseline, out Vector3 center, out float factor)
+        {
+            center = baseline.Center;
+            factor = 1f;
+            target = target.Where(sample => {
+                var delta = sample.Point - baseline.Center;
+                return delta.y >= -baseline.Radius * 0.35f && delta.sqrMagnitude < baseline.Radius * baseline.Radius * 4f;
+            }).ToArray();
+            if (target.Length < 100) return false;
+            var outside = new List<Vector3>();
+            var inside = new List<Vector3>();
+            foreach (var sample in source)
+            {
+                var delta = sample.Point - shell.Center;
+                var distance = delta.magnitude;
+                if (distance < shell.Radius * 0.65f || delta.y < -shell.Radius * 0.35f) continue;
+                var alignment = Vector3.Dot(delta / distance, sample.Normal);
+                if (Mathf.Abs(distance - shell.Radius) < shell.Radius * 0.15f && alignment > 0.7f) outside.Add(delta);
+                if (distance < shell.Radius * 1.05f && alignment < -0.7f) inside.Add(delta);
+            }
+            if (outside.Count < source.Length * 0.15f) return false;
+            var constraints = new List<Constraint>();
+            for (var elevation = 0; elevation < 4; elevation++)
+            {
+                var height = Mathf.Min(1f, elevation * 0.4f);
+                var horizontal = Mathf.Sqrt(1f - height * height);
+                for (var azimuth = 0; azimuth < (elevation == 3 ? 1 : 12); azimuth++)
+                {
+                    var angle = azimuth * Mathf.PI / 6f;
+                    var direction = new Vector3(Mathf.Sin(angle) * horizontal, height, Mathf.Cos(angle) * horizontal);
+                    if (outside.Count(point => Vector3.Dot(point.normalized, direction) > 0.85f) < 8) continue;
+                    var outerSupport = Quantile(outside.Select(point => Vector3.Dot(point, direction)), 0.98f);
+                    var interior = inside.Where(point => Vector3.Dot(point.normalized, direction) > 0.85f).ToArray();
+                    var sourceSupport = interior.Length >= 8
+                        ? Mathf.Clamp(Quantile(interior.Select(point => Vector3.Dot(point, direction)), 0.98f), outerSupport * 0.8f, outerSupport)
+                        : outerSupport;
+                    if (!(sourceSupport > shell.Radius * 0.2f)) continue;
+                    var targetSupport = Quantile(target.Select(sample => Vector3.Dot(sample.Point - baseline.Center, direction)), 0.98f);
+                    if (existing.Length > 0)
+                        targetSupport = Mathf.Max(targetSupport, Quantile(existing.Select(sample => Vector3.Dot(sample.Point - baseline.Center, direction)), 0.98f));
+                    constraints.Add(new Constraint {
+                        Weights = new Vector4(direction.x, direction.y, direction.z, sourceSupport / shell.Radius),
+                        Limit = targetSupport / baseline.Radius + 0.02f
+                    });
+                }
+            }
+            if (constraints.Count < 24) return false;
+            var solution = new Vector4(0f, 0f, 0f, 1f);
+            for (var iteration = 0; iteration < 32; iteration++)
+            {
+                var system = new double[4, 5];
+                for (var axis = 0; axis < 3; axis++) system[axis, axis] = 2;
+                foreach (var constraint in constraints)
+                {
+                    var weight = Vector4.Dot(constraint.Weights, solution) < constraint.Limit ? 200d : 1d;
+                    for (var row = 0; row < 4; row++)
+                    {
+                        for (var column = 0; column < 4; column++)
+                            system[row, column] += weight * constraint.Weights[row] * constraint.Weights[column];
+                        system[row, 4] += weight * constraint.Weights[row] * constraint.Limit;
+                    }
+                }
+                if (!TrySolve(system, out var next)) return false;
+                var cost = ShellCost(constraints, solution);
+                var step = 1f;
+                while (step > 0.001f && ShellCost(constraints, Vector4.LerpUnclamped(solution, next, step)) > cost) step *= 0.5f;
+                var change = (next - solution) * step;
+                solution += change;
+                if (change.sqrMagnitude < 0.00000001f) break;
+            }
+            center += new Vector3(solution.x, solution.y, solution.z) * baseline.Radius;
+            factor = solution.w * baseline.Radius / shell.Radius;
+            return factor > 0f && !float.IsNaN(factor) && !float.IsInfinity(factor);
+        }
+
+        private static float Quantile(IEnumerable<float> values, float quantile)
+        {
+            var ordered = values.OrderBy(value => value).ToArray();
+            var index = (ordered.Length - 1) * quantile;
+            var lower = Mathf.FloorToInt(index);
+            return Mathf.Lerp(ordered[lower], ordered[Mathf.Min(lower + 1, ordered.Length - 1)], index - lower);
+        }
+
+        private static double ShellCost(List<Constraint> constraints, Vector4 solution)
+        {
+            var cost = 2d * (solution.x * solution.x + solution.y * solution.y + solution.z * solution.z);
+            foreach (var constraint in constraints)
+            {
+                var residual = Vector4.Dot(constraint.Weights, solution) - constraint.Limit;
+                cost += residual * residual * (residual < 0f ? 200d : 1d);
+            }
+            return cost;
+        }
+
+        private static bool TrySolve(double[,] system, out Vector4 solution)
+        {
+            solution = Vector4.zero;
+            for (var column = 0; column < 4; column++)
+            {
+                var pivot = column;
+                for (var row = column + 1; row < 4; row++)
+                    if (Math.Abs(system[row, column]) > Math.Abs(system[pivot, column])) pivot = row;
+                if (Math.Abs(system[pivot, column]) < 0.000000001d) return false;
+                for (var entry = column; entry < 5; entry++)
+                {
+                    var saved = system[column, entry];
+                    system[column, entry] = system[pivot, entry];
+                    system[pivot, entry] = saved;
+                }
+                var divisor = system[column, column];
+                for (var entry = column; entry < 5; entry++) system[column, entry] /= divisor;
+                for (var row = 0; row < 4; row++)
+                {
+                    if (row == column) continue;
+                    var multiplier = system[row, column];
+                    for (var entry = column; entry < 5; entry++) system[row, entry] -= multiplier * system[column, entry];
+                }
+            }
+            for (var axis = 0; axis < 4; axis++) solution[axis] = (float)system[axis, 4];
             return true;
         }
 
